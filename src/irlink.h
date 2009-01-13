@@ -69,9 +69,8 @@ extern "C" {
   // Link .size directives from gas
   void link_size(const char *name, unsigned int size,
                  const char *line_verbatim);
-  // Called when gas is finished. Here we have a complete representation of the
-  // program.
-  void mao_finished_assemble(void (*callback)(void *unit));
+  // Callback to mao code before as starts and when while file is parsed.
+  void mao_callback(void (*callback)(void *unit));
 
 #ifdef __cplusplus
 }

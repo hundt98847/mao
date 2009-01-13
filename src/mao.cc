@@ -112,8 +112,12 @@ int process_command_line_arguments(int *argc, char *argv[],
   return 0;
 }
 
+void ir_start(void *mao_unit_p) {
+  //
+}
+
 // Called when IR has been generated
-void ir_ready(void *mao_unit_p) {
+void ir_end(void *mao_unit_p) {
   MaoUnit *maounit = (MaoUnit *)mao_unit_p;
   if (mao_options.write_assembly()) {
     FILE *outfile =  fopen(mao_options.assembly_output_file_name(), "w");
@@ -142,6 +146,6 @@ int main(int argc, char *argv[]) {
   //   -mao_o FILE : Write output to FILE. Defaults to stdout.
   //   -mao_v      : Prints version and exists.
   process_command_line_arguments(&argc, argv, &mao_options);
-  int ret_val = as_main(argc, argv, &ir_ready);
+  int ret_val = as_main(argc, argv, &ir_start, &ir_end);
   return ret_val;
 }

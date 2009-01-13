@@ -1080,7 +1080,7 @@ create_obj_attrs_section (void)
 
 
 int
-as_main (int argc, char ** argv, void (*callback)(void *))
+as_main (int argc, char ** argv, void (*start_callback)(void *), void (*end_callback)(void *))
 {
   char ** argv_orig = argv;
 
@@ -1186,6 +1186,8 @@ as_main (int argc, char ** argv, void (*callback)(void *))
 
   PROGRESS (1);
 
+  mao_callback(start_callback);
+
   /* Assemble it.  */
   perform_an_assembly_pass (argc, argv);
 
@@ -1196,7 +1198,7 @@ as_main (int argc, char ** argv, void (*callback)(void *))
 #endif
 
 
-  mao_finished_assemble(callback);
+  mao_callback(end_callback);
 
 #ifdef OBJ_ELF
   if (IS_ELF)
