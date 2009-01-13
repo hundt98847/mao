@@ -1,0 +1,21 @@
+#summary Example on how to run MAO.
+
+= Running mao =
+
+For each target you build MAO, a binary called {{{mao-$TARGET}}} will be placed in 
+{{{./bin/.}}} Besides the normal flags accepted by GNU Assembler, the following can
+be used.
+
+{{{
+Usage: mao [-mao_o FILE] [-mao_ir FILE] [-mao_v]
+  -mao_o FILE       Prints output to FILE.
+  -mao_ir FILE      Prints the IR in XML-like format to FILE
+  -mao_v            Prints version and usage info, then exits
+}}}
+
+In order to read and print out assembly file example.s on a x86_64 target to 
+stdout, run the following
+
+{{{
+mao-x86_64 -mao_o /dev/stdout example.s
+}}}
