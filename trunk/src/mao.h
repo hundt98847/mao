@@ -23,7 +23,7 @@
 // gas main entry point
 extern "C" {
 // gas main entry point
-int as_main (int argc, char ** argv, void (*callback)(void *unit));
+int as_main (int argc, char ** argv, void (*start_callback)(void *unit), void (*end_callback)(void *unit));
 }
 
 #endif  // MAO_H_

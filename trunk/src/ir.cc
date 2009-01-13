@@ -34,6 +34,7 @@ extern "C" void   as_where (char **, unsigned int *);
 
 // Global variable that holds the whole unit.
 
+
 MaoUnit maounit_;
 MaoOptions *mao_options_;
 
@@ -199,6 +200,6 @@ void link_size(const char *name, unsigned int size, const char *line_verbatim) {
   return;
 }
 
-void mao_finished_assemble(void (*callback)(void *unit)) {
+void mao_callback(void (*callback)(void *unit)) {
   callback(&maounit_);
 }
