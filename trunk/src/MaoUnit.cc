@@ -100,8 +100,8 @@ void MaoUnit::PrintIR(FILE *out) const {
     Section *section = iter->second;
     fprintf(out,"[%3d] %s [", index, section->name());
     // Print out the subsections in this section as a list of indexes
-    std::vector<unsigned int> *subsection_indexes = section->GetSubSectionIndexes();
-    for (std::vector<unsigned int>::const_iterator si_iter =
+    std::vector<subsection_index_t> *subsection_indexes = section->GetSubSectionIndexes();
+    for (std::vector<subsection_index_t>::const_iterator si_iter =
              subsection_indexes->begin();
          si_iter != subsection_indexes->end(); ++si_iter) {
     fprintf(out, " %d", *si_iter);
@@ -788,7 +788,7 @@ Section::~Section() {
   free(name_);
 }
 
-void Section::AddSubSectionIndex(unsigned int index) {
+void Section::AddSubSectionIndex(subsection_index_t index) {
   sub_section_indexes_.push_back(index);
 }
 

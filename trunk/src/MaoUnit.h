@@ -29,6 +29,9 @@
 #define DEFAULT_SECTION_NAME "text"
 #define DEFAULT_SECTION_CREATION_OP "\t.text"
 
+typedef unsigned int entry_index_t;
+typedef unsigned int subsection_index_t;
+
 class MaoUnitEntry;
 class Section;
 class SubSection;
@@ -272,10 +275,10 @@ class SubSection {
   const char *name() const;
   const char *creation_op() const;
 
-  unsigned int first_entry_index() { return first_entry_index_;}
-  unsigned int last_entry_index() { return last_entry_index_;}
-  void set_first_entry_index(unsigned int index) { first_entry_index_ = index;}
-  void set_last_entry_index(unsigned int index) { last_entry_index_ = index;}
+  entry_index_t first_entry_index() { return first_entry_index_;}
+  entry_index_t last_entry_index() { return last_entry_index_;}
+  void set_first_entry_index(entry_index_t index) { first_entry_index_ = index;}
+  void set_last_entry_index(entry_index_t index) { last_entry_index_ = index;}
  private:
   // The subsection number
   const unsigned int number_;
@@ -283,8 +286,8 @@ class SubSection {
 
   // Points to the first and last entry for the subsection.
   // Value is stored as index into the vector.
-  unsigned int first_entry_index_;
-  unsigned int last_entry_index_;
+  entry_index_t first_entry_index_;
+  entry_index_t last_entry_index_;
 
   // The assembly code needed to create this subsection.
   char *creation_op_;
@@ -299,11 +302,11 @@ class Section {
   explicit Section(const char *name);
   ~Section();
   const char *name() const;
-  void AddSubSectionIndex(unsigned int index);
-  std::vector<unsigned int> *GetSubSectionIndexes() {return &sub_section_indexes_;}
+  void AddSubSectionIndex(subsection_index_t index);
+  std::vector<subsection_index_t> *GetSubSectionIndexes() {return &sub_section_indexes_;}
  private:
   char *name_;  // .text -> "text", .data -> "data"
-  std::vector<unsigned int> sub_section_indexes_;
+  std::vector<subsection_index_t> sub_section_indexes_;
 };
 
 #endif  // MAOUNIT_H_
