@@ -22,7 +22,7 @@
 #include <map>
 #include <vector>
 
-#include "ir.h"
+#include "ir-gas.h"
 #include "irlink.h"
 #include "SymbolTable.h"
 

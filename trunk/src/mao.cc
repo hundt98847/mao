@@ -21,13 +21,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ir.h"
 #include "mao.h"
 #include "MaoOptions.h"
 #include "MaoUnit.h"
 
-// Global variable for now
-// TODO(martint): Implement a cleaner interface for options.
-MaoOptions mao_options;
+
+
 
 void print_command_line_arguments(int argc, char *argv[]) {
   for (int i = 0; i < argc; i++) {
@@ -112,15 +112,9 @@ int process_command_line_arguments(int *argc, char *argv[],
   return 0;
 }
 
-void ir_start(void *mao_unit_p) {
-  //
-}
-
-// Called when IR has been generated
-void ir_end(void *mao_unit_p) {
-  MaoUnit *maounit = (MaoUnit *)mao_unit_p;
-  if (mao_options.write_assembly()) {
-    FILE *outfile =  fopen(mao_options.assembly_output_file_name(), "w");
+void ProcessIR(MaoUnit *maounit, MaoOptions *mao_options) {
+  if (mao_options->write_assembly()) {
+    FILE *outfile =  fopen(mao_options->assembly_output_file_name(), "w");
     assert(outfile);
     fprintf(outfile, "# MaoUnit:\n");
     maounit->PrintMaoUnit(outfile);
@@ -133,19 +127,21 @@ void ir_end(void *mao_unit_p) {
       fclose(outfile);
     }
   }
-  if (mao_options.write_ir()) {
-    FILE *outfile =  fopen(mao_options.ir_output_file_name(), "w");
+  if (mao_options->write_ir()) {
+    FILE *outfile =  fopen(mao_options->ir_output_file_name(), "w");
     assert(outfile);
     maounit->PrintIR();
   }
 }
 
 int main(int argc, char *argv[]) {
-  // Handle command line options
-  // Currently supports:
-  //   -mao_o FILE : Write output to FILE. Defaults to stdout.
-  //   -mao_v      : Prints version and exists.
+  MaoOptions mao_options;
+  MaoUnit maounit;
+  // Allows linking function to access our MaoUnit.
+  register_mao_unit(&maounit);
+  // Parse any mao-specific command line flags
   process_command_line_arguments(&argc, argv, &mao_options);
-  int ret_val = as_main(argc, argv, &ir_start, &ir_end);
+  int ret_val = as_main(argc, argv);
+  ProcessIR(&maounit, &mao_options);
   return ret_val;
 }

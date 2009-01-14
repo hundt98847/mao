@@ -24,7 +24,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "ir.h"
+#include "ir-gas.h"
 #include "irlink.h"
 #include "MaoOptions.h"
 #include "MaoUnit.h"
@@ -32,11 +32,8 @@
 extern "C" const char *S_GET_NAME(symbolS *s);
 extern "C" void   as_where (char **, unsigned int *);
 
-// Global variable that holds the whole unit.
-
-
-MaoUnit maounit_;
-MaoOptions *mao_options_;
+// Reference to a the mao_unit. 
+MaoUnit *maounit_;
 
 struct link_context_s {
   unsigned int line_number;
@@ -60,19 +57,20 @@ void link_insn(i386_insn *insn, size_t SizeOfInsn, const char *line_verbatim) {
   i386_insn *inst = insn;
 
   struct link_context_s link_context = get_link_context();
-
-  maounit_.AddEntry(new InstructionEntry(inst,
-                                         link_context.line_number,
-                                         line_verbatim), true);
+  assert(maounit_);
+  maounit_->AddEntry(new InstructionEntry(inst,
+                                          link_context.line_number,
+                                          line_verbatim), true);
 }
 
 void link_label(const char *name, const char *line_verbatim) {
   // Add the label to the symbol table.
-  SymbolTable *symbol_table = maounit_.GetSymbolTable();
+  SymbolTable *symbol_table = maounit_->GetSymbolTable();
   assert(symbol_table);
   struct link_context_s link_context = get_link_context();
-  maounit_.AddEntry(new LabelEntry(name, link_context.line_number,
-                                   line_verbatim), true);
+  assert(maounit_);
+  maounit_->AddEntry(new LabelEntry(name, link_context.line_number,
+                                    line_verbatim), true);
 }
 
 void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,
@@ -83,7 +81,8 @@ void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,
   // with an undefined section
 
   // Get table
-  SymbolTable *symbol_table = maounit_.GetSymbolTable();
+  assert(maounit_);
+  SymbolTable *symbol_table = maounit_->GetSymbolTable();
   assert(symbol_table);
   // Create symbol if needed
   if (!symbol_table->Exists(name)) {
@@ -100,7 +99,8 @@ void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,
 void link_comm(const char *name, unsigned int common_size,
                unsigned int common_align, const char *line_verbatim) {
   assert(name);
-  maounit_.AddCommSymbol(name, common_size, common_align);
+  assert(maounit_);
+  maounit_->AddCommSymbol(name, common_size, common_align);
 }
 
 
@@ -109,8 +109,9 @@ void link_directive(const char *key, const char *value,
   assert(key);
   assert(value);
   struct link_context_s link_context = get_link_context();
-  maounit_.AddEntry(new DirectiveEntry(key, value, link_context.line_number,
-                                       line_verbatim), false);
+  assert(maounit_);
+  maounit_->AddEntry(new DirectiveEntry(key, value, link_context.line_number,
+                                        line_verbatim), false);
 }
 
 
@@ -118,8 +119,9 @@ void link_debug(const char *key, const char *value, const char *line_verbatim) {
   assert(key);
   assert(value);
   struct link_context_s link_context = get_link_context();
-  maounit_.AddEntry(new DebugEntry(key, value, link_context.line_number,
-                                   line_verbatim), false);
+  assert(maounit_);
+  maounit_->AddEntry(new DebugEntry(key, value, link_context.line_number,
+                                    line_verbatim), false);
 }
 
 
@@ -161,19 +163,19 @@ void link_section(const char *name, const char *arguments,
   assert(name);
   assert(name[0] != '.');
   assert(create_op);
-
+  assert(maounit_);
   if (strcmp(name, "bss") == 0 ||
       strcmp(name, "text") == 0 ||
       strcmp(name, "data") == 0) {
     // No argument are used for these.
-    maounit_.SetSubSection(name, 0, create_op);
+    maounit_->SetSubSection(name, 0, create_op);
   } else if (strcmp(name, "section") == 0) {
     // Get name of section from argument
     assert(strlen(arguments) < MAX_SYMBOL_NAME_LENGTH);
     char name_buffer[MAX_SYMBOL_NAME_LENGTH];
     get_section_name(arguments, name_buffer);
     assert(name_buffer);
-    maounit_.SetSubSection(name_buffer, 0, create_op);
+    maounit_->SetSubSection(name_buffer, 0, create_op);
   } else {
     assert(0);  // Unknown directive found
   }
@@ -181,7 +183,8 @@ void link_section(const char *name, const char *arguments,
 
 void link_type(const char *name, SymbolType symbol_type,
                const char *line_verbatim) {
-  SymbolTable *symbol_table = maounit_.GetSymbolTable();
+  assert(maounit_);
+  SymbolTable *symbol_table = maounit_->GetSymbolTable();
   assert(symbol_table);
   Symbol *symbol = symbol_table->FindOrCreateAndFind(name);
   assert(symbol);
@@ -191,8 +194,8 @@ void link_type(const char *name, SymbolType symbol_type,
 
 void link_size(const char *name, unsigned int size, const char *line_verbatim) {
   assert(name);
-
-  SymbolTable *symbol_table = maounit_.GetSymbolTable();
+  assert(maounit_);
+  SymbolTable *symbol_table = maounit_->GetSymbolTable();
   assert(symbol_table);
   Symbol *symbol = symbol_table->FindOrCreateAndFind(name);
   assert(symbol);
@@ -200,6 +203,7 @@ void link_size(const char *name, unsigned int size, const char *line_verbatim) {
   return;
 }
 
-void mao_callback(void (*callback)(void *unit)) {
-  callback(&maounit_);
+void register_mao_unit(MaoUnit *maounit) {
+  assert(maounit);
+  maounit_ = maounit;
 }
