@@ -69,8 +69,8 @@ extern "C" {
   // Link .size directives from gas
   void link_size(const char *name, unsigned int size,
                  const char *line_verbatim);
-  // Callback to mao code before as starts and when while file is parsed.
-  void mao_callback(void (*callback)(void *unit));
+  // Register mao object so that linking functions can access it
+  void set_mao_unit(void *mao_unit);
 
 #ifdef __cplusplus
 }

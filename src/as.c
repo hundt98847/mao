@@ -1080,7 +1080,7 @@ create_obj_attrs_section (void)
 
 
 int
-as_main (int argc, char ** argv, void (*start_callback)(void *), void (*end_callback)(void *))
+as_main (int argc, char ** argv)
 {
   char ** argv_orig = argv;
 
@@ -1186,8 +1186,6 @@ as_main (int argc, char ** argv, void (*start_callback)(void *), void (*end_call
 
   PROGRESS (1);
 
-  mao_callback(start_callback);
-
   /* Assemble it.  */
   perform_an_assembly_pass (argc, argv);
 
@@ -1197,8 +1195,6 @@ as_main (int argc, char ** argv, void (*start_callback)(void *), void (*end_call
   md_end ();
 #endif
 
-
-  mao_callback(end_callback);
 
 #ifdef OBJ_ELF
   if (IS_ELF)
@@ -1270,5 +1266,6 @@ as_main (int argc, char ** argv, void (*start_callback)(void *), void (*end_call
   /* Only generate dependency file if assembler was successful.  */
   print_dependencies ();
 
-  xexit (EXIT_SUCCESS);
+  return 0;
+  //xexit (EXIT_SUCCESS);
 }
