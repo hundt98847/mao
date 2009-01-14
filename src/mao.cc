@@ -104,7 +104,7 @@ int process_command_line_arguments(int *argc, char *argv[],
     fprintf(stderr,
       "  -mao_o FILE       Prints output to FILE.\n");
     fprintf(stderr,
-      "  -mao_ir FILE      Prints the IR in XML-like format to FILE\n");
+      "  -mao_ir FILE      Prints the IR to FILE\n");
     fprintf(stderr,
       "  -mao_v            Prints version and usage info, then exits\n");
     exit(0);
