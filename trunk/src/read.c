@@ -939,14 +939,17 @@ read_a_source_file (char *name)
 
                       if(strcmp(pop->poc_name, "bss") == 0) {
                         link_section("bss", 0, "\t.bss", 0);
+                        link_directive(".bss", buffer, 0);
                       }
 
                       if(strcmp(pop->poc_name, "text") == 0) {
                         link_section("text", 0, "\t.text", 0);
+                        link_directive(".text", buffer, 0);
                       }
 
                       if(strcmp(pop->poc_name, "data") == 0) {
                         link_section("data", 0, "\t.data", 0);
+                        link_directive(".data", buffer, 0);
                       }
 
                       if(strcmp(pop->poc_name, "ident") == 0) {
@@ -962,6 +965,7 @@ read_a_source_file (char *name)
                         char creation_op_buffer[MAX_OPERANDS_STRING_LENGTH];
                         sprintf(creation_op_buffer, ".section %s", buffer);
                         link_section("section", buffer, creation_op_buffer, 0);
+                        link_directive(".section", buffer, 0);
                       }
 
                       if(strcmp(pop->poc_name, "size") == 0) {

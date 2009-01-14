@@ -72,8 +72,6 @@ class SymbolTable {
  public:
   SymbolTable();
   ~SymbolTable();
-  // Initalize the table
-  void Init();
   Symbol *Add(const char *name, Symbol *symbol);
   bool Exists(const char *name);
   // Returns a pointer to a symbol with the given name. Creates it if it does

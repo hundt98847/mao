@@ -25,7 +25,9 @@
 
 // Class SymbolTable
 
-SymbolTable::SymbolTable() {}
+SymbolTable::SymbolTable() {
+  table_.clear();
+}
 
 SymbolTable::~SymbolTable() {
   // we should clear the entries here.
@@ -46,10 +48,6 @@ Symbol *SymbolTable::Add(const char *name, Symbol *symbol) {
   //  table_[name] = symbol;
   table_[symbol->name()] = symbol;
   return symbol;
-}
-
-void SymbolTable::Init() {
-  table_.clear();
 }
 
 void SymbolTable::Print() const {

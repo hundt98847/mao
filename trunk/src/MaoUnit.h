@@ -43,9 +43,10 @@ class MaoUnit {
   MaoUnit();
   ~MaoUnit();
 
-  // Inserts an entry (Label, Instruction, or Directive) to the compilation
+  // Inserts an entry (Label, Instruction, Directive, ...) to the compilation
   // unit. create_default_section signals if a default section should be created
-  // if there is no current subsection.
+  // if there is no current subsection. Some directives in the beginning of the
+  // file does not belong to any subsection.
   bool AddEntry(MaoUnitEntryBase *entry, bool create_default_section);
   // Add a common symbol to the symbol table
   bool AddCommSymbol(const char *name, unsigned int common_size,
@@ -53,23 +54,21 @@ class MaoUnit {
   // Returns a handle to the symbol table
   SymbolTable *GetSymbolTable() {return &symbol_table_;}
 
-  // Note that a given subsection identifier can occour in many places in the
+  // Note that a given subsection identifier can occur in many places in the
   // code. (.text, .data, .text.)
-  // This will be create several SybSection objects with .text in the
+  // This will be create several SubSection objects with .text in the
   // sub_sections_ member.
   void SetSubSection(const char *section_name, unsigned int subsection_number,
                      const char *creation_op);
-  // Create section_name if it does not already exists. Returns a pointer the
-  // section.
+  // Create the section section_name if it does not already exists. Returns a
+  // pointer the section.
   Section *FindOrCreateAndFind(const char *section_name);
+
   void PrintMaoUnit() const;
   void PrintMaoUnit(FILE *out) const;
-
   void PrintIR() const;
   void PrintIR(FILE *out) const;
  private:
-  void PrintSubSections() const;
-  void PrintSubSections(FILE *out) const;
 
   // Used by the STL-maps of sections and subsections.
   struct ltstr {
@@ -78,14 +77,12 @@ class MaoUnit {
     }
   };
 
-  // For directives and entreis not belonging to sections, place
-  // them in this member. E.g.: the ".file" directive
+  // List of all the entries in the unit
   std::vector<MaoUnitEntryBase *> entries_;
 
-  // The program is a list of sub_sections_
-  // Subsection are kept in the same order as they were found in
-  // the assembly. This allows them to be printed in the same order
-  // and generate an identical result file which simplifies verifiction.
+  // A list of all subsections found in the unit.
+  // Each subsection should have a pointer to the first and last
+  // entry of the subsection in entries_
   std::vector<SubSection *> sub_sections_;
 
   // List of sections_ found in the program. Each subsection has a pointer to
@@ -99,9 +96,6 @@ class MaoUnit {
   SymbolTable symbol_table_;
 };
 
-
-
-
 // Base class for all types of entries in the MaoUnit. Example of entries
 // are Labels, Directives, and Instructions
 class MaoUnitEntryBase {
@@ -110,7 +104,8 @@ class MaoUnitEntryBase {
   virtual ~MaoUnitEntryBase();
 
   virtual void PrintEntry(FILE *out) const = 0;
-  virtual void PrintIR(unsigned int indent_level, FILE *out) const = 0;
+  virtual void PrintIR(FILE *out) const = 0;
+  virtual char GetDescriptiveChar() const = 0;
 
   // Types of possible entries
   enum EntryType {
@@ -152,9 +147,10 @@ class LabelEntry : public MaoUnitEntryBase {
              const char* line_verbatim);
   ~LabelEntry();
   void PrintEntry(FILE *out) const;
-  void PrintIR(unsigned int indent_level, FILE *out) const;
+  void PrintIR(FILE *out) const;
   MaoUnitEntryBase::EntryType  entry_type() const;
   const char *name();
+  char GetDescriptiveChar() const {return 'L';}
  private:
   // The actual label
   Label *label_;
@@ -175,7 +171,7 @@ class Directive {
   const char *key();
   const char *value();
  private:
-  // key_ holds the name of the diretive
+  // key_ holds the name of the directive
   char *key_;
   // value holds the arguments to the directive
   char *value_;
@@ -188,8 +184,9 @@ class DirectiveEntry : public MaoUnitEntryBase {
                  const char* line_verbatim);
   ~DirectiveEntry();
   void PrintEntry(FILE *out) const;
-  void PrintIR(unsigned int indent_level, FILE *out) const;
+  void PrintIR(FILE *out) const;
   MaoUnitEntryBase::EntryType  entry_type() const;
+  char GetDescriptiveChar() const {return 'D';}
  private:
   // The actual directive
   Directive *directive_;
@@ -203,8 +200,9 @@ class DebugEntry : public MaoUnitEntryBase {
              const char* line_verbatim);
   ~DebugEntry();
   void PrintEntry(FILE *out) const;
-  void PrintIR(unsigned int indent_level, FILE *out) const;
+  void PrintIR(FILE *out) const;
   MaoUnitEntryBase::EntryType  entry_type() const;
+  char GetDescriptiveChar() const {return 'g';}
  private:
   // Currently reuses the Directive class for debug entries
   Directive *directive_;
@@ -250,8 +248,9 @@ class InstructionEntry : public MaoUnitEntryBase {
                    const char* line_verbatim);
   ~InstructionEntry();
   void PrintEntry(FILE *out) const;
-  void PrintIR(unsigned int indent_level, FILE *out) const;
+  void PrintIR(FILE *out) const;
   MaoUnitEntryBase::EntryType  entry_type() const;
+  char GetDescriptiveChar() const {return 'I';}
  private:
   AsmInstruction *instruction_;
 };
@@ -259,31 +258,34 @@ class InstructionEntry : public MaoUnitEntryBase {
 
 
 // A Subsection is part of a section. The subsection concept allows the assembly
-// file to write the code more freely, but still keep the data organised in
+// file to write the code more freely, but still keep the data organized in
 // sections. Each subsection has a pointer to the section it belongs, as well
 // as a number to allow the subsections to be ordered correctly.
 class SubSection {
  public:
   // Constructor needs subsection number, a pointer to the actual section, and
   // the assembly code needed to create the subsection.
-  explicit SubSection(unsigned int subsection_number, Section *section,
+  explicit SubSection(unsigned int subsection_number, const char *name,
                       const char *creation_op);
   ~SubSection();
-  // Adds an entry to the subsection
-  bool AddEntry(MaoUnitEntryBase *entry);
-  // Print out the entries in the subsection.
-  void PrintEntries(FILE *out, SymbolTable *symbol_table) const;
-  void PrintIR(unsigned int indent_level, FILE *out) const;
-
   unsigned int number() const;
   const char *name() const;
   const char *creation_op() const;
+
+  unsigned int first_entry_index() { return first_entry_index_;}
+  unsigned int last_entry_index() { return last_entry_index_;}
+  void set_first_entry_index(unsigned int index) { first_entry_index_ = index;}
+  void set_last_entry_index(unsigned int index) { last_entry_index_ = index;}
  private:
   // The subsection number
   const unsigned int number_;
-  // Pointer to the section
-  const Section *section_;
-  std::list<MaoUnitEntryBase *> entries_;
+  char *name_;
+
+  // Points to the first and last entry for the subsection.
+  // Value is stored as index into the vector.
+  unsigned int first_entry_index_;
+  unsigned int last_entry_index_;
+
   // The assembly code needed to create this subsection.
   char *creation_op_;
 };
@@ -297,8 +299,11 @@ class Section {
   explicit Section(const char *name);
   ~Section();
   const char *name() const;
+  void AddSubSectionIndex(unsigned int index);
+  std::vector<unsigned int> *GetSubSectionIndexes() {return &sub_section_indexes_;}
  private:
   char *name_;  // .text -> "text", .data -> "data"
+  std::vector<unsigned int> sub_section_indexes_;
 };
 
 #endif  // MAOUNIT_H_
