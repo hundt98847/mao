@@ -28,11 +28,13 @@ extern "C" const char *S_GET_NAME(symbolS *s);
 // Class: MaoUnit
 //
 
-MaoUnit::MaoUnit() {
+MaoUnit::MaoUnit() :
+    current_subsection_(0) {
   // Default to no subsection selected
-  // A default will be generetaed if necessary later on.
-  current_subsection_ = 0;
-  symbol_table_.Init();
+  // A default will be generated if necessary later on.
+  entries_.clear();
+  sub_sections_.clear();
+  sections_.clear();
 }
 
 MaoUnit::~MaoUnit() {
@@ -62,9 +64,7 @@ void MaoUnit::PrintMaoUnit() const {
   PrintMaoUnit(stdout);
 }
 
-// Prints all entries in the MaoUnit. Starts with the
-// ones not associated with any section, then the rest by
-// iterating over the subsections.
+// Prints all entries in the MaoUnit
 void MaoUnit::PrintMaoUnit(FILE *out) const {
   for (std::vector<MaoUnitEntryBase *>::const_iterator iter =
            entries_.begin();
@@ -72,7 +72,6 @@ void MaoUnit::PrintMaoUnit(FILE *out) const {
     MaoUnitEntryBase *e = *iter;
     e->PrintEntry(out);
   }
-  PrintSubSections(out);
 }
 
 void MaoUnit::PrintIR() const {
@@ -80,43 +79,49 @@ void MaoUnit::PrintIR() const {
 }
 
 void MaoUnit::PrintIR(FILE *out) const {
-  fprintf(out, "<ir>\n");
-  // start with the subsection-less entries:
+  unsigned int index = 0;
+  // Print the entries
   for (std::vector<MaoUnitEntryBase *>::const_iterator e_iter =
            entries_.begin();
       e_iter != entries_.end(); ++e_iter) {
     MaoUnitEntryBase *e = *e_iter;
-    e->PrintIR(2, out);
+    fprintf(out, "[%5d][%c] ", index, e->GetDescriptiveChar());
+    e->PrintIR(out);
+    fprintf(out, "\n");
+    index++;
   }
-  // Now print each subsection
-  for (std::vector<SubSection *>::const_iterator ss_iter =
-           sub_sections_.begin(); ss_iter != sub_sections_.end(); ++ss_iter) {
-    SubSection *ss = *ss_iter;
-    fprintf(out, "  <subsection %s %d>\n", ss->name(), ss->number());
-    // loop through the subsections here!
-    ss->PrintIR(4, out);
-    fprintf(out, "  </subsection>\n");
+
+  // Print the sections
+  index = 0;
+  fprintf(out, "Sections : \n");
+  for (std::map<const char *, Section *, ltstr>::const_iterator iter =
+           sections_.begin();
+      iter != sections_.end(); ++iter) {
+    Section *section = iter->second;
+    fprintf(out,"[%3d] %s [", index, section->name());
+    // Print out the subsections in this section as a list of indexes
+    std::vector<unsigned int> *subsection_indexes = section->GetSubSectionIndexes();
+    for (std::vector<unsigned int>::const_iterator si_iter =
+             subsection_indexes->begin();
+         si_iter != subsection_indexes->end(); ++si_iter) {
+    fprintf(out, " %d", *si_iter);
+    }
+    fprintf(out, "]\n");
+    index++;
   }
-  fprintf(out, "</ir>\n");
-}
 
-
-void MaoUnit::PrintSubSections() const {
-  PrintSubSections(stdout);
-}
-
-// Prints the entries found in all the subsections. The order is important
-// since keepign the symbol-order as the orignal assembly file simplifies
-// verification.
-void MaoUnit::PrintSubSections(FILE *out) const {
+  // Print the subsections
+  index = 0;
+  fprintf(out, "Subsections : \n");
   for (std::vector<SubSection *>::const_iterator iter = sub_sections_.begin();
        iter != sub_sections_.end(); ++iter) {
     SubSection *ss = *iter;
-    fprintf(out, " # section : %s %s\n", ss->name(), ss->creation_op());
-    fprintf(out, "%s\n", ss->creation_op());
-    ss->PrintEntries(out, (SymbolTable *)&symbol_table_);
+    fprintf(out, "[%3d] [%d-%d]: %s (%s)\n", index,
+            ss->first_entry_index(), ss->last_entry_index(), ss->name(),
+            ss->creation_op());
+    index++;
   }
-  return;
+
 }
 
 Section *MaoUnit::FindOrCreateAndFind(const char *section_name) {
@@ -124,7 +129,7 @@ Section *MaoUnit::FindOrCreateAndFind(const char *section_name) {
   std::map<const char *, Section *, ltstr>::const_iterator it =
       sections_.find(section_name);
   if (it == sections_.end()) {
-    // creapte it!
+    // create it!
     section = new Section(section_name);
     sections_[section->name()] = section;
   } else {
@@ -142,15 +147,17 @@ void MaoUnit::SetSubSection(const char *section_name,
   Section *section = FindOrCreateAndFind(section_name);
   assert(section);
   // Create a new subsection, even if the same subsection number
-  // have already been used. This allows the program to be MaoUnit
-  // to use a list of SubSections and still keep the symbol
-  // order of all the symbols.
-  SubSection *subsection = new SubSection(subsection_number, section,
+  // have already been used.
+  SubSection *subsection = new SubSection(subsection_number, section_name,
                                           creation_op);
   sub_sections_.push_back(subsection);
+  section->AddSubSectionIndex(sub_sections_.size()-1);
 
   // set current_subsection!
   current_subsection_ = subsection;
+
+  current_subsection_->set_first_entry_index(entries_.size());
+  current_subsection_->set_last_entry_index(entries_.size());
 }
 
 // Add an Instruction entry to the MaoUnit list
@@ -177,7 +184,9 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
       label_entry = (LabelEntry *)entry;
       symbol = symbol_table_.FindOrCreateAndFind(label_entry->name());
       assert(symbol);
-      symbol->set_section_name(current_subsection_->name());
+      if (0 != current_subsection_) {
+        symbol->set_section_name(current_subsection_->name());
+      }
       break;
     case MaoUnitEntryBase::DEBUG:
       break;
@@ -191,10 +200,9 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
   }
 
   // Add the entry to the compilation unit
-  if (!current_subsection_) {
-    entries_.push_back(entry);
-  } else {
-    current_subsection_->AddEntry(entry);
+  entries_.push_back(entry);
+  if (current_subsection_) {
+    current_subsection_->set_last_entry_index(entries_.size()-1);
   }
   return true;
 }
@@ -324,7 +332,7 @@ bool AsmInstruction::IsRegisterOperand(const i386_insn *instruction,
 
 // Prints out the instruction. This is work-in-progress, but currently
 // supports the assembly instructions found in the assembled version
-// of mao. Please add functionatlity when unsupported instructions are found.
+// of mao. Please add functionality when unsupported instructions are found.
 void AsmInstruction::PrintInstruction(FILE *out) const {
   int scale[] = { 1, 2, 4, 8 };
 
@@ -648,10 +656,9 @@ void LabelEntry::PrintEntry(FILE *out) const {
   fprintf(out, "\n");
 }
 
-void LabelEntry::PrintIR(unsigned int indent_level, FILE *out) const {
+void LabelEntry::PrintIR(FILE *out) const {
   assert(label_);
-  Spaces(indent_level, out);
-  fprintf(out, "<label>%s</label>\n", label_->name() );
+  fprintf(out, "%s", label_->name() );
 }
 
 
@@ -685,10 +692,9 @@ void DirectiveEntry::PrintEntry(FILE *out) const {
   fprintf(out, "\n");
 }
 
-void DirectiveEntry::PrintIR(unsigned int indent_level, FILE *out) const {
+void DirectiveEntry::PrintIR(FILE *out) const {
   assert(directive_);
-  Spaces(indent_level, out);
-  fprintf(out, "<directive> %s %s </directive>\n", directive_->key(),
+  fprintf(out, "%s %s", directive_->key(),
           directive_->value());
 }
 
@@ -719,10 +725,9 @@ void DebugEntry::PrintEntry(FILE *out) const {
   fprintf(out, "\n");
 }
 
-void DebugEntry::PrintIR(unsigned int indent_level, FILE *out) const {
+void DebugEntry::PrintIR(FILE *out) const {
   assert(directive_);
-  Spaces(indent_level, out);
-  fprintf(out, "<debug>%s %s</debug>\n", directive_->key(),
+  fprintf(out, "%s %s", directive_->key(),
           directive_->value());
 }
 
@@ -754,10 +759,9 @@ void InstructionEntry::PrintEntry(FILE *out) const {
 }
 
 
-void InstructionEntry::PrintIR(unsigned int indent_level, FILE *out) const {
+void InstructionEntry::PrintIR(FILE *out) const {
   assert(instruction_);
-  Spaces(indent_level, out);
-  fprintf(out, "<instruction>%s</instruction>\n", instruction_->get_op());
+  fprintf(out, "%s", instruction_->get_op());
 }
 
 
@@ -784,51 +788,32 @@ Section::~Section() {
   free(name_);
 }
 
+void Section::AddSubSectionIndex(unsigned int index) {
+  sub_section_indexes_.push_back(index);
+}
+
 //
 // Class: SubSection
 //
 
-SubSection::SubSection(unsigned int subsection_number, Section *section,
+SubSection::SubSection(unsigned int subsection_number, const char *name,
                        const char *creation_op) :
     number_(subsection_number),
-    section_(section) {
-  assert(section_);
+    first_entry_index_(0),
+    last_entry_index_(0) {
   assert(creation_op);
   creation_op_ = strdup(creation_op);  // this way free() works
-}
-
-const char *SubSection::name() const {
-  assert(section_);
-  return section_->name();
+  assert(name);
+  name_ = strdup(name);
 }
 
 unsigned int SubSection::number() const {
   return number_;
 }
 
-
-// Add an Instruction entry to the MaoUnit list
-bool SubSection::AddEntry(MaoUnitEntryBase *entry) {
-  entries_.push_back(entry);
-  return true;
+const char *SubSection::name() const {
+  return name_;
 }
-
-void SubSection::PrintEntries(FILE *out, SymbolTable *symbol_table) const {
-  for (std::list<MaoUnitEntryBase *>::const_iterator iter = entries_.begin();
-       iter != entries_.end(); ++iter) {
-    MaoUnitEntryBase *pe = *iter;
-    pe->PrintEntry(out);
-  }
-}
-
-void SubSection::PrintIR(unsigned int indent_level, FILE *out) const {
-  for (std::list<MaoUnitEntryBase *>::const_iterator iter = entries_.begin();
-       iter != entries_.end(); ++iter) {
-    MaoUnitEntryBase *pe = *iter;
-    pe->PrintIR(indent_level, out);
-  }
-}
-
 
 const char *SubSection::creation_op() const {
   assert(creation_op_);
@@ -836,11 +821,9 @@ const char *SubSection::creation_op() const {
 }
 
 SubSection::~SubSection() {
-  // clear the entries!
-  for (std::list<MaoUnitEntryBase *>::iterator iter = entries_.begin();
-       iter != entries_.end(); ++iter) {
-    delete *iter;
-  }
+  assert(name_);
+  free(name_);
+
   assert(creation_op_);
   free(creation_op_);
 }
