@@ -27,6 +27,11 @@ make
 
 cd ..
 cd src
+
+# Note that the Makefile in this directory specifies
+# the location of binutils. Depending on your setup, you
+# may have to change the Makefile to point to the proper
+# locations.
 make TARGET=i686
 make TARGET=x86_64
 }}}
