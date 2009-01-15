@@ -69,7 +69,8 @@ class MaoUnit {
   Section *FindOrCreateAndFind(const char *section_name);
 
   // Insert a new basic block in the unit
-  BasicBlock *AddAndGetBasicBlock();
+  BasicBlock *AddBasicblock(subsection_index_t start_index,
+                            subsection_index_t end_index);
 
   void PrintMaoUnit() const;
   void PrintMaoUnit(FILE *out) const;
@@ -102,7 +103,6 @@ class MaoUnit {
   // Basic blocks
   std::vector<BasicBlock *> basicblocks_;
   BasicBlock *current_basicblock_; // Points to the current basic block, or NULL if none.
-
 
   // One symbol table holds all symbols found in the assembly file.
   SymbolTable symbol_table_;

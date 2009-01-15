@@ -30,7 +30,7 @@ extern "C" const char *S_GET_NAME(symbolS *s);
 
 MaoUnit::MaoUnit() :
     current_subsection_(0),
-    current_basicblock_(0){
+    current_basicblock_(0) {
   // Default to no subsection selected
   // A default will be generated if necessary later on.
   entries_.clear();
@@ -183,11 +183,24 @@ void MaoUnit::SetSubSection(const char *section_name,
   current_subsection_->set_last_entry_index(entries_.size());
 }
 
-// Add an Instruction entry to the MaoUnit list
+// Add a new basic block. Return a pointer to it to be able
+// to update it afterwards.
+BasicBlock *MaoUnit::AddBasicblock(subsection_index_t start_index,
+                                   subsection_index_t end_index) {
+  BasicBlock *bb = new BasicBlock();
+  bb->set_first_entry_index(start_index);
+  bb->set_last_entry_index(end_index);
+  basicblocks_.push_back(bb);
+  return bb;
+}
+
+// Add an entry to the MaoUnit list
 bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
-  // Instructions that _might_ get used.
+  // Variables that _might_ get used.
   LabelEntry *label_entry;
   Symbol *symbol;
+
+  entry_index_t number_of_entries_added = entries_.size();
 
   assert(entry);
 
@@ -225,22 +238,24 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
   // Add the entry to the compilation unit
   entries_.push_back(entry);
   if (current_subsection_) {
-    current_subsection_->set_last_entry_index(entries_.size()-1);
+    current_subsection_->set_last_entry_index(number_of_entries_added);
   }
 
-  // Update the BB structure
-  // current_basicblock_ is used as a helper variable when
-  // building new basic blocks. If it is NULL, a new basic block
-  // has to be created.
+  // Update basic block information
   if (entry->BelongsInBasicBlock()) {
     if (! current_basicblock_) {
-      current_basicblock_ = AddAndGetBasicBlock();
-      current_basicblock_->set_first_entry_index(entries_.size()-1);
+      // Assume the basic block is only one entry long. It is updated
+      // later if we need to
+      current_basicblock_ = AddBasicblock(number_of_entries_added,
+                                          number_of_entries_added);
+    } else {
+      current_basicblock_->set_last_entry_index(number_of_entries_added);
     }
-    current_basicblock_->set_last_entry_index(entries_.size()-1);
   }
+  // This forces a new basic block to be created when the next
+  // entry that belongs in a basic block is encountered.
   if (entry->EndsBasicBlock()) {
-    current_basicblock_ = 0;
+     current_basicblock_ = 0;
   }
 
   return true;
@@ -274,12 +289,6 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
     symbol->set_common_align(common_align);
   }
   return true;
-}
-
-BasicBlock *MaoUnit::AddAndGetBasicBlock() {
-  BasicBlock *bb = new BasicBlock();
-  basicblocks_.push_back(bb);
-  return bb;
 }
 
 //
