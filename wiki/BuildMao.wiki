@@ -12,16 +12,16 @@ wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
 gunzip binutils-2.19.tar.gz
 tar xvf binutils-2.19.tar
 
-# For i686
-mkdir binutils-2.19-obj-i686 
-cd binutils-2.19-obj-i686
+# For i686-linux
+mkdir binutils-2.19-obj-i686-linux 
+cd binutils-2.19-obj-i686-linux
 ../binutils-2.19/configure --target=i686-linux
 make
 
 # For x86_64
 cd ..
-mkdir binutils-2.19-obj-x86_64
-cd binutils-2.19-obj-x86_64
+mkdir binutils-2.19-obj-x86_64-linux
+cd binutils-2.19-obj-x86_64-inux
 ../binutils-2.19/configure --target=x86_64-linux
 make
 
@@ -32,6 +32,6 @@ cd src
 # the location of binutils. Depending on your setup, you
 # may have to change the Makefile to point to the proper
 # locations.
-make TARGET=i686
-make TARGET=x86_64
+make TARGET=i686-linux
+make TARGET=x86_64-linux
 }}}
