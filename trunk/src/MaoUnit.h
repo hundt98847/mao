@@ -32,6 +32,7 @@
 typedef unsigned int entry_index_t;
 typedef unsigned int subsection_index_t;
 
+class BasicBlock;
 class MaoUnitEntry;
 class Section;
 class SubSection;
@@ -67,6 +68,9 @@ class MaoUnit {
   // pointer the section.
   Section *FindOrCreateAndFind(const char *section_name);
 
+  // Insert a new basic block in the unit
+  BasicBlock *AddAndGetBasicBlock();
+
   void PrintMaoUnit() const;
   void PrintMaoUnit(FILE *out) const;
   void PrintIR() const;
@@ -95,6 +99,11 @@ class MaoUnit {
   // Pointer to current subsection. Used when parsing the assembly file.
   SubSection *current_subsection_;
 
+  // Basic blocks
+  std::vector<BasicBlock *> basicblocks_;
+  BasicBlock *current_basicblock_; // Points to the current basic block, or NULL if none.
+
+
   // One symbol table holds all symbols found in the assembly file.
   SymbolTable symbol_table_;
 };
@@ -119,6 +128,9 @@ class MaoUnitEntryBase {
     DEBUG,
   };
   virtual EntryType entry_type() const = 0;
+
+  virtual bool BelongsInBasicBlock() const = 0;
+  virtual bool EndsBasicBlock() const = 0;
 
  protected:
   // Line number assembly was found in the original file
@@ -154,6 +166,8 @@ class LabelEntry : public MaoUnitEntryBase {
   MaoUnitEntryBase::EntryType  entry_type() const;
   const char *name();
   char GetDescriptiveChar() const {return 'L';}
+  bool BelongsInBasicBlock() const {return false;}
+  bool EndsBasicBlock() const {return true;}
  private:
   // The actual label
   Label *label_;
@@ -190,6 +204,8 @@ class DirectiveEntry : public MaoUnitEntryBase {
   void PrintIR(FILE *out) const;
   MaoUnitEntryBase::EntryType  entry_type() const;
   char GetDescriptiveChar() const {return 'D';}
+  bool BelongsInBasicBlock() const {return false;}
+  bool EndsBasicBlock() const {return false;}
  private:
   // The actual directive
   Directive *directive_;
@@ -206,6 +222,8 @@ class DebugEntry : public MaoUnitEntryBase {
   void PrintIR(FILE *out) const;
   MaoUnitEntryBase::EntryType  entry_type() const;
   char GetDescriptiveChar() const {return 'g';}
+  bool BelongsInBasicBlock() const {return false;}
+  bool EndsBasicBlock() const {return false;}
  private:
   // Currently reuses the Directive class for debug entries
   Directive *directive_;
@@ -221,6 +239,7 @@ class AsmInstruction {
   void PrintInstruction(FILE *out) const;
   static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
   const char *get_op() const;
+  bool EndsBasicBlock() const;
  private:
   i386_insn *instruction_;
 
@@ -254,6 +273,8 @@ class InstructionEntry : public MaoUnitEntryBase {
   void PrintIR(FILE *out) const;
   MaoUnitEntryBase::EntryType  entry_type() const;
   char GetDescriptiveChar() const {return 'I';}
+  bool BelongsInBasicBlock() const {return true;}
+  bool EndsBasicBlock() const {return instruction_->EndsBasicBlock();}
  private:
   AsmInstruction *instruction_;
 };
@@ -285,7 +306,7 @@ class SubSection {
   char *name_;
 
   // Points to the first and last entry for the subsection.
-  // Value is stored as index into the vector.
+  // Value is stored as index into the entry vector.
   entry_index_t first_entry_index_;
   entry_index_t last_entry_index_;
 
@@ -308,5 +329,24 @@ class Section {
   char *name_;  // .text -> "text", .data -> "data"
   std::vector<subsection_index_t> sub_section_indexes_;
 };
+
+class BasicBlock {
+ public:
+  BasicBlock();
+  ~BasicBlock();
+
+  entry_index_t first_entry_index() { return first_entry_index_;}
+  entry_index_t last_entry_index() { return last_entry_index_;}
+  void set_first_entry_index(entry_index_t index) { first_entry_index_ = index;}
+  void set_last_entry_index(entry_index_t index) { last_entry_index_ = index;}
+
+ private:
+  // Points to the first and last entry for the subsection.
+  // Value is stored as index into the entry vector
+  entry_index_t first_entry_index_;
+  entry_index_t last_entry_index_;
+
+};
+
 
 #endif  // MAOUNIT_H_
