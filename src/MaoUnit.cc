@@ -59,6 +59,13 @@ MaoUnit::~MaoUnit() {
       iter != sections_.end(); ++iter) {
     delete iter->second;
   }
+
+  // Remove basic blocks and free allocated memory
+  for (std::vector<BasicBlock *>::iterator iter =
+           basicblocks_.begin();
+       iter != basicblocks_.end(); ++iter) {
+    delete *iter;
+  }
 }
 
 void MaoUnit::PrintMaoUnit() const {
@@ -222,13 +229,14 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
   }
 
   // Update the BB structure
+  // current_basicblock_ is used as a helper variable when
+  // building new basic blocks. If it is NULL, a new basic block
+  // has to be created.
   if (entry->BelongsInBasicBlock()) {
     if (! current_basicblock_) {
       current_basicblock_ = AddAndGetBasicBlock();
-      //  current_basicblock_->SetStartEntry(entry);
       current_basicblock_->set_first_entry_index(entries_.size()-1);
     }
-    // current_basicblock_->SetEndEntry(entry);
     current_basicblock_->set_last_entry_index(entries_.size()-1);
   }
   if (entry->EndsBasicBlock()) {
@@ -269,7 +277,6 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
 }
 
 BasicBlock *MaoUnit::AddAndGetBasicBlock() {
-  // allocated here!
   BasicBlock *bb = new BasicBlock();
   basicblocks_.push_back(bb);
   return bb;
