@@ -29,7 +29,8 @@ extern "C" const char *S_GET_NAME(symbolS *s);
 //
 
 MaoUnit::MaoUnit() :
-    current_subsection_(0) {
+    current_subsection_(0),
+    current_basicblock_(0){
   // Default to no subsection selected
   // A default will be generated if necessary later on.
   entries_.clear();
@@ -78,6 +79,8 @@ void MaoUnit::PrintIR() const {
   PrintIR(stdout);
 }
 
+
+// TODO(martint): Re-factor the code and take out the different parts
 void MaoUnit::PrintIR(FILE *out) const {
   unsigned int index = 0;
   // Print the entries
@@ -120,6 +123,19 @@ void MaoUnit::PrintIR(FILE *out) const {
             ss->first_entry_index(), ss->last_entry_index(), ss->name(),
             ss->creation_op());
     index++;
+  }
+
+  // Print the basic blocks
+  fprintf(out, "Basic blocks:\n");
+  for(unsigned int i = 0; i < basicblocks_.size(); i++){
+    fprintf(out, "bb%d: ", i);
+    BasicBlock *bb = basicblocks_[i];
+    if (0 == bb) {
+      fprintf(out, "<DELETED>");
+    } else {
+      fprintf(out, "BB [%d-%d]", bb->first_entry_index(), bb->last_entry_index());
+    }
+    fprintf(out, "\n");
   }
 
 }
@@ -204,6 +220,21 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
   if (current_subsection_) {
     current_subsection_->set_last_entry_index(entries_.size()-1);
   }
+
+  // Update the BB structure
+  if (entry->BelongsInBasicBlock()) {
+    if (! current_basicblock_) {
+      current_basicblock_ = AddAndGetBasicBlock();
+      //  current_basicblock_->SetStartEntry(entry);
+      current_basicblock_->set_first_entry_index(entries_.size()-1);
+    }
+    // current_basicblock_->SetEndEntry(entry);
+    current_basicblock_->set_last_entry_index(entries_.size()-1);
+  }
+  if (entry->EndsBasicBlock()) {
+    current_basicblock_ = 0;
+  }
+
   return true;
 }
 
@@ -235,6 +266,13 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
     symbol->set_common_align(common_align);
   }
   return true;
+}
+
+BasicBlock *MaoUnit::AddAndGetBasicBlock() {
+  // allocated here!
+  BasicBlock *bb = new BasicBlock();
+  basicblocks_.push_back(bb);
+  return bb;
 }
 
 //
@@ -564,6 +602,17 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
   return new_inst;
 }
 
+bool AsmInstruction::EndsBasicBlock() const {
+  // TODO(martint): Find out what instruction that change control
+  // flow.
+  if (instruction_->tm.opcode_modifier.jump ||
+      instruction_->tm.opcode_modifier.jumpdword ||
+      instruction_->tm.opcode_modifier.jumpbyte) {
+    return true;
+  }
+  return false;
+}
+
 //
 // Class: Directive
 //
@@ -769,6 +818,7 @@ MaoUnitEntryBase::EntryType InstructionEntry::entry_type() const {
   return INSTRUCTION;
 }
 
+
 //
 // Class: Section
 //
@@ -826,4 +876,16 @@ SubSection::~SubSection() {
 
   assert(creation_op_);
   free(creation_op_);
+}
+
+//
+// Class: BasicBlock
+//
+
+BasicBlock::BasicBlock() {
+  //  Constructor
+}
+
+BasicBlock::~BasicBlock() {
+  //  Destructor
 }
