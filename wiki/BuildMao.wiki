@@ -35,3 +35,9 @@ cd src
 make TARGET=i686-linux
 make TARGET=x86_64-linux
 }}}
+
+
+When builing on MacOS X, the following flags might be necessary.
+{{{
+./binutils-2.19/configure --target=x86_64-linux --disable-nls
+}}}
