@@ -105,7 +105,8 @@ Symbol *SymbolTable::FindOrCreateAndFind(const char *name) {
 
 Symbol::Symbol(const char *name, const SymbolVisibility symbol_visibility,
                const SymbolType symbol_type) {
-  name_ = strndup(name, kMaxSymbolLength);
+  assert(strlen(name) < kMaxSymbolLength);
+  name_ = strdup(name);
   symbol_visibility_ = symbol_visibility;
   symbol_type_ = symbol_type;
   size_ = 0;

@@ -1,4 +1,4 @@
-TARGET=x86_64
+TARGET=x86_64-linux
 DLOCALEDIR="\"/usr/share/locale\""
 BINUTILOBJ=../binutils-2.19-obj-$(TARGET)
 BINUTILSRC=../binutils-2.19
@@ -54,7 +54,7 @@ all: mao-$(TARGET)
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
 $(BINDIR)/mao-$(TARGET): stamp-bin $(OBJDIR) $(OBJS)
-	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L $(BINUTILOBJ)/libiberty -L $(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ -lz
+	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ -lz
 
 .PHONY : clean all mao-$(TARGET)
 

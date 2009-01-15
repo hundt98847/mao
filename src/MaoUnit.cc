@@ -332,7 +332,8 @@ reg_entry *AsmInstruction::CopyRegEntry(const reg_entry *in_reg) {
   reg_entry *tmp_r;
   tmp_r = (reg_entry *)malloc(sizeof(reg_entry) );
   assert(tmp_r);
-  tmp_r->reg_name = strndup(in_reg->reg_name, kMaxRegisterNameLength);
+  assert(strlen(in_reg->reg_name) < kMaxRegisterNameLength);
+  tmp_r->reg_name = strdup(in_reg->reg_name);
   tmp_r->reg_type = in_reg->reg_type;
   tmp_r->reg_flags = in_reg->reg_flags;
   tmp_r->reg_num = in_reg->reg_num;
@@ -585,8 +586,8 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
     if (in_inst->seg[i]) {
       seg_entry *tmp_seg = (seg_entry *)malloc(sizeof(seg_entry) );
       assert(tmp_seg);
-      tmp_seg->seg_name = strndup(in_inst->seg[i]->seg_name,
-                                  MAX_SEGMENT_NAME_LENGTH);
+      assert(strlen(in_inst->seg[i]->seg_name) < MAX_SEGMENT_NAME_LENGTH);
+      tmp_seg->seg_name = strdup(in_inst->seg[i]->seg_name);
       tmp_seg->seg_prefix = in_inst->seg[i]->seg_prefix;
       new_inst->seg[i] = tmp_seg;
     } else {
@@ -626,8 +627,10 @@ bool AsmInstruction::EndsBasicBlock() const {
 Directive::Directive(const char *key, const char *value) {
   assert(key);
   assert(value);
-  key_ = strndup(key, MAX_DIRECTIVE_NAME_LENGTH);
-  value_ = strndup(value, MAX_DIRECTIVE_NAME_LENGTH);
+  assert(strlen(key) < MAX_DIRECTIVE_NAME_LENGTH);
+  key_ = strdup(key);
+  assert(strlen(value) < MAX_DIRECTIVE_NAME_LENGTH);
+  value_ = strdup(value);
 }
 
 Directive::~Directive() {
@@ -653,7 +656,8 @@ const char *Directive::value() {
 
 Label::Label(const char *name) {
   assert(name);
-  name_ = strndup(name, MAX_SYMBOL_NAME_LENGTH);
+  assert(strlen(name) < MAX_SEGMENT_NAME_LENGTH);
+  name_ = strdup(name);
 }
 
 Label::~Label() {
@@ -674,8 +678,8 @@ MaoUnitEntryBase::MaoUnitEntryBase(unsigned int line_number,
                                    const char *line_verbatim) :
     line_number_(line_number) {
   if (line_verbatim) {
-    line_verbatim_ = strndup(line_verbatim,
-                             MAX_VERBATIM_ASSEMBLY_STRING_LENGTH);
+    assert(strlen(line_verbatim) < MAX_VERBATIM_ASSEMBLY_STRING_LENGTH);
+    line_verbatim_ = strdup(line_verbatim);
   } else {
     line_verbatim_ = 0;
   }
@@ -832,7 +836,8 @@ MaoUnitEntryBase::EntryType InstructionEntry::entry_type() const {
 
 Section::Section(const char *name) {
   assert(name);
-  name_ = strndup(name, MAX_SYMBOL_NAME_LENGTH);
+  assert(strlen(name) < MAX_SEGMENT_NAME_LENGTH);
+  name_ = strdup(name);
 }
 
 const char *Section::name() const {
