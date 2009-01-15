@@ -17,5 +17,5 @@ In order to read and print out assembly file example.s on a x86_64 target to
 stdout, run the following
 
 {{{
-mao-x86_64 -mao_o /dev/stdout example.s
+mao-x86_64-linux -mao_o /dev/stdout example.s
 }}}
