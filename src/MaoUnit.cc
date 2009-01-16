@@ -66,6 +66,13 @@ MaoUnit::~MaoUnit() {
        iter != basicblocks_.end(); ++iter) {
     delete *iter;
   }
+
+  // Remove basic blocks and free allocated memory
+  for (std::vector<BasicBlockEdge *>::iterator iter =
+           basicblock_edges_.begin();
+       iter != basicblock_edges_.end(); ++iter) {
+    delete *iter;
+  }
 }
 
 void MaoUnit::PrintMaoUnit() const {
@@ -145,6 +152,20 @@ void MaoUnit::PrintIR(FILE *out) const {
     fprintf(out, "\n");
   }
 
+  // Print the edges
+  fprintf(out, "Basic block edges:\n");
+  for(unsigned int i = 0; i < basicblock_edges_.size(); i++){
+    fprintf(out, "edge%d: ", i);
+    BasicBlockEdge *bbe = basicblock_edges_[i];
+    if (0 == bbe) {
+      fprintf(out, "<DELETED>");
+    } else {
+      fprintf(out, " bb%d -> bb%d", bbe->source_index(), bbe->target_index());
+    }
+    fprintf(out, "\n");
+  }
+
+
 }
 
 Section *MaoUnit::FindOrCreateAndFind(const char *section_name) {
@@ -193,6 +214,29 @@ BasicBlock *MaoUnit::AddBasicblock(subsection_index_t start_index,
   basicblocks_.push_back(bb);
   return bb;
 }
+
+
+BasicBlockEdge *MaoUnit::AddBasicBlockEdge(basicblock_index_t source_index,
+                                           basicblock_index_t target_index) {
+  BasicBlock *bb;
+  BasicBlockEdge *bbe = new BasicBlockEdge();
+  bbe->set_source_index(source_index);
+  bbe->set_target_index(target_index);
+  basicblock_edges_.push_back(bbe);
+
+  // Now update the basic blocks
+  assert(source_index < basicblocks_.size());
+  bb = basicblocks_[source_index];
+  assert(bb);
+  bb->AddOutEdge(bbe);
+  assert(target_index < basicblocks_.size());
+  bb = basicblocks_[target_index];
+  assert(bb);
+  bb->AddInEdge(bbe);
+
+  return bbe;
+}
+
 
 // Add an entry to the MaoUnit list
 bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
@@ -905,8 +949,24 @@ SubSection::~SubSection() {
 
 BasicBlock::BasicBlock() {
   //  Constructor
+  in_edges_.clear();
+  out_edges_.clear();
 }
 
 BasicBlock::~BasicBlock() {
   //  Destructor
 }
+
+void BasicBlock::AddInEdge(BasicBlockEdge *edge) {
+  assert(edge);
+  in_edges_.push_back(edge);
+}
+
+void BasicBlock::AddOutEdge(BasicBlockEdge *edge) {
+  assert(edge);
+  out_edges_.push_back(edge);
+}
+
+//
+// Class: BasicBlockEdge
+//
