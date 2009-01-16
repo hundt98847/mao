@@ -31,8 +31,10 @@
 
 typedef unsigned int entry_index_t;
 typedef unsigned int subsection_index_t;
+typedef unsigned int basicblock_index_t;
 
 class BasicBlock;
+class BasicBlockEdge;
 class MaoUnitEntry;
 class Section;
 class SubSection;
@@ -72,6 +74,10 @@ class MaoUnit {
   BasicBlock *AddBasicblock(subsection_index_t start_index,
                             subsection_index_t end_index);
 
+
+  BasicBlockEdge *AddBasicBlockEdge(basicblock_index_t source,
+                                    basicblock_index_t target);
+
   void PrintMaoUnit() const;
   void PrintMaoUnit(FILE *out) const;
   void PrintIR() const;
@@ -103,6 +109,9 @@ class MaoUnit {
   // Basic blocks
   std::vector<BasicBlock *> basicblocks_;
   BasicBlock *current_basicblock_; // Points to the current basic block, or NULL if none.
+
+  // Edges between basic blocks
+  std::vector<BasicBlockEdge *> basicblock_edges_;
 
   // One symbol table holds all symbols found in the assembly file.
   SymbolTable symbol_table_;
@@ -337,8 +346,10 @@ class BasicBlock {
 
   entry_index_t first_entry_index() { return first_entry_index_;}
   entry_index_t last_entry_index() { return last_entry_index_;}
-  void set_first_entry_index(entry_index_t index) { first_entry_index_ = index;}
-  void set_last_entry_index(entry_index_t index) { last_entry_index_ = index;}
+  void set_first_entry_index(entry_index_t index) {first_entry_index_ = index;}
+  void set_last_entry_index(entry_index_t index) {last_entry_index_ = index;}
+  void AddInEdge(BasicBlockEdge *edge);
+  void AddOutEdge(BasicBlockEdge *edge);
 
  private:
   // Points to the first and last entry for the subsection.
@@ -346,7 +357,22 @@ class BasicBlock {
   entry_index_t first_entry_index_;
   entry_index_t last_entry_index_;
 
+  // Pointers to in/out-edges to/from this basic block.
+  std::vector<BasicBlockEdge *> in_edges_;
+  std::vector<BasicBlockEdge *> out_edges_;
 };
 
+class BasicBlockEdge {
+ public:
+  BasicBlockEdge() {}
+  ~BasicBlockEdge() {}
+  basicblock_index_t source_index() { return source_index_;}
+  basicblock_index_t target_index() { return target_index_;}
+  void set_source_index(basicblock_index_t index) {source_index_ = index;}
+  void set_target_index(basicblock_index_t index) {target_index_ = index;}
+ private:
+  basicblock_index_t source_index_;
+  basicblock_index_t target_index_;
+};
 
 #endif  // MAOUNIT_H_
