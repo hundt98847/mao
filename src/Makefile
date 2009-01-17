@@ -13,6 +13,7 @@ CFLAGS=-D_GNU_SOURCE -I. -I$(BINUTILOBJ)/gas -I$(BINUTILSRC)/gas -I$(BINUTILOBJ)
 OBJS=$(OBJDIR)/as.o \
 	$(OBJDIR)/mao.o \
 	$(OBJDIR)/ir.o \
+	$(OBJDIR)/MaoDebug.o \
 	$(OBJDIR)/MaoUnit.o \
 	$(OBJDIR)/MaoOptions.o \
 	$(OBJDIR)/SymbolTable.o \
@@ -67,11 +68,14 @@ stamp-bin:
 
 # object files
 
-$(OBJDIR)/mao.o: mao.cc mao.h
+$(OBJDIR)/mao.o: mao.cc mao.h MaoDebug.h
 	$(CC) $(CFLAGS) -c -o $@ mao.cc
 
 $(OBJDIR)/ir.o: ir.cc ir.h  irlink.h
 	$(CC) $(CFLAGS) -c -o $@ ir.cc
+
+$(OBJDIR)/MaoDebug.o: MaoDebug.cc MaoDebug.h
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)/MaoUnit.o: MaoUnit.cc MaoUnit.h
 	$(CC) $(CFLAGS) -c -o $@ $<
