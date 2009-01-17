@@ -17,12 +17,12 @@
 
 #include <iostream>
 
-#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "ir.h"
 #include "mao.h"
+#include "MaoDebug.h"
 #include "MaoOptions.h"
 #include "MaoUnit.h"
 
@@ -38,8 +38,8 @@ void print_command_line_arguments(int argc, char *argv[]) {
 
 // Remove the argument index (index_to_remove) from argv and decreases argc
 void remove_arg(int *argc, char *argv[], int index_to_remove) {
-  assert(index_to_remove < *argc);
-  assert(index_to_remove >= 0);
+  MAO_ASSERT(index_to_remove < *argc);
+  MAO_ASSERT(index_to_remove >= 0);
   for (int i = index_to_remove; i < *argc; i++) {
     if ((i+1) < *argc) {
       argv[i] = argv[i+1];
@@ -70,7 +70,7 @@ int process_command_line_arguments(int *argc, char *argv[],
     }
     if (strcmp(argv[current_flag], "-mao_o") == 0) {
       // make sure there is (atleast) one more argument
-      assert((current_flag+1) < *argc);
+      MAO_ASSERT((current_flag+1) < *argc);
       o_value = argv[current_flag+1];
       // we found a match
       remove_arg(argc, argv, current_flag);
@@ -80,7 +80,7 @@ int process_command_line_arguments(int *argc, char *argv[],
     }
     if (strcmp(argv[current_flag], "-mao_ir") == 0) {
       // make sure there is (atleast) one more argument
-      assert((current_flag+1) < *argc);
+      MAO_ASSERT((current_flag+1) < *argc);
       ir_value = argv[current_flag+1];
       // we found a match
       remove_arg(argc, argv, current_flag);
@@ -115,12 +115,12 @@ int process_command_line_arguments(int *argc, char *argv[],
 void ProcessIR(MaoUnit *maounit, MaoOptions *mao_options) {
   if (mao_options->write_assembly()) {
     FILE *outfile =  fopen(mao_options->assembly_output_file_name(), "w");
-    assert(outfile);
+    MAO_ASSERT(outfile);
     fprintf(outfile, "# MaoUnit:\n");
     maounit->PrintMaoUnit(outfile);
     fprintf(outfile, "# Symbol table:\n");
     SymbolTable *symbol_table = maounit->GetSymbolTable();
-    assert(symbol_table);
+    MAO_ASSERT(symbol_table);
     symbol_table->Print(outfile);
     fprintf(outfile, "# Done\n");
     if (outfile != stdout) {
@@ -129,19 +129,27 @@ void ProcessIR(MaoUnit *maounit, MaoOptions *mao_options) {
   }
   if (mao_options->write_ir()) {
     FILE *outfile =  fopen(mao_options->ir_output_file_name(), "w");
-    assert(outfile);
+    MAO_ASSERT(outfile);
     maounit->PrintIR();
   }
+
+  // To through the basic blocks here
+
 }
 
 int main(int argc, char *argv[]) {
   MaoOptions mao_options;
   MaoUnit maounit;
+
+  MAO_TRACE("Starting mao");
+
   // Allows linking function to access our MaoUnit.
   register_mao_unit(&maounit);
   // Parse any mao-specific command line flags
   process_command_line_arguments(&argc, argv, &mao_options);
   int ret_val = as_main(argc, argv);
+
+
   ProcessIR(&maounit, &mao_options);
   return ret_val;
 }
