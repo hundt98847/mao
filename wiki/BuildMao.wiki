@@ -23,6 +23,8 @@ cd ..
 mkdir binutils-2.19-obj-x86_64-linux
 cd binutils-2.19-obj-x86_64-linux
 ../binutils-2.19/configure --target=x86_64-linux
+# When building on a Mac (tested on Leopard) --disable-nls might
+# be needed when configuring binutils.
 make
 
 cd ..
