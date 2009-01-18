@@ -21,7 +21,7 @@ make
 # For x86_64
 cd ..
 mkdir binutils-2.19-obj-x86_64-linux
-cd binutils-2.19-obj-x86_64-inux
+cd binutils-2.19-obj-x86_64-linux
 ../binutils-2.19/configure --target=x86_64-linux
 make
 
