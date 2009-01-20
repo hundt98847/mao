@@ -17,8 +17,8 @@
 
 #include <iostream>
 
-#include <assert.h>
 #include <stdio.h>
+#include "MaoDebug.h"
 #include "MaoOptions.h"
 
 // Class MaoOptions
@@ -41,13 +41,13 @@ const char *MaoOptions::ir_output_file_name() {
 }
 
 void MaoOptions::set_assembly_output_file_name(const char *file_name) {
-  assert(file_name);
+  MAO_ASSERT(file_name);
   write_assembly_ = true;
   assembly_output_file_name_ = file_name;
 }
 
 void MaoOptions::set_ir_output_file_name(const char *file_name) {
-  assert(file_name);
+  MAO_ASSERT(file_name);
   write_ir_ = true;
   ir_output_file_name_ = file_name;
 }

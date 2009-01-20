@@ -18,9 +18,9 @@
 
 #include <iostream>
 
-#include <assert.h>
-
+#include "MaoDebug.h"
 #include "MaoUnit.h"
+
 
 extern "C" const char *S_GET_NAME(symbolS *s);
 
@@ -179,7 +179,7 @@ Section *MaoUnit::FindOrCreateAndFind(const char *section_name) {
   } else {
     section = it->second;
   }
-  assert(section);
+  MAO_ASSERT(section);
   return section;
 }
 
@@ -189,7 +189,7 @@ void MaoUnit::SetSubSection(const char *section_name,
                             const char *creation_op) {
   // Get (and possibly create) the section
   Section *section = FindOrCreateAndFind(section_name);
-  assert(section);
+  MAO_ASSERT(section);
   // Create a new subsection, even if the same subsection number
   // have already been used.
   SubSection *subsection = new SubSection(subsection_number, section_name,
@@ -225,13 +225,13 @@ BasicBlockEdge *MaoUnit::AddBasicBlockEdge(basicblock_index_t source_index,
   basicblock_edges_.push_back(bbe);
 
   // Now update the basic blocks
-  assert(source_index < basicblocks_.size());
+  MAO_ASSERT(source_index < basicblocks_.size());
   bb = basicblocks_[source_index];
-  assert(bb);
+  MAO_ASSERT(bb);
   bb->AddOutEdge(bbe);
-  assert(target_index < basicblocks_.size());
+  MAO_ASSERT(target_index < basicblocks_.size());
   bb = basicblocks_[target_index];
-  assert(bb);
+  MAO_ASSERT(bb);
   bb->AddInEdge(bbe);
 
   return bbe;
@@ -246,12 +246,12 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
 
   entry_index_t number_of_entries_added = entries_.size();
 
-  assert(entry);
+  MAO_ASSERT(entry);
 
   // Create a subsection if necessary
   if (create_default_section && !current_subsection_) {
     SetSubSection(DEFAULT_SECTION_NAME, 0, DEFAULT_SECTION_CREATION_OP);
-    assert(current_subsection_);
+    MAO_ASSERT(current_subsection_);
   }
 
   // Check the type
@@ -263,7 +263,7 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
       // TODO(martint): fix casting
       label_entry = (LabelEntry *)entry;
       symbol = symbol_table_.FindOrCreateAndFind(label_entry->name());
-      assert(symbol);
+      MAO_ASSERT(symbol);
       if (0 != current_subsection_) {
         symbol->set_section_name(current_subsection_->name());
       }
@@ -276,7 +276,7 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
       break;
     default:
       // should never happen. Catch all cases above.
-      assert(0);
+      MAO_RASSERT(0);
   }
 
   // Add the entry to the compilation unit
@@ -326,7 +326,7 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
   symbol->set_common(true);
   if (symbol->common_size() < common_size) {
     symbol->set_common_size(common_size);
-    assert(symbol->size() < symbol->common_size());
+    MAO_ASSERT(symbol->size() < symbol->common_size());
     symbol->set_size(symbol->common_size());
   }
   if (symbol->common_align() < common_align) {
@@ -340,24 +340,24 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
 //
 
 AsmInstruction::AsmInstruction(i386_insn *instruction) {
-  assert(instruction);
+  MAO_ASSERT(instruction);
   instruction_ = CreateInstructionCopy(instruction);
 }
 
 AsmInstruction::~AsmInstruction() {
-  assert(instruction_);
+  MAO_ASSERT(instruction_);
   FreeInstruction();
 }
 
 const char *AsmInstruction::get_op() const {
-  assert(instruction_);
-  assert(instruction_->tm.name);
+  MAO_ASSERT(instruction_);
+  MAO_ASSERT(instruction_->tm.name);
   return(instruction_->tm.name);
 }
 
 // This deallocates memory allocated in CreateInstructionCopy().
 void AsmInstruction::FreeInstruction() {
-  assert(instruction_);
+  MAO_ASSERT(instruction_);
   for (unsigned int i = 0; i < instruction_->operands; i++) {
     if (IsImmediateOperand(instruction_, i)) {
       free(instruction_->op[i].imms);
@@ -384,8 +384,8 @@ reg_entry *AsmInstruction::CopyRegEntry(const reg_entry *in_reg) {
     return 0;
   reg_entry *tmp_r;
   tmp_r = (reg_entry *)malloc(sizeof(reg_entry) );
-  assert(tmp_r);
-  assert(strlen(in_reg->reg_name) < kMaxRegisterNameLength);
+  MAO_ASSERT(tmp_r);
+  MAO_ASSERT(strlen(in_reg->reg_name) < kMaxRegisterNameLength);
   tmp_r->reg_name = strdup(in_reg->reg_name);
   tmp_r->reg_type = in_reg->reg_type;
   tmp_r->reg_flags = in_reg->reg_flags;
@@ -396,7 +396,7 @@ reg_entry *AsmInstruction::CopyRegEntry(const reg_entry *in_reg) {
 
 bool AsmInstruction::IsMemOperand(const i386_insn *instruction,
                                   const unsigned int op_index) {
-  assert(instruction->operands > op_index);
+  MAO_ASSERT(instruction->operands > op_index);
   i386_operand_type t = instruction->types[op_index];
   return (t.bitfield.disp8
           || t.bitfield.disp16
@@ -408,7 +408,7 @@ bool AsmInstruction::IsMemOperand(const i386_insn *instruction,
 
 bool AsmInstruction::IsImmediateOperand(const i386_insn *instruction,
                                         const unsigned int op_index) {
-  assert(instruction->operands > op_index);
+  MAO_ASSERT(instruction->operands > op_index);
   i386_operand_type t = instruction->types[op_index];
       return (t.bitfield.imm1
               || t.bitfield.imm8
@@ -421,7 +421,7 @@ bool AsmInstruction::IsImmediateOperand(const i386_insn *instruction,
 
 bool AsmInstruction::IsRegisterOperand(const i386_insn *instruction,
                                        const unsigned int op_index) {
-  assert(instruction->operands > op_index);
+  MAO_ASSERT(instruction->operands > op_index);
   i386_operand_type t = instruction->types[op_index];
   return (t.bitfield.reg8
           || t.bitfield.reg16
@@ -560,7 +560,7 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
 // members.
 i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
   i386_insn *new_inst = (i386_insn *)malloc(sizeof(i386_insn) );
-  assert(new_inst);
+  MAO_ASSERT(new_inst);
 
   // Template related members
   new_inst->tm = in_inst->tm;
@@ -583,7 +583,7 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
     // Copy the correct part of the op[i] union
     if (IsImmediateOperand(in_inst, i)) {
       new_inst->op[i].imms = (expressionS *)malloc(sizeof(expressionS) );
-      assert(new_inst->op[i].imms);
+      MAO_ASSERT(new_inst->op[i].imms);
       new_inst->op[i].imms->X_op = in_inst->op[i].imms->X_op;
 
       // TODO(martint): Check if we need to allocate memory for these instead
@@ -607,7 +607,7 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
     if (IsMemOperand(in_inst, i)) {
       if (in_inst->op[i].disps) {
         new_inst->op[i].disps = (expressionS *)malloc(sizeof(expressionS));
-        assert(new_inst->op[i].disps);
+        MAO_ASSERT(new_inst->op[i].disps);
         new_inst->op[i].disps->X_add_symbol =
             in_inst->op[i].disps->X_add_symbol;
         new_inst->op[i].disps->X_add_number =
@@ -638,8 +638,8 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
   for (unsigned int i = 0; i < 2; i++) {
     if (in_inst->seg[i]) {
       seg_entry *tmp_seg = (seg_entry *)malloc(sizeof(seg_entry) );
-      assert(tmp_seg);
-      assert(strlen(in_inst->seg[i]->seg_name) < MAX_SEGMENT_NAME_LENGTH);
+      MAO_ASSERT(tmp_seg);
+      MAO_ASSERT(strlen(in_inst->seg[i]->seg_name) < MAX_SEGMENT_NAME_LENGTH);
       tmp_seg->seg_name = strdup(in_inst->seg[i]->seg_name);
       tmp_seg->seg_prefix = in_inst->seg[i]->seg_prefix;
       new_inst->seg[i] = tmp_seg;
@@ -678,28 +678,28 @@ bool AsmInstruction::EndsBasicBlock() const {
 // Class: Directive
 //
 Directive::Directive(const char *key, const char *value) {
-  assert(key);
-  assert(value);
-  assert(strlen(key) < MAX_DIRECTIVE_NAME_LENGTH);
+  MAO_ASSERT(key);
+  MAO_ASSERT(value);
+  MAO_ASSERT(strlen(key) < MAX_DIRECTIVE_NAME_LENGTH);
   key_ = strdup(key);
-  assert(strlen(value) < MAX_DIRECTIVE_NAME_LENGTH);
+  MAO_ASSERT(strlen(value) < MAX_DIRECTIVE_NAME_LENGTH);
   value_ = strdup(value);
 }
 
 Directive::~Directive() {
-  assert(key_);
+  MAO_ASSERT(key_);
   free(key_);
-  assert(value_);
+  MAO_ASSERT(value_);
   free(value_);
 }
 
 const char *Directive::key() {
-  assert(key_);
+  MAO_ASSERT(key_);
   return key_;
 };
 
 const char *Directive::value() {
-  assert(value_);
+  MAO_ASSERT(value_);
   return value_;
 }
 
@@ -708,18 +708,18 @@ const char *Directive::value() {
 //
 
 Label::Label(const char *name) {
-  assert(name);
-  assert(strlen(name) < MAX_SEGMENT_NAME_LENGTH);
+  MAO_ASSERT(name);
+  MAO_ASSERT(strlen(name) < MAX_SEGMENT_NAME_LENGTH);
   name_ = strdup(name);
 }
 
 Label::~Label() {
-  assert(name_);
+  MAO_ASSERT(name_);
   free(name_);
 }
 
 const char *Label::name() const {
-  assert(name_);
+  MAO_ASSERT(name_);
   return name_;
 }
 
@@ -731,7 +731,7 @@ MaoUnitEntryBase::MaoUnitEntryBase(unsigned int line_number,
                                    const char *line_verbatim) :
     line_number_(line_number) {
   if (line_verbatim) {
-    assert(strlen(line_verbatim) < MAX_VERBATIM_ASSEMBLY_STRING_LENGTH);
+    MAO_ASSERT(strlen(line_verbatim) < MAX_VERBATIM_ASSEMBLY_STRING_LENGTH);
     line_verbatim_ = strdup(line_verbatim);
   } else {
     line_verbatim_ = 0;
@@ -763,14 +763,14 @@ LabelEntry::~LabelEntry() {
 }
 
 void LabelEntry::PrintEntry(FILE *out) const {
-  assert(label_);
+  MAO_ASSERT(label_);
   fprintf(out, "%s:", label_->name() );
   fprintf(out, "\t # [%d]\t%s", line_number_, line_verbatim_?line_verbatim_:"");
   fprintf(out, "\n");
 }
 
 void LabelEntry::PrintIR(FILE *out) const {
-  assert(label_);
+  MAO_ASSERT(label_);
   fprintf(out, "%s", label_->name() );
 }
 
@@ -799,14 +799,14 @@ DirectiveEntry::~DirectiveEntry() {
 }
 
 void DirectiveEntry::PrintEntry(FILE *out) const {
-  assert(directive_);
+  MAO_ASSERT(directive_);
   fprintf(out, "\t%s\t%s", directive_->key(), directive_->value() );
   fprintf(out, "\t # [%d]\t%s", line_number_, line_verbatim_?line_verbatim_:"");
   fprintf(out, "\n");
 }
 
 void DirectiveEntry::PrintIR(FILE *out) const {
-  assert(directive_);
+  MAO_ASSERT(directive_);
   fprintf(out, "%s %s", directive_->key(),
           directive_->value());
 }
@@ -832,14 +832,14 @@ DebugEntry::~DebugEntry() {
 }
 
 void DebugEntry::PrintEntry(FILE *out) const {
-  assert(directive_);
+  MAO_ASSERT(directive_);
   fprintf(out, "\t%s\t%s", directive_->key(), directive_->value() );
   fprintf(out, "\t # [%d]\t%s", line_number_, line_verbatim_?line_verbatim_:"");
   fprintf(out, "\n");
 }
 
 void DebugEntry::PrintIR(FILE *out) const {
-  assert(directive_);
+  MAO_ASSERT(directive_);
   fprintf(out, "%s %s", directive_->key(),
           directive_->value());
 }
@@ -873,7 +873,7 @@ void InstructionEntry::PrintEntry(FILE *out) const {
 
 
 void InstructionEntry::PrintIR(FILE *out) const {
-  assert(instruction_);
+  MAO_ASSERT(instruction_);
   fprintf(out, "%s", instruction_->get_op());
 }
 
@@ -888,18 +888,18 @@ MaoUnitEntryBase::EntryType InstructionEntry::entry_type() const {
 //
 
 Section::Section(const char *name) {
-  assert(name);
-  assert(strlen(name) < MAX_SEGMENT_NAME_LENGTH);
+  MAO_ASSERT(name);
+  MAO_ASSERT(strlen(name) < MAX_SEGMENT_NAME_LENGTH);
   name_ = strdup(name);
 }
 
 const char *Section::name() const {
-  assert(name_);
+  MAO_ASSERT(name_);
   return name_;
 }
 
 Section::~Section() {
-  assert(name_);
+  MAO_ASSERT(name_);
   free(name_);
 }
 
@@ -916,9 +916,9 @@ SubSection::SubSection(unsigned int subsection_number, const char *name,
     number_(subsection_number),
     first_entry_index_(0),
     last_entry_index_(0) {
-  assert(creation_op);
+  MAO_ASSERT(creation_op);
   creation_op_ = strdup(creation_op);  // this way free() works
-  assert(name);
+  MAO_ASSERT(name);
   name_ = strdup(name);
 }
 
@@ -931,15 +931,15 @@ const char *SubSection::name() const {
 }
 
 const char *SubSection::creation_op() const {
-  assert(creation_op_);
+  MAO_ASSERT(creation_op_);
   return creation_op_;
 }
 
 SubSection::~SubSection() {
-  assert(name_);
+  MAO_ASSERT(name_);
   free(name_);
 
-  assert(creation_op_);
+  MAO_ASSERT(creation_op_);
   free(creation_op_);
 }
 
@@ -958,12 +958,12 @@ BasicBlock::~BasicBlock() {
 }
 
 void BasicBlock::AddInEdge(BasicBlockEdge *edge) {
-  assert(edge);
+  MAO_ASSERT(edge);
   in_edges_.push_back(edge);
 }
 
 void BasicBlock::AddOutEdge(BasicBlockEdge *edge) {
-  assert(edge);
+  MAO_ASSERT(edge);
   out_edges_.push_back(edge);
 }
 
