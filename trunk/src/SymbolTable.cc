@@ -18,9 +18,9 @@
 #include <iostream>
 
 
-#include <assert.h>
 #include <stdio.h>
 
+#include "MaoDebug.h"
 #include "MaoUnit.h"
 
 // Class SymbolTable
@@ -86,7 +86,7 @@ void SymbolTable::Print(FILE *out) const {
 
 Symbol *SymbolTable::Find(const char *name) {
   std::map<const char*, Symbol *, ltstr>::const_iterator it = table_.find(name);
-  assert(it != table_.end() );
+  MAO_ASSERT(it != table_.end() );
   return it->second;
 }
 
@@ -96,7 +96,7 @@ Symbol *SymbolTable::FindOrCreateAndFind(const char *name) {
   } else {
     return Find(name);
   }
-  assert(1);
+  MAO_RASSERT(1);
 }
 
 //
@@ -105,7 +105,7 @@ Symbol *SymbolTable::FindOrCreateAndFind(const char *name) {
 
 Symbol::Symbol(const char *name, const SymbolVisibility symbol_visibility,
                const SymbolType symbol_type) {
-  assert(strlen(name) < kMaxSymbolLength);
+  MAO_ASSERT(strlen(name) < kMaxSymbolLength);
   name_ = strdup(name);
   symbol_visibility_ = symbol_visibility;
   symbol_type_ = symbol_type;
@@ -117,7 +117,7 @@ Symbol::Symbol(const char *name, const SymbolVisibility symbol_visibility,
 }
 
 Symbol::~Symbol() {
-  assert(name_);
+  MAO_ASSERT(name_);
   free(name_);
 }
 
@@ -130,7 +130,7 @@ void Symbol::set_symbol_visibility(const SymbolVisibility symbol_visibility) {
 }
 
 const char *Symbol::name() const {
-  assert(name_);
+  MAO_ASSERT(name_);
   return name_;
 }
 
@@ -182,6 +182,6 @@ const char *Symbol::section_name() const {
 }
 
 void Symbol::set_section_name(const char *section_name) {
-  assert(section_name);
+  MAO_ASSERT(section_name);
   section_name_ = section_name;
 }
