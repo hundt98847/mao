@@ -70,6 +70,10 @@ class MaoDebug {
   static void SetTraceOutPut(FILE *file);
   // Change threshold
   static void SetTraceTreshold(unsigned char level) {trace_treshold_ = level;}
+  // Get file handles
+  static FILE *trace_file() { return trace_file_; }
+  static FILE *assert_file() { return assert_file_; }
+
  private:
   // Assert file
   static FILE *assert_file_;
