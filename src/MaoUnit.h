@@ -351,7 +351,15 @@ class BasicBlock {
   void AddInEdge(BasicBlockEdge *edge);
   void AddOutEdge(BasicBlockEdge *edge);
 
- private:
+  int GetNumPred() {
+    return in_edges_.size();
+  }
+
+  int GetNumSucc() {
+    return out_edges_.size();
+  }
+
+// private:
   // Points to the first and last entry for the subsection.
   // Value is stored as index into the entry vector
   entry_index_t first_entry_index_;
