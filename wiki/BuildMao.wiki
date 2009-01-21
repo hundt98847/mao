@@ -11,8 +11,7 @@ Mac (tested on Leopard).
 {{{
 cd $DIR
 wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
-gunzip binutils-2.19.tar.gz
-tar xvf binutils-2.19.tar
+gzip -dc binutils-2.19.tar.gz | tar xvf -
 
 # For i686-linux
 mkdir binutils-2.19-obj-i686-linux 
