@@ -22,8 +22,8 @@
 #include <set>
 #include <vector>
 #include <algorithm>
-#include "debug.h"
 
+#include "MaoDebug.h"
 #include "MaoUnit.h"
 
 //--- MOCKING CODE begin -------------------
@@ -71,7 +71,7 @@ class UnionFindNode {
   // Initialize this node
   //
   void Init(BasicBlock *bb, unsigned int dfs_number) {
-    DBG_ASSERT(bb);
+    MAO_ASSERT(bb);
 
     parent_ = this;
     bb_     = bb;
@@ -85,8 +85,8 @@ class UnionFindNode {
   // result in significant traversals)
   //
   UnionFindNode *FindSet() {
-    DBG_ASSERT(parent());
-    DBG_ASSERT(bb());
+    MAO_ASSERT(parent());
+    MAO_ASSERT(bb());
 
     typedef std::list<UnionFindNode *> NodeListType;
     NodeListType nodeList;
@@ -112,7 +112,7 @@ class UnionFindNode {
   // We rely on path compression
   //
   void Union(UnionFindNode *B) {
-    DBG_ASSERT(B);
+    MAO_ASSERT(B);
 
     set_parent(B);
   }
@@ -158,8 +158,8 @@ class HavlakLoopFinder {
   public:
   HavlakLoopFinder(MaoCFG *cfg, LoopMan *loop_man) :
     CFG_(cfg), current_(0), loop_man_(loop_man) {
-    DBG_ASSERT(CFG_);
-    DBG_ASSERT(loop_man_);
+    MAO_ASSERT(CFG_);
+    MAO_ASSERT(loop_man_);
   }
 
   enum BasicBlockClass {
@@ -225,7 +225,7 @@ class HavlakLoopFinder {
            NodeVector       &nodes,
            BasicBlockMap    &number,
            IntVector        &last) {
-    DBG_ASSERT(a);
+    MAO_ASSERT(a);
 
     nodes[current_].Init(a, current_);
     number[a] = current_++;
@@ -421,8 +421,8 @@ class HavlakLoopFinder {
 
         for (niter = P.begin(); niter != P.end(); niter++) {
           UnionFindNode  *node = (*niter);
-          DBG_ASSERT(node);
-          DBG_ASSERT(type[w] != BB_NONHEADER);
+          MAO_ASSERT(node);
+          MAO_ASSERT(type[w] != BB_NONHEADER);
 
           // Add nodes to loop descriptor
           header[node->dfs()] = w;
