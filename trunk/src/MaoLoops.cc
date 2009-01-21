@@ -25,16 +25,10 @@
 
 #include "MaoDebug.h"
 #include "MaoUnit.h"
+#include "MaoLoops.h"
 
 //--- MOCKING CODE begin -------------------
 //
-
-class LoopDesc {   // Loop Descriptor
-  public:
-  void add_node(BasicBlock *bb);
-  void set_parent(LoopDesc *parent);
-};
-
 
 class MaoCFG {
   public:
@@ -47,14 +41,6 @@ class MaoCFG {
   std::list<BasicBlock *> all_bbs;
 };
 
-
-class LoopMan {
-  public:
-  LoopDesc *CreateNewLoop();
-  void      KillAll();
-  void      CalcNest();
-  void      AddLoop(LoopDesc *loop);
-};
 
 //
 //--- MOCKING CODE end  -------------------
@@ -122,17 +108,17 @@ class UnionFindNode {
   //
   UnionFindNode *parent() { return parent_; }
   BasicBlock    *bb()     { return bb_; }
-  LoopDesc      *loop()   { return loop_; }
+  SimpleLoop    *loop()   { return loop_; }
   unsigned int   dfs()    { return dfs_; }
 
   void           set_parent(UnionFindNode *parent) { parent_ = parent; }
-  void           set_loop(LoopDesc *loop) { loop_ = loop; }
+  void           set_loop(SimpleLoop *loop) { loop_ = loop; }
 
   private:
-  UnionFindNode      *parent_;
-  BasicBlock         *bb_;
-  LoopDesc           *loop_;
-  unsigned int        dfs_;
+  UnionFindNode *parent_;
+  BasicBlock    *bb_;
+  SimpleLoop    *loop_;
+  unsigned int   dfs_;
 };
 
 
@@ -156,10 +142,10 @@ class UnionFindNode {
 
 class HavlakLoopFinder {
   public:
-  HavlakLoopFinder(MaoCFG *cfg, LoopMan *loop_man) :
-    CFG_(cfg), current_(0), loop_man_(loop_man) {
+  HavlakLoopFinder(MaoCFG *cfg, LoopStructureGraph *lsg) :
+    CFG_(cfg), current_(0), lsg_(lsg) {
     MAO_ASSERT(CFG_);
-    MAO_ASSERT(loop_man_);
+    MAO_ASSERT(lsg_);
   }
 
   enum BasicBlockClass {
@@ -196,13 +182,13 @@ class HavlakLoopFinder {
   //
   // member vars
   //
-  MaoCFG       *CFG_;      // current control flow graph
-  unsigned int  current_;  // node id/number
-  LoopMan      *loop_man_;  // loop forest
+  MaoCFG             *CFG_;      // current control flow graph
+  unsigned int        current_;  // node id/number
+  LoopStructureGraph *lsg_;      // loop forest
 
 
   //
-  // local types used for Havlak algorithm, all carefully
+  // Local types used for Havlak algorithm, all carefully
   // selected to guarantee minimal complexity ;-)
   //
   typedef std::vector<UnionFindNode>          NodeVector;
@@ -214,6 +200,10 @@ class HavlakLoopFinder {
   typedef std::vector<IntSet>                 IntSetVector;
   typedef std::vector<unsigned int>           IntVector;
   typedef std::vector<unsigned char>          CharVector;
+
+  // Iterators
+  //
+  typedef std::vector<BasicBlockEdge*>::iterator BasicBlockIter;
 
   //
   // DFS
@@ -230,8 +220,7 @@ class HavlakLoopFinder {
     nodes[current_].Init(a, current_);
     number[a] = current_++;
 
-    for (std::vector<BasicBlockEdge*>::iterator outedges =
-           a->out_edges_.begin();
+    for (BasicBlockIter outedges = a->out_edges_.begin();
          outedges != a->out_edges_.end(); ++outedges) {
       BasicBlock *target = CFG_->GetDst(*outedges);
 
@@ -295,8 +284,7 @@ class HavlakLoopFinder {
         }
 
         if (node_w->GetNumPred())
-          for (std::vector<BasicBlockEdge*>::iterator inedges =
-                 node_w->in_edges_.begin();
+          for (BasicBlockIter inedges = node_w->in_edges_.begin();
                inedges != node_w->in_edges_.end(); ++inedges) {
               BasicBlockEdge *edge   = *inedges;
               BasicBlock     *node_v = CFG_->GetSrc(edge);
@@ -367,12 +355,13 @@ class HavlakLoopFinder {
         // the header of an irreducible loop, there is another entry
         // into this loop that avoids w.
         //
+
         // The algorithm has degenerated. Break and
         // return in this case
         //
         size_t non_back_size = nonBackPreds[x.dfs()].size();
         if (non_back_size > kMaxNonBackPreds) {
-          loop_man_->KillAll();
+          lsg_->KillAll();
           return;
         }
 
@@ -401,7 +390,7 @@ class HavlakLoopFinder {
       // For every SCC found, create a loop descriptor and link it in.
       //
       if (P.size() || (type[w] == BB_SELF)) {
-        LoopDesc* loop = loop_man_->CreateNewLoop();
+        SimpleLoop* loop = lsg_->CreateNewLoop();
 
         // At this point, one can set attributes to the loop, such as:
         //
@@ -432,10 +421,10 @@ class HavlakLoopFinder {
           if (node->loop())
             node->loop()->set_parent(loop);
           else
-            loop->add_node(node->bb());
+            loop->AddNode(node->bb());
         }
 
-        loop_man_->AddLoop(loop);
+        lsg_->AddLoop(loop);
       }  // P.size
     }  // step c
   }  // FindLoops
