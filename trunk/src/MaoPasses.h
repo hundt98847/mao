@@ -1,4 +1,21 @@
+//
+// Copyright 2008 Google Inc.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#include <list>
 
 // MaoPass
 //
@@ -13,8 +30,6 @@
 //     2  - medium level granularity
 //     3  - give me all you got.
 //
-#include <list>
-
 class MaoPass {
   public:
   MaoPass(const char *name) : name_(name), enabled_(true), tracing_level_(3),
@@ -48,9 +63,7 @@ class MaoPass {
 // The Mao Pass Manager.
 //
 // Allows linking of MaoPass objects into a list and executing this
-// list.
-//
-// Very preliminary now, but extensible.
+// list. Very preliminary now, but extensible.
 //
 class MaoPassManager {
   public:
@@ -106,6 +119,11 @@ class MaoPassManager {
 };
 
 
+//
+// External Entry Points
+//
 
-// entry points
+// This function links together a begin pass (BEG) and end pass (END)
+// and return a pointer to the static pass manager object.
+//
 MaoPassManager *InitPasses();
