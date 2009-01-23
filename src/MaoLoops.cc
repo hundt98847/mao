@@ -203,7 +203,7 @@ class HavlakLoopFinder {
 
   // Iterators
   //
-  typedef std::vector<BasicBlockEdge*>::iterator BasicBlockIter;
+  typedef std::vector<BasicBlockEdge*>::const_iterator BasicBlockIter;
 
   //
   // DFS
@@ -220,8 +220,8 @@ class HavlakLoopFinder {
     nodes[current_].Init(a, current_);
     number[a] = current_++;
 
-    for (BasicBlockIter outedges = a->out_edges_.begin();
-         outedges != a->out_edges_.end(); ++outedges) {
+    for (BasicBlockIter outedges = a->GetOutEdges().begin();
+         outedges != a->GetOutEdges().end(); ++outedges) {
       BasicBlock *target = CFG_->GetDst(*outedges);
 
       if (number[target] == kUnvisited)
@@ -284,8 +284,8 @@ class HavlakLoopFinder {
         }
 
         if (node_w->GetNumPred())
-          for (BasicBlockIter inedges = node_w->in_edges_.begin();
-               inedges != node_w->in_edges_.end(); ++inedges) {
+          for (BasicBlockIter inedges = node_w->GetInEdges().begin();
+               inedges != node_w->GetInEdges().end(); ++inedges) {
               BasicBlockEdge *edge   = *inedges;
               BasicBlock     *node_v = CFG_->GetSrc(edge);
 
