@@ -60,7 +60,7 @@ void link_insn(i386_insn *insn, size_t SizeOfInsn, const char *line_verbatim) {
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new InstructionEntry(inst,
                                           link_context.line_number,
-                                          line_verbatim), true);
+                                          line_verbatim), true, true);
 }
 
 void link_label(const char *name, const char *line_verbatim) {
@@ -70,7 +70,7 @@ void link_label(const char *name, const char *line_verbatim) {
   struct link_context_s link_context = get_link_context();
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new LabelEntry(name, link_context.line_number,
-                                    line_verbatim), true);
+                                    line_verbatim), true, true);
 }
 
 void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,
@@ -111,7 +111,7 @@ void link_directive(const char *key, const char *value,
   struct link_context_s link_context = get_link_context();
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new DirectiveEntry(key, value, link_context.line_number,
-                                        line_verbatim), false);
+                                        line_verbatim), true, false);
 }
 
 
@@ -121,7 +121,7 @@ void link_debug(const char *key, const char *value, const char *line_verbatim) {
   struct link_context_s link_context = get_link_context();
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new DebugEntry(key, value, link_context.line_number,
-                                    line_verbatim), false);
+                                    line_verbatim), true, false);
 }
 
 

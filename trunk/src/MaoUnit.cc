@@ -15,12 +15,10 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-
 #include <iostream>
 
 #include "MaoDebug.h"
 #include "MaoUnit.h"
-
 
 extern "C" const char *S_GET_NAME(symbolS *s);
 
@@ -28,21 +26,23 @@ extern "C" const char *S_GET_NAME(symbolS *s);
 // Class: MaoUnit
 //
 
-MaoUnit::MaoUnit() :
-    current_subsection_(0),
-    current_basicblock_(0) {
-  // Default to no subsection selected
-  // A default will be generated if necessary later on.
-  entries_.clear();
+// Default to no subsection selected
+// A default will be generated if necessary later on.
+MaoUnit::MaoUnit()
+    : current_subsection_(0) {
+  entry_vector_.clear();
+  entry_list_.clear();
   sub_sections_.clear();
   sections_.clear();
+  bb_list_.clear();
+  bb_vector_.clear();
 }
 
 MaoUnit::~MaoUnit() {
   // Remove entries and free allocated memory
-  for (std::vector<MaoUnitEntryBase *>::iterator iter =
-           entries_.begin();
-      iter != entries_.end(); ++iter) {
+  for (std::list<MaoUnitEntryBase *>::iterator iter =
+           entry_list_.begin();
+      iter != entry_list_.end(); ++iter) {
     delete *iter;
   }
 
@@ -60,17 +60,17 @@ MaoUnit::~MaoUnit() {
     delete iter->second;
   }
 
-  // Remove basic blocks and free allocated memory
-  for (std::vector<BasicBlock *>::iterator iter =
-           basicblocks_.begin();
-       iter != basicblocks_.end(); ++iter) {
+  // Remove basicblocks and free allocated memory
+  for (std::vector<BasicBlockEdge *>::iterator iter =
+           bb_edges_.begin();
+      iter != bb_edges_.end(); ++iter) {
     delete *iter;
   }
 
-  // Remove basic blocks and free allocated memory
-  for (std::vector<BasicBlockEdge *>::iterator iter =
-           basicblock_edges_.begin();
-       iter != basicblock_edges_.end(); ++iter) {
+  // Remove basicblocks and free allocated memory
+  for (std::list<BasicBlock *>::iterator iter =
+           bb_list_.begin();
+      iter != bb_list_.end(); ++iter) {
     delete *iter;
   }
 }
@@ -81,9 +81,9 @@ void MaoUnit::PrintMaoUnit() const {
 
 // Prints all entries in the MaoUnit
 void MaoUnit::PrintMaoUnit(FILE *out) const {
-  for (std::vector<MaoUnitEntryBase *>::const_iterator iter =
-           entries_.begin();
-      iter != entries_.end(); ++iter) {
+  for (std::list<MaoUnitEntryBase *>::const_iterator iter =
+           entry_list_.begin();
+      iter != entry_list_.end(); ++iter) {
     MaoUnitEntryBase *e = *iter;
     e->PrintEntry(out);
   }
@@ -94,30 +94,31 @@ void MaoUnit::PrintIR() const {
 }
 
 
-// TODO(martint): Re-factor the code and take out the different parts
 void MaoUnit::PrintIR(FILE *out) const {
-  unsigned int index = 0;
   // Print the entries
-  for (std::vector<MaoUnitEntryBase *>::const_iterator e_iter =
-           entries_.begin();
-      e_iter != entries_.end(); ++e_iter) {
+  for (std::list<MaoUnitEntryBase *>::const_iterator e_iter =
+           entry_list_.begin();
+       e_iter != entry_list_.end(); ++e_iter) {
     MaoUnitEntryBase *e = *e_iter;
-    fprintf(out, "[%5d][%c] ", index, e->GetDescriptiveChar());
+    fprintf(out, "[%5d][%c] ", e->index(), e->GetDescriptiveChar());
+    if (MaoUnitEntryBase::INSTRUCTION == e->entry_type()) {
+      fprintf(out, "\t");
+    }
     e->PrintIR(out);
     fprintf(out, "\n");
-    index++;
   }
 
   // Print the sections
-  index = 0;
+  unsigned int index = 0;
   fprintf(out, "Sections : \n");
   for (std::map<const char *, Section *, ltstr>::const_iterator iter =
            sections_.begin();
       iter != sections_.end(); ++iter) {
     Section *section = iter->second;
-    fprintf(out,"[%3d] %s [", index, section->name());
+    fprintf(out, "[%3d] %s [", index, section->name());
     // Print out the subsections in this section as a list of indexes
-    std::vector<subsection_index_t> *subsection_indexes = section->GetSubSectionIndexes();
+    std::vector<subsection_index_t> *subsection_indexes =
+        section->GetSubSectionIndexes();
     for (std::vector<subsection_index_t>::const_iterator si_iter =
              subsection_indexes->begin();
          si_iter != subsection_indexes->end(); ++si_iter) {
@@ -138,34 +139,6 @@ void MaoUnit::PrintIR(FILE *out) const {
             ss->creation_op());
     index++;
   }
-
-  // Print the basic blocks
-  fprintf(out, "Basic blocks:\n");
-  for(unsigned int i = 0; i < basicblocks_.size(); i++){
-    fprintf(out, "bb%d: ", i);
-    BasicBlock *bb = basicblocks_[i];
-    if (0 == bb) {
-      fprintf(out, "<DELETED>");
-    } else {
-      fprintf(out, "BB [%d-%d]", bb->first_entry_index(), bb->last_entry_index());
-    }
-    fprintf(out, "\n");
-  }
-
-  // Print the edges
-  fprintf(out, "Basic block edges:\n");
-  for(unsigned int i = 0; i < basicblock_edges_.size(); i++){
-    fprintf(out, "edge%d: ", i);
-    BasicBlockEdge *bbe = basicblock_edges_[i];
-    if (0 == bbe) {
-      fprintf(out, "<DELETED>");
-    } else {
-      fprintf(out, " bb%d -> bb%d", bbe->source_index(), bbe->target_index());
-    }
-    fprintf(out, "\n");
-  }
-
-
 }
 
 Section *MaoUnit::FindOrCreateAndFind(const char *section_name) {
@@ -200,56 +173,97 @@ void MaoUnit::SetSubSection(const char *section_name,
   // set current_subsection!
   current_subsection_ = subsection;
 
-  current_subsection_->set_first_entry_index(entries_.size());
-  current_subsection_->set_last_entry_index(entries_.size());
+  current_subsection_->set_first_entry_index(entry_list_.size());
+  current_subsection_->set_last_entry_index(entry_list_.size());
 }
 
-// Add a new basic block. Return a pointer to it to be able
-// to update it afterwards.
-BasicBlock *MaoUnit::AddBasicblock(subsection_index_t start_index,
-                                   subsection_index_t end_index) {
-  BasicBlock *bb = new BasicBlock();
-  bb->set_first_entry_index(start_index);
+
+BasicBlock *MaoUnit::CreateAndAddBasicblock(
+    const char *label,
+    std::list<MaoUnitEntryBase *>::iterator start_iterator,
+    subsection_index_t end_index) {
+  // TODO(martint): add assert to make sure label does not alerady exist as
+  //                a basic block.
+  BasicBlock *bb = new BasicBlock(label);
   bb->set_last_entry_index(end_index);
-  basicblocks_.push_back(bb);
+  bb->set_first_iter(start_iterator);
+  bb_list_.push_back(bb);
+  bb_vector_.push_back(bb);
+  bb->set_index(bb_vector_.size()-1);
   return bb;
 }
 
+BasicBlock *MaoUnit::GetBasicBlockByID(const basicblock_index_t id) const {
+  MAO_ASSERT(id < bb_vector_.size());
+  return bb_vector_[id];
+}
 
-BasicBlockEdge *MaoUnit::AddBasicBlockEdge(basicblock_index_t source_index,
-                                           basicblock_index_t target_index) {
-  BasicBlock *bb;
+MaoUnitEntryBase *MaoUnit::GetEntryByID(const entry_index_t id) const {
+  MAO_ASSERT(id < entry_vector_.size());
+  MAO_ASSERT(entry_vector_[id] != 0);
+  return entry_vector_[id];
+}
+
+BasicBlockEdge *MaoUnit::CreateBasicBlockEdge(
+    const basicblock_index_t source_index,
+    const basicblock_index_t target_index,
+    const bool fallthrough) {
   BasicBlockEdge *bbe = new BasicBlockEdge();
   bbe->set_source_index(source_index);
   bbe->set_target_index(target_index);
-  basicblock_edges_.push_back(bbe);
+  bbe->set_fallthrough(fallthrough);
+  bb_edges_.push_back(bbe);
+  return bbe;
+}
 
-  // Now update the basic blocks
-  MAO_ASSERT(source_index < basicblocks_.size());
-  bb = basicblocks_[source_index];
-  MAO_ASSERT(bb);
-  bb->AddOutEdge(bbe);
-  MAO_ASSERT(target_index < basicblocks_.size());
-  bb = basicblocks_[target_index];
-  MAO_ASSERT(bb);
-  bb->AddInEdge(bbe);
+void MaoUnit::RegisterBasicBlockEdge(BasicBlockEdge *bbe,
+                                     const bool register_source,
+                                     const bool register_target) {
+  MAO_ASSERT(register_source || register_target);
+  if (register_source) {
+    BasicBlock *bb = GetBasicBlockByID(bbe->source_index());
+    MAO_ASSERT(bb);
+    bb->AddOutEdge(bbe);
+  }
+  if (register_target) {
+    BasicBlock *bb = GetBasicBlockByID(bbe->target_index());
+    MAO_ASSERT(bb);
+    bb->AddInEdge(bbe);
+  }
+}
 
+BasicBlockEdge *MaoUnit::AddBasicBlockEdge(basicblock_index_t source_index,
+                                           basicblock_index_t target_index,
+                                           bool fallthrough) {
+  BasicBlockEdge *bbe = CreateBasicBlockEdge(source_index, target_index,
+                                             fallthrough);
+  RegisterBasicBlockEdge(bbe, true, true);
   return bbe;
 }
 
 
+bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool build_sections,
+                       bool create_default_section) {
+  return AddEntry(entry, build_sections, create_default_section,
+                  entry_list_.end());
+}
+
 // Add an entry to the MaoUnit list
-bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
+bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool build_sections,
+                       bool create_default_section,
+                       std::list<MaoUnitEntryBase *>::iterator list_iter) {
   // Variables that _might_ get used.
   LabelEntry *label_entry;
   Symbol *symbol;
 
-  entry_index_t number_of_entries_added = entries_.size();
+  // next free ID for the entry
+  entry_index_t entry_index = entry_vector_.size();
 
   MAO_ASSERT(entry);
+  entry->set_index(entry_index);
 
   // Create a subsection if necessary
-  if (create_default_section && !current_subsection_) {
+  if (build_sections && (create_default_section && !current_subsection_)) {
     SetSubSection(DEFAULT_SECTION_NAME, 0, DEFAULT_SECTION_CREATION_OP);
     MAO_ASSERT(current_subsection_);
   }
@@ -260,13 +274,11 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
       break;
     case MaoUnitEntryBase::LABEL:
       // A Label will generate in a new symbol in the symbol table
-      // TODO(martint): fix casting
       label_entry = (LabelEntry *)entry;
       symbol = symbol_table_.FindOrCreateAndFind(label_entry->name());
       MAO_ASSERT(symbol);
-      if (0 != current_subsection_) {
-        symbol->set_section_name(current_subsection_->name());
-      }
+      // TODO(martint): The codes does not currently set the correct
+      //                section for all labels in the symboltable.
       break;
     case MaoUnitEntryBase::DEBUG:
       break;
@@ -276,30 +288,16 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool create_default_section) {
       break;
     default:
       // should never happen. Catch all cases above.
-      MAO_RASSERT(0);
+      MAO_RASSERT_MSG(0, "Entry type not recognised.");
   }
 
   // Add the entry to the compilation unit
-  entries_.push_back(entry);
-  if (current_subsection_) {
-    current_subsection_->set_last_entry_index(number_of_entries_added);
-  }
+  entry_vector_.push_back(entry);
+  entry_list_.insert(list_iter, entry);
 
-  // Update basic block information
-  if (entry->BelongsInBasicBlock()) {
-    if (! current_basicblock_) {
-      // Assume the basic block is only one entry long. It is updated
-      // later if we need to
-      current_basicblock_ = AddBasicblock(number_of_entries_added,
-                                          number_of_entries_added);
-    } else {
-      current_basicblock_->set_last_entry_index(number_of_entries_added);
-    }
-  }
-  // This forces a new basic block to be created when the next
-  // entry that belongs in a basic block is encountered.
-  if (entry->EndsBasicBlock()) {
-     current_basicblock_ = 0;
+  // Update subsection information
+  if (build_sections && current_subsection_) {
+    current_subsection_->set_last_entry_index(entry_index);
   }
 
   return true;
@@ -335,6 +333,462 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
   return true;
 }
 
+const char *MaoUnit::GetCurrentLabelIfAny(const entry_index_t index) {
+  MaoUnitEntryBase *entry = GetEntryByID(index);
+  if (MaoUnitEntryBase::LABEL == entry->entry_type()) {
+    LabelEntry *le = (LabelEntry *)entry;
+    MAO_ASSERT(le);
+    return le->name();
+  }
+  return 0;
+}
+
+void MaoUnit::UpdateLabel2BasicblockMap(labels2basicblock_map_t *labels2bb,
+                                        BasicBlock *bb) {
+  unsigned int offset = 0;
+  std::list<MaoUnitEntryBase *>::iterator it = bb->first_iter();
+
+  // For each label in the basic block, add the ID of the basic block and the
+  // offset into the basic block to the map
+  while (0 == *it || (*it)->index() != bb->last_entry_index()) {
+    if (*it) {
+      // process *it
+      if (MaoUnitEntryBase::LABEL == (*it)->entry_type()) {
+        LabelEntry *le = (LabelEntry *)(*it);
+        MAO_ASSERT(le);
+        std::pair<basicblock_index_t, unsigned int> p(bb->index(), offset);
+        (*labels2bb)[le->name()] = p;
+      }
+    }
+    offset++;
+    it++;
+  }
+  // process *it
+  if (MaoUnitEntryBase::LABEL == (*it)->entry_type()) {
+    LabelEntry *le = (LabelEntry *)(*it);
+    MAO_ASSERT(le);
+    std::pair<basicblock_index_t, unsigned int> p(bb->index(), offset);
+    (*labels2bb)[le->name()] = p;
+  }
+}
+
+
+void MaoUnit::ClearOldLabel2BasicblockMap(labels2basicblock_map_t *labels2bb,
+                                          BasicBlock *bb) {
+  std::list<MaoUnitEntryBase *>::iterator it = bb->first_iter();
+  // For each label in the basic block, add the ID of the basic block and the
+  // offset into the basic block to the map
+  while ((*it)->index() != bb->last_entry_index()) {
+    MAO_ASSERT((*it));
+    // process *it
+    if (MaoUnitEntryBase::LABEL == (*it)->entry_type()) {
+      LabelEntry *le = (LabelEntry *)(*it);
+      MAO_ASSERT(le);
+      std::map<const char *,
+          std::pair<basicblock_index_t, unsigned int>, ltstr>::iterator l_it =
+          labels2bb->find(le->name());
+      if (l_it != labels2bb->end()) {
+        // remove it!
+        labels2bb->erase(l_it);
+      }
+    }
+    it++;
+  }
+  // process *it
+  if (MaoUnitEntryBase::LABEL == (*it)->entry_type()) {
+    if (MaoUnitEntryBase::LABEL == (*it)->entry_type()) {
+      LabelEntry *le = (LabelEntry *)(*it);
+      MAO_ASSERT(le);
+      std::map<const char *,
+          std::pair<basicblock_index_t, unsigned int>, ltstr>::iterator l_it =
+          labels2bb->find(le->name());
+      if (l_it != labels2bb->end()) {
+        // remove it!
+        labels2bb->erase(l_it);
+      }
+    }
+  }
+}
+
+
+
+bool MaoUnit::GetBasicblockFromLabel(const char * label,
+                                     const labels2basicblock_map_t *labels2bb,
+                                     std::pair<basicblock_index_t, unsigned int>
+                                     &out_pair) {
+  std::map<const char *,
+      std::pair<basicblock_index_t, unsigned int>, ltstr>::const_iterator it =
+      labels2bb->find(label);
+  if (it == labels2bb->end()) {
+    return false;
+  }
+  out_pair = it->second;
+  return true;
+}
+
+void MaoUnit::MoveBasicBlockEdgeSource(BasicBlockEdge *bbe,
+                         const basicblock_index_t new_basicblock_source_index) {
+  MAO_TRACE("Move Edge (%d -> %d) to (%d -> %d)", bbe->source_index(),
+            bbe->target_index(), new_basicblock_source_index,
+            bbe->target_index());
+  // Remove it from the original basic block
+  BasicBlock *old_bb = GetBasicBlockByID(bbe->source_index());
+  old_bb->RemoveOutEdge(bbe);
+  // Change the actual label.
+  bbe->set_source_index(new_basicblock_source_index);
+  // Add it to the new basic block
+  RegisterBasicBlockEdge(bbe, true, false);
+}
+
+
+// Split basic block at the offset given.
+void MaoUnit::SplitBasicBlock(basicblock_index_t basicblock_index,
+                              unsigned int offset, labels2basicblock_map_t &labels2bb) {
+  MAO_TRACE("SplitBasicBlock: Split %s at offset %d",
+            GetBasicBlockByID(basicblock_index)->label(),
+            offset);
+
+  // The original basic block. Will also be used for the first of the two new
+  // basic blocks.
+  BasicBlock *orig_bb = GetBasicBlockByID(basicblock_index);
+
+  MAO_ASSERT(offset > 0);
+  MAO_ASSERT(offset < (orig_bb->NumberOfEntries()-1));
+
+  // The new basic block
+  BasicBlock *new_bb = 0;
+
+  // Iterator that will point at the end of the second basic block
+  std::list<MaoUnitEntryBase *>::iterator end_it = orig_bb->first_iter();
+  // Iterator that will point to the first entry int he second basic block
+  std::list<MaoUnitEntryBase *>::iterator break_it;
+  unsigned int entry_count = 0;
+  MAO_ASSERT(*end_it != 0);
+  while ((*end_it)->index() != orig_bb->last_entry_index()) {
+    if (entry_count == offset) {
+      break_it = end_it;
+    }
+    entry_count++;
+    end_it++;
+    MAO_ASSERT(*end_it != 0);
+  }
+  // now end_it points to the last entry
+  MAO_ASSERT(*break_it);
+  MAO_ASSERT(*end_it);
+  MAO_TRACE("break id: %d", (*break_it)->index());
+  MAO_TRACE("end id: %d", (*end_it)->index());
+
+  // Currently only support breaking at labels!
+  MAO_ASSERT((*break_it)->entry_type() == MaoUnitEntryBase::LABEL);
+  const char *new_label_name = GetCurrentLabelIfAny((*break_it)->index());
+  MAO_ASSERT(new_label_name);
+
+  // what is the end index of the new_bb??
+  new_bb = CreateAndAddBasicblock(new_label_name, break_it, (*end_it)->index());
+  break_it--;
+  orig_bb->set_last_entry_index((*break_it)->index());
+  break_it++;
+
+  // Update in and out edges of the basic blocks
+  // Move the out edges from the old basic block to the new basic block
+  std::vector<BasicBlockEdge *> outedges = orig_bb->GetOutEdges();
+  for (std::vector<BasicBlockEdge *>::iterator iter = outedges.begin();
+       iter != outedges.end(); ++iter) {
+    MoveBasicBlockEdgeSource(*iter, new_bb->index());
+  }
+  // Create a new edge to link the two basic blocks
+  AddBasicBlockEdge(orig_bb->index(),
+                    new_bb->index(),
+                    true);
+
+  // Now we should update the labels in the map if necessary!
+  // ID and offset must change!
+  // 1 remove the stale labels
+  ClearOldLabel2BasicblockMap(&labels2bb, new_bb);
+  // 2 re-add the labels
+  UpdateLabel2BasicblockMap(&labels2bb, new_bb);
+
+
+  MAO_TRACE("Finished splitting");
+}
+
+
+void MaoUnit::PrintLabels2BasicBlock(labels2basicblock_map_t &labels2bb) {
+  PrintLabels2BasicBlock(stdout, labels2bb);
+}
+
+
+void MaoUnit::PrintLabels2BasicBlock(FILE *out,
+                                     labels2basicblock_map_t &labels2bb) {
+  for (std::map<const char *,
+           std::pair<basicblock_index_t, unsigned int>, ltstr>::const_iterator
+           iter = labels2bb.begin();
+       iter != labels2bb.end();
+       iter++) {
+    MAO_TRACE("Label: %s, Basic block:%d", (*iter).first, (*iter).second.first);
+  }
+}
+
+
+void MaoUnit::BuildCFG() {
+  // Need to hold a temporary list of future targets!
+  // each target has the following information
+  //  - name of target, which basic block jumps to this block
+  std::multimap<const char *, basicblock_index_t, ltstr> future_targets;
+  future_targets.clear();
+
+  // Holds a map that maps between labels and basic blocks
+  // The map holds the ID of the basic block, and the offset of the label into
+  // the basic block.
+  // TODO(martint): it would make more sence to have a way to identify if
+  //                the label identifies the top of this basic block or not.
+  //                Currently, only one label is being identified with the
+  //                start of the given basic block.
+  labels2basicblock_map_t labels2bb;
+  labels2bb.clear();
+
+  // Used when building the basic blocks
+  // Points to the current basic block, or NULL if none.
+  BasicBlock *current_basicblock = 0;
+  // If not null, then a fallthrough edge should be created
+  // when a new basic block is build.
+  BasicBlockEdge *fallthrough = 0;
+
+  // Add the source and sink BB
+  // index 0 = source
+  BasicBlock *bb = CreateAndAddBasicblock("source", entry_list_.end(), 0);
+  bb->set_source(true);
+  // TODO(martint): Add a label from every exit-point to the sink.
+  // index 1 = sink
+  bb = CreateAndAddBasicblock("sink", entry_list_.end(), 0);
+  bb->set_sink(true);
+
+  // Initial fallthrough edge from the source basic block
+  fallthrough = new BasicBlockEdge();
+  fallthrough->set_source_index(0);
+
+  // Iterate over entries
+  for (std::list<MaoUnitEntryBase *>::iterator e_iter =
+           entry_list_.begin();
+       e_iter != entry_list_.end(); ++e_iter) {
+    MaoUnitEntryBase *entry = *e_iter;
+
+    // Check if entry is a LABEL and a Future Edge exists for this label
+    // If that is true, this label should en the previous basic block
+    if (entry->entry_type() == MaoUnitEntryBase::LABEL) {
+      const char *label_name = GetCurrentLabelIfAny(entry->index());
+      MAO_ASSERT(label_name);
+      if (future_targets.count(label_name) > 0) {
+        //  - create new fallthrough edge
+        MAO_ASSERT(fallthrough == 0);
+        if (current_basicblock) {
+          fallthrough = new BasicBlockEdge();
+          fallthrough->set_source_index(current_basicblock->index());
+        }
+        //  - update label2basic blocks for the prev. block
+        UpdateLabel2BasicblockMap(&labels2bb, current_basicblock);
+        //  - set current_basicblock to 0 so a new one can be created
+        current_basicblock = 0;
+      }
+    }
+
+    // Entry belongs in basic block, process it.
+    if (entry->BelongsInBasicBlock()) {
+      // If we are not currently processing a basic block, create a new one.
+      if (!current_basicblock) {
+        // Get the name of the current label, or a generated one if needed
+        const char *label_name = GetCurrentLabelIfAny((*e_iter)->index());
+        // If no label exists for this basic block, createa a new one.
+        if (!label_name) {
+          label_name = BBNameGen::GetUniqueName();
+          AddEntry(new LabelEntry(label_name, 0, 0), false, false, e_iter);
+          // Move iterator so it points to our new label.
+          e_iter--;
+          entry = *e_iter;
+        }
+        MAO_ASSERT(label_name);
+        // Create the new basic block.
+        // Assume the basic block is only one entry long. This newly created
+        // basic block is updated later when more instructions are found
+        current_basicblock = CreateAndAddBasicblock(label_name,
+                                                     e_iter,
+                                                     (*e_iter)->index());
+
+        // Check for future edges to this entry
+        // For each one found, create the edges
+        if (entry->entry_type() == MaoUnitEntryBase::LABEL) {
+          MAO_ASSERT(label_name);
+          std::multimap<const char *, basicblock_index_t, ltstr>::iterator iter;
+          while ((iter = future_targets.find(label_name)) !=
+                 future_targets.end()) {
+            MAO_TRACE("Future tragets found in BuildCFG %s %d ",
+                      (*iter).first, (*iter).second);
+            // create the new edges!
+            AddBasicBlockEdge((*iter).second ,
+                              current_basicblock->index(),
+                              false);
+            future_targets.erase(iter);
+          }
+        }
+
+        // check if we have a current fallthrough edge to this block.
+        if (fallthrough) {
+          fallthrough->set_target_index(current_basicblock->index());
+          AddBasicBlockEdge(fallthrough->source_index(),
+                            fallthrough->target_index(),
+                            true);
+          delete fallthrough;
+          fallthrough = 0;
+        }
+      } else {
+        // Update the current basic block to also include this entry.
+        current_basicblock->set_last_entry_index((*e_iter)->index());
+      }
+    }
+
+    // This forces a new basic block to be created when the next
+    // entry that belongs in a basic block is encountered.
+    if (entry->EndsBasicBlock()) {
+      // Here we can check if the current instruction suggests that a
+      // fallthrough edge should be created
+      if (MaoUnitEntryBase::INSTRUCTION == entry->entry_type()) {
+        InstructionEntry *ie = (InstructionEntry *)entry;
+        if (ie->HasFallthrough()) {
+          MAO_ASSERT(!fallthrough);
+          fallthrough = new BasicBlockEdge();
+          fallthrough->set_source_index(current_basicblock->index());
+        }
+      }
+
+      // When the basicblock ends, add all labels in the block to the map
+      UpdateLabel2BasicblockMap(&labels2bb, current_basicblock);
+
+      // If the current instruction jumps to a label:
+      //   1. label exists and is the first entry in a basic block
+      //        - add edge
+      //   2. label exists but is in the middle of a basic block
+      //        - split the basic block at the label..
+      //        - update edges, labels, and fallthrough
+      //   3. a label we have not seen yet (a future label)
+      //        - keep track of future labels, and from where we jump using
+      //          the multimap future_edges.
+      //      search the map when adding new labels so we can add the edges
+      //      as we find them.
+
+      if (MaoUnitEntryBase::INSTRUCTION == entry->entry_type()) {
+        InstructionEntry *ie = (InstructionEntry *)entry;
+        if (ie->HasTarget()) {
+          // Target is  ie->GetTarget()
+          std::pair<basicblock_index_t, unsigned int> pair;
+          if (GetBasicblockFromLabel(ie->GetTarget(), &labels2bb, pair)) {
+            // We found the target. it does already exists
+            if (0 == pair.second) {
+              // Target is the first entry of the basic block
+              AddBasicBlockEdge(current_basicblock->index(),
+                                pair.first,
+                                false);
+            } else {
+              // Target is in the middle of the basic block
+              SplitBasicBlock(pair.first, pair.second, labels2bb);
+            }
+          } else {
+            // Target not yet processed. Add it to the future targets
+            future_targets.insert(
+                std::pair<const char *, basicblock_index_t>(ie->GetTarget(),
+                                                  current_basicblock->index()));
+          }
+        }
+      }
+      // Get ready for the next basic block.
+      current_basicblock = 0;
+    }
+  }
+  // Dont forget the final basic block.
+  if (current_basicblock) {
+    UpdateLabel2BasicblockMap(&labels2bb, current_basicblock);
+  }
+
+  if (current_basicblock && fallthrough) {
+    AddBasicBlockEdge(current_basicblock->index(),
+                      1,  // The sink has index 1
+                      true);
+    current_basicblock = 0;
+  }
+
+  if (fallthrough) {
+    // Add the sink
+    delete fallthrough;
+  }
+
+  // print out future targets
+  MAO_ASSERT_MSG(future_targets.size() == 0,
+                 "Not all future targets were resolved");
+}
+
+void MaoUnit::PrintBasicBlocks() {
+  PrintBasicBlocks(stdout);
+}
+
+void MaoUnit::PrintBasicBlocks(FILE *out) {
+  // Print the basic blocks
+  fprintf(out, "Basic blocks:\n");
+  for (std::vector<BasicBlock *>::iterator iter =
+           bb_vector_.begin();
+       iter != bb_vector_.end(); ++iter) {
+    BasicBlock *bb = *iter;
+    if (bb) {
+      (*iter)->PrintInfo(out);
+    } else {
+      fprintf(out, "<DELETED>\n");
+    }
+  }
+}
+
+void MaoUnit::PrintBasicBlockEdges() {
+  PrintBasicBlocks(stdout);
+}
+
+void MaoUnit::PrintBasicBlockEdges(FILE *out) {
+  // Print the basic blocks
+  fprintf(out, "Basic block edges:\n");
+  for (std::vector<BasicBlockEdge *>::iterator iter =
+           bb_edges_.begin();
+       iter != bb_edges_.end(); ++iter) {
+    BasicBlockEdge *bbe = *iter;
+    if (bbe) {
+      fprintf(out, " bb%d(%s) -> bb%d(%s) %s\n", bbe->source_index(),
+              GetBasicBlockByID(bbe->source_index())->label(),
+              bbe->target_index(),
+              GetBasicBlockByID(bbe->target_index())->label(),
+              bbe->fallthrough()?"[Fallthrough]":"");
+    } else {
+      fprintf(out, "<DELETED>\n");
+    }
+  }
+}
+
+void MaoUnit::PrintCFG() {
+  PrintCFG(stdout);
+}
+
+
+void MaoUnit::PrintCFG(FILE *out) {
+  // Use the IR to build the CFG
+  PrintBasicBlocks(out);
+  PrintBasicBlockEdges(out);
+}
+
+
+int MaoUnit::BBNameGen::i = 0;
+const char *MaoUnit::BBNameGen::GetUniqueName() {
+  char *buff = strdup(".mao_label_XXXX");
+  MAO_ASSERT(i <= 9999);
+  sprintf(buff, ".mao_label_%04d", i);
+  i++;
+  return buff;
+}
+
+
 //
 // Class: AsmInstruction
 //
@@ -349,7 +803,7 @@ AsmInstruction::~AsmInstruction() {
   FreeInstruction();
 }
 
-const char *AsmInstruction::get_op() const {
+const char *AsmInstruction::GetOp() const {
   MAO_ASSERT(instruction_);
   MAO_ASSERT(instruction_->tm.name);
   return(instruction_->tm.name);
@@ -537,7 +991,7 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
         fprintf(out, "%%rax");
     }
 // TODO(martint): fix floatacc
-// if ((instruction_->types[i].bitfield.floatacc){
+// if ((instruction_->types[i].bitfield.floatacc) {
 // }
 
     if (IsRegisterOperand(instruction_, i)) {
@@ -664,14 +1118,70 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
 }
 
 bool AsmInstruction::EndsBasicBlock() const {
-  // TODO(martint): Find out what instruction that change control
-  // flow.
+  if (0 == strcmp(GetOp(), "ret")) {
+    return true;
+  }
+  // TODO(martint): Create a setting which controls
+  // if call ends basic blocks.
+  if (0 == strcmp(GetOp(), "call")) {
+    return false;
+  }
+
   if (instruction_->tm.opcode_modifier.jump ||
       instruction_->tm.opcode_modifier.jumpdword ||
       instruction_->tm.opcode_modifier.jumpbyte) {
     return true;
   }
   return false;
+}
+
+bool AsmInstruction::IsInList(const char *string, const char *list[],
+                              const unsigned int number_of_elements) const {
+  for (unsigned int i = 0; i < number_of_elements; i++) {
+    if (0 == strcmp(string, list[i]))
+      return true;
+  }
+  return false;
+}
+
+bool AsmInstruction::HasFallthrough() const {
+  // TODO(martint): Get this info from the i386_insn structure
+  //                or complete the list
+  const char *insn[] = {"je", "be", "beq", "jne"};
+  if (IsInList(GetOp(), insn, sizeof(insn)/sizeof(char *))) {
+    return true;
+  }
+
+  return false;
+}
+
+bool AsmInstruction::HasTarget() const {
+  // TODO(martint): Get this info from the i386_insn structure
+  //                or complete the list
+  const char *insn[] = {"je", "be", "beq", "jne", "jmp"};
+  if (IsInList(GetOp(), insn, sizeof(insn)/sizeof(char *))) {
+    return true;
+  }
+  return false;
+}
+
+const char *AsmInstruction::GetTarget() const {
+  //
+  for (unsigned int i =0; i < instruction_->operands; i++) {
+    if (IsMemOperand(instruction_, i)) {
+      // symbol?
+      if (instruction_->types[i].bitfield.disp8 ||
+          instruction_->types[i].bitfield.disp16 ||
+          instruction_->types[i].bitfield.disp32 ||
+          instruction_->types[i].bitfield.disp32s ||
+          instruction_->types[i].bitfield.disp64) {
+        if (instruction_->op[i].disps->X_op == O_symbol) {
+          return S_GET_NAME(instruction_->op[i].disps->X_add_symbol);
+        }
+      }
+    }
+  }
+  return "<UKNOWN>";
 }
 
 //
@@ -693,12 +1203,12 @@ Directive::~Directive() {
   free(value_);
 }
 
-const char *Directive::key() {
+const char *Directive::key() const {
   MAO_ASSERT(key_);
   return key_;
 };
 
-const char *Directive::value() {
+const char *Directive::value() const {
   MAO_ASSERT(value_);
   return value_;
 }
@@ -729,7 +1239,8 @@ const char *Label::name() const {
 
 MaoUnitEntryBase::MaoUnitEntryBase(unsigned int line_number,
                                    const char *line_verbatim) :
-    line_number_(line_number) {
+    line_number_(line_number),
+    index_(0) {
   if (line_verbatim) {
     MAO_ASSERT(strlen(line_verbatim) < MAX_VERBATIM_ASSEMBLY_STRING_LENGTH);
     line_verbatim_ = strdup(line_verbatim);
@@ -874,7 +1385,7 @@ void InstructionEntry::PrintEntry(FILE *out) const {
 
 void InstructionEntry::PrintIR(FILE *out) const {
   MAO_ASSERT(instruction_);
-  fprintf(out, "%s", instruction_->get_op());
+  instruction_->PrintInstruction(out);
 }
 
 
@@ -947,24 +1458,101 @@ SubSection::~SubSection() {
 // Class: BasicBlock
 //
 
-BasicBlock::BasicBlock() {
+BasicBlock::BasicBlock(const char *label)
+    : source_(false),
+      sink_(false),
+      index_(0),
+      label_(label) {
   //  Constructor
   in_edges_.clear();
   out_edges_.clear();
 }
 
-BasicBlock::~BasicBlock() {
-  //  Destructor
+
+const char *BasicBlock::label() const {
+  MAO_ASSERT(label_);
+  return label_;
 }
+
 
 void BasicBlock::AddInEdge(BasicBlockEdge *edge) {
   MAO_ASSERT(edge);
   in_edges_.push_back(edge);
 }
 
+void BasicBlock::RemoveInEdge(BasicBlockEdge *edge) {
+  MAO_ASSERT(edge);
+  for (std::vector<BasicBlockEdge *>::iterator iter =
+           in_edges_.begin();
+       iter != in_edges_.end(); ++iter) {
+    if (*iter == edge) {
+      in_edges_.erase(iter);
+      return;
+    }
+  }
+  MAO_ASSERT_MSG(0, "Could not find edge to remove");
+}
+
 void BasicBlock::AddOutEdge(BasicBlockEdge *edge) {
   MAO_ASSERT(edge);
   out_edges_.push_back(edge);
+}
+
+void BasicBlock::RemoveOutEdge(BasicBlockEdge *edge) {
+  MAO_ASSERT(edge);
+  for (std::vector<BasicBlockEdge *>::iterator iter =
+           out_edges_.begin();
+       iter != out_edges_.end(); ++iter) {
+    if (*iter == edge) {
+      out_edges_.erase(iter);
+      return;
+    }
+  }
+  MAO_ASSERT_MSG(0, "Could not find edge to remove");
+}
+
+
+unsigned int  BasicBlock::NumberOfEntries() const {
+  std::list<MaoUnitEntryBase *>::const_iterator iter = first_iter();
+  unsigned int entry_count = 0;
+  MAO_ASSERT(*iter != 0);
+  while ((*iter)->index() != last_entry_index()) {
+    entry_count++;
+    iter++;
+    MAO_ASSERT(*iter != 0);
+  }
+  return entry_count;
+}
+
+
+void BasicBlock::PrintInfo() const {
+  PrintInfo(stdout);
+}
+
+void BasicBlock::PrintInfo(FILE *out) const {
+  // bb - id:%d range:%d-%d inedges:.... outedges...
+  fprintf(out, "bb - id:%3d label:%20s ", index(), label());
+  if (!source() && !sink()) {
+    fprintf(out, " range:%3d-%3d",
+            (*first_iter())->index(), last_entry_index());
+  } else {
+    fprintf(out, "             ");
+  }
+  fprintf(out, " in(");
+  for (std::vector<BasicBlockEdge *>::const_iterator iter =
+           in_edges_.begin();
+       iter != in_edges_.end(); ++iter) {
+    printf("%d ", (*iter)->source_index());
+  }
+  fprintf(out, ")");
+  fprintf(out, " out(");
+  for (std::vector<BasicBlockEdge *>::const_iterator iter =
+           out_edges_.begin();
+       iter != out_edges_.end(); ++iter) {
+    printf("%d ", (*iter)->target_index());
+  }
+  fprintf(out, ")");
+  fprintf(out, "\n");
 }
 
 //

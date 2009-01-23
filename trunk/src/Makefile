@@ -68,10 +68,10 @@ stamp-bin:
 
 # object files
 
-$(OBJDIR)/mao.o: mao.cc mao.h MaoDebug.h
+$(OBJDIR)/mao.o: mao.cc mao.h MaoDebug.h MaoUnit.h
 	$(CC) $(CFLAGS) -c -o $@ mao.cc
 
-$(OBJDIR)/ir.o: ir.cc ir.h  irlink.h
+$(OBJDIR)/ir.o: ir.cc ir.h  irlink.h MaoUnit.h
 	$(CC) $(CFLAGS) -c -o $@ ir.cc
 
 $(OBJDIR)/MaoDebug.o: MaoDebug.cc MaoDebug.h
