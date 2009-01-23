@@ -469,7 +469,7 @@ class Section {
 class BasicBlock {
  public:
   explicit BasicBlock(const char *label);
-  ~BasicBlock() {;}
+  ~BasicBlock() {}
 
   std::list<MaoUnitEntryBase *>::iterator first_iter() const {
     return first_iter_;
@@ -497,20 +497,16 @@ class BasicBlock {
   unsigned int NumberOfEntries() const;
 
   const char *label() const;
-  std::vector<BasicBlockEdge *> GetInEdges() const {return in_edges_;}
-  std::vector<BasicBlockEdge *> GetOutEdges() const {return out_edges_;}
+  const std::vector<BasicBlockEdge *> &GetInEdges() const { return in_edges_;}
+  const std::vector<BasicBlockEdge *> &GetOutEdges() const { return out_edges_;}
 
   void PrintInfo() const;
   void PrintInfo(FILE *out) const;
+
+  int GetNumPred() { return in_edges_.size(); }
+  int GetNumSucc() { return out_edges_.size(); }
+
  private:
-
-  int GetNumPred() {
-    return in_edges_.size();
-  }
-
-  int GetNumSucc() {
-    return out_edges_.size();
-  }
 
   // Identifies to the first and last entry in the basic block
   std::list<MaoUnitEntryBase *>::iterator first_iter_;
