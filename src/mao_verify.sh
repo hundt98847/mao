@@ -25,11 +25,13 @@ function isNumeric(){
 
 USAGE="Usage: mao_verify.sh target infile [number of lines to verify]"
 
+TARGET=$1
+
 # Set the target variable correctly.
 if [ "$1x" == "i686x" ]; then
-  TARGET=i686
+  TARGET=i686-linux
 elif [ "$1x" == "x86_64x" ]; then
-  TARGET=x86_64
+  TARGET=x86_64-linux
 else
   echo "${USAGE}";
   exit 1;
@@ -52,7 +54,6 @@ else
   fi
 fi
 
-TARGET=$1
 IN_FILE=$2
 
 CC=gcc

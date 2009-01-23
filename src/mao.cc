@@ -27,8 +27,6 @@
 #include "MaoUnit.h"
 
 
-
-
 void print_command_line_arguments(int argc, char *argv[]) {
   for (int i = 0; i < argc; i++) {
     printf("Arg %d: %s\n", i, argv[i]);
@@ -132,16 +130,13 @@ void ProcessIR(MaoUnit *maounit, MaoOptions *mao_options) {
     MAO_ASSERT(outfile);
     maounit->PrintIR();
   }
-
-  // To through the basic blocks here
-
 }
 
 int main(int argc, char *argv[]) {
   MaoOptions mao_options;
   MaoUnit maounit;
 
-  MAO_TRACE("Starting mao");
+  MAO_TRACE("Starting");
 
   // Allows linking function to access our MaoUnit.
   register_mao_unit(&maounit);
@@ -149,7 +144,12 @@ int main(int argc, char *argv[]) {
   process_command_line_arguments(&argc, argv, &mao_options);
   int ret_val = as_main(argc, argv);
 
-
   ProcessIR(&maounit, &mao_options);
+
+  maounit.BuildCFG();
+//   maounit.PrintCFG();
+//   maounit.PrintIR();
+
+  MAO_TRACE("Finished");
   return ret_val;
 }
