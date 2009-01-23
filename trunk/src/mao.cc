@@ -12,10 +12,8 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
-#include <iostream>
+// along with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <stdio.h>
 #include <string.h>
@@ -25,131 +23,187 @@
 #include "MaoDebug.h"
 #include "MaoOptions.h"
 #include "MaoUnit.h"
-
-
-void print_command_line_arguments(int argc, char *argv[]) {
-  for (int i = 0; i < argc; i++) {
-    printf("Arg %d: %s\n", i, argv[i]);
-  }
-}
-
-
-// Remove the argument index (index_to_remove) from argv and decreases argc
-void remove_arg(int *argc, char *argv[], int index_to_remove) {
-  MAO_ASSERT(index_to_remove < *argc);
-  MAO_ASSERT(index_to_remove >= 0);
-  for (int i = index_to_remove; i < *argc; i++) {
-    if ((i+1) < *argc) {
-      argv[i] = argv[i+1];
-    }
-  }
-  (*argc)--;
-}
+#include "MaoPasses.h"
 
 
 // Unprocessed flags are passed on to as_main (which is the GNU Assembler
-// main function). Currently, this function handles the flags mao_o and mao_v
-int process_command_line_arguments(int *argc, char *argv[],
-                                   MaoOptions *in_out_options) {
-  bool v_flag = false;
-  bool o_flag = false;
-  bool ir_flag = false;
-  char *o_value = NULL;
-  char *ir_value = NULL;
-  int current_flag = 0;
-
-  while (current_flag < *argc) {
-    // check for matches
-    if (strcmp(argv[current_flag], "-mao_v") == 0) {
-      // we found a match
-      remove_arg(argc, argv, current_flag);
-      v_flag = true;
-      continue;
-    }
-    if (strcmp(argv[current_flag], "-mao_o") == 0) {
-      // make sure there is (atleast) one more argument
-      MAO_ASSERT((current_flag+1) < *argc);
-      o_value = argv[current_flag+1];
-      // we found a match
-      remove_arg(argc, argv, current_flag);
-      remove_arg(argc, argv, current_flag);
-      o_flag = true;
-      continue;
-    }
-    if (strcmp(argv[current_flag], "-mao_ir") == 0) {
-      // make sure there is (atleast) one more argument
-      MAO_ASSERT((current_flag+1) < *argc);
-      ir_value = argv[current_flag+1];
-      // we found a match
-      remove_arg(argc, argv, current_flag);
-      remove_arg(argc, argv, current_flag);
-      ir_flag = true;
-      continue;
-    }
-    current_flag++;
-  }
-
-  if (o_flag) {
-    in_out_options->set_assembly_output_file_name(o_value);
-  }
-  if (ir_flag) {
-    in_out_options->set_ir_output_file_name(ir_value);
-  }
-
-  if (v_flag) {
-    fprintf(stderr, "Mao version %s\n", MAO_VERSION);
-    fprintf(stderr, "Usage: mao [-mao_o FILE] [-mao_ir FILE] [-mao_v]\n");
+// main function). Everything else is handed to the MAO Option processor
+//
+static int ProvideHelp(MaoOptions *mao_options) {
+  if (mao_options->help()) {
     fprintf(stderr,
-      "  -mao_o FILE       Prints output to FILE.\n");
+            "Mao %s\n",
+            MAO_VERSION);
     fprintf(stderr,
-      "  -mao_ir FILE      Prints the IR to FILE\n");
-    fprintf(stderr,
-      "  -mao_v            Prints version and usage info, then exits\n");
+            "Usage: mao [-mao:mao-options]* "
+            "[regular-assembler-options]* input-file \n"
+            "\n\nwith 'mao-options' being one of:\n\n"
+            "-h          display this help text\n"
+            "-v          verbose\n"
+            "-ofname     specify assembler output file\n"
+            "\n"
+            "PHASE=[phase-options]\n"
+            "\n\nwith 'phase-options' being one of:\n\n"
+            "db          dump IR before phase\n"
+            "da          dump IR before phase\n"
+            "db|da[type] dump something before phase,"
+            " with 'type' being one of ir, cfg, vcg, mem, time\n"
+            );
     exit(0);
   }
   return 0;
 }
 
-void ProcessIR(MaoUnit *maounit, MaoOptions *mao_options) {
-  if (mao_options->write_assembly()) {
-    FILE *outfile =  fopen(mao_options->assembly_output_file_name(), "w");
-    MAO_ASSERT(outfile);
-    fprintf(outfile, "# MaoUnit:\n");
-    maounit->PrintMaoUnit(outfile);
-    fprintf(outfile, "# Symbol table:\n");
-    SymbolTable *symbol_table = maounit->GetSymbolTable();
-    MAO_ASSERT(symbol_table);
-    symbol_table->Print(outfile);
-    fprintf(outfile, "# Done\n");
-    if (outfile != stdout) {
-      fclose(outfile);
+
+// AssemblyPass
+//
+// Pass to dump out the IR in assembly format
+//
+class AssemblyPass : public MaoPass {
+public:
+  AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
+    MaoPass("ASM"), mao_unit_(mao_unit), mao_options_(mao_options) {
+  }
+
+  bool Go() {
+    if (mao_options_->write_assembly()) {
+      Trace(1, "Generate Assembly File: %s",
+            mao_options_->assembly_output_file_name());
+
+      FILE *outfile =
+        mao_options_->output_is_stdout() ? stdout :
+        mao_options_->output_is_stderr() ? stderr :
+        fopen(mao_options_->assembly_output_file_name(), "w");
+      MAO_ASSERT(outfile);
+
+      fprintf(outfile, "# MaoUnit:\n");
+      mao_unit_->PrintMaoUnit(outfile);
+
+      fprintf(outfile, "# Symbol table:\n");
+      SymbolTable *symbol_table = mao_unit_->GetSymbolTable();
+      MAO_ASSERT(symbol_table);
+      symbol_table->Print(outfile);
+
+      if (outfile != stdout)
+        fclose(outfile);
     }
-  }
-  if (mao_options->write_ir()) {
-    FILE *outfile =  fopen(mao_options->ir_output_file_name(), "w");
-    MAO_ASSERT(outfile);
-    maounit->PrintIR();
-  }
-}
 
-int main(int argc, char *argv[]) {
+    return true;
+  }
+
+private:
+  MaoUnit    *mao_unit_;
+  MaoOptions *mao_options_;
+};
+
+
+// ReadAsmPass
+//
+// Read/parse the input asm file and generate the IR
+//
+class ReadInputPass : public MaoPass {
+public:
+  ReadInputPass(int argc, char *argv[]) :
+    MaoPass("READ"), argc_(argc), argv_(argv) {
+  }
+
+  bool Go() {
+    // Call Gas main routine, building up the IR.
+    // Gas will return 0 on success.
+    Trace(1, "Read Input");
+    return !as_main(argc_, argv_);
+  }
+private:
+  int argc_;
+  char **argv_;
+};
+
+// CreateCFG
+//
+// Create a CFG, TODO(rhundt): Make it per function
+//
+class CreateCFGPass : public MaoPass {
+public:
+  CreateCFGPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
+    MaoPass("CFG"), mao_unit_(mao_unit), mao_options_(mao_options) {
+  }
+
+  bool Go() {
+    Trace(1, "Build CFG");
+    mao_unit_->BuildCFG();
+
+    return true;
+  }
+private:
+  MaoUnit    *mao_unit_;
+  MaoOptions *mao_options_;
+};
+
+
+// DumpIrPass
+//
+// Pass to to dump out the IR in IR format
+//
+class DumpIrPass : public MaoPass {
+public:
+  DumpIrPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
+    MaoPass("IR"), mao_unit_(mao_unit), mao_options_(mao_options) {
+  }
+  bool Go() {
+    if (mao_options_->write_ir()) {
+      Trace(1, "Generate IR Dump File: %s",
+            mao_options_->ir_output_file_name());
+
+      FILE *outfile =  fopen(mao_options_->ir_output_file_name(), "w");
+      MAO_ASSERT(outfile);
+      mao_unit_->PrintIR();
+    }
+    return true;
+  }
+
+private:
+  MaoUnit    *mao_unit_;
+  MaoOptions *mao_options_;
+};
+
+
+//==================================
+// MAO Main Entry
+//==================================
+int main(int argc, const char *argv[]) {
   MaoOptions mao_options;
-  MaoUnit maounit;
+  MaoUnit    mao_unit;
 
-  MAO_TRACE("Starting");
+  // Parse any mao-specific command line flags (start with -mao:)
+  char **new_argv = new char*[argc];
+  int    new_argc = 0;
 
-  // Allows linking function to access our MaoUnit.
-  register_mao_unit(&maounit);
-  // Parse any mao-specific command line flags
-  process_command_line_arguments(&argc, argv, &mao_options);
-  int ret_val = as_main(argc, argv);
+  for (int i = 0; i < argc; i++) {
+    if (strncmp(argv[i], "-mao:", 5) == 0)
+      mao_options.Parse(const_cast<char*>(&argv[i][5]));
+    else
+      new_argv[new_argc++] = const_cast<char*>(argv[i]);
+  }
 
-  ProcessIR(&maounit, &mao_options);
+  // Static Initialization
+  ProvideHelp(&mao_options);
+  register_mao_unit(&mao_unit);
 
-  maounit.BuildCFG();
-//   maounit.PrintCFG();
-//   maounit.PrintIR();
+  // Make Passes...
+  MaoPassManager *mao_pass_man = InitPasses();
+  #define PASS(x) mao_pass_man->LinkPass(new x)
 
-  MAO_TRACE("Finished");
-  return ret_val;
+  // global init passes
+  PASS(ReadInputPass(new_argc, new_argv));
+
+  // function specific passes
+  // TODO(rhundt): add loop over functinos
+  PASS(CreateCFGPass(&mao_options, &mao_unit));
+
+  // global finalization passes
+  PASS(AssemblyPass(&mao_options, &mao_unit));
+
+  // run the passes
+  mao_pass_man->Run();
+  return 0;
 }

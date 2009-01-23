@@ -21,8 +21,21 @@
 // Symbol table
 class MaoOptions {
  public:
-  MaoOptions();
-  ~MaoOptions();
+  MaoOptions() : write_assembly_(true),
+                 assembly_output_file_name_("<stdout>"),
+                 output_is_stdout_(true),
+                 output_is_stderr_(false),
+                 write_ir_(false),
+                 help_(false),
+                 ir_output_file_name_(0) {
+  }
+
+  ~MaoOptions() {}
+
+  void       Parse(char *arg);
+  const bool help() const { return help_; }
+  const bool output_is_stdout() const { return output_is_stdout_; }
+  const bool output_is_stderr() const { return output_is_stderr_; }
 
   const bool write_assembly() const {return write_assembly_;}
   const bool write_ir() const {return write_ir_;}
@@ -30,10 +43,15 @@ class MaoOptions {
   const char *ir_output_file_name();
   void set_assembly_output_file_name(const char *file_name);
   void set_ir_output_file_name(const char *file_name);
+  void set_output_is_stderr() { output_is_stderr_ = true; }
+
  private:
   bool write_assembly_;
   const char *assembly_output_file_name_;  // The default (NULL) means stdout.
+  bool output_is_stdout_;
+  bool output_is_stderr_;
   bool write_ir_;
+  bool help_;
   const char *ir_output_file_name_;  // The default (NULL) means stdout.
 };
 
