@@ -1,7 +1,7 @@
 TARGET=x86_64-linux
 DLOCALEDIR="\"/usr/share/locale\""
-BINUTILOBJ=../binutils-2.19-obj-$(TARGET)
-BINUTILSRC=../binutils-2.19
+BINUTILOBJ=../../binutils-2.19-obj-$(TARGET)
+BINUTILSRC=../../binutils-2.19
 OBJDIR=../obj-$(TARGET)
 BINDIR=../bin
 CC=gcc
@@ -13,6 +13,8 @@ CFLAGS=-D_GNU_SOURCE -I. -I$(BINUTILOBJ)/gas -I$(BINUTILSRC)/gas -I$(BINUTILOBJ)
 OBJS=$(OBJDIR)/as.o \
 	$(OBJDIR)/mao.o \
 	$(OBJDIR)/ir.o \
+	$(OBJDIR)/MaoLoops.o \
+	$(OBJDIR)/MaoPasses.o \
 	$(OBJDIR)/MaoDebug.o \
 	$(OBJDIR)/MaoUnit.o \
 	$(OBJDIR)/MaoOptions.o \
@@ -55,7 +57,7 @@ all: mao-$(TARGET)
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
 $(BINDIR)/mao-$(TARGET): stamp-bin $(OBJDIR) $(OBJS)
-	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ -lz
+	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L $(BINUTILOBJ)/libiberty -L $(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ 
 
 .PHONY : clean all mao-$(TARGET)
 
@@ -73,6 +75,12 @@ $(OBJDIR)/mao.o: mao.cc mao.h MaoDebug.h MaoUnit.h
 
 $(OBJDIR)/ir.o: ir.cc ir.h  irlink.h MaoUnit.h
 	$(CC) $(CFLAGS) -c -o $@ ir.cc
+
+$(OBJDIR)/MaoLoops.o: MaoLoops.cc MaoLoops.h MaoUnit.h MaoDebug.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/MaoPasses.o: MaoPasses.cc MaoPasses.h MaoUnit.h MaoDebug.h
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)/MaoDebug.o: MaoDebug.cc MaoDebug.h
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -185,3 +193,10 @@ $(OBJDIR)/write.o: $(BINUTILSRC)/gas/write.c
 clean : 
 	rm  $(OBJDIR)/*
 	rm  $(BINDIR)/mao-$(TARGET)
+# DO NOT DELETE THIS LINE -- mkdep uses it.
+# DO NOT PUT ANYTHING AFTER THIS LINE, IT WILL GO AWAY.
+
+MaoDebug.o: MaoDebug.cc MaoDebug.h
+MaoOptions.o: MaoOptions.cc MaoDebug.h MaoOptions.h
+
+# IF YOU PUT ANYTHING HERE IT WILL GO AWAY
