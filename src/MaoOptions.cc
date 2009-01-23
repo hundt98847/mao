@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
 #include <iostream>
 
@@ -21,16 +21,19 @@
 #include "MaoDebug.h"
 #include "MaoOptions.h"
 
-// Class MaoOptions
-
-MaoOptions::MaoOptions()
-    : write_assembly_(false),
-      assembly_output_file_name_(0),
-      write_ir_(false),
-      ir_output_file_name_(0) {
+void MaoOptions::Parse(char *arg) {
+  // Standard options?
+  if (arg[0] == '-') {
+    if (arg[1] == 'o')
+      if (!strcmp(&arg[2], "stderr")) {
+        set_output_is_stderr();
+        set_assembly_output_file_name("<stderr>");
+      }
+      else {
+        set_assembly_output_file_name(&arg[2]);
+      }
+  }
 }
-
-MaoOptions::~MaoOptions() {}
 
 const char *MaoOptions::assembly_output_file_name() {
   return assembly_output_file_name_;
@@ -43,6 +46,7 @@ const char *MaoOptions::ir_output_file_name() {
 void MaoOptions::set_assembly_output_file_name(const char *file_name) {
   MAO_ASSERT(file_name);
   write_assembly_ = true;
+  output_is_stdout_ = false;
   assembly_output_file_name_ = file_name;
 }
 
