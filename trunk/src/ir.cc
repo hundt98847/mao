@@ -174,7 +174,7 @@ void link_section(const char *name, const char *arguments,
     MAO_ASSERT(strlen(arguments) < MAX_SYMBOL_NAME_LENGTH);
     char name_buffer[MAX_SYMBOL_NAME_LENGTH];
     get_section_name(arguments, name_buffer);
-    MAO_ASSERT(name_buffer);
+
     maounit_->SetSubSection(name_buffer, 0, create_op);
   } else {
     MAO_RASSERT(0);  // Unknown directive found
