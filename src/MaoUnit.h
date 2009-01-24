@@ -108,6 +108,9 @@ class MaoUnit {
   void PrintBasicBlockEdges();
   void PrintBasicBlockEdges(FILE *out);
 
+  std::list<BasicBlock *> *GetBasicBlocks() { return &bb_list_; }
+  std::vector<BasicBlockEdge *> *GetBasicBlockEdges() { return &bb_edges_; }
+
  private:
 
   // Used by the STL-maps of sections and subsections.
@@ -140,8 +143,11 @@ class MaoUnit {
   // Edges between basic blocks
   std::vector<BasicBlockEdge *> bb_edges_;
 
+public:
   // Returns an entity given the ID.
   BasicBlock *GetBasicBlockByID(const basicblock_index_t id) const;
+private:
+
   MaoUnitEntryBase *GetEntryByID(basicblock_index_t id) const;
 
   // If the entry with the given id is a label, return the name, otherwise
