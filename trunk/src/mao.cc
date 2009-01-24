@@ -24,6 +24,7 @@
 #include "MaoOptions.h"
 #include "MaoUnit.h"
 #include "MaoPasses.h"
+#include "MaoLoops.h"
 
 
 // Unprocessed flags are passed on to as_main (which is the GNU Assembler
@@ -166,6 +167,26 @@ private:
   MaoOptions *mao_options_;
 };
 
+// LoopRecognition
+//
+// Run Loop recognition - see what you can find...
+//
+class LoopRecognitionPass : public MaoPass {
+public:
+  LoopRecognitionPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
+    MaoPass("LFIND"), mao_unit_(mao_unit), mao_options_(mao_options) {
+  }
+  bool Go() {
+    PerformLoopRecognition(mao_unit_);
+
+    return true;
+  }
+
+private:
+  MaoUnit    *mao_unit_;
+  MaoOptions *mao_options_;
+};
+
 
 //==================================
 // MAO Main Entry
@@ -199,6 +220,7 @@ int main(int argc, const char *argv[]) {
   // function specific passes
   // TODO(rhundt): add loop over functinos
   PASS(CreateCFGPass(&mao_options, &mao_unit));
+  PASS(LoopRecognitionPass(&mao_options, &mao_unit));
 
   // global finalization passes
   PASS(AssemblyPass(&mao_options, &mao_unit));

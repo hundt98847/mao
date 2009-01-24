@@ -32,13 +32,66 @@
 
 class MaoCFG {
   public:
-  unsigned int   GetNumOfNodes();
-  BasicBlock    *GetStartBB();
-  BasicBlock    *GetEndBB();
-  BasicBlock    *GetDst(BasicBlockEdge *edge);
-  BasicBlock    *GetSrc(BasicBlockEdge *edge);
+  MaoCFG(MaoUnit *mao_unit) : mao_unit_(mao_unit) {
+  }
 
-  std::list<BasicBlock *> all_bbs;
+  int   GetNumOfNodes() {
+    return mao_unit_->GetBasicBlocks()->size();
+  }
+
+  BasicBlock    *GetStartBB() {
+    return mao_unit_->GetBasicBlockByID(0);
+  }
+
+  BasicBlock    *GetDst(BasicBlockEdge *edge) {
+    return mao_unit_->GetBasicBlockByID(edge->target_index());
+  }
+
+  BasicBlock    *GetSrc(BasicBlockEdge *edge) {
+    return mao_unit_->GetBasicBlockByID(edge->source_index());
+  }
+
+  std::list<BasicBlock *> *GetBasicBlocks() {
+    return mao_unit_->GetBasicBlocks();
+  }
+
+  std::vector<BasicBlockEdge *> *GetBasicBlockEdges() {
+    return mao_unit_->GetBasicBlockEdges();
+  }
+
+  void DumpVCG(const char *fname) {
+    MAO_ASSERT(fname);
+    FILE *f = fopen(fname, "w");
+    if (!f) return;
+
+    fprintf(f,
+            "graph: { title: \"CFG\" \n"
+            "splines: yes\n"
+            "\n"
+            "node.color: lightyellow\n"
+            "node.textcolor: blue\n"
+            "edge.arrowsize: 15\n"
+            );
+
+      for (std::list<BasicBlock *>::iterator biter = GetBasicBlocks()->begin();
+           biter != GetBasicBlocks()->end(); ++biter) {
+        fprintf(f,"node: { title: \"bb%d\" label: \"bb%d: %s\" }\n",
+                (*biter)->index(), (*biter)->index(), (*biter)->label() );
+      }
+
+    for (std::vector<BasicBlockEdge *>::iterator eiter =
+           GetBasicBlockEdges()->begin();
+         eiter != GetBasicBlockEdges()->end(); ++eiter) {
+      fprintf(f, "edge: { sourcename: \"bb%d\" targetname: \"bb%d\" }\n",
+              GetSrc((*eiter))->index(), GetDst((*eiter))->index() );
+    }
+
+    fprintf(f, "}\n");
+    fclose(f);
+  }
+
+ private:
+  MaoUnit  *mao_unit_;
 };
 
 
@@ -56,7 +109,7 @@ class UnionFindNode {
 
   // Initialize this node
   //
-  void Init(BasicBlock *bb, unsigned int dfs_number) {
+  void Init(BasicBlock *bb, int dfs_number) {
     MAO_ASSERT(bb);
 
     parent_ = this;
@@ -109,7 +162,7 @@ class UnionFindNode {
   UnionFindNode *parent() { return parent_; }
   BasicBlock    *bb()     { return bb_; }
   SimpleLoop    *loop()   { return loop_; }
-  unsigned int   dfs()    { return dfs_; }
+  int            dfs()    { return dfs_; }
 
   void           set_parent(UnionFindNode *parent) { parent_ = parent; }
   void           set_loop(SimpleLoop *loop) { loop_ = loop; }
@@ -118,7 +171,7 @@ class UnionFindNode {
   UnionFindNode *parent_;
   BasicBlock    *bb_;
   SimpleLoop    *loop_;
-  unsigned int   dfs_;
+  int            dfs_;
 };
 
 
@@ -176,14 +229,14 @@ class HavlakLoopFinder {
   //
   // Constants
   //
-  static const unsigned int kUnvisited = UINT_MAX;
-  static const unsigned int kMaxNonBackPreds = 100000;
+  static const int kUnvisited = INT_MAX;
+  static const int kMaxNonBackPreds = (32*1024);
 
   //
   // member vars
   //
   MaoCFG             *CFG_;      // current control flow graph
-  unsigned int        current_;  // node id/number
+  int                 current_;  // node id/number
   LoopStructureGraph *lsg_;      // loop forest
 
 
@@ -192,14 +245,14 @@ class HavlakLoopFinder {
   // selected to guarantee minimal complexity ;-)
   //
   typedef std::vector<UnionFindNode>          NodeVector;
-  typedef std::map<BasicBlock*, unsigned int> BasicBlockMap;
-  typedef std::list<unsigned int>             IntList;
-  typedef std::set<unsigned int>              IntSet;
+  typedef std::map<BasicBlock*, int>          BasicBlockMap;
+  typedef std::list<int>                      IntList;
+  typedef std::set<int>                       IntSet;
   typedef std::list<UnionFindNode*>           NodeList;
   typedef std::vector<IntList>                IntListVector;
   typedef std::vector<IntSet>                 IntSetVector;
-  typedef std::vector<unsigned int>           IntVector;
-  typedef std::vector<unsigned char>          CharVector;
+  typedef std::vector<int>                    IntVector;
+  typedef std::vector<char>                   CharVector;
 
   // Iterators
   //
@@ -212,22 +265,23 @@ class HavlakLoopFinder {
   // Simple depth first traversal along out edges with node numbering
   //
   void DFS(BasicBlock      *a,
-           NodeVector       &nodes,
-           BasicBlockMap    &number,
-           IntVector        &last) {
+           NodeVector      *nodes,
+           BasicBlockMap   *number,
+           IntVector       *last) {
     MAO_ASSERT(a);
 
-    nodes[current_].Init(a, current_);
-    number[a] = current_++;
+    (*nodes)[current_].Init(a, current_);
+    (*number)[a] = current_;
+    current_++;
 
     for (BasicBlockIter outedges = a->GetOutEdges().begin();
          outedges != a->GetOutEdges().end(); ++outedges) {
       BasicBlock *target = CFG_->GetDst(*outedges);
 
-      if (number[target] == kUnvisited)
+      if ((*number)[target] == kUnvisited)
         DFS(target, nodes, number, last);
     }
-    last[number[a]] = current_-1;
+    (*last)[(*number)[a]] = current_-1;
   }
 
   //
@@ -240,7 +294,7 @@ class HavlakLoopFinder {
   // paper (which is similar to the one used by Tarjan)
   //
   void FindLoops() {
-    unsigned int       size = CFG_->GetNumOfNodes();
+    int                size = CFG_->GetNumOfNodes();
     IntSetVector       nonBackPreds(size);
     IntListVector      backPreds(size);
     IntVector          header(size);
@@ -248,20 +302,21 @@ class HavlakLoopFinder {
     IntVector          last(size);
     NodeVector         nodes(size);
     BasicBlockMap      number;
-    unsigned int       w;
+    int                w;
 
     // Step a:
     //   - initialize all nodes as unvisited
     //   - depth-first traversal and numbering
     //   - unreached BB's are marked as dead
     //
-    for (std::list<BasicBlock *>::iterator bb_iter = CFG_->all_bbs.begin();
-         bb_iter != CFG_->all_bbs.end(); ++bb_iter) {
+    for (std::list<BasicBlock *>::iterator bb_iter =
+           CFG_->GetBasicBlocks()->begin();
+         bb_iter != CFG_->GetBasicBlocks()->end(); ++bb_iter) {
       number[*bb_iter] = kUnvisited;
     }
 
     current_ = 0;
-    DFS(CFG_->GetStartBB(), nodes, number, last);
+    DFS(CFG_->GetStartBB(), &nodes, &number, &last);
 
     // Step b:
     //   - iterate over all nodes.
@@ -289,7 +344,7 @@ class HavlakLoopFinder {
               BasicBlockEdge *edge   = *inedges;
               BasicBlock     *node_v = CFG_->GetSrc(edge);
 
-              unsigned int v = number[ node_v ];
+              int v = number[ node_v ];
               if (v == kUnvisited) continue;  // dead node
 
               if (IsAncestor(w, v))
@@ -323,8 +378,8 @@ class HavlakLoopFinder {
       IntList::iterator back_pred_iter  = backPreds[w].begin();
       IntList::iterator back_pred_end   = backPreds[w].end();
       for (; back_pred_iter != back_pred_end; back_pred_iter++) {
-        unsigned int v = *back_pred_iter;
-        if ( v != w)
+        int v = *back_pred_iter;
+        if ( v!= w)
           P.push_back(nodes[v].FindSet());
         else
           type[w] = BB_SELF;
@@ -359,7 +414,7 @@ class HavlakLoopFinder {
         // The algorithm has degenerated. Break and
         // return in this case
         //
-        size_t non_back_size = nonBackPreds[x.dfs()].size();
+        int non_back_size = nonBackPreds[x.dfs()].size();
         if (non_back_size > kMaxNonBackPreds) {
           lsg_->KillAll();
           return;
@@ -391,6 +446,8 @@ class HavlakLoopFinder {
       //
       if (P.size() || (type[w] == BB_SELF)) {
         SimpleLoop* loop = lsg_->CreateNewLoop();
+        fprintf(stderr, "Created \n:");
+        loop->Dump();
 
         // At this point, one can set attributes to the loop, such as:
         //
@@ -434,5 +491,21 @@ class HavlakLoopFinder {
 // Constant instantiations
 //   (needed for some compilers)
 //
-const unsigned int HavlakLoopFinder::kUnvisited;
-const unsigned int HavlakLoopFinder::kMaxNonBackPreds;
+const int HavlakLoopFinder::kUnvisited;
+const int HavlakLoopFinder::kMaxNonBackPreds;
+
+// External Entry Point
+//
+int PerformLoopRecognition(MaoUnit *mao) {
+  MaoCFG             CFG(mao);
+  LoopStructureGraph LSG;
+  HavlakLoopFinder   Havlak(&CFG, &LSG);
+
+  mao->PrintCFG();
+
+  CFG.DumpVCG("HavlakCfg.vcg");
+  Havlak.FindLoops();
+
+  LSG.Dump();
+  return LSG.NumberOfLoops();
+}

@@ -158,7 +158,7 @@ class LoopStructureGraph {
     if (!loop->is_root()) {
       for (unsigned int i = 0; i < indent; i++)
         fprintf(MaoDebug::trace_file(), "  ");
-      loop->Dump();
+      loop->DumpLong();
     }
     for (SimpleLoop::LoopSet::iterator liter = loop->GetChildren()->begin();
          liter != loop->GetChildren()->end(); ++liter)
@@ -201,3 +201,8 @@ class LoopStructureGraph {
   LoopList      loops_;
   unsigned int  loop_counter_;
 };
+
+
+
+// External Entry Points
+int PerformLoopRecognition(MaoUnit *mao);
