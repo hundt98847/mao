@@ -521,7 +521,7 @@ int PerformLoopRecognition(MaoUnit *mao) {
 
   CFG.DumpVCG("HavlakCfg.vcg");
   Havlak.FindLoops();
-
   LSG.Dump();
+
   return LSG.NumberOfLoops();
 }

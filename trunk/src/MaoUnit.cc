@@ -1531,27 +1531,29 @@ void BasicBlock::PrintInfo() const {
 
 void BasicBlock::PrintInfo(FILE *out) const {
   // bb - id:%d range:%d-%d inedges:.... outedges...
-  fprintf(out, "bb - id:%3d label:%20s ", index(), label());
+  fprintf(out, "bb%d:\t label:%20s ", index(), label());
   if (!source() && !sink()) {
     fprintf(out, " range:%3d-%3d",
             (*first_iter())->index(), last_entry_index());
   } else {
-    fprintf(out, "             ");
+    fprintf(out, "              ");
   }
-  fprintf(out, " in(");
-  for (std::vector<BasicBlockEdge *>::const_iterator iter =
+  if (in_edges_.size()) {
+    fprintf(out, " in: ");
+    for (std::vector<BasicBlockEdge *>::const_iterator iter =
            in_edges_.begin();
-       iter != in_edges_.end(); ++iter) {
-    printf("%d ", (*iter)->source_index());
+         iter != in_edges_.end(); ++iter) {
+      printf("bb%d ", (*iter)->source_index());
+    }
   }
-  fprintf(out, ")");
-  fprintf(out, " out(");
-  for (std::vector<BasicBlockEdge *>::const_iterator iter =
+  if (out_edges_.size()) {
+    fprintf(out, " out: ");
+    for (std::vector<BasicBlockEdge *>::const_iterator iter =
            out_edges_.begin();
-       iter != out_edges_.end(); ++iter) {
-    printf("%d ", (*iter)->target_index());
+         iter != out_edges_.end(); ++iter) {
+      printf("bb%d ", (*iter)->target_index());
+    }
   }
-  fprintf(out, ")");
   fprintf(out, "\n");
 }
 
