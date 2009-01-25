@@ -318,6 +318,18 @@ class HavlakLoopFinder {
     current_ = 0;
     DFS(CFG_->GetStartBB(), &nodes, &number, &last);
 
+    // DEBUG code - leave it in here for now
+    //for (std::list<BasicBlock *>::iterator bb_iter =
+    //       CFG_->GetBasicBlocks()->begin();
+    //     bb_iter != CFG_->GetBasicBlocks()->end(); ++bb_iter) {
+    //  fprintf(stderr,
+    //          "Number[bb%d]=%d last[%d]=%d\n",
+    //          (*bb_iter)->index(), number[*bb_iter],
+    //          (*bb_iter)->index(), last[number[*bb_iter]]
+    //          );
+    // }
+
+
     // Step b:
     //   - iterate over all nodes.
     //
@@ -446,8 +458,9 @@ class HavlakLoopFinder {
       //
       if (P.size() || (type[w] == BB_SELF)) {
         SimpleLoop* loop = lsg_->CreateNewLoop();
-        fprintf(stderr, "Created \n:");
-        loop->Dump();
+
+        loop->set_header(node_w, true);
+        loop->set_is_reducible(type[w] != BB_IRREDUCIBLE);
 
         // At this point, one can set attributes to the loop, such as:
         //
@@ -484,6 +497,9 @@ class HavlakLoopFinder {
         lsg_->AddLoop(loop);
       }  // P.size
     }  // step c
+
+    // Determine nesting relationship and link 1st level loops to root node.
+    lsg_->CalculateNestingLevel();
   }  // FindLoops
 };  // HavlakLoopFinder
 

@@ -45,7 +45,8 @@ class SimpleLoop {
   typedef std::set<SimpleLoop *> LoopSet;
 
 
-  SimpleLoop() : is_root_(false), nesting_level_(0), depth_level_(0) {
+  SimpleLoop() : header_(NULL), is_root_(false), is_reducible_(true),
+                 depth_level_(0), nesting_level_(0) {
   }
 
   void AddNode(BasicBlock *bb) {
@@ -56,23 +57,48 @@ class SimpleLoop {
   void AddChildLoop(SimpleLoop *loop) {
     MAO_ASSERT(loop);
     children_.insert(loop);
-    loop->set_parent(this);
   }
 
   void Dump() {
-    fprintf(MaoDebug::trace_file(), "loop-%d", counter_);
+    if (is_root())
+      fprintf(stderr, "<root>");
+    else
+      fprintf(stderr, "loop-%d", counter_);
   }
 
   void DumpLong() {
     Dump();
-    fprintf(MaoDebug::trace_file(), " d: %d, n: %d ",
+    if (!is_reducible())
+      fprintf(stderr, "*IRREDUCIBLE* ");
+
+    fprintf(stderr, " depth: %d, nest: %d ",
             depth_level(), nesting_level());
 
-    for (BasicBlockSet::iterator bbiter = basic_blocks_.begin();
-         bbiter != basic_blocks_.end(); ++bbiter)
-      fprintf(MaoDebug::trace_file(), "BB%d ", 0);
+    if (parent_) {
+      fprintf(stderr, "Parent: ");
+      parent_->Dump();
+      fprintf(stderr, " ");
+    }
 
-    fprintf(MaoDebug::trace_file(), "\n");
+    if (basic_blocks_.size()) {
+      fprintf(stderr, "BBs: ");
+      for (BasicBlockSet::iterator bbiter = basic_blocks_.begin();
+           bbiter != basic_blocks_.end(); ++bbiter) {
+        BasicBlock *BB = *bbiter;
+        fprintf(stderr, "BB%d%s ", BB->index(),
+                BB == header() ? "<head> " : "");
+      }
+    }
+
+    if (children_.size()) {
+      fprintf(stderr, "Children: ");
+      for(std::set<SimpleLoop *>::iterator citer =  children_.begin();
+          citer != children_.end(); ++citer) {
+        SimpleLoop *loop = *citer;
+        loop->Dump();
+        fprintf(stderr, " ");
+      }
+    }
   }
 
   LoopSet *GetChildren() {
@@ -85,27 +111,42 @@ class SimpleLoop {
   unsigned int depth_level() { return depth_level_; }
   unsigned int counter() { return counter_; }
   bool         is_root() { return is_root_; }
+  bool         is_reducible() { return is_reducible_; }
+  BasicBlock  *header() { return header_; }
 
   void set_parent(SimpleLoop *parent) {
     MAO_ASSERT(parent);
     parent_ = parent;
-    parent->AddChildLoop(this);
+    parent_->AddChildLoop(this);
+  }
+  void set_header(BasicBlock *header, bool add_node = true) {
+    MAO_ASSERT(header);
+
+    if (add_node) AddNode(header);
+    header_ = header;
   }
 
   void set_is_root() { is_root_ = true; }
   void set_counter(unsigned int value) { counter_ = value; }
-  void set_nesting_level(unsigned int level) { nesting_level_ = level; }
+  void set_nesting_level(unsigned int level) {
+    nesting_level_ = level;
+    if (level==0)
+      set_is_root();
+  }
   void set_depth_level(unsigned int level) { depth_level_ = level; }
+  void set_is_reducible(bool val) { is_reducible_ = val; }
 
   private:
   BasicBlockSet          basic_blocks_;
+  BasicBlock            *header_;
   std::set<SimpleLoop *> children_;
   SimpleLoop            *parent_;
 
   bool         is_root_: 1;
+  bool         is_reducible_ : 1;
   unsigned int counter_;
-  unsigned int nesting_level_;
   unsigned int depth_level_;
+  unsigned int nesting_level_;
 };
 
 
@@ -131,8 +172,9 @@ class LoopStructureGraph {
 
   LoopStructureGraph() : root_(new SimpleLoop()),
                          loop_counter_(0) {
-    root_->set_nesting_level(0);
+    root_->set_nesting_level(0); // make it root node
     root_->set_counter(loop_counter_++);
+    AddLoop(root_);
   }
 
   SimpleLoop *CreateNewLoop() {
@@ -155,11 +197,11 @@ class LoopStructureGraph {
   }
 
   void DumpRec(SimpleLoop *loop, unsigned int indent) {
-    if (!loop->is_root()) {
-      for (unsigned int i = 0; i < indent; i++)
-        fprintf(MaoDebug::trace_file(), "  ");
-      loop->DumpLong();
-    }
+    for (unsigned int i = 0; i < indent; i++)
+      fprintf(stderr, "    ");
+    loop->DumpLong();
+    fprintf(stderr, "\n");
+
     for (SimpleLoop::LoopSet::iterator liter = loop->GetChildren()->begin();
          liter != loop->GetChildren()->end(); ++liter)
       DumpRec(*liter,  indent+1);
@@ -170,8 +212,10 @@ class LoopStructureGraph {
     for (LoopList::iterator liter = loops_.begin();
          liter != loops_.end(); ++liter) {
       SimpleLoop *loop = *liter;
+
       if (loop->is_root()) continue;
-      if (!loop->parent()) loop->set_parent(root_);
+      if (!loop->parent())
+        loop->set_parent(root_);
     }
 
     // recursively traverse the tree and assign levels
@@ -183,8 +227,8 @@ class LoopStructureGraph {
     MAO_ASSERT(loop);
 
     loop->set_depth_level(depth);
-    for (LoopList::iterator liter = loops_.begin();
-         liter != loops_.end(); ++liter) {
+    for (SimpleLoop::LoopSet::iterator liter = loop->GetChildren()->begin();
+         liter != loop->GetChildren()->end(); ++liter) {
       CalculateNestingLevelRec(*liter, depth+1);
 
       loop->set_nesting_level(std::max(loop->nesting_level(),
