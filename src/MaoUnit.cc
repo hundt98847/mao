@@ -573,6 +573,9 @@ void MaoUnit::BuildCFG() {
        e_iter != entry_list_.end(); ++e_iter) {
     MaoUnitEntryBase *entry = *e_iter;
 
+    //fprintf(stderr, "Working on: ");
+    //entry->PrintEntry(stderr);
+
     // Check if entry is a LABEL and a Future Edge exists for this label
     // If that is true, this label should en the previous basic block
     if (entry->entry_type() == MaoUnitEntryBase::LABEL) {
@@ -702,6 +705,9 @@ void MaoUnit::BuildCFG() {
       // Get ready for the next basic block.
       current_basicblock = 0;
     }
+    //fprintf(stderr, "After Processing - CurrentCFG: ");
+    //PrintCFG();
+    //fprintf(stderr, "\n\n\n");
   }
   // Dont forget the final basic block.
   if (current_basicblock) {
@@ -1118,12 +1124,12 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
 }
 
 bool AsmInstruction::EndsBasicBlock() const {
-  if (0 == strcmp(GetOp(), "ret")) {
+  if (!strcmp(GetOp(), "ret")  || !strcmp(GetOp(), "hlt")) {
     return true;
   }
   // TODO(martint): Create a setting which controls
   // if call ends basic blocks.
-  if (0 == strcmp(GetOp(), "call")) {
+  if (!strcmp(GetOp(), "call") || !strcmp(GetOp(), "lcall")) {
     return false;
   }
 
@@ -1144,11 +1150,24 @@ bool AsmInstruction::IsInList(const char *string, const char *list[],
   return false;
 }
 
+const char *cond_jumps[] = {
+// Conditional jumps.
+"jo", "jno", "jb", "jc", "jnae", "jnb", "jnc", "jae", "je", "jz", "jne", "jnz",
+"jbe", "jna", "jnbe", "ja", "js", "jns", "jp", "jpe", "jnp", "jpo", "jl",
+"jnge", "jnl", "jge", "jle", "jng", "jnle", "jg",
+
+// jcxz vs. jecxz is chosen on the basis of the address size prefix.
+"jcxz", "jecxz", "jecxz", "jrcxz"
+
+// loop variants
+"loop", "loopz", "loope", "loopnz", "loopne"
+};
+
+
 bool AsmInstruction::HasFallthrough() const {
   // TODO(martint): Get this info from the i386_insn structure
   //                or complete the list
-  const char *insn[] = {"je", "be", "beq", "jne"};
-  if (IsInList(GetOp(), insn, sizeof(insn)/sizeof(char *))) {
+  if (IsInList(GetOp(), cond_jumps, sizeof(cond_jumps)/sizeof(char *))) {
     return true;
   }
 
@@ -1158,10 +1177,12 @@ bool AsmInstruction::HasFallthrough() const {
 bool AsmInstruction::HasTarget() const {
   // TODO(martint): Get this info from the i386_insn structure
   //                or complete the list
-  const char *insn[] = {"je", "be", "beq", "jne", "jmp"};
-  if (IsInList(GetOp(), insn, sizeof(insn)/sizeof(char *))) {
+  const char *insn[] = {"jmp", "jmpl"};
+  if (IsInList(GetOp(), insn, sizeof(insn)/sizeof(char *)))
     return true;
-  }
+  if (IsInList(GetOp(), cond_jumps, sizeof(cond_jumps)/sizeof(char *)))
+    return true;
+
   return false;
 }
 
@@ -1530,8 +1551,8 @@ void BasicBlock::PrintInfo() const {
 }
 
 void BasicBlock::PrintInfo(FILE *out) const {
-  // bb - id:%d range:%d-%d inedges:.... outedges...
-  fprintf(out, "bb%d:\t label:%20s ", index(), label());
+  fprintf(out, "bb%d:%s %20s ", index(),
+          index()<10 ? "  " : index() < 100 ? " " : "", label());
   if (!source() && !sink()) {
     fprintf(out, " range:%3d-%3d",
             (*first_iter())->index(), last_entry_index());
@@ -1539,7 +1560,7 @@ void BasicBlock::PrintInfo(FILE *out) const {
     fprintf(out, "              ");
   }
   if (in_edges_.size()) {
-    fprintf(out, " in: ");
+    fprintf(out, " in:  ");
     for (std::vector<BasicBlockEdge *>::const_iterator iter =
            in_edges_.begin();
          iter != in_edges_.end(); ++iter) {
