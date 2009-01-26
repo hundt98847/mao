@@ -67,6 +67,7 @@ class MaoCFG {
     fprintf(f,
             "graph: { title: \"CFG\" \n"
             "splines: yes\n"
+            "layoutalgorithm: dfs\n"
             "\n"
             "node.color: lightyellow\n"
             "node.textcolor: blue\n"
@@ -75,8 +76,21 @@ class MaoCFG {
 
       for (std::list<BasicBlock *>::iterator biter = GetBasicBlocks()->begin();
            biter != GetBasicBlocks()->end(); ++biter) {
-        fprintf(f,"node: { title: \"bb%d\" label: \"bb%d: %s\" }\n",
-                (*biter)->index(), (*biter)->index(), (*biter)->label() );
+        fprintf(f,"node: { title: \"bb%d\" label: \"bb%d: %s\" %s",
+                (*biter)->index(), (*biter)->index(), (*biter)->label(),
+                (*biter)->index() < 2 ? "color: red" : "");
+
+        fprintf(f, "info1: \"");
+        std::list<MaoUnitEntryBase *>::iterator it = (*biter)->first_iter();
+        for (; (*it)->index() != (*biter)->last_entry_index(); ++it) {
+          if ( (*it)->entry_type() == MaoUnitEntryBase::INSTRUCTION ||
+               (*it)->entry_type() == MaoUnitEntryBase::LABEL)
+            (*it)->PrintEntry(f);
+          else
+            fprintf(f, "...\n");
+        }
+
+        fprintf(f, "\"}\n");
       }
 
     for (std::vector<BasicBlockEdge *>::iterator eiter =

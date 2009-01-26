@@ -573,9 +573,6 @@ void MaoUnit::BuildCFG() {
        e_iter != entry_list_.end(); ++e_iter) {
     MaoUnitEntryBase *entry = *e_iter;
 
-    //fprintf(stderr, "Working on: ");
-    //entry->PrintEntry(stderr);
-
     // Check if entry is a LABEL and a Future Edge exists for this label
     // If that is true, this label should en the previous basic block
     if (entry->entry_type() == MaoUnitEntryBase::LABEL) {
@@ -705,9 +702,6 @@ void MaoUnit::BuildCFG() {
       // Get ready for the next basic block.
       current_basicblock = 0;
     }
-    //fprintf(stderr, "After Processing - CurrentCFG: ");
-    //PrintCFG();
-    //fprintf(stderr, "\n\n\n");
   }
   // Dont forget the final basic block.
   if (current_basicblock) {
@@ -1121,6 +1115,12 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
   new_inst->vex = in_inst->vex;
 
   return new_inst;
+}
+
+bool AsmInstruction::NeverReturns() const {
+  if (!strcmp(GetOp(), "ret")  || !strcmp(GetOp(), "hlt"))
+    return true;
+  return false;
 }
 
 bool AsmInstruction::EndsBasicBlock() const {
