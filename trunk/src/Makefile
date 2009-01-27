@@ -18,6 +18,7 @@ OBJS=$(OBJDIR)/as.o \
 	$(OBJDIR)/MaoDebug.o \
 	$(OBJDIR)/MaoUnit.o \
 	$(OBJDIR)/MaoOptions.o \
+	$(OBJDIR)/MaoOpcodes.o \
 	$(OBJDIR)/SymbolTable.o \
 	$(OBJDIR)/read.o \
 	$(OBJDIR)/tc-i386.o\
@@ -52,12 +53,13 @@ OBJS=$(OBJDIR)/as.o \
 	$(OBJDIR)/write.o
 
 
+
 all: mao-$(TARGET)
 
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
 $(BINDIR)/mao-$(TARGET): stamp-bin $(OBJDIR) $(OBJS)
-	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L $(BINUTILOBJ)/libiberty -L $(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ 
+	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L $(BINUTILOBJ)/libiberty -L $(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ -lz
 
 .PHONY : clean all mao-$(TARGET)
 
@@ -70,10 +72,16 @@ stamp-bin:
 
 # object files
 
+$(OBJDIR)/GenOpcodes: GenOpcodes.cc Makefile
+	$(CC) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc -lstdc++
+
+gen-opcodes.h: $(OBJDIR)/GenOpcodes
+	$(OBJDIR)/GenOpcodes $(BINUTILSRC)/opcodes/i386-opc.tbl
+
 $(OBJDIR)/mao.o: mao.cc mao.h MaoDebug.h MaoUnit.h
 	$(CC) $(CFLAGS) -c -o $@ mao.cc
 
-$(OBJDIR)/ir.o: ir.cc ir.h  irlink.h MaoUnit.h
+$(OBJDIR)/ir.o: ir.cc ir.h  irlink.h MaoUnit.h gen-opcodes.h
 	$(CC) $(CFLAGS) -c -o $@ ir.cc
 
 $(OBJDIR)/MaoLoops.o: MaoLoops.cc MaoLoops.h MaoUnit.h MaoDebug.h
@@ -82,10 +90,13 @@ $(OBJDIR)/MaoLoops.o: MaoLoops.cc MaoLoops.h MaoUnit.h MaoDebug.h
 $(OBJDIR)/MaoPasses.o: MaoPasses.cc MaoPasses.h MaoUnit.h MaoDebug.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(OBJDIR)/MaoOpcodes.o: MaoOpcodes.cc gen-opcodes.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 $(OBJDIR)/MaoDebug.o: MaoDebug.cc MaoDebug.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/MaoUnit.o: MaoUnit.cc MaoUnit.h
+$(OBJDIR)/MaoUnit.o: MaoUnit.cc MaoUnit.h gen-opcodes.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)/MaoOptions.o: MaoOptions.cc MaoOptions.h

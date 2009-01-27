@@ -24,11 +24,13 @@
 #include <utility>
 
 #include "ir-gas.h"
+#include "gen-opcodes.h"
 #include "irlink.h"
 #include "SymbolTable.h"
 
 #define DEFAULT_SECTION_NAME "text"
 #define DEFAULT_SECTION_CREATION_OP "\t.text"
+
 
 // Maps the label to a block, and the offset into this block
 struct ltstr {
@@ -358,13 +360,16 @@ class AsmInstruction {
   void PrintInstruction(FILE *out) const;
   static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
   const char *GetOp() const;
+  MaoOpcode   op() const { return op_; }
   bool EndsBasicBlock() const;
   bool HasFallthrough() const;
   bool HasTarget() const;
+  bool NeverReturns() const;
 
   const char *GetTarget() const;
  private:
   i386_insn *instruction_;
+  MaoOpcode  op_;
 
   // Helper functions
 
@@ -401,6 +406,7 @@ class InstructionEntry : public MaoUnitEntryBase {
   const char *GetTarget() const  {return instruction_->GetTarget();}
   char GetDescriptiveChar() const {return 'I';}
   bool BelongsInBasicBlock() const {return true;}
+  bool NeverReturns() const {return instruction_->NeverReturns();}
   bool EndsBasicBlock() const {return instruction_->EndsBasicBlock();}
   bool HasFallthrough() const {return instruction_->HasFallthrough();}
   bool HasTarget() const {return instruction_->HasTarget();}
