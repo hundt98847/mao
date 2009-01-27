@@ -31,7 +31,7 @@
 //     3  - give me all you got.
 //
 class MaoPass {
-  public:
+ public:
   MaoPass(const char *name) : name_(name), enabled_(true), tracing_level_(3),
     trace_file_(stderr) {
   }
@@ -50,7 +50,7 @@ class MaoPass {
   void set_enabled(bool value) { enabled_ = value; }
   void set_tracing_level(unsigned int value) { tracing_level_ = value; }
 
-  private:
+ private:
   const char   *name_;
   bool          enabled_;
   unsigned int  tracing_level_;
@@ -66,7 +66,7 @@ class MaoPass {
 // list. Very preliminary now, but extensible.
 //
 class MaoPassManager {
-  public:
+ public:
   MaoPassManager() {
   }
 
@@ -114,7 +114,7 @@ class MaoPassManager {
     }
   }
 
-  private:
+ private:
   std::list<MaoPass *> pass_list_;
 };
 
