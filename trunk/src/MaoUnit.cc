@@ -584,8 +584,13 @@ void MaoUnit::BuildCFG() {
         if (current_basicblock) {
           fallthrough = new BasicBlockEdge();
           fallthrough->set_source_index(current_basicblock->index());
+        } else {
+          current_basicblock = CreateAndAddBasicblock(label_name,
+                                                      e_iter,
+                                                      (*e_iter)->index());
         }
         //  - update label2basic blocks for the prev. block
+        MAO_ASSERT(current_basicblock);
         UpdateLabel2BasicblockMap(&labels2bb, current_basicblock);
         //  - set current_basicblock to 0 so a new one can be created
         current_basicblock = 0;
