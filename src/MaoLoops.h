@@ -45,7 +45,7 @@ class SimpleLoop {
   typedef std::set<SimpleLoop *> LoopSet;
 
 
-  SimpleLoop() : header_(NULL), is_root_(false), is_reducible_(true),
+  SimpleLoop() : header_(NULL), parent_(NULL), is_root_(false), is_reducible_(true),
                  depth_level_(0), nesting_level_(0) {
   }
 
