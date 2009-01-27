@@ -191,8 +191,8 @@ $(OBJDIR)/write.o: $(BINUTILSRC)/gas/write.c
 	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/write.c
 
 clean : 
-	rm  $(OBJDIR)/*
-	rm  $(BINDIR)/mao-$(TARGET)
+	rm -f $(OBJDIR)/*
+	rm -f $(BINDIR)/mao-$(TARGET)
 # DO NOT DELETE THIS LINE -- mkdep uses it.
 # DO NOT PUT ANYTHING AFTER THIS LINE, IT WILL GO AWAY.
 
