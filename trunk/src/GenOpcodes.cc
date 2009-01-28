@@ -181,12 +181,15 @@ int main(int argc, const char*argv[]) {
     strcpy(lastname, name);
   }
 
-  fprintf(out, "};  // MaoOpcode\n");
+  fprintf(out, "};  // MaoOpcode\n\n"
+	  "MaoOpcode GetOpcode(const char *opcode);\n");
 
   fprintf(table, "  { OP_invalid, 0 }\n");
   fprintf(table, "};\n");
+
   fclose(in);
   fclose(out);
+  fclose(table);
 
   return 0;
 }

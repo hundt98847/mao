@@ -280,8 +280,10 @@ const char *MaoUnit::BBNameGen::GetUniqueName() {
 // Class: AsmInstruction
 //
 
-AsmInstruction::AsmInstruction(i386_insn *instruction) {
+AsmInstruction::AsmInstruction(i386_insn *instruction, MaoOpcode opcode)
+  : op_(opcode) {
   MAO_ASSERT(instruction);
+  MAO_ASSERT(op_ != OP_invalid);
   instruction_ = CreateInstructionCopy(instruction);
 }
 
@@ -837,7 +839,8 @@ InstructionEntry::InstructionEntry(i386_insn *instruction,
                                    unsigned int line_number,
                                    const char* line_verbatim) :
     MaoUnitEntryBase(line_number, line_verbatim) {
-  instruction_ = new AsmInstruction(instruction);
+  instruction_ = new AsmInstruction(instruction, 
+				    GetOpcode(instruction->tm.name));
 }
 
 InstructionEntry::~InstructionEntry() {
