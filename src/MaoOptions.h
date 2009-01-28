@@ -18,7 +18,27 @@
 #ifndef MAOOPTIONS_H_
 #define MAOOPTIONS_H_
 
-// Symbol table
+
+enum MaoOptionType {
+  OPT_INT, OPT_STRING, OPT_BOOL
+};
+
+typedef struct MaoOption {
+  MaoOptionType   type;
+  const char     *name;
+  const char     *description;
+  union {
+    int         ival;
+    const char *cval;
+    bool        bval;
+  };
+};
+
+#define OPTION_INT(name,val,desc) { OPT_INT, name, desc, { ival: val } }
+#define OPTION_BOOL(name,val,desc){ OPT_BOOL, name, desc, { bval: val } }
+#define OPTION_STR(name,val,desc) { OPT_STRING, name, desc, { cval: val } }
+#define OPTION_END  { OPT_INT, NULL, NULL, { ival: 0} }
+
 class MaoOptions {
  public:
   MaoOptions() : write_assembly_(true),
