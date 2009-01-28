@@ -35,6 +35,7 @@ class MaoPass {
   MaoPass(const char *name) : name_(name), enabled_(true), tracing_level_(3),
     trace_file_(stderr) {
   }
+  virtual ~MaoPass() { }
 
   virtual void Trace(unsigned int level, const char *fmt, ...);
 

@@ -27,91 +27,6 @@
 #include "MaoUnit.h"
 #include "MaoLoops.h"
 
-//--- MOCKING CODE begin -------------------
-//
-
-class MaoCFG {
-  public:
-  MaoCFG(MaoUnit *mao_unit) : mao_unit_(mao_unit) {
-  }
-
-  int   GetNumOfNodes() {
-    return mao_unit_->GetBasicBlocks()->size();
-  }
-
-  BasicBlock    *GetStartBB() {
-    return mao_unit_->GetBasicBlockByID(0);
-  }
-
-  BasicBlock    *GetDst(BasicBlockEdge *edge) {
-    return mao_unit_->GetBasicBlockByID(edge->target_index());
-  }
-
-  BasicBlock    *GetSrc(BasicBlockEdge *edge) {
-    return mao_unit_->GetBasicBlockByID(edge->source_index());
-  }
-
-  std::list<BasicBlock *> *GetBasicBlocks() {
-    return mao_unit_->GetBasicBlocks();
-  }
-
-  std::vector<BasicBlockEdge *> *GetBasicBlockEdges() {
-    return mao_unit_->GetBasicBlockEdges();
-  }
-
-  void DumpVCG(const char *fname) {
-    MAO_ASSERT(fname);
-    FILE *f = fopen(fname, "w");
-    if (!f) return;
-
-    fprintf(f,
-            "graph: { title: \"CFG\" \n"
-            "splines: yes\n"
-            "layoutalgorithm: dfs\n"
-            "\n"
-            "node.color: lightyellow\n"
-            "node.textcolor: blue\n"
-            "edge.arrowsize: 15\n"
-            );
-
-      for (std::list<BasicBlock *>::iterator biter = GetBasicBlocks()->begin();
-           biter != GetBasicBlocks()->end(); ++biter) {
-        fprintf(f,"node: { title: \"bb%d\" label: \"bb%d: %s\" %s",
-                (*biter)->index(), (*biter)->index(), (*biter)->label(),
-                (*biter)->index() < 2 ? "color: red" : "");
-
-        fprintf(f, "info1: \"");
-        std::list<MaoUnitEntryBase *>::iterator it = (*biter)->first_iter();
-        for (; (*it)->index() != (*biter)->last_entry_index(); ++it) {
-          if ( (*it)->entry_type() == MaoUnitEntryBase::INSTRUCTION ||
-               (*it)->entry_type() == MaoUnitEntryBase::LABEL)
-            (*it)->PrintEntry(f);
-          else
-            fprintf(f, "...\n");
-        }
-
-        fprintf(f, "\"}\n");
-      }
-
-    for (std::vector<BasicBlockEdge *>::iterator eiter =
-           GetBasicBlockEdges()->begin();
-         eiter != GetBasicBlockEdges()->end(); ++eiter) {
-      fprintf(f, "edge: { sourcename: \"bb%d\" targetname: \"bb%d\" }\n",
-              GetSrc((*eiter))->index(), GetDst((*eiter))->index() );
-    }
-
-    fprintf(f, "}\n");
-    fclose(f);
-  }
-
- private:
-  MaoUnit  *mao_unit_;
-};
-
-
-//
-//--- MOCKING CODE end  -------------------
-
 //
 // Union/Find algorithm after Tarjan, R.E., 1983, Data Structures
 // and Network Algorithms.
@@ -208,94 +123,11 @@ class UnionFindNode {
 //-------------------------------------------------------------------
 
 class HavlakLoopFinder {
-  public:
-  HavlakLoopFinder(MaoCFG *cfg, LoopStructureGraph *lsg) :
+ public:
+  HavlakLoopFinder(const CFG *cfg, LoopStructureGraph *lsg) :
     CFG_(cfg), current_(0), lsg_(lsg) {
     MAO_ASSERT(CFG_);
     MAO_ASSERT(lsg_);
-  }
-
-  enum BasicBlockClass {
-    BB_TOP,          // uninitialized
-    BB_NONHEADER,    // a regular BB
-    BB_REDUCIBLE,    // reducible loop
-    BB_SELF,         // single BB loop
-    BB_IRREDUCIBLE,  // irreducible loop
-    BB_DEAD,         // a dead BB
-    BB_LAST          // Sentinel
-  };
-
-  //
-  // isAncestor
-  //
-  // As described in the paper, determine whether a node 'w' is a
-  // "true" ancestor for node 'v'
-  //
-  // Dominance can be tested quickly using a pre-order trick
-  // for depth-first spanning trees. This is why DFS is the first
-  // thing we run below.
-  //
-  // Following the notation in the paper we keep this as a
-  // hash-define.
-  //
-#define IsAncestor(w, v) ((w <= v) && (v <= last[w]))
-
-  //
-  // Constants
-  //
-  static const int kUnvisited = INT_MAX;
-  static const int kMaxNonBackPreds = (32*1024);
-
-  //
-  // member vars
-  //
-  MaoCFG             *CFG_;      // current control flow graph
-  int                 current_;  // node id/number
-  LoopStructureGraph *lsg_;      // loop forest
-
-
-  //
-  // Local types used for Havlak algorithm, all carefully
-  // selected to guarantee minimal complexity ;-)
-  //
-  typedef std::vector<UnionFindNode>          NodeVector;
-  typedef std::map<BasicBlock*, int>          BasicBlockMap;
-  typedef std::list<int>                      IntList;
-  typedef std::set<int>                       IntSet;
-  typedef std::list<UnionFindNode*>           NodeList;
-  typedef std::vector<IntList>                IntListVector;
-  typedef std::vector<IntSet>                 IntSetVector;
-  typedef std::vector<int>                    IntVector;
-  typedef std::vector<char>                   CharVector;
-
-  // Iterators
-  //
-  typedef std::vector<BasicBlockEdge*>::const_iterator BasicBlockIter;
-
-  //
-  // DFS
-  //
-  // DESCRIPTION:
-  // Simple depth first traversal along out edges with node numbering
-  //
-  void DFS(BasicBlock      *a,
-           NodeVector      *nodes,
-           BasicBlockMap   *number,
-           IntVector       *last) {
-    MAO_ASSERT(a);
-
-    (*nodes)[current_].Init(a, current_);
-    (*number)[a] = current_;
-    current_++;
-
-    for (BasicBlockIter outedges = a->GetOutEdges().begin();
-         outedges != a->GetOutEdges().end(); ++outedges) {
-      BasicBlock *target = CFG_->GetDst(*outedges);
-
-      if ((*number)[target] == kUnvisited)
-        DFS(target, nodes, number, last);
-    }
-    (*last)[(*number)[a]] = current_-1;
   }
 
   //
@@ -323,14 +155,13 @@ class HavlakLoopFinder {
     //   - depth-first traversal and numbering
     //   - unreached BB's are marked as dead
     //
-    for (std::list<BasicBlock *>::iterator bb_iter =
-           CFG_->GetBasicBlocks()->begin();
-         bb_iter != CFG_->GetBasicBlocks()->end(); ++bb_iter) {
+    for (CFG::BBVector::const_iterator bb_iter = CFG_->Begin();
+         bb_iter != CFG_->End(); ++bb_iter) {
       number[*bb_iter] = kUnvisited;
     }
 
     current_ = 0;
-    DFS(CFG_->GetStartBB(), &nodes, &number, &last);
+    DFS(*CFG_->Begin(), &nodes, &number, &last);
 
     // DEBUG code - leave it in here for now
     //for (std::list<BasicBlock *>::iterator bb_iter =
@@ -364,20 +195,19 @@ class HavlakLoopFinder {
           continue;  // dead BB
         }
 
-        if (node_w->GetNumPred())
-          for (BasicBlockIter inedges = node_w->GetInEdges().begin();
-               inedges != node_w->GetInEdges().end(); ++inedges) {
-              BasicBlockEdge *edge   = *inedges;
-              BasicBlock     *node_v = CFG_->GetSrc(edge);
+        for (BasicBlock::ConstEdgeIterator inedges = node_w->BeginInEdges();
+             inedges != node_w->EndInEdges(); ++inedges) {
+          BasicBlockEdge *edge   = *inedges;
+          BasicBlock     *node_v = edge->source();
 
-              int v = number[ node_v ];
-              if (v == kUnvisited) continue;  // dead node
+          int v = number[ node_v ];
+          if (v == kUnvisited) continue;  // dead node
 
-              if (IsAncestor(w, v))
-                backPreds[w].push_back(v);
-              else
-                nonBackPreds[w].insert(v);
-          }
+          if (IsAncestor(w, v, last))
+            backPreds[w].push_back(v);
+          else
+            nonBackPreds[w].insert(v);
+        }
     }
 
     // Start node is root of all other loops
@@ -452,7 +282,7 @@ class HavlakLoopFinder {
           UnionFindNode  y     = nodes[*non_back_pred_iter];
           UnionFindNode *ydash = y.FindSet();
 
-          if (!IsAncestor(w, ydash->dfs())) {
+          if (!IsAncestor(w, ydash->dfs(), last)) {
             type[w] = BB_IRREDUCIBLE;
             nonBackPreds[w].insert(ydash->dfs());
           } else {
@@ -515,6 +345,84 @@ class HavlakLoopFinder {
     // Determine nesting relationship and link 1st level loops to root node.
     lsg_->CalculateNestingLevel();
   }  // FindLoops
+
+ private:
+  enum BasicBlockClass {
+    BB_TOP,          // uninitialized
+    BB_NONHEADER,    // a regular BB
+    BB_REDUCIBLE,    // reducible loop
+    BB_SELF,         // single BB loop
+    BB_IRREDUCIBLE,  // irreducible loop
+    BB_DEAD,         // a dead BB
+    BB_LAST          // Sentinel
+  };
+
+  //
+  // Local types used for Havlak algorithm, all carefully
+  // selected to guarantee minimal complexity ;-)
+  //
+  typedef std::vector<UnionFindNode>          NodeVector;
+  typedef std::map<BasicBlock*, int>          BasicBlockMap;
+  typedef std::list<int>                      IntList;
+  typedef std::set<int>                       IntSet;
+  typedef std::list<UnionFindNode*>           NodeList;
+  typedef std::vector<IntList>                IntListVector;
+  typedef std::vector<IntSet>                 IntSetVector;
+  typedef std::vector<int>                    IntVector;
+  typedef std::vector<char>                   CharVector;
+
+  //
+  // Constants
+  //
+  static const int kUnvisited = INT_MAX;
+  static const int kMaxNonBackPreds = (32*1024);
+
+  //
+  // IsAncestor
+  //
+  // As described in the paper, determine whether a node 'w' is a
+  // "true" ancestor for node 'v'
+  //
+  // Dominance can be tested quickly using a pre-order trick
+  // for depth-first spanning trees. This is why DFS is the first
+  // thing we run below.
+  //
+  bool IsAncestor(int w, int v, const IntVector &last) {
+    return ((w <= v) && (v <= last[w]));
+  }
+
+  //
+  // DFS
+  //
+  // DESCRIPTION:
+  // Simple depth first traversal along out edges with node numbering
+  //
+  void DFS(BasicBlock      *a,
+           NodeVector      *nodes,
+           BasicBlockMap   *number,
+           IntVector       *last) {
+    MAO_ASSERT(a);
+
+    (*nodes)[current_].Init(a, current_);
+    (*number)[a] = current_;
+    current_++;
+
+    for (BasicBlock::ConstEdgeIterator outedges = a->BeginOutEdges();
+         outedges != a->EndOutEdges(); ++outedges) {
+      BasicBlock *target = (*outedges)->dest();
+
+      if ((*number)[target] == kUnvisited)
+        DFS(target, nodes, number, last);
+    }
+    (*last)[(*number)[a]] = current_-1;
+  }
+
+  //
+  // member vars
+  //
+  const CFG          *CFG_;      // current control flow graph
+  int                 current_;  // node id/number
+  LoopStructureGraph *lsg_;      // loop forest
 };  // HavlakLoopFinder
 
 
@@ -526,14 +434,13 @@ const int HavlakLoopFinder::kMaxNonBackPreds;
 
 // External Entry Point
 //
-int PerformLoopRecognition(MaoUnit *mao) {
-  MaoCFG             CFG(mao);
+int PerformLoopRecognition(MaoUnit *mao, const CFG *CFG) {
   LoopStructureGraph LSG;
-  HavlakLoopFinder   Havlak(&CFG, &LSG);
+  HavlakLoopFinder   Havlak(CFG, &LSG);
 
-  mao->PrintCFG();
+  CFG->Print();
 
-  CFG.DumpVCG("HavlakCfg.vcg");
+  CFG->DumpVCG("HavlakCfg.vcg");
   Havlak.FindLoops();
   LSG.Dump();
 

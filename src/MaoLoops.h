@@ -23,9 +23,7 @@
 #include <algorithm>
 
 #include "MaoDebug.h"
-
-// Forwards
-class BasicBlock;
+#include "MaoCFG.h"
 
 //
 // SimpleLoop
@@ -85,7 +83,7 @@ class SimpleLoop {
       for (BasicBlockSet::iterator bbiter = basic_blocks_.begin();
            bbiter != basic_blocks_.end(); ++bbiter) {
         BasicBlock *BB = *bbiter;
-        fprintf(stderr, "BB%d%s ", BB->index(),
+        fprintf(stderr, "BB%d%s ", BB->id(),
                 BB == header() ? "<head> " : "");
       }
     }
@@ -249,4 +247,4 @@ class LoopStructureGraph {
 
 
 // External Entry Points
-int PerformLoopRecognition(MaoUnit *mao);
+int PerformLoopRecognition(MaoUnit *mao, const CFG *CFG);

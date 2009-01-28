@@ -1,4 +1,4 @@
-TARGET=x86_64-linux
+TARGET=x86_64
 DLOCALEDIR="\"/usr/share/locale\""
 BINUTILOBJ=../../binutils-2.19-obj-$(TARGET)
 BINUTILSRC=../../binutils-2.19
@@ -6,59 +6,129 @@ OBJDIR=../obj-$(TARGET)
 BINDIR=../bin
 CC=gcc
 
-CFLAGS=-D_GNU_SOURCE -I. -I$(BINUTILOBJ)/gas -I$(BINUTILSRC)/gas -I$(BINUTILOBJ)/bfd -I$(BINUTILSRC)/bfd -I$(BINUTILOBJ)/gas/config -I$(BINUTILSRC)/gas/config -I$(BINUTILOBJ) -I$(BINUTILSRC) -I$(BINUTILSRC)/include -I$(BINUTILOBJ)/include \
-	-DLOCALEDIR=$(DLOCALEDIR) \
+CFLAGS=						\
+	-D_GNU_SOURCE				\
+	-I.					\
+	-I$(BINUTILOBJ)/gas 			\
+	-I$(BINUTILSRC)/gas 			\
+	-I$(BINUTILOBJ)/bfd			\
+	-I$(BINUTILSRC)/bfd			\
+	-I$(BINUTILOBJ)/gas/config		\
+	-I$(BINUTILSRC)/gas/config		\
+	-I$(BINUTILOBJ)				\
+	-I$(BINUTILSRC)				\
+	-I$(BINUTILSRC)/include			\
+	-I$(BINUTILOBJ)/include			\
+	-DLOCALEDIR=$(DLOCALEDIR)		\
 	-g -O0 -Wall
 
-OBJS=$(OBJDIR)/as.o \
-	$(OBJDIR)/mao.o \
-	$(OBJDIR)/ir.o \
-	$(OBJDIR)/MaoLoops.o \
-	$(OBJDIR)/MaoPasses.o \
-	$(OBJDIR)/MaoDebug.o \
-	$(OBJDIR)/MaoUnit.o \
-	$(OBJDIR)/MaoOptions.o \
-	$(OBJDIR)/MaoOpcodes.o \
-	$(OBJDIR)/SymbolTable.o \
-	$(OBJDIR)/read.o \
-	$(OBJDIR)/tc-i386.o\
-	$(OBJDIR)/app.o \
-	$(OBJDIR)/atof-generic.o \
-	$(OBJDIR)/atof-ieee.o \
-	$(OBJDIR)/cond.o \
-	$(OBJDIR)/depend.o \
-	$(OBJDIR)/dw2gencfi.o \
-	$(OBJDIR)/dwarf2dbg.o \
-	$(OBJDIR)/ecoff.o \
-	$(OBJDIR)/ehopt.o \
-	$(OBJDIR)/expr.o \
-	$(OBJDIR)/flonum-copy.o \
-	$(OBJDIR)/flonum-konst.o \
-	$(OBJDIR)/flonum-mult.o \
-	$(OBJDIR)/frags.o \
-	$(OBJDIR)/listing.o \
-	$(OBJDIR)/hash.o \
-	$(OBJDIR)/i386-opc.o \
-	$(OBJDIR)/input-file.o \
-	$(OBJDIR)/input-scrub.o \
-	$(OBJDIR)/messages.o \
-	$(OBJDIR)/macro.o \
-	$(OBJDIR)/obj-elf.o \
-	$(OBJDIR)/output-file.o \
-	$(OBJDIR)/remap.o \
-	$(OBJDIR)/sb.o \
-	$(OBJDIR)/stabs.o \
-	$(OBJDIR)/subsegs.o \
-	$(OBJDIR)/symbols.o \
-	$(OBJDIR)/write.o
+MAKEDEPEND=gcc -MM $(CFLAGS) -o $(patsubst %.o,%.P,$@) $<
+
+GAS_SRC=					\
+	$(BINUTILSRC)/gas/app.c			\
+	$(BINUTILSRC)/gas/atof-generic.c	\
+	$(BINUTILSRC)/gas/cond.c		\
+	$(BINUTILSRC)/gas/depend.c		\
+	$(BINUTILSRC)/gas/dw2gencfi.c		\
+	$(BINUTILSRC)/gas/ecoff.c		\
+	$(BINUTILSRC)/gas/ehopt.c		\
+	$(BINUTILSRC)/gas/expr.c		\
+	$(BINUTILSRC)/gas/flonum-copy.c		\
+	$(BINUTILSRC)/gas/flonum-konst.c	\
+	$(BINUTILSRC)/gas/flonum-mult.c		\
+	$(BINUTILSRC)/gas/frags.c		\
+	$(BINUTILSRC)/gas/listing.c		\
+	$(BINUTILSRC)/gas/hash.c		\
+	$(BINUTILSRC)/gas/input-file.c		\
+	$(BINUTILSRC)/gas/input-scrub.c		\
+	$(BINUTILSRC)/gas/messages.c		\
+	$(BINUTILSRC)/gas/macro.c		\
+	$(BINUTILSRC)/gas/output-file.c		\
+	$(BINUTILSRC)/gas/remap.c		\
+	$(BINUTILSRC)/gas/sb.c			\
+	$(BINUTILSRC)/gas/stabs.c		\
+	$(BINUTILSRC)/gas/subsegs.c		\
+	$(BINUTILSRC)/gas/write.c
+
+GAS_CONFIG_SRC=					\
+	$(BINUTILSRC)/gas/config/atof-ieee.c
+
+OPCODES_SRC=					\
+	$(BINUTILSRC)/opcodes/i386-opc.c
+
+CSRCS=						\
+	as.c					\
+	read.c					\
+	tc-i386.c				\
+	dwarf2dbg.c				\
+	obj-elf.c				\
+	symbols.c
+
+CCSRCS=						\
+	ir.cc					\
+	mao.cc					\
+	MaoCFG.cc				\
+	MaoDebug.cc				\
+	MaoLoops.cc				\
+	MaoOptions.cc				\
+	MaoPasses.cc				\
+	MaoUnit.cc				\
+	MaoOpcodes.cc				\
+	SymbolTable.cc
 
 
+GAS_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_SRC)))
+GAS_CONFIG_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_CONFIG_SRC)))
+OPCODES_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(OPCODES_SRC)))
+BINUTILS_OBJS=$(GAS_OBJS) $(GAS_CONFIG_OBJS) $(OPCODES_OBJS)
+
+OBJS=							\
+	$(BINUTILS_OBJS)				\
+	$(patsubst %.c,$(OBJDIR)/%.o,$(CSRCS))		\
+	$(patsubst %.cc,$(OBJDIR)/%.o,$(CCSRCS))
+
+CDEPS=$(patsubst %.c,$(OBJDIR)/%.d,$(CSRCS))
+CCDEPS=$(patsubst %.cc,$(OBJDIR)/%.d,$(CCSRCS))
+DEPS=$(CDEPS) $(CCDEPS)
 
 all: mao-$(TARGET)
 
+$(OBJDIR)/%.o : %.c
+	@$(MAKEDEPEND);						\
+	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
+	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//'	\
+	    -e '/^$$/ d' -e 's/$$/ :/' -e 's/^ *//'		\
+            < $(OBJDIR)/$*.P >> $(OBJDIR)/$*.d;			\
+	rm -f $(OBJDIR)/$*.P
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/%.o : %.cc
+	@$(MAKEDEPEND);						\
+	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
+	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//'	\
+	    -e '/^$$/ d' -e 's/$$/ :/' -e 's/^ *//'		\
+            < $(OBJDIR)/$*.P >> $(OBJDIR)/$*.d;			\
+	rm -f $(OBJDIR)/$*.P
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(GAS_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(GAS_CONFIG_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/config/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/GenOpcodes: GenOpcodes.cc Makefile
+	$(CXX) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc
+
+gen-opcodes.h: $(OBJDIR)/GenOpcodes
+	$(OBJDIR)/GenOpcodes $(BINUTILSRC)/opcodes/i386-opc.tbl
+
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
-$(BINDIR)/mao-$(TARGET): stamp-bin $(OBJDIR) $(OBJS)
+$(BINDIR)/mao-$(TARGET): stamp-bin gen-opcodes.h $(OBJDIR) $(OBJS)
 	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L $(BINUTILOBJ)/libiberty -L $(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ -lz
 
 .PHONY : clean all mao-$(TARGET)
@@ -70,144 +140,10 @@ stamp-bin:
 	test -d $(BINDIR) || mkdir -p $(BINDIR)
 	touch stamp-bin
 
-# object files
-
-$(OBJDIR)/GenOpcodes: GenOpcodes.cc Makefile
-	$(CC) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc -lstdc++
-
-gen-opcodes.h: $(OBJDIR)/GenOpcodes
-	$(OBJDIR)/GenOpcodes $(BINUTILSRC)/opcodes/i386-opc.tbl
-
-$(OBJDIR)/mao.o: mao.cc mao.h MaoDebug.h MaoUnit.h
-	$(CC) $(CFLAGS) -c -o $@ mao.cc
-
-$(OBJDIR)/ir.o: ir.cc ir.h  irlink.h MaoUnit.h gen-opcodes.h
-	$(CC) $(CFLAGS) -c -o $@ ir.cc
-
-$(OBJDIR)/MaoLoops.o: MaoLoops.cc MaoLoops.h MaoUnit.h MaoDebug.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/MaoPasses.o: MaoPasses.cc MaoPasses.h MaoUnit.h MaoDebug.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/MaoOpcodes.o: MaoOpcodes.cc gen-opcodes.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/MaoDebug.o: MaoDebug.cc MaoDebug.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/MaoUnit.o: MaoUnit.cc MaoUnit.h gen-opcodes.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/MaoOptions.o: MaoOptions.cc MaoOptions.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/SymbolTable.o: SymbolTable.cc SymbolTable.h irlink.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/obj-elf.o: obj-elf.c
-	$(CC) $(CFLAGS)  -c -o $@ $<
-
-$(OBJDIR)/as.o: as.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/read.o: read.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/symbols.o: symbols.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/dwarf2dbg.o: dwarf2dbg.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJDIR)/tc-i386.o: tc-i386.c
-	$(CC) $(CFLAGS) -c -o $@ tc-i386.c
-
-$(OBJDIR)/app.o: $(BINUTILSRC)/gas/app.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/app.c
-
-$(OBJDIR)/atof-generic.o: $(BINUTILSRC)/gas/atof-generic.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/atof-generic.c
-
-$(OBJDIR)/atof-ieee.o: $(BINUTILSRC)/gas/config/atof-ieee.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/config/atof-ieee.c
-
-$(OBJDIR)/cond.o: $(BINUTILSRC)/gas/cond.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/cond.c
-
-$(OBJDIR)/depend.o: $(BINUTILSRC)/gas/depend.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/depend.c
-
-$(OBJDIR)/dw2gencfi.o: $(BINUTILSRC)/gas/dw2gencfi.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/dw2gencfi.c
-
-$(OBJDIR)/ecoff.o: $(BINUTILSRC)/gas/ecoff.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/ecoff.c
-
-$(OBJDIR)/ehopt.o: $(BINUTILSRC)/gas/ehopt.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/ehopt.c
-
-$(OBJDIR)/expr.o: $(BINUTILSRC)/gas/expr.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/expr.c
-
-$(OBJDIR)/flonum-copy.o: $(BINUTILSRC)/gas/flonum-copy.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/flonum-copy.c
-
-$(OBJDIR)/flonum-konst.o: $(BINUTILSRC)/gas/flonum-konst.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/flonum-konst.c
-
-$(OBJDIR)/flonum-mult.o: $(BINUTILSRC)/gas/flonum-mult.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/flonum-mult.c
-
-$(OBJDIR)/frags.o: $(BINUTILSRC)/gas/frags.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/frags.c
-
-$(OBJDIR)/listing.o: $(BINUTILSRC)/gas/listing.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/listing.c
-
-$(OBJDIR)/hash.o: $(BINUTILSRC)/gas/hash.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/hash.c
-
-$(OBJDIR)/i386-opc.o: $(BINUTILSRC)/opcodes/i386-opc.c
-	$(CC) $(CFLAGS) -I$(BINUTILSRC)/opcodes -c -o $@ $(BINUTILSRC)/opcodes/i386-opc.c
-
-$(OBJDIR)/input-file.o: $(BINUTILSRC)/gas/input-file.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/input-file.c
-
-$(OBJDIR)/input-scrub.o: $(BINUTILSRC)/gas/input-scrub.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/input-scrub.c
-
-$(OBJDIR)/messages.o: $(BINUTILSRC)/gas/messages.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/messages.c
-
-$(OBJDIR)/macro.o: $(BINUTILSRC)/gas/macro.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/macro.c
-
-$(OBJDIR)/output-file.o: $(BINUTILSRC)/gas/output-file.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/output-file.c
-
-$(OBJDIR)/remap.o: $(BINUTILSRC)/gas/remap.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/remap.c
-
-$(OBJDIR)/sb.o: $(BINUTILSRC)/gas/sb.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/sb.c
-
-$(OBJDIR)/stabs.o: $(BINUTILSRC)/gas/stabs.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/stabs.c
-
-$(OBJDIR)/subsegs.o: $(BINUTILSRC)/gas/subsegs.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/subsegs.c
-
-$(OBJDIR)/write.o: $(BINUTILSRC)/gas/write.c
-	$(CC) $(CFLAGS) -c -o $@ $(BINUTILSRC)/gas/write.c
-
 clean : 
 	rm -f $(OBJDIR)/*
 	rm -f $(BINDIR)/mao-$(TARGET)
-# DO NOT DELETE THIS LINE -- mkdep uses it.
-# DO NOT PUT ANYTHING AFTER THIS LINE, IT WILL GO AWAY.
+	rm -f gen-opcodes-table.h
+	rm -f gen-opcodes.h
 
-MaoDebug.o: MaoDebug.cc MaoDebug.h
-MaoOptions.o: MaoOptions.cc MaoDebug.h MaoOptions.h
-
-# IF YOU PUT ANYTHING HERE IT WILL GO AWAY
+-include $(DEPS)
