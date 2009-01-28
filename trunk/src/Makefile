@@ -94,7 +94,7 @@ DEPS=$(CDEPS) $(CCDEPS)
 all: mao-$(TARGET)
 
 $(OBJDIR)/%.o : %.c
-	@$(MAKEDEPEND);						\
+	@$(MAKEDEPEND) -MQ $@;					\
 	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//'	\
 	    -e '/^$$/ d' -e 's/$$/ :/' -e 's/^ *//'		\
@@ -103,7 +103,7 @@ $(OBJDIR)/%.o : %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)/%.o : %.cc
-	@$(MAKEDEPEND);						\
+	@$(MAKEDEPEND) -MQ $@;					\
 	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//'	\
 	    -e '/^$$/ d' -e 's/$$/ :/' -e 's/^ *//'		\
