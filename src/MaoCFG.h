@@ -25,6 +25,7 @@
 #include <map>
 
 #include "MaoDebug.h"
+#include "MaoUnit.h"
 
 class BasicBlock;
 
