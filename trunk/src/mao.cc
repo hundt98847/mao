@@ -125,18 +125,20 @@ private:
 //
 class CreateCFGPass : public MaoPass {
 public:
-  CreateCFGPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("CFG"), mao_unit_(mao_unit), mao_options_(mao_options) {
+  CreateCFGPass(MaoOptions *mao_options, MaoUnit *mao_unit, CFG *CFG) :
+    MaoPass("CFG"), mao_unit_(mao_unit), CFG_(CFG), mao_options_(mao_options) {
   }
 
   bool Go() {
     Trace(1, "Build CFG");
-    mao_unit_->BuildCFG();
+    Section *section = mao_unit_->FindOrCreateAndFind("text");
+    CFGBuilder::Build(mao_unit_, section, CFG_);
 
     return true;
   }
 private:
   MaoUnit    *mao_unit_;
+  CFG        *CFG_;
   MaoOptions *mao_options_;
 };
 
@@ -173,17 +175,20 @@ private:
 //
 class LoopRecognitionPass : public MaoPass {
 public:
-  LoopRecognitionPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("LFIND"), mao_unit_(mao_unit), mao_options_(mao_options) {
+  LoopRecognitionPass(MaoOptions *mao_options, MaoUnit *mao_unit,
+                      const CFG *CFG) :
+    MaoPass("LFIND"), mao_unit_(mao_unit), CFG_(CFG),
+    mao_options_(mao_options) {
   }
   bool Go() {
-    PerformLoopRecognition(mao_unit_);
+    PerformLoopRecognition(mao_unit_, CFG_);
 
     return true;
   }
 
 private:
   MaoUnit    *mao_unit_;
+  const CFG  *CFG_;
   MaoOptions *mao_options_;
 };
 
@@ -194,6 +199,7 @@ private:
 int main(int argc, const char *argv[]) {
   MaoOptions mao_options;
   MaoUnit    mao_unit;
+  CFG        CFG(&mao_unit);
 
   // Parse any mao-specific command line flags (start with -mao:)
   char **new_argv = new char*[argc];
@@ -212,18 +218,19 @@ int main(int argc, const char *argv[]) {
 
   // Make Passes...
   MaoPassManager *mao_pass_man = InitPasses();
-  #define PASS(x) mao_pass_man->LinkPass(new x)
+#define PASS(x) mao_pass_man->LinkPass(new x)
 
   // global init passes
   PASS(ReadInputPass(new_argc, new_argv));
 
   // function specific passes
   // TODO(rhundt): add loop over functinos
-  PASS(CreateCFGPass(&mao_options, &mao_unit));
-  PASS(LoopRecognitionPass(&mao_options, &mao_unit));
+  PASS(CreateCFGPass(&mao_options, &mao_unit, &CFG));
+  PASS(LoopRecognitionPass(&mao_options, &mao_unit, &CFG));
 
   // global finalization passes
   PASS(AssemblyPass(&mao_options, &mao_unit));
+#undef PASS
 
   // run the passes
   mao_pass_man->Run();
