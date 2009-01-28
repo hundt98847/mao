@@ -17,6 +17,9 @@
 //   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 // Interfaces to loop related functionality in MAO
+//    SimpleLoop - a class representing a single loop in a routine
+//    LoopStructureGraph - a class representing the nesting relationships
+//                 of all loops in a routine.
 //
 #include <set>
 #include <list>
@@ -170,9 +173,13 @@ class LoopStructureGraph {
 
   LoopStructureGraph() : root_(new SimpleLoop()),
                          loop_counter_(0) {
-    root_->set_nesting_level(0); // make it root node
+    root_->set_nesting_level(0);  // make it root node
     root_->set_counter(loop_counter_++);
     AddLoop(root_);
+  }
+
+  ~LoopStructureGraph() {
+    KillAll();
   }
 
   SimpleLoop *CreateNewLoop() {
@@ -182,7 +189,7 @@ class LoopStructureGraph {
   }
 
   void      KillAll() {
-    // TODO(rhundt): Free up resources
+    loops_.clear();
   }
 
   void AddLoop(SimpleLoop *loop) {
@@ -210,7 +217,6 @@ class LoopStructureGraph {
     for (LoopList::iterator liter = loops_.begin();
          liter != loops_.end(); ++liter) {
       SimpleLoop *loop = *liter;
-
       if (loop->is_root()) continue;
       if (!loop->parent())
         loop->set_parent(root_);
