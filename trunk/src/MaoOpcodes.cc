@@ -16,11 +16,18 @@
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
 #include "gen-opcodes-table.h"
+#include "MaoDebug.h"
 
 #include <map>
 
+struct ltstr {
+  bool operator()(const char* s1, const char* s2) const {
+    return strcmp(s1, s2) < 0;
+  }
+};
+
 static bool initialized = false;
-static std::map<const char*, MaoOpcode> name_hash;
+static std::map<const char*, MaoOpcode, ltstr> name_hash;
 
 MaoOpcode GetOpcode(const char *opcode) {
   if (!initialized) {
@@ -31,5 +38,6 @@ MaoOpcode GetOpcode(const char *opcode) {
     }
     initialized = true;
   }
+  MAO_ASSERT(OP_invalid != name_hash[opcode]);
   return name_hash[opcode];
 }
