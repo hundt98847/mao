@@ -24,7 +24,7 @@
 void MaoOptions::Parse(char *arg) {
   // Standard options?
   if (arg[0] == '-') {
-    if (arg[1] == 'o')
+    if (arg[1] == 'o') {
       if (!strcmp(&arg[2], "stderr")) {
         set_output_is_stderr();
         set_assembly_output_file_name("<stderr>");
@@ -32,6 +32,7 @@ void MaoOptions::Parse(char *arg) {
       else {
         set_assembly_output_file_name(&arg[2]);
       }
+    }
   }
 }
 
@@ -55,3 +56,13 @@ void MaoOptions::set_ir_output_file_name(const char *file_name) {
   write_ir_ = true;
   ir_output_file_name_ = file_name;
 }
+
+
+
+//-------------------------
+
+MaoOption  opt[] = {
+  OPTION_INT ("i", 10, "Description"),
+  OPTION_BOOL("b", true, "Description"),
+  OPTION_STR ("string", "Hello World", "Description")
+};

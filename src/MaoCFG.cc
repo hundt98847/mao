@@ -21,6 +21,7 @@
 
 #include "MaoUnit.h"
 #include "MaoCFG.h"
+#include "MaoOptions.h"
 
 void CFG::Print(FILE *out) const {
   // TODO(nvachhar): Emit a text representation of the CFG
@@ -72,12 +73,25 @@ void CFG::DumpVCG(const char *fname) const {
   fclose(f);
 }
 
-void CFGBuilder::Build(MaoUnit *mao_unit, Section *section, CFG *CFG) {
-  CFGBuilder builder(mao_unit, section, CFG);
-  builder.Go();
+// --------------------------------------------------------------------
+// Options
+// --------------------------------------------------------------------
+MaoOption CFGBuilder_opts[] = {
+  OPTION_BOOL("callsplit", false, "Split Basic Blocks at call sites"),
+  OPTION_END
+};
+
+
+// --------------------------------------------------------------------
+CFGBuilder::CFGBuilder(MaoUnit *mao_unit, Section *section, CFG *CFG)
+  : MaoPass("MAO", CFGBuilder_opts),
+    mao_unit_(mao_unit), section_(section), CFG_(CFG), next_id_(0) {
+  split_basic_blocks_ = GetOptionBool("callsplit");
 }
 
-void CFGBuilder::Go() {
+
+
+void CFGBuilder::Build() {
   // These basic blocks are not mapped in the CFG because the labels are fake
   BasicBlock *source = CreateBasicBlock("<SOURCE>");
   BasicBlock *sink = CreateBasicBlock("<SINK>");
@@ -180,4 +194,12 @@ void CFGBuilder::Go() {
 
   if (create_fall_through)
     Link(previous, sink, true);
+}
+
+
+void CreateCFG(MaoUnit *mao_unit, CFG *cfg) {
+  Section *section = mao_unit->FindOrCreateAndFind("text");
+
+  CFGBuilder builder(mao_unit, section, cfg);
+  builder.Build();
 }
