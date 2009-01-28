@@ -1,7 +1,7 @@
 //
 // Copyright 2008 Google Inc.
 //
-// This program is free software; you can redistribute it and/or
+// This program is free software; you can redistribute it and/or to
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
-#include <iostream>
 
 #include "MaoDebug.h"
 #include "MaoUnit.h"
@@ -606,26 +604,27 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
   return new_inst;
 }
 
-bool AsmInstruction::IsInList(const char *string, const char *list[],
+bool AsmInstruction::IsInList(MaoOpcode opcode, const MaoOpcode list[],
                               const unsigned int number_of_elements) const {
   for (unsigned int i = 0; i < number_of_elements; i++) {
-    if (0 == strcmp(string, list[i]))
+    if (opcode == list[i])
       return true;
   }
   return false;
 }
 
-const char *cond_jumps[] = {
+const MaoOpcode cond_jumps[] = {
   // Conditional jumps.
-  "jo", "jno", "jb", "jc", "jnae", "jnb", "jnc", "jae", "je", "jz", "jne", "jnz",
-  "jbe", "jna", "jnbe", "ja", "js", "jns", "jp", "jpe", "jnp", "jpo", "jl",
-  "jnge", "jnl", "jge", "jle", "jng", "jnle", "jg",
+  OP_jo,  OP_jno, OP_jb,   OP_jc,  OP_jnae, OP_jnb,  OP_jnc, OP_jae, OP_je,  
+  OP_jz,  OP_jne, OP_jnz,  OP_jbe, OP_jna,  OP_jnbe, OP_ja,  OP_js,  OP_jns,  
+  OP_jp,  OP_jpe, OP_jnp,  OP_jpo, OP_jl,   OP_jnge, OP_jnl, OP_jge, OP_jle, 
+  OP_jng,  OP_jnle, OP_jg,
 
   // jcxz vs. jecxz is chosen on the basis of the address size prefix.
-  "jcxz", "jecxz", "jecxz", "jrcxz"
+  OP_jcxz, OP_jecxz, OP_jecxz, OP_jrcxz,
 
   // loop variants
-  "loop", "loopz", "loope", "loopnz", "loopne"
+  OP_loop, OP_loopz, OP_loope, OP_loopnz, OP_loopne
 };
 
 bool AsmInstruction::HasFallThrough() const {
@@ -634,7 +633,7 @@ bool AsmInstruction::HasFallThrough() const {
   if (IsReturn()) return false;
   if (!HasTarget()) return true;
   if (IsCall()) return true;
-  if (IsInList(GetOp(), cond_jumps, sizeof(cond_jumps)/sizeof(char *))) {
+  if (IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode))) {
     return true;
   }
 
@@ -644,10 +643,10 @@ bool AsmInstruction::HasFallThrough() const {
 bool AsmInstruction::HasTarget() const {
   // TODO(martint): Get this info from the i386_insn structure
   //                or complete the list
-  const char *insn[] = {"jmp", "jmpl"};
-  if (IsInList(GetOp(), insn, sizeof(insn)/sizeof(char *)))
+  const MaoOpcode insn[] = {OP_jmp, OP_ljmp};
+  if (IsInList(op(), insn, sizeof(insn)/sizeof(MaoOpcode)))
     return true;
-  if (IsInList(GetOp(), cond_jumps, sizeof(cond_jumps)/sizeof(char *)))
+  if (IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode)))
     return true;
 
   return false;
@@ -673,17 +672,17 @@ const char *AsmInstruction::GetTarget() const {
 }
 
 bool AsmInstruction::IsCall() const {
-  const char *calls[] = {
-    "call", "lcall", "vmcall", "syscall", "vmmcall"
+  const MaoOpcode calls[] = {
+    OP_call, OP_lcall, OP_vmcall, OP_syscall, OP_vmmcall
   };
-  return IsInList(GetOp(), calls, sizeof(calls)/sizeof(char *));
+  return IsInList(op(), calls, sizeof(calls)/sizeof(MaoOpcode));
 }
 
 bool AsmInstruction::IsReturn() const {
-  const char *rets[] = {
-    "ret", "lret", "retf", "iret", "sysret"
+  const MaoOpcode rets[] = {
+    OP_ret, OP_lret, OP_retf, OP_iret, OP_sysret
   };
-  return IsInList(GetOp(), rets, sizeof(rets)/sizeof(char *));
+  return IsInList(op(), rets, sizeof(rets)/sizeof(MaoOpcode));
 }
 
 
@@ -889,3 +888,4 @@ Section::~Section() {
 void Section::AddSubSectionIndex(subsection_index_t index) {
   sub_section_indexes_.push_back(index);
 }
+

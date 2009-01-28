@@ -338,7 +338,7 @@ class AsmInstruction {
   reg_entry *CopyRegEntry(const reg_entry *in_reg);
   // Frees all allocated memory for this instruction
   void FreeInstruction();
-  bool IsInList(const char *string, const char *list[],
+  bool IsInList(const MaoOpcode opcode, const MaoOpcode list[],
                 const unsigned int number_of_elements) const;
 };
 
