@@ -7,11 +7,11 @@ cd $DIR
 wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
 gzip -dc gunzip binutils-2.19.tar.gz | tar xvf -
 mkdir binutils-2.19-obj-i686 binutils-2.19-obj-x86_64
-cd binutils-2.19-obj-i686
+cd binutils-2.19-obj-i686-linux
 ../binutils-2.19/configure --target=i686-linux
 make
 cd ..
-cd binutils-2.19-obj-x86_64
+cd binutils-2.19-obj-x86_64-linux
 ../binutils-2.19/configure --target=x86_64-linux
 make
 cd ..

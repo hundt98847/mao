@@ -1,7 +1,7 @@
-TARGET=x86_64
+TARGET=x86_64-linux
 DLOCALEDIR="\"/usr/share/locale\""
-BINUTILOBJ=../../binutils-2.19-obj-$(TARGET)
-BINUTILSRC=../../binutils-2.19
+BINUTILOBJ=../binutils-2.19-obj-$(TARGET)
+BINUTILSRC=../binutils-2.19
 OBJDIR=../obj-$(TARGET)
 BINDIR=../bin
 CC=gcc
@@ -20,7 +20,7 @@ CFLAGS=						\
 	-I$(BINUTILSRC)/include			\
 	-I$(BINUTILOBJ)/include			\
 	-DLOCALEDIR=$(DLOCALEDIR)		\
-	-g -O0 -Wall
+	-g -O0 -Wall -fno-exceptions
 
 MAKEDEPEND=gcc -MM $(CFLAGS) -o $(patsubst %.o,%.P,$@) $<
 
@@ -120,7 +120,7 @@ $(GAS_CONFIG_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/config/%.c
 $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/GenOpcodes: GenOpcodes.cc Makefile
+$(OBJDIR)/GenOpcodes: $(OBJDIR) GenOpcodes.cc Makefile
 	$(CXX) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc
 
 gen-opcodes.h: $(OBJDIR)/GenOpcodes
@@ -129,7 +129,7 @@ gen-opcodes.h: $(OBJDIR)/GenOpcodes
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
 $(BINDIR)/mao-$(TARGET): stamp-bin gen-opcodes.h $(OBJDIR) $(OBJS)
-	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L $(BINUTILOBJ)/libiberty -L $(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ -lz
+	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ -lz
 
 .PHONY : clean all mao-$(TARGET)
 
@@ -145,5 +145,6 @@ clean :
 	rm -f $(BINDIR)/mao-$(TARGET)
 	rm -f gen-opcodes-table.h
 	rm -f gen-opcodes.h
+	rm -f stamp-bin
 
 -include $(DEPS)
