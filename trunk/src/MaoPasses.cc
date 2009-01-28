@@ -74,3 +74,15 @@ MaoPassManager *InitPasses() {
 
   return &mao_pass_man;
 }
+
+void ReadInput(int argc, char *argv[]) {
+  ReadInputPass reader(argc, argv);
+}
+
+void CreateCFG(MaoUnit *mao_unit, CFG *cfg) {
+  CreateCFGPass(mao_unit, cfg);
+}
+
+void LoopRecognition(MaoUnit *mao_unit, const CFG *cfg) {
+  LoopRecognitionPass(mao_unit, cfg);
+}

@@ -1,3 +1,5 @@
+#ifndef MAO_LOOPS_H_INCLUDED_
+#define MAO_LOOPS_H_INCLUDED_
 //
 // Copyright 2009 and later Google Inc.
 //
@@ -254,3 +256,6 @@ class LoopStructureGraph {
 
 // External Entry Points
 int PerformLoopRecognition(MaoUnit *mao, const CFG *CFG);
+
+
+#endif // MAO_LOOPS_H_INCLUDED_

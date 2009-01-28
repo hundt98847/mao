@@ -838,7 +838,7 @@ InstructionEntry::InstructionEntry(i386_insn *instruction,
                                    unsigned int line_number,
                                    const char* line_verbatim) :
     MaoUnitEntryBase(line_number, line_verbatim) {
-  instruction_ = new AsmInstruction(instruction, 
+  instruction_ = new AsmInstruction(instruction,
 				    GetOpcode(instruction->tm.name));
 }
 
@@ -888,4 +888,3 @@ Section::~Section() {
 void Section::AddSubSectionIndex(subsection_index_t index) {
   sub_section_indexes_.push_back(index);
 }
-

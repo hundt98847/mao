@@ -1,3 +1,5 @@
+#ifndef MAP_PASSES_H_INCLUDED_
+#define MAP_PASSES_H_INCLUDED_
 //
 // Copyright 2008 Google Inc.
 //
@@ -17,6 +19,14 @@
 
 #include <list>
 
+#include "MaoCFG.h"
+#include "MaoDebug.h"
+#include "MaoLoops.h"
+#include "MaoUnit.h"
+#include "MaoOptions.h"
+#include "mao.h"
+
+
 // MaoPass
 //
 // Base class for every pass in MAO. All other pieces of functionality
@@ -34,13 +44,16 @@ class MaoPass {
  public:
   MaoPass(const char *name) : name_(name), enabled_(true), tracing_level_(3),
     trace_file_(stderr) {
+    Trace(1, "begin");
   }
-  virtual ~MaoPass() { }
+  virtual ~MaoPass() {
+    Trace(1, "end");
+  }
 
   virtual void Trace(unsigned int level, const char *fmt, ...);
 
   // Main invocation (depends on enabled())
-  virtual bool Go() = 0;
+  virtual bool Go() { return true; }
 
   // Setters/Getters
   const char  *name() { return name_; }
@@ -121,6 +134,123 @@ class MaoPassManager {
 
 
 //
+// Standard Passes
+//
+
+// AssemblyPass
+//
+// Pass to dump out the IR in assembly format
+//
+class AssemblyPass : public MaoPass {
+public:
+  AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
+    MaoPass("ASM"), mao_unit_(mao_unit), mao_options_(mao_options) {
+  }
+
+  bool Go() {
+    if (mao_options_->write_assembly()) {
+      Trace(1, "Generate Assembly File: %s",
+            mao_options_->assembly_output_file_name());
+
+      FILE *outfile =
+        mao_options_->output_is_stdout() ? stdout :
+        mao_options_->output_is_stderr() ? stderr :
+        fopen(mao_options_->assembly_output_file_name(), "w");
+      MAO_ASSERT(outfile);
+
+      fprintf(outfile, "# MaoUnit:\n");
+      mao_unit_->PrintMaoUnit(outfile);
+
+      fprintf(outfile, "# Symbol table:\n");
+      SymbolTable *symbol_table = mao_unit_->GetSymbolTable();
+      MAO_ASSERT(symbol_table);
+      symbol_table->Print(outfile);
+
+      if (outfile != stdout)
+        fclose(outfile);
+    }
+
+    return true;
+  }
+
+private:
+  MaoUnit    *mao_unit_;
+  MaoOptions *mao_options_;
+};
+
+
+// ReadAsmPass
+//
+// Read/parse the input asm file and generate the IR
+//
+class ReadInputPass : public MaoPass {
+public:
+  ReadInputPass(int argc, char *argv[]) :
+    MaoPass("READ") {
+
+    MAO_ASSERT(!as_main(argc, argv));
+  }
+};
+
+void ReadInput(int argc, char *argv[]);
+
+// CreateCFG
+//
+// Create a CFG, TODO(rhundt): Make it per function
+//
+class CreateCFGPass : public MaoPass {
+public:
+  CreateCFGPass(MaoUnit *mao_unit, CFG *cfg) :
+    MaoPass("CFG") {
+
+    Section *section = mao_unit->FindOrCreateAndFind("text");
+    CFGBuilder::Build(mao_unit, section, cfg);
+  }
+};
+
+void CreateCFG(MaoUnit *mao_unit, CFG *cfg);
+
+// DumpIrPass
+//
+// Pass to to dump out the IR in IR format
+//
+class DumpIrPass : public MaoPass {
+public:
+  DumpIrPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
+    MaoPass("IR"), mao_unit_(mao_unit), mao_options_(mao_options) {
+  }
+  bool Go() {
+    if (mao_options_->write_ir()) {
+      Trace(1, "Generate IR Dump File: %s",
+            mao_options_->ir_output_file_name());
+
+      FILE *outfile =  fopen(mao_options_->ir_output_file_name(), "w");
+      MAO_ASSERT(outfile);
+      mao_unit_->PrintIR();
+    }
+    return true;
+  }
+
+private:
+  MaoUnit    *mao_unit_;
+  MaoOptions *mao_options_;
+};
+
+// LoopRecognition
+//
+// Run Loop recognition - see what you can find...
+//
+class LoopRecognitionPass : public MaoPass {
+public:
+  LoopRecognitionPass(MaoUnit *mao_unit, const CFG *CFG) : MaoPass("LFIND") {
+    PerformLoopRecognition(mao_unit, CFG);
+  }
+};
+
+void LoopRecognition(MaoUnit *mao_unit, const CFG *cfg);
+
+
+//
 // External Entry Points
 //
 
@@ -128,3 +258,6 @@ class MaoPassManager {
 // and return a pointer to the static pass manager object.
 //
 MaoPassManager *InitPasses();
+
+
+#endif   // MAP_PASSES_H_INCLUDED_

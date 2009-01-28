@@ -56,150 +56,13 @@ static int ProvideHelp(MaoOptions *mao_options) {
 }
 
 
-// AssemblyPass
-//
-// Pass to dump out the IR in assembly format
-//
-class AssemblyPass : public MaoPass {
-public:
-  AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("ASM"), mao_unit_(mao_unit), mao_options_(mao_options) {
-  }
-
-  bool Go() {
-    if (mao_options_->write_assembly()) {
-      Trace(1, "Generate Assembly File: %s",
-            mao_options_->assembly_output_file_name());
-
-      FILE *outfile =
-        mao_options_->output_is_stdout() ? stdout :
-        mao_options_->output_is_stderr() ? stderr :
-        fopen(mao_options_->assembly_output_file_name(), "w");
-      MAO_ASSERT(outfile);
-
-      fprintf(outfile, "# MaoUnit:\n");
-      mao_unit_->PrintMaoUnit(outfile);
-
-      fprintf(outfile, "# Symbol table:\n");
-      SymbolTable *symbol_table = mao_unit_->GetSymbolTable();
-      MAO_ASSERT(symbol_table);
-      symbol_table->Print(outfile);
-
-      if (outfile != stdout)
-        fclose(outfile);
-    }
-
-    return true;
-  }
-
-private:
-  MaoUnit    *mao_unit_;
-  MaoOptions *mao_options_;
-};
-
-
-// ReadAsmPass
-//
-// Read/parse the input asm file and generate the IR
-//
-class ReadInputPass : public MaoPass {
-public:
-  ReadInputPass(int argc, char *argv[]) :
-    MaoPass("READ"), argc_(argc), argv_(argv) {
-  }
-
-  bool Go() {
-    // Call Gas main routine, building up the IR.
-    // Gas will return 0 on success.
-    Trace(1, "Read Input");
-    return !as_main(argc_, argv_);
-  }
-private:
-  int argc_;
-  char **argv_;
-};
-
-// CreateCFG
-//
-// Create a CFG, TODO(rhundt): Make it per function
-//
-class CreateCFGPass : public MaoPass {
-public:
-  CreateCFGPass(MaoOptions *mao_options, MaoUnit *mao_unit, CFG *CFG) :
-    MaoPass("CFG"), mao_unit_(mao_unit), CFG_(CFG), mao_options_(mao_options) {
-  }
-
-  bool Go() {
-    Trace(1, "Build CFG");
-    Section *section = mao_unit_->FindOrCreateAndFind("text");
-    CFGBuilder::Build(mao_unit_, section, CFG_);
-
-    return true;
-  }
-private:
-  MaoUnit    *mao_unit_;
-  CFG        *CFG_;
-  MaoOptions *mao_options_;
-};
-
-
-// DumpIrPass
-//
-// Pass to to dump out the IR in IR format
-//
-class DumpIrPass : public MaoPass {
-public:
-  DumpIrPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("IR"), mao_unit_(mao_unit), mao_options_(mao_options) {
-  }
-  bool Go() {
-    if (mao_options_->write_ir()) {
-      Trace(1, "Generate IR Dump File: %s",
-            mao_options_->ir_output_file_name());
-
-      FILE *outfile =  fopen(mao_options_->ir_output_file_name(), "w");
-      MAO_ASSERT(outfile);
-      mao_unit_->PrintIR();
-    }
-    return true;
-  }
-
-private:
-  MaoUnit    *mao_unit_;
-  MaoOptions *mao_options_;
-};
-
-// LoopRecognition
-//
-// Run Loop recognition - see what you can find...
-//
-class LoopRecognitionPass : public MaoPass {
-public:
-  LoopRecognitionPass(MaoOptions *mao_options, MaoUnit *mao_unit,
-                      const CFG *CFG) :
-    MaoPass("LFIND"), mao_unit_(mao_unit), CFG_(CFG),
-    mao_options_(mao_options) {
-  }
-  bool Go() {
-    PerformLoopRecognition(mao_unit_, CFG_);
-
-    return true;
-  }
-
-private:
-  MaoUnit    *mao_unit_;
-  const CFG  *CFG_;
-  MaoOptions *mao_options_;
-};
-
-
 //==================================
 // MAO Main Entry
 //==================================
 int main(int argc, const char *argv[]) {
   MaoOptions mao_options;
   MaoUnit    mao_unit;
-  CFG        CFG(&mao_unit);
+  CFG        cfg(&mao_unit);
 
   // Parse any mao-specific command line flags (start with -mao:)
   char **new_argv = new char*[argc];
@@ -218,19 +81,17 @@ int main(int argc, const char *argv[]) {
 
   // Make Passes...
   MaoPassManager *mao_pass_man = InitPasses();
-#define PASS(x) mao_pass_man->LinkPass(new x)
 
   // global init passes
-  PASS(ReadInputPass(new_argc, new_argv));
+  ReadInput(new_argc, new_argv);
 
-  // function specific passes
-  // TODO(rhundt): add loop over functinos
-  PASS(CreateCFGPass(&mao_options, &mao_unit, &CFG));
-  PASS(LoopRecognitionPass(&mao_options, &mao_unit, &CFG));
+  // for (function iterator....)
+  //     TODO(rhundt): add loop over functinos
+  CreateCFG(&mao_unit, &cfg);
+  LoopRecognition(&mao_unit, &cfg);
 
   // global finalization passes
-  PASS(AssemblyPass(&mao_options, &mao_unit));
-#undef PASS
+  mao_pass_man->LinkPass(new AssemblyPass(&mao_options, &mao_unit));
 
   // run the passes
   mao_pass_man->Run();
