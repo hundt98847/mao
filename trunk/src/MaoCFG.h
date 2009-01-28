@@ -26,9 +26,9 @@
 
 #include "MaoDebug.h"
 #include "MaoUnit.h"
+#include "MaoPasses.h"
 
 class BasicBlock;
-
 
 class BasicBlockEdge {
  public:
@@ -168,16 +168,12 @@ class CFG {
   BBVector basic_blocks_;
 };
 
-class CFGBuilder {
+class CFGBuilder : public MaoPass {
  public:
-  static void Build(MaoUnit *mao_unit, Section *section, CFG *CFG);
+  CFGBuilder(MaoUnit *mao_unit, Section *section, CFG *CFG);
+  void Build();
 
  private:
-  CFGBuilder(MaoUnit *mao_unit, Section *section, CFG *CFG)
-      : mao_unit_(mao_unit), section_(section), CFG_(CFG), next_id_(0) { }
-
-  void Go();
-
   BasicBlock *CreateBasicBlock(const char *label) {
     BasicBlock *bb = new BasicBlock(next_id_, label);
     CFG_->AddBasicBlock(bb);
@@ -269,7 +265,11 @@ class CFGBuilder {
   CFG      *CFG_;
   int       next_id_;
   CFG::LabelToBBMap label_to_bb_map_;
+  bool      split_basic_blocks_;
 };
+
+// External entry point
+void CreateCFG(MaoUnit *mao_unit, CFG *cfg);
 
 
 

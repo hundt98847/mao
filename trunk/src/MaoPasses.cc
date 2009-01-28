@@ -39,10 +39,40 @@ void MaoPass::Trace(unsigned int level, const char *fmt, ...) {
 }
 
 
+MaoOption *MaoPass::FindOptionEntry(const char *name) {
+  MAO_ASSERT(options_);
+
+  int index = 0;
+  while (options_[index].name) {
+    if (!strcasecmp(name, options_[index].name))
+      return &options_[index];
+    ++index;
+  }
+
+  MAO_ASSERT_MSG(false, "Invalid options name: %s", name);
+  return NULL;
+}
+
+
+bool MaoPass::GetOptionBool(const char *name) {
+  MaoOption *opt = FindOptionEntry(name);
+  return opt->bval;
+}
+
+const char *MaoPass::GetOptionString(const char *name) {
+  MaoOption *opt = FindOptionEntry(name);
+  return opt->cval;
+}
+
+int MaoPass::GetOptionInt(const char *name) {
+  MaoOption *opt = FindOptionEntry(name);
+  return opt->ival;
+}
+
 // Dummy pass to mark begin of compilation
 class BeginPass : public MaoPass {
   public:
-  BeginPass() : MaoPass("BEG") {
+  BeginPass() : MaoPass("BEG", NULL) {
   }
 
   bool Go() {
@@ -54,7 +84,7 @@ class BeginPass : public MaoPass {
 // Dummy pass to mark end of compilation
 class EndPass : public MaoPass {
   public:
-  EndPass() : MaoPass("END") {
+  EndPass() : MaoPass("END", NULL) {
   }
 
   bool Go() {
@@ -77,12 +107,4 @@ MaoPassManager *InitPasses() {
 
 void ReadInput(int argc, char *argv[]) {
   ReadInputPass reader(argc, argv);
-}
-
-void CreateCFG(MaoUnit *mao_unit, CFG *cfg) {
-  CreateCFGPass(mao_unit, cfg);
-}
-
-void LoopRecognition(MaoUnit *mao_unit, const CFG *cfg) {
-  LoopRecognitionPass(mao_unit, cfg);
 }

@@ -19,9 +19,6 @@
 
 #include <list>
 
-#include "MaoCFG.h"
-#include "MaoDebug.h"
-#include "MaoLoops.h"
 #include "MaoUnit.h"
 #include "MaoOptions.h"
 #include "mao.h"
@@ -42,10 +39,12 @@
 //
 class MaoPass {
  public:
-  MaoPass(const char *name) : name_(name), enabled_(true), tracing_level_(3),
+  MaoPass(const char *name, MaoOption *options) :
+    name_(name), options_(options), enabled_(true), tracing_level_(3),
     trace_file_(stderr) {
     Trace(1, "begin");
   }
+
   virtual ~MaoPass() {
     Trace(1, "end");
   }
@@ -54,6 +53,12 @@ class MaoPass {
 
   // Main invocation (depends on enabled())
   virtual bool Go() { return true; }
+
+  // Options
+  MaoOption   *FindOptionEntry(const char *name);
+  bool         GetOptionBool(const char *name);
+  const char  *GetOptionString(const char *name);
+  int          GetOptionInt(const char *name);
 
   // Setters/Getters
   const char  *name() { return name_; }
@@ -66,6 +71,7 @@ class MaoPass {
 
  private:
   const char   *name_;
+  MaoOption    *options_;
   bool          enabled_;
   unsigned int  tracing_level_;
   FILE         *trace_file_;
@@ -144,7 +150,7 @@ class MaoPassManager {
 class AssemblyPass : public MaoPass {
 public:
   AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("ASM"), mao_unit_(mao_unit), mao_options_(mao_options) {
+    MaoPass("ASM", NULL), mao_unit_(mao_unit), mao_options_(mao_options) {
   }
 
   bool Go() {
@@ -186,7 +192,7 @@ private:
 class ReadInputPass : public MaoPass {
 public:
   ReadInputPass(int argc, char *argv[]) :
-    MaoPass("READ") {
+    MaoPass("READ", NULL) {
 
     MAO_ASSERT(!as_main(argc, argv));
   }
@@ -194,21 +200,6 @@ public:
 
 void ReadInput(int argc, char *argv[]);
 
-// CreateCFG
-//
-// Create a CFG, TODO(rhundt): Make it per function
-//
-class CreateCFGPass : public MaoPass {
-public:
-  CreateCFGPass(MaoUnit *mao_unit, CFG *cfg) :
-    MaoPass("CFG") {
-
-    Section *section = mao_unit->FindOrCreateAndFind("text");
-    CFGBuilder::Build(mao_unit, section, cfg);
-  }
-};
-
-void CreateCFG(MaoUnit *mao_unit, CFG *cfg);
 
 // DumpIrPass
 //
@@ -217,7 +208,7 @@ void CreateCFG(MaoUnit *mao_unit, CFG *cfg);
 class DumpIrPass : public MaoPass {
 public:
   DumpIrPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("IR"), mao_unit_(mao_unit), mao_options_(mao_options) {
+    MaoPass("IR", NULL), mao_unit_(mao_unit), mao_options_(mao_options) {
   }
   bool Go() {
     if (mao_options_->write_ir()) {
@@ -235,20 +226,6 @@ private:
   MaoUnit    *mao_unit_;
   MaoOptions *mao_options_;
 };
-
-// LoopRecognition
-//
-// Run Loop recognition - see what you can find...
-//
-class LoopRecognitionPass : public MaoPass {
-public:
-  LoopRecognitionPass(MaoUnit *mao_unit, const CFG *CFG) : MaoPass("LFIND") {
-    PerformLoopRecognition(mao_unit, CFG);
-  }
-};
-
-void LoopRecognition(MaoUnit *mao_unit, const CFG *cfg);
-
 
 //
 // External Entry Points
