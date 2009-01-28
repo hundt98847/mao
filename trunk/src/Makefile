@@ -121,7 +121,7 @@ $(GAS_CONFIG_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/config/%.c
 $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/GenOpcodes: $(OBJDIR) GenOpcodes.cc Makefile
+$(OBJDIR)/GenOpcodes: GenOpcodes.cc Makefile
 	$(CXX) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc
 
 gen-opcodes.h: $(OBJDIR)/GenOpcodes
@@ -139,6 +139,7 @@ $(OBJDIR) :
 
 stamp-bin:
 	test -d $(BINDIR) || mkdir -p $(BINDIR)
+	test -d $(OBJDIR) || mkdir -p $(OBJDIR)
 	touch stamp-bin
 
 clean : 
