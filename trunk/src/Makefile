@@ -1,7 +1,8 @@
 TARGET=x86_64-linux
 DLOCALEDIR="\"/usr/share/locale\""
-BINUTILOBJ=../binutils-2.19-obj-$(TARGET)
 BINUTILSRC=../binutils-2.19
+BINUTILOBJ=$(BINUTILSRC)-obj-$(TARGET)
+LIBZ=-lz
 OBJDIR=../obj-$(TARGET)
 BINDIR=../bin
 CC=gcc
@@ -129,7 +130,7 @@ gen-opcodes.h: $(OBJDIR)/GenOpcodes
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
 $(BINDIR)/mao-$(TARGET): stamp-bin gen-opcodes.h $(OBJDIR) $(OBJS)
-	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ -lz
+	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ)
 
 .PHONY : clean all mao-$(TARGET)
 
