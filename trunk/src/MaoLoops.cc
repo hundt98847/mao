@@ -432,17 +432,52 @@ class HavlakLoopFinder {
 const int HavlakLoopFinder::kUnvisited;
 const int HavlakLoopFinder::kMaxNonBackPreds;
 
+
+// --------------------------------------------------------------------
+// Options
+// --------------------------------------------------------------------
+MaoOption loop_finder_opts[] = {
+  OPTION_BOOL("vcg", false, "Dump VCG file"),
+  OPTION_BOOL("cfg", false, "Dump CFG in text format"),
+  OPTION_BOOL("lsg", false, "Dump LSG in text format"),
+  OPTION_END
+};
+
+class LoopFinderPass : public MaoPass {
+public:
+  LoopFinderPass(MaoUnit *mao, const CFG *cfg) :
+    MaoPass("LFIND", loop_finder_opts),
+    mao_(mao), cfg_(cfg) {
+    dump_vcg_ = GetOptionBool("vcg");
+    dump_cfg_ = GetOptionBool("cfg");
+    dump_lsg_ = GetOptionBool("lsg");
+  }
+
+  LoopStructureGraph *DoTheHavlak() {
+    LoopStructureGraph *LSG = new LoopStructureGraph;
+    HavlakLoopFinder   Havlak(cfg_, LSG);
+
+    if (dump_cfg_)
+      cfg_->Print();
+    if (dump_vcg_)
+      cfg_->DumpVCG("HavlakCfg.vcg");
+
+    Havlak.FindLoops();
+
+    if (dump_lsg_)
+      LSG->Dump();
+    return LSG;
+  }
+
+private:
+  bool       dump_vcg_, dump_cfg_, dump_lsg_;
+  MaoUnit   *mao_;
+  const CFG *cfg_;
+};
+
 // External Entry Point
 //
-int PerformLoopRecognition(MaoUnit *mao, const CFG *CFG) {
-  LoopStructureGraph LSG;
-  HavlakLoopFinder   Havlak(CFG, &LSG);
-
-  CFG->Print();
-
-  CFG->DumpVCG("HavlakCfg.vcg");
-  Havlak.FindLoops();
-  LSG.Dump();
-
-  return LSG.NumberOfLoops();
+LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, const CFG *cfg) {
+  LoopFinderPass finder(mao, cfg);
+  return finder.DoTheHavlak();
 }
