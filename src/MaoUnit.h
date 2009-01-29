@@ -233,33 +233,22 @@ class LabelEntry : public MaoUnitEntryBase {
   const char *const name_;
 };
 
-// A Directive
-class Directive {
+// An Entry of the type Directive
+class DirectiveEntry : public MaoUnitEntryBase {
   // examples of directives
   //  .file "filename.c"
   //  .text
   //  .ident ""
   //  .section
  public:
-  // Memory is allocated in the constructor and needs to be freed in the
-  // destructor.
-  Directive(const char *key, const char *value);
-  ~Directive();
-  const char *key() const;
-  const char *value() const;
- private:
-  // key_ holds the name of the directive
-  char *key_;
-  // value holds the arguments to the directive
-  char *value_;
-};
-
-// An Entry of the type Directive
-class DirectiveEntry : public MaoUnitEntryBase {
- public:
   DirectiveEntry(const char *key, const char* value, unsigned int line_number,
-                 const char* line_verbatim);
-  ~DirectiveEntry();
+                 const char* line_verbatim)
+      : MaoUnitEntryBase(line_number, line_verbatim),
+        key_(key), value_(value) { }
+
+  const std::string &key() const { return key_; }
+  const std::string &value() const { return value_; }
+
   virtual void PrintEntry(FILE *out) const;
   virtual void PrintIR(FILE *out) const;
   virtual MaoUnitEntryBase::EntryType  Type() const;
@@ -272,8 +261,10 @@ class DirectiveEntry : public MaoUnitEntryBase {
   virtual bool IsReturn() const { return false; }
 
  private:
-  // The actual directive
-  Directive *directive_;
+  // key_ holds the name of the directive
+  const std::string key_;
+  // value holds the arguments to the directive
+  const std::string value_;
 };
 
 // An Entry of the type Debug
@@ -281,8 +272,9 @@ class DirectiveEntry : public MaoUnitEntryBase {
 class DebugEntry : public MaoUnitEntryBase {
  public:
   DebugEntry(const char *key, const char* value, unsigned int line_number,
-             const char* line_verbatim);
-  ~DebugEntry();
+             const char* line_verbatim)
+      : MaoUnitEntryBase(line_number, line_verbatim),
+        key_(key), value_(value) { }
   virtual void PrintEntry(FILE *out) const;
   virtual void PrintIR(FILE *out) const;
   virtual MaoUnitEntryBase::EntryType  Type() const;
@@ -295,8 +287,10 @@ class DebugEntry : public MaoUnitEntryBase {
   virtual bool IsReturn() const { return false; }
 
  private:
-  // Currently reuses the Directive class for debug entries
-  Directive *directive_;
+  // key_ holds the name of the directive
+  const std::string key_;
+  // value holds the arguments to the directive
+  const std::string value_;
 };
 
 // Asm instruction is a wrapper around i386_insn structure used
