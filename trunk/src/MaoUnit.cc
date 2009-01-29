@@ -687,36 +687,6 @@ bool AsmInstruction::IsReturn() const {
 
 
 //
-// Class: Directive
-//
-Directive::Directive(const char *key, const char *value) {
-  MAO_ASSERT(key);
-  MAO_ASSERT(value);
-  MAO_ASSERT(strlen(key) < MAX_DIRECTIVE_NAME_LENGTH);
-  key_ = strdup(key);
-  MAO_ASSERT(strlen(value) < MAX_DIRECTIVE_NAME_LENGTH);
-  value_ = strdup(value);
-}
-
-Directive::~Directive() {
-  MAO_ASSERT(key_);
-  free(key_);
-  MAO_ASSERT(value_);
-  free(value_);
-}
-
-const char *Directive::key() const {
-  MAO_ASSERT(key_);
-  return key_;
-};
-
-const char *Directive::value() const {
-  MAO_ASSERT(value_);
-  return value_;
-}
-
-
-//
 // Class: MaoUnitEntryBase
 //
 
@@ -765,29 +735,15 @@ void LabelEntry::PrintIR(FILE *out) const {
 // Class: DirectiveEntry
 //
 
-DirectiveEntry::DirectiveEntry(const char *key, const char *value,
-                               unsigned int line_number,
-                               const char* line_verbatim) :
-    MaoUnitEntryBase(line_number, line_verbatim) {
-  directive_ = new Directive(key, value);
-}
-
-DirectiveEntry::~DirectiveEntry() {
-  delete directive_;
-}
-
 void DirectiveEntry::PrintEntry(FILE *out) const {
-  MAO_ASSERT(directive_);
-  fprintf(out, "\t%s\t%s", directive_->key(), directive_->value() );
+  fprintf(out, "\t%s\t%s", key_.c_str(), value_.c_str());
   fprintf(out, "\t # [%d]\t%s", line_number(),
           line_verbatim() ? line_verbatim() : "");
   fprintf(out, "\n");
 }
 
 void DirectiveEntry::PrintIR(FILE *out) const {
-  MAO_ASSERT(directive_);
-  fprintf(out, "%s %s", directive_->key(),
-          directive_->value());
+  fprintf(out, "%s %s", key_.c_str(), value_.c_str());
 }
 
 
@@ -800,28 +756,15 @@ MaoUnitEntryBase::EntryType DirectiveEntry::Type() const {
 // Class: DebugEntry
 //
 
-DebugEntry::DebugEntry(const char *key, const char *value,
-                       unsigned int line_number, const char* line_verbatim) :
-    MaoUnitEntryBase(line_number, line_verbatim) {
-  directive_ = new Directive(key, value);
-}
-
-DebugEntry::~DebugEntry() {
-  delete directive_;
-}
-
 void DebugEntry::PrintEntry(FILE *out) const {
-  MAO_ASSERT(directive_);
-  fprintf(out, "\t%s\t%s", directive_->key(), directive_->value() );
+  fprintf(out, "\t%s\t%s", key_.c_str(), value_.c_str());
   fprintf(out, "\t # [%d]\t%s", line_number(),
           line_verbatim() ? line_verbatim() : "");
   fprintf(out, "\n");
 }
 
 void DebugEntry::PrintIR(FILE *out) const {
-  MAO_ASSERT(directive_);
-  fprintf(out, "%s %s", directive_->key(),
-          directive_->value());
+  fprintf(out, "%s %s", key_.c_str(), value_.c_str());
 }
 
 
