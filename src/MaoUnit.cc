@@ -591,7 +591,7 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
 
   // Prefixes
   new_inst->prefixes = in_inst->prefixes;
-  for (unsigned int i = 0; i < 2; i++) {
+  for (unsigned int i = 0; i < MAX_PREFIXES; i++) {
     new_inst->prefix[i] = in_inst->prefix[i];
   }
 
