@@ -76,15 +76,14 @@ void CFG::DumpVCG(const char *fname) const {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MaoOption CFGBuilder_opts[] = {
+MAO_OPTIONS_DEFINE(CFG,1) {
   OPTION_BOOL("callsplit", false, "Split Basic Blocks at call sites"),
-  OPTION_END
 };
 
 
 // --------------------------------------------------------------------
 CFGBuilder::CFGBuilder(MaoUnit *mao_unit, Section *section, CFG *CFG)
-  : MaoPass("CFG", CFGBuilder_opts),
+  : MaoPass("CFG", MAO_OPTIONS(CFG)),
     mao_unit_(mao_unit), section_(section), CFG_(CFG), next_id_(0) {
   split_basic_blocks_ = GetOptionBool("callsplit");
 }
