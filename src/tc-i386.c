@@ -35,6 +35,7 @@
 #include "elf/x86-64.h"
 #include "opcodes/i386-init.h"
 #include "irlink.h"
+#include "tc-i386-helper.h"
 
 #ifndef REGISTER_WARNINGS
 #define REGISTER_WARNINGS 1
@@ -404,7 +405,7 @@ enum flag_code {
 	CODE_16BIT,
 	CODE_64BIT };
 
-static enum flag_code flag_code;
+enum flag_code flag_code;
 static unsigned int object_64bit;
 static int use_rela_relocations = 0;
 
@@ -1400,55 +1401,6 @@ static const i386_operand_type imm16_32 = OPERAND_TYPE_IMM16_32;
 static const i386_operand_type imm16_32s = OPERAND_TYPE_IMM16_32S;
 static const i386_operand_type imm16_32_32s = OPERAND_TYPE_IMM16_32_32S;
 static const i386_operand_type vex_imm4 = OPERAND_TYPE_VEX_IMM4;
-
-enum operand_type
-{
-  reg,
-  imm,
-  disp,
-  anymem
-};
-
-static INLINE int
-operand_type_check (i386_operand_type t, enum operand_type c)
-{
-  switch (c)
-    {
-    case reg:
-      return (t.bitfield.reg8
-	      || t.bitfield.reg16
-	      || t.bitfield.reg32
-	      || t.bitfield.reg64);
-
-    case imm:
-      return (t.bitfield.imm8
-	      || t.bitfield.imm8s
-	      || t.bitfield.imm16
-	      || t.bitfield.imm32
-	      || t.bitfield.imm32s
-	      || t.bitfield.imm64);
-
-    case disp:
-      return (t.bitfield.disp8
-	      || t.bitfield.disp16
-	      || t.bitfield.disp32
-	      || t.bitfield.disp32s
-	      || t.bitfield.disp64);
-
-    case anymem:
-      return (t.bitfield.disp8
-	      || t.bitfield.disp16
-	      || t.bitfield.disp32
-	      || t.bitfield.disp32s
-	      || t.bitfield.disp64
-	      || t.bitfield.baseindex);
-
-    default:
-      abort ();
-    }
-
-  return 0;
-}
 
 /* Return 1 if there is no conflict in 8bit/16bit/32bit/64bit on
    operand J for instruction template T.  */
