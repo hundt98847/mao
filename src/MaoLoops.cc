@@ -436,17 +436,16 @@ const int HavlakLoopFinder::kMaxNonBackPreds;
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MaoOption loop_finder_opts[] = {
+MAO_OPTIONS_DEFINE(LFIND,3) {
   OPTION_BOOL("vcg", false, "Dump VCG file"),
   OPTION_BOOL("cfg", false, "Dump CFG in text format"),
   OPTION_BOOL("lsg", false, "Dump LSG in text format"),
-  OPTION_END
 };
 
 class LoopFinderPass : public MaoPass {
 public:
   LoopFinderPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("LFIND", loop_finder_opts),
+    MaoPass("LFIND", MAO_OPTIONS(LFIND)),
     mao_(mao), cfg_(cfg) {
     dump_vcg_ = GetOptionBool("vcg");
     dump_cfg_ = GetOptionBool("cfg");

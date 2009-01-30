@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
 #ifndef MAOOPTIONS_H_
 #define MAOOPTIONS_H_
@@ -34,10 +34,33 @@ typedef struct MaoOption {
   };
 };
 
+// This is how to define options, build up an array consisting of
+// entries of this type:
 #define OPTION_INT(name,val,desc) { OPT_INT, name, desc, { ival: val } }
 #define OPTION_BOOL(name,val,desc){ OPT_BOOL, name, desc, { bval: val } }
 #define OPTION_STR(name,val,desc) { OPT_STRING, name, desc, { cval: val } }
-#define OPTION_END  { OPT_INT, NULL, NULL, { ival: 0} }
+
+
+// Define an array of options with help of this macro.
+// Usage (please note the final trainling comma):
+//    MAO_OPTIONS_DEFINE {
+//       OPTION_INT(...),
+//       OPTION_STR(...),
+//       ...,
+//    };
+//
+#define MAO_OPTIONS_DEFINE(pass, N)  \
+            extern MaoOption pass##_opts[]; \
+            static MaoOptionRegister pass##_opts_reg(#pass, pass##_opts, N); \
+            MaoOption pass##_opts[N] =
+
+// Provide option array name.
+#define MAO_OPTIONS(pass) pass##_opts
+
+class MaoOptionRegister {
+public:
+  MaoOptionRegister(const char *name, MaoOption *array, int N);
+};
 
 class MaoOptions {
  public:
@@ -46,14 +69,25 @@ class MaoOptions {
                  output_is_stdout_(true),
                  output_is_stderr_(false),
                  write_ir_(false),
-                 help_(false),
+                 help_(false), verbose_(false),
                  ir_output_file_name_(0) {
   }
 
   ~MaoOptions() {}
 
-  void       Parse(char *arg);
+  void        Parse(char *arg);
+  static void SetOption(const char *pass_name,
+                        const char *option_name,
+                        int         value);
+  static void SetOption(const char *pass_name,
+                        const char *option_name,
+                        bool        value);
+  static void SetOption(const char *pass_name,
+                        const char *option_name,
+                        const char *value);
+
   const bool help() const { return help_; }
+  const bool verbose() const { return verbose_; }
   const bool output_is_stdout() const { return output_is_stdout_; }
   const bool output_is_stderr() const { return output_is_stderr_; }
 
@@ -64,6 +98,8 @@ class MaoOptions {
   void set_assembly_output_file_name(const char *file_name);
   void set_ir_output_file_name(const char *file_name);
   void set_output_is_stderr() { output_is_stderr_ = true; }
+  void set_verbose() { verbose_ = true; }
+  void set_help() { help_ = true; }
 
  private:
   bool write_assembly_;
@@ -72,6 +108,7 @@ class MaoOptions {
   bool output_is_stderr_;
   bool write_ir_;
   bool help_;
+  bool verbose_;
   const char *ir_output_file_name_;  // The default (NULL) means stdout.
 };
 
