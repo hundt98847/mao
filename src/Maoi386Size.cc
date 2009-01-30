@@ -28,7 +28,13 @@
 #include "ir-gas.h"
 #include "tc-i386-helper.h"
 
-int X86InstructionSizeHelper::SizeOfBranch() {
+void X86InstructionSizeHelper::MergeSizePair(const std::pair<int, bool> &from,
+                                             std::pair<int, bool> *to) {
+  to->first += from.first;
+  to->second |= from.second;
+}
+
+std::pair<int, bool> X86InstructionSizeHelper::SizeOfBranch() {
   int size = 1;			// At least 1 opcode byte
 
   if (insn_->prefix[DATA_PREFIX] != 0)
@@ -43,22 +49,22 @@ int X86InstructionSizeHelper::SizeOfBranch() {
   if (insn_->prefix[REX_PREFIX] != 0)
     size++;
 
-  return size;
+  return std::make_pair(size, true);
 }
 
-int X86InstructionSizeHelper::SizeOfJump() {
+std::pair<int, bool> X86InstructionSizeHelper::SizeOfJump() {
   // TODO(nvachhar):
   MAO_ASSERT(false);
-  return 0;
+  return std::make_pair(0, false);
 }
 
-int X86InstructionSizeHelper::SizeOfIntersegJump() {
+std::pair<int, bool> X86InstructionSizeHelper::SizeOfIntersegJump() {
   // TODO(nvachhar):
   MAO_ASSERT(false);
-  return 0;
+  return std::make_pair(0, false);
 }
 
-int X86InstructionSizeHelper::SizeOfDisp() {
+std::pair<int, bool> X86InstructionSizeHelper::SizeOfDisp() {
   unsigned int n;
   int size = 0;
 
@@ -74,10 +80,10 @@ int X86InstructionSizeHelper::SizeOfDisp() {
         size = 4;
     }
   }
-  return size;
+  return std::make_pair(size, false);
 }
 
-int X86InstructionSizeHelper::SizeOfImm() {
+std::pair<int, bool> X86InstructionSizeHelper::SizeOfImm() {
   unsigned int n;
   int size = 0;
 
@@ -93,7 +99,7 @@ int X86InstructionSizeHelper::SizeOfImm() {
         size += 4;
     }
   }
-  return size;
+  return std::make_pair(size, false);
 }
 
 
@@ -160,8 +166,8 @@ int X86InstructionSizeHelper::AddPrefix(unsigned int prefix) {
   return ret;
 }
 
-int X86InstructionSizeHelper::SizeOfInstruction() {
-  int size = 0;
+std::pair<int, bool> X86InstructionSizeHelper::SizeOfInstruction() {
+  std::pair<int, bool> size(0, false);
 
   // Size jumps.
   if (insn_->tm.opcode_modifier.jump)
@@ -207,7 +213,7 @@ int X86InstructionSizeHelper::SizeOfInstruction() {
       /* The prefix bytes.  */
       for (j = ARRAY_SIZE (insn_->prefix), q = insn_->prefix; j > 0; j--, q++)
         if (*q)
-          size++;
+          size.first++;
     }
 
     if (insn_->tm.opcode_modifier.vex) {
@@ -219,7 +225,7 @@ int X86InstructionSizeHelper::SizeOfInstruction() {
               break;
             case SEG_PREFIX:
             case ADDR_PREFIX:
-              size++;
+              size.first++;
               break;
             default:
               /* There should be no other prefixes for instructions
@@ -228,15 +234,15 @@ int X86InstructionSizeHelper::SizeOfInstruction() {
           }
 
       /* Now the VEX prefix.  */
-      size += insn_->vex.length;
+      size.first += insn_->vex.length;
     }
 
     /* Now the opcode; be careful about word order here!  */
-    size += insn_->tm.opcode_length;
+    size.first += insn_->tm.opcode_length;
 
     /* Now the modrm byte and sib byte (if present).  */
     if (insn_->tm.opcode_modifier.modrm) {
-      size++;
+      size.first++;
 
       /* If insn_->rm.regmem == ESP (4)
          && insn_->rm.mode != (Register mode)
@@ -245,18 +251,18 @@ int X86InstructionSizeHelper::SizeOfInstruction() {
       if (insn_->rm.regmem == ESCAPE_TO_TWO_BYTE_ADDRESSING
           && insn_->rm.mode != 3
           && !(insn_->base_reg && insn_->base_reg->reg_type.bitfield.reg16))
-        size++;
+        size.first++;
     }
 
     /* Write the DREX byte if needed.  */
     if (insn_->tm.opcode_modifier.drex || insn_->tm.opcode_modifier.drexc)
-      size++;
+      size.first++;
 
     if (insn_->disp_operands)
-      size += SizeOfDisp();
+      MergeSizePair(SizeOfDisp(), &size);
 
     if (insn_->imm_operands)
-      size += SizeOfImm();
+      MergeSizePair(SizeOfImm(), &size);
   }
 
   return size;

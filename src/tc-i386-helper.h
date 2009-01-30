@@ -49,44 +49,44 @@ enum operand_type {
 extern "C" {
 #endif
 
-INLINE int
-operand_type_check (i386_operand_type t, enum operand_type c) {
-  switch (c) {
-    case reg:
-      return (t.bitfield.reg8
-	      || t.bitfield.reg16
-	      || t.bitfield.reg32
-	      || t.bitfield.reg64);
+  INLINE int
+  operand_type_check (i386_operand_type t, enum operand_type c) {
+    switch (c) {
+      case reg:
+        return (t.bitfield.reg8
+                || t.bitfield.reg16
+                || t.bitfield.reg32
+                || t.bitfield.reg64);
 
-    case imm:
-      return (t.bitfield.imm8
-	      || t.bitfield.imm8s
-	      || t.bitfield.imm16
-	      || t.bitfield.imm32
-	      || t.bitfield.imm32s
-	      || t.bitfield.imm64);
+      case imm:
+        return (t.bitfield.imm8
+                || t.bitfield.imm8s
+                || t.bitfield.imm16
+                || t.bitfield.imm32
+                || t.bitfield.imm32s
+                || t.bitfield.imm64);
 
-    case disp:
-      return (t.bitfield.disp8
-	      || t.bitfield.disp16
-	      || t.bitfield.disp32
-	      || t.bitfield.disp32s
-	      || t.bitfield.disp64);
+      case disp:
+        return (t.bitfield.disp8
+                || t.bitfield.disp16
+                || t.bitfield.disp32
+                || t.bitfield.disp32s
+                || t.bitfield.disp64);
 
-    case anymem:
-      return (t.bitfield.disp8
-	      || t.bitfield.disp16
-	      || t.bitfield.disp32
-	      || t.bitfield.disp32s
-	      || t.bitfield.disp64
-	      || t.bitfield.baseindex);
+      case anymem:
+        return (t.bitfield.disp8
+                || t.bitfield.disp16
+                || t.bitfield.disp32
+                || t.bitfield.disp32s
+                || t.bitfield.disp64
+                || t.bitfield.baseindex);
 
-    default:
-      abort ();
+      default:
+        abort ();
+    }
+
+    return 0;
   }
-
-  return 0;
-}
 
 #ifdef __cplusplus
 }
@@ -94,6 +94,8 @@ operand_type_check (i386_operand_type t, enum operand_type c) {
 
 
 #ifdef __cplusplus
+
+#include <utility>
 
 #undef WAIT_PREFIX
 #undef SEG_PREFIX
@@ -105,15 +107,6 @@ operand_type_check (i386_operand_type t, enum operand_type c) {
 
 class X86InstructionSizeHelper {
  public:
-  X86InstructionSizeHelper(i386_insn *insn) : insn_(insn) { }
-  int SizeOfInstruction ();
-
- private:
-  /* Prefixes will be emitted in the order defined below.
-     WAIT_PREFIX must be the first prefix since FWAIT is really is an
-     instruction, and so must come before any prefixes.
-     The preferred prefix order is SEG_PREFIX, ADDR_PREFIX, DATA_PREFIX,
-     LOCKREP_PREFIX.  */
   enum Prefix {
     WAIT_PREFIX    = 0,
     SEG_PREFIX	   = 1,
@@ -124,16 +117,32 @@ class X86InstructionSizeHelper {
     MAX_PREFIXES   = 6	/* max prefixes per opcode */
   };
 
-  int SizeOfBranch();
-  int SizeOfJump();
-  int SizeOfIntersegJump();
-  int SizeOfDisp();
-  int SizeOfImm();
+  X86InstructionSizeHelper(i386_insn *insn) : insn_(insn) { }
+
+  // This function returns the fixed size of an instruction and a bool
+  // which indicates whether or not the instruction can be variably
+  // sized.  If the bool is true, the size does *NOT* include the size
+  // of the variable length part of the instruction.
+  std::pair<int, bool> SizeOfInstruction();
+
+ private:
+  /* Prefixes will be emitted in the order defined below.
+     WAIT_PREFIX must be the first prefix since FWAIT is really is an
+     instruction, and so must come before any prefixes.
+     The preferred prefix order is SEG_PREFIX, ADDR_PREFIX, DATA_PREFIX,
+     LOCKREP_PREFIX.  */
+  std::pair<int, bool> SizeOfBranch();
+  std::pair<int, bool> SizeOfJump();
+  std::pair<int, bool> SizeOfIntersegJump();
+  std::pair<int, bool> SizeOfDisp();
+  std::pair<int, bool> SizeOfImm();
 
   /* Returns 0 if attempting to add a prefix where one from the same
      class already exists, 1 if non rep/repne added, 2 if rep/repne
      added.  */
   int AddPrefix(unsigned int prefix);
+
+  void MergeSizePair(const std::pair<int, bool> &from, std::pair<int, bool> *to);
 
   i386_insn *insn_;
 };
