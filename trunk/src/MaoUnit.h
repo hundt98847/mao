@@ -310,6 +310,9 @@ class AsmInstruction {
   bool IsReturn() const;
 
   const char *GetTarget() const;
+
+  i386_insn *instruction() { return instruction_; }
+
  private:
   i386_insn *instruction_;
   MaoOpcode  op_;
@@ -357,6 +360,8 @@ class InstructionEntry : public MaoUnitEntryBase {
   }
   virtual bool IsCall() const { return instruction_->IsCall(); }
   virtual bool IsReturn() const { return instruction_->IsReturn(); }
+
+  AsmInstruction *instruction() { return instruction_; }
 
  private:
   AsmInstruction *instruction_;

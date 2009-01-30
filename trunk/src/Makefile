@@ -75,7 +75,11 @@ CCSRCS=						\
 	MaoPasses.cc				\
 	MaoUnit.cc				\
 	MaoOpcodes.cc				\
-	SymbolTable.cc
+	MaoRelax.cc				\
+	SymbolTable.cc				\
+	Maoi386Size.cc
+
+
 
 
 GAS_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_SRC)))
