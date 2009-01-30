@@ -18,7 +18,9 @@
 #ifndef IR_GAS_H
 #define IR_GAS_H
 
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "bfd.h"
 
@@ -849,5 +851,10 @@ enum flag_code {
 	CODE_64BIT };
 
 extern enum flag_code flag_code;
+extern i386_cpu_flags cpu_arch_flags;
+
+#ifdef __cplusplus
+}  /*extern "C" */
+#endif
 
 #endif  // IR_GAS_H_
