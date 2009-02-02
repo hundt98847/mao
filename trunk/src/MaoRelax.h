@@ -43,18 +43,18 @@ class MaoRelaxer {
     }
   }
 
-  static struct frag *MaoRelaxer::FragVar(
+  static struct frag *FragVar(
       relax_stateT type, int var, relax_substateT subtype,
       symbolS *symbol, offsetT offset, char *opcode, struct frag *frag,
       bool new_frag);
 
-  static struct frag *MaoRelaxer::EndFragmentInstruction(
+  static struct frag *EndFragmentInstruction(
       InstructionEntry *entry, struct frag *frag, bool new_frag);
 
-  static struct frag *MaoRelaxer::EndFragmentCodeAlign(
+  static struct frag *EndFragmentCodeAlign(
       int alignment, int max, struct frag *frag, bool new_frag);
 
-  static void MaoRelaxer::FragInitOther(struct frag *frag);
+  static void FragInitOther(struct frag *frag);
 
   struct frag *BuildFragments();
 
