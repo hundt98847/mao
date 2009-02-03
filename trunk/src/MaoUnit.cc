@@ -26,8 +26,8 @@ extern "C" const char *S_GET_NAME(symbolS *s);
 
 // Default to no subsection selected
 // A default will be generated if necessary later on.
-MaoUnit::MaoUnit()
-    : current_subsection_(0) {
+MaoUnit::MaoUnit(MaoOptions *mao_options)
+    : current_subsection_(0), mao_options_(mao_options) {
   entry_vector_.clear();
   entry_list_.clear();
   sub_sections_.clear();

@@ -19,8 +19,40 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <map>
+#include <algorithm>
+
 #include "MaoDebug.h"
 #include "MaoPasses.h"
+
+static std::map<MaoOption *, MaoPass *> option_to_pass_map;
+
+MaoPass *FindPass(MaoOption *arr) {
+  MAO_ASSERT(arr);
+
+  std::map<MaoOption *, MaoPass *>::iterator it = option_to_pass_map.find(arr);
+  if (it == option_to_pass_map.end())
+    return NULL;
+  return (*it).second;
+}
+
+
+MaoPass::MaoPass(const char *name, MaoOptions *mao_options,
+                 MaoOption *options) :
+  name_(name), options_(options), enabled_(true), tracing_level_(0),
+  trace_file_(stderr), mao_options_(mao_options) {
+  option_to_pass_map[options_] = this;
+  if (mao_options_)
+    mao_options_->Reparse();
+  if (enabled_)
+    Trace(1, "begin");
+}
+
+MaoPass::~MaoPass() {
+  option_to_pass_map[options_] = NULL;
+  if (enabled_)
+    Trace(1, "end");
+}
 
 
 void MaoPass::Trace(unsigned int level, const char *fmt, ...) {
@@ -43,8 +75,8 @@ MaoOption *MaoPass::FindOptionEntry(const char *name) {
   MAO_ASSERT(options_);
 
   int index = 0;
-  while (options_[index].name) {
-    if (!strcasecmp(name, options_[index].name))
+  while (options_[index].name()) {
+    if (!strcasecmp(name, options_[index].name()))
       return &options_[index];
     ++index;
   }
@@ -56,23 +88,23 @@ MaoOption *MaoPass::FindOptionEntry(const char *name) {
 
 bool MaoPass::GetOptionBool(const char *name) {
   MaoOption *opt = FindOptionEntry(name);
-  return opt->bval;
+  return opt->bval_;
 }
 
 const char *MaoPass::GetOptionString(const char *name) {
   MaoOption *opt = FindOptionEntry(name);
-  return opt->cval;
+  return opt->cval_;
 }
 
 int MaoPass::GetOptionInt(const char *name) {
   MaoOption *opt = FindOptionEntry(name);
-  return opt->ival;
+  return opt->ival_;
 }
 
 // Dummy pass to mark begin of compilation
 class BeginPass : public MaoPass {
   public:
-  BeginPass() : MaoPass("BEG", NULL) {
+  BeginPass() : MaoPass("BEG", NULL, NULL) {
   }
 
   bool Go() {
@@ -84,7 +116,7 @@ class BeginPass : public MaoPass {
 // Dummy pass to mark end of compilation
 class EndPass : public MaoPass {
   public:
-  EndPass() : MaoPass("END", NULL) {
+  EndPass() : MaoPass("END", NULL, NULL) {
   }
 
   bool Go() {

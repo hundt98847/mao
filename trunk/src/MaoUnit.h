@@ -55,6 +55,7 @@ class Symbol;
 class InstructionEntry;
 class MaoUnitEntryBase;
 class LabelEntry;
+class MaoOptions;
 
 class MaoUnit {
  public:
@@ -62,7 +63,7 @@ class MaoUnit {
   typedef EntryVector::iterator EntryIterator;
   typedef EntryVector::const_iterator ConstEntryIterator;
 
-  MaoUnit();
+  MaoUnit(MaoOptions *mao_options);
   ~MaoUnit();
 
   // Inserts an entry (Label, Instruction, Directive, ...) to the compilation
@@ -128,6 +129,8 @@ class MaoUnit {
     static int i;
   };
 
+  MaoOptions *mao_options() { return mao_options_; }
+
  private:
   // Used by the STL-maps of sections and subsections.
 
@@ -156,6 +159,8 @@ class MaoUnit {
   std::map<const char *, LabelEntry *> labels_;
 
   MaoUnitEntryBase *GetEntryByID(basicblock_index_t id) const;
+
+  MaoOptions *mao_options_;
 };
 
 
