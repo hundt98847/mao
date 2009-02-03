@@ -80,7 +80,7 @@ class MaoOptions {
 
   void        Parse(char *arg, bool collect = true);
   void        Reparse();
-  void        ProvideHelp();
+  void        ProvideHelp(bool always = false);
   static void SetOption(const char *pass_name,
                         const char *option_name,
                         int         value);

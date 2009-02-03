@@ -75,30 +75,39 @@ static std::list<MaoOptionArray *> option_array_list;
 // Unprocessed flags are passed on to as_main (which is the GNU Assembler
 // main function). Everything else is handed to the MAO Option processor
 //
-void MaoOptions::ProvideHelp() {
-  if (!help()) return;
+void MaoOptions::ProvideHelp(bool always) {
+  if (!help() && !always) return;
 
   fprintf(stderr,
           "Mao %s\n",
           MAO_VERSION);
   fprintf(stderr,
-            "Usage: mao [-mao:mao-options]* "
-            "[regular-assembler-options]* input-file \n"
-            "\n\nwith 'mao-options' being one of (and separated with a ,) :\n\n"
-            "-h          display this help text\n"
-            "-v          verbose\n"
-            "-ofname     specify assembly output file\n"
-            "\n"
-            "PHASE=[phase-options]\n"
-            "\n\nwith availble 'phase-options' being:\n\n"
-            );
+          "Usage: mao [-mao:mao-options]* "
+          "[regular-assembler-options]* input-file \n"
+          "\n'mao-options' are seperated by commas, and are:\n\n"
+          "-h          display this help text\n"
+          "-v          verbose (set trace level to 3)\n"
+          "-ofname     specify assembly output file (also -o,fname)\n"
+          "\n"
+          "PASS=[phase-option][,phase-option]*\n"
+          "\nwith PASS and 'phase-option' being:\n\n"
+          "Pass: ALL\n"
+          "  enable    : (bool)   En/Disable a pass\n"
+          "  trace     : (int)    Set trace level to 'val' (0..3)\n"
+          );
 
   for (std::list<MaoOptionArray *>::iterator it = option_array_list.begin();
        it != option_array_list.end(); ++it) {
     fprintf(stderr, "Pass: %s\n", (*it)->name());
     MaoOption *arr = (*it)->array();
     for (int i = 0; i < (*it)->num_entries(); i++) {
-      fprintf(stderr, "  %-10s: %s\n", arr[i].name(), arr[i].description());
+      fprintf(stderr, "  %-10s: %7s %s\n",
+              arr[i].name(),
+              arr[i].type() == OPT_INT ? "(int)   " :
+              arr[i].type() == OPT_BOOL ? "(bool)  " :
+              arr[i].type() == OPT_STRING ? "(string)" :
+              "(unk)",
+              arr[i].description());
     }
   }
   exit(0);
@@ -161,7 +170,7 @@ void MaoOptions::SetOption(const char *pass_name,
 
 static char token_buff[128];
 
-static char *next_token(char *arg, char **next) {
+static char *NextToken(char *arg, char **next) {
   int i = 0;
   char *p = arg;
   if (*p == ',' || *p == ':' || *p == '=' || *p == '+')
@@ -176,7 +185,7 @@ static char *next_token(char *arg, char **next) {
   return token_buff;
 }
 
-static char *gobble_garbage(char *arg, char **next) {
+static char *GobbleGarbage(char *arg, char **next) {
   char *p = arg;
   if (*p == ',' || *p == ':' || *p == '=')
     ++p;
@@ -184,6 +193,68 @@ static char *gobble_garbage(char *arg, char **next) {
   return p;
 }
 
+// At the current parameter location, check if we have
+// a parameter, e.g.:
+//    option:val
+//    option(val)
+//    option[val]
+//
+static bool GetParam(char *arg, char **next, char **param) {
+  if (arg[0] == '(' || arg[0] == '[' || arg[0] == ':') {
+    char  delim = arg[0];
+
+    ++arg;
+    *param = NextToken(arg, &arg);
+
+    if (delim != ':') {
+      MAO_ASSERT_MSG(arg[0] == ')' || arg[0] == ']',
+                     "Ill formatted parameter to option: %s", arg);
+      ++arg; // skip closing bracket
+    }
+    *next = arg;
+    return true;
+  } else {
+    *next = arg;
+    *param = NULL;
+    return false;
+  }
+}
+
+// See whether an option is a "pass-specific" options, an option
+// that applies to passes, but is not specified in the pass' option
+// array.
+//
+bool SetPassSpecificOptions(char *option, char *arg, char **next,
+                            MaoOptionArray *current_opts) {
+  if (!strcasecmp(option, "enable") || !strcasecmp(option, "on")) {
+    MaoPass *mao_pass = FindPass(current_opts->array());
+    if (mao_pass)
+      mao_pass->set_enabled(true);
+    return true;
+  }
+  if (!strcasecmp(option, "trace")) {
+    char *param;
+    int   level = 3;
+    if (GetParam(arg, next, &param))
+      level = atoi(param);
+    MaoPass *mao_pass = FindPass(current_opts->array());
+    if (mao_pass)
+      mao_pass->set_tracing_level(level);;
+    return true;
+  }
+  if (!strcasecmp(option, "disable") || !strcasecmp(option, "off")) {
+    MaoPass *mao_pass = FindPass(current_opts->array());
+    if (mao_pass)
+      mao_pass->set_enabled(false);
+    return true;
+  }
+  return false;
+}
+
+// Reparse the accumulated option strings. The reason for reparsing is
+// that dynamically created passes are not visible at standard option
+// parsing time. We therefore reparse on pass creation.
+//
 void MaoOptions::Reparse() {
   Parse(mao_options_, false);
 }
@@ -198,9 +269,11 @@ void MaoOptions::Parse(char *arg, bool collect) {
     }
   }
 
-  // Standard options?
   while (arg[0]) {
-    gobble_garbage(arg, &arg);
+    GobbleGarbage(arg, &arg);
+
+    // Standard options start with a '-'.
+    //
     if (arg[0] == '-') {
       ++arg;
       if (arg[0] == 'v') {
@@ -214,13 +287,13 @@ void MaoOptions::Parse(char *arg, bool collect) {
       if (arg[0] == 'o') {
         ++arg;
         char *filename;
-        filename = next_token(arg, &arg);
+        filename = NextToken(arg, &arg);
         if (!strcmp(filename, "stderr")) {
           set_output_is_stderr();
           set_assembly_output_file_name("<stderr>");
         }
         else {
-          set_assembly_output_file_name(filename);
+          set_assembly_output_file_name(strdup(filename));
         }
       } else {
         fprintf(stderr, "Invalid Option starting with: %s\n", arg);
@@ -229,54 +302,31 @@ void MaoOptions::Parse(char *arg, bool collect) {
       continue;
     }
 
-    // Pass name?
+    // Named passes start with a regular character,
+    // have an identifier (a valid pass name), and
+    // are followed by either '=' or ':'.
+    //
     if (isascii(arg[0])) {
-      char *pass = next_token(arg, &arg);
+      char *pass = NextToken(arg, &arg);
 
-      if (arg[0] == '=' || arg[0] == ':') {
+      if (arg[0] == '=') {
         MaoOptionArray *current_opts = FindOptionArray(pass);
         MAO_ASSERT(current_opts);
 
         char *option;
         while (1) {
-          option = next_token(arg, &arg);
+          option = NextToken(arg, &arg);
           if (!option || option[0] == '\0')
             break;
 
-          if (!strcasecmp(option, "enable") || !strcasecmp(option, "on")) {
-            MaoPass *mao_pass = FindPass(current_opts->array());
-            if (mao_pass)
-              mao_pass->set_enabled(true);
-            break;
-          }
-          if (!strcasecmp(option, "trace")) {
-            MaoPass *mao_pass = FindPass(current_opts->array());
-            if (mao_pass)
-              mao_pass->set_tracing_level(3);;
-            break;
-          }
-          if (!strcasecmp(option, "disable") || !strcasecmp(option, "off")) {
-            MaoPass *mao_pass = FindPass(current_opts->array());
-            if (mao_pass)
-              mao_pass->set_enabled(false);
-            break;
-          }
+          if (SetPassSpecificOptions(option, arg, &arg, current_opts))
+            continue;
 
           MaoOption *opt = current_opts->FindOption(option);
           MAO_ASSERT_MSG(opt, "Could not find option: %s", option);
 
-          if (arg[0] == '(' || arg[0] == '[' || arg[0] == '=') {
-            char delim = arg[0];
-
-            ++arg;
-            char *param = next_token(arg, &arg);
-
-            if (delim != '=') {
-              MAO_ASSERT_MSG(arg[0] == ')' || arg[0] == ']',
-                             "Ill formatted parameter to option: %s", arg);
-              ++arg; // skip closing bracket
-            }
-
+          char *param;
+          if (GetParam(arg, &arg, &param)) {
             if (opt->type() == OPT_INT)
               opt->ival_ = atoi(param);
             else if (opt->type() == OPT_STRING)
@@ -307,7 +357,7 @@ void MaoOptions::Parse(char *arg, bool collect) {
           }
           ++arg;
         }
-        gobble_garbage(arg, &arg);
+        GobbleGarbage(arg, &arg);
       }
 
       continue;
