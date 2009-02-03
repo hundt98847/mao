@@ -53,15 +53,58 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfBranch() {
 }
 
 std::pair<int, bool> X86InstructionSizeHelper::SizeOfJump() {
-  // TODO(nvachhar):
-  MAO_ASSERT(false);
-  return std::make_pair(0, false);
+  int size = 1; // 1 byte for the opcode
+
+  if (insn_->tm.opcode_modifier.jumpbyte) {
+    /* This is a loop or jecxz type instruction.  */
+    size++;  // 1 byte for the offset for this type
+    if (insn_->prefix[ADDR_PREFIX] != 0)
+      size++;
+
+    /* Pentium4 branch hints.  */
+    if (insn_->prefix[SEG_PREFIX] == CS_PREFIX_OPCODE /* not taken */
+        || insn_->prefix[SEG_PREFIX] == DS_PREFIX_OPCODE /* taken */)
+      size++;
+  } else {
+    int width16 = flag_code == CODE_16BIT ? true : false;
+    if (insn_->prefix[DATA_PREFIX] != 0) {
+      size++;
+      width16 = !width16;
+    }
+
+    if (width16)
+      size += 2;  // 2 byte offset in 16-bit mode
+    else
+      size += 4;  // 4 byte offset in 32-bit nmode
+  }
+
+  if (insn_->prefix[REX_PREFIX] != 0)
+    size++;
+
+  return std::make_pair(size, false);
 }
 
 std::pair<int, bool> X86InstructionSizeHelper::SizeOfIntersegJump() {
-  // TODO(nvachhar):
-  MAO_ASSERT(false);
-  return std::make_pair(0, false);
+  int size = 0;
+  bool width16 = flag_code == CODE_16BIT ? true : false;
+
+  if (insn_->prefix[DATA_PREFIX] != 0) {
+    size++;
+    width16 = !width16;
+  }
+
+  if (insn_->prefix[REX_PREFIX] != 0)
+    size++;
+
+  if (width16)
+    size += 2;  // 2 byte offset in 16-bit mode
+  else
+    size += 4;  // 4 byte offset in 32-bit mode
+
+  /* 1 opcode; 2 segment; offset  */
+  size += 1 + 2;
+
+  return std::make_pair(size, false);
 }
 
 std::pair<int, bool> X86InstructionSizeHelper::SizeOfDisp() {
