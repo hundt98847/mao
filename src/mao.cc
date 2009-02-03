@@ -61,7 +61,7 @@ static int ProvideHelp(MaoOptions *mao_options) {
 //==================================
 int main(int argc, const char *argv[]) {
   MaoOptions mao_options;
-  MaoUnit    mao_unit;
+  MaoUnit    mao_unit(&mao_options);
   CFG        cfg(&mao_unit);
 
   // Parse any mao-specific command line flags (start with -mao:)

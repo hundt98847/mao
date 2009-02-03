@@ -24,22 +24,23 @@ enum MaoOptionType {
 };
 
 typedef struct MaoOption {
-  MaoOptionType   type;
-  const char     *name;
-  const char     *description;
+  MaoOptionType   type() const { return type_; }
+  const char     *name() const { return name_; }
+  MaoOptionType   type_;
+  const char     *name_;
+  const char     *description_;
   union {
-    int         ival;
-    const char *cval;
-    bool        bval;
+    int         ival_;
+    const char *cval_;
+    bool        bval_;
   };
 };
 
 // This is how to define options, build up an array consisting of
 // entries of this type:
-#define OPTION_INT(name,val,desc) { OPT_INT, name, desc, { ival: val } }
-#define OPTION_BOOL(name,val,desc){ OPT_BOOL, name, desc, { bval: val } }
-#define OPTION_STR(name,val,desc) { OPT_STRING, name, desc, { cval: val } }
-
+#define OPTION_INT(name,val,desc) { OPT_INT, name, desc, { ival_: val } }
+#define OPTION_BOOL(name,val,desc){ OPT_BOOL, name, desc, { bval_: val } }
+#define OPTION_STR(name,val,desc) { OPT_STRING, name, desc, { cval_: val } }
 
 // Define an array of options with help of this macro.
 // Usage (please note the final trainling comma):
@@ -53,6 +54,7 @@ typedef struct MaoOption {
             extern MaoOption pass##_opts[]; \
             static MaoOptionRegister pass##_opts_reg(#pass, pass##_opts, N); \
             MaoOption pass##_opts[N] =
+
 
 // Provide option array name.
 #define MAO_OPTIONS(pass) pass##_opts
@@ -70,12 +72,14 @@ class MaoOptions {
                  output_is_stderr_(false),
                  write_ir_(false),
                  help_(false), verbose_(false),
-                 ir_output_file_name_(0) {
+                 ir_output_file_name_(0),
+                 mao_options_(NULL) {
   }
 
   ~MaoOptions() {}
 
-  void        Parse(char *arg);
+  void        Parse(char *arg, bool collect = true);
+  void        Reparse();
   static void SetOption(const char *pass_name,
                         const char *option_name,
                         int         value);
@@ -110,6 +114,7 @@ class MaoOptions {
   bool help_;
   bool verbose_;
   const char *ir_output_file_name_;  // The default (NULL) means stdout.
+  char *mao_options_;
 };
 
 #endif  // MAOOPTIONS_H_

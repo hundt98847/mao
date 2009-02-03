@@ -39,15 +39,8 @@
 //
 class MaoPass {
  public:
-  MaoPass(const char *name, MaoOption *options) :
-    name_(name), options_(options), enabled_(true), tracing_level_(3),
-    trace_file_(stderr) {
-    Trace(1, "begin");
-  }
-
-  virtual ~MaoPass() {
-    Trace(1, "end");
-  }
+  MaoPass(const char *name, MaoOptions* mao_options, MaoOption *options);
+  virtual ~MaoPass();
 
   virtual void Trace(unsigned int level, const char *fmt, ...);
 
@@ -75,6 +68,7 @@ class MaoPass {
   bool          enabled_;
   unsigned int  tracing_level_;
   FILE         *trace_file_;
+  MaoOptions   *mao_options_;
 };
 
 
@@ -150,7 +144,8 @@ class MaoPassManager {
 class AssemblyPass : public MaoPass {
 public:
   AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("ASM", NULL), mao_unit_(mao_unit), mao_options_(mao_options) {
+    MaoPass("ASM", mao_options, NULL), mao_unit_(mao_unit),
+    mao_options_(mao_options) {
   }
 
   bool Go() {
@@ -192,7 +187,7 @@ private:
 class ReadInputPass : public MaoPass {
 public:
   ReadInputPass(int argc, char *argv[]) :
-    MaoPass("READ", NULL) {
+    MaoPass("READ", NULL, NULL) {
 
     MAO_ASSERT(!as_main(argc, argv));
   }
@@ -208,7 +203,8 @@ void ReadInput(int argc, char *argv[]);
 class DumpIrPass : public MaoPass {
 public:
   DumpIrPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("IR", NULL), mao_unit_(mao_unit), mao_options_(mao_options) {
+    MaoPass("IR", mao_options, NULL), mao_unit_(mao_unit),
+    mao_options_(mao_options) {
   }
   bool Go() {
     if (mao_options_->write_ir()) {
@@ -235,6 +231,10 @@ private:
 // and return a pointer to the static pass manager object.
 //
 MaoPassManager *InitPasses();
+
+
+// Find a pass for a given option set
+MaoPass *FindPass(MaoOption *arr);
 
 
 #endif   // MAP_PASSES_H_INCLUDED_

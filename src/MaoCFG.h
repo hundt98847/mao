@@ -170,7 +170,8 @@ class CFG {
 
 class CFGBuilder : public MaoPass {
  public:
-  CFGBuilder(MaoUnit *mao_unit, Section *section, CFG *CFG);
+  CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
+             Section *section, CFG *CFG);
   void Build();
 
  private:

@@ -445,7 +445,7 @@ MAO_OPTIONS_DEFINE(LFIND,3) {
 class LoopFinderPass : public MaoPass {
 public:
   LoopFinderPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("LFIND", MAO_OPTIONS(LFIND)),
+    MaoPass("LFIND", mao->mao_options(), MAO_OPTIONS(LFIND)),
     mao_(mao), cfg_(cfg) {
     dump_vcg_ = GetOptionBool("vcg");
     dump_cfg_ = GetOptionBool("cfg");

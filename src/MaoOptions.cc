@@ -20,6 +20,7 @@
 #include <ctype.h>
 #include "MaoDebug.h"
 #include "MaoOptions.h"
+#include "MaoPasses.h"
 
 const char *MaoOptions::assembly_output_file_name() {
   return assembly_output_file_name_;
@@ -34,8 +35,6 @@ void MaoOptions::set_assembly_output_file_name(const char *file_name) {
   write_assembly_ = true;
   output_is_stdout_ = false;
   assembly_output_file_name_ = file_name;
-  if (verbose())
-    fprintf(stderr, "asm output file: %s\n", file_name);
 }
 
 void MaoOptions::set_ir_output_file_name(const char *file_name) {
@@ -55,13 +54,14 @@ public:
 
   MaoOption  *FindOption(const char *option_name) {
     for (int i = 0; i < num_entries_; i++)
-      if (!strcasecmp(option_name, array_[i].name))
+      if (!strcasecmp(option_name, array_[i].name()))
         return &array_[i];
     MAO_ASSERT_MSG(false, "Option %s not found", option_name);
     return NULL;
   }
 
   const char *name() const { return name_; }
+  MaoOption  *array() { return array_; }
 
 private:
   const char *name_;
@@ -98,9 +98,9 @@ void MaoOptions::SetOption(const char *pass_name,
                            int         value) {
   MaoOptionArray *entry = FindOptionArray(pass_name);
   MaoOption      *option = entry->FindOption(option_name);
-  MAO_ASSERT(option->type == OPT_INT);
+  MAO_ASSERT(option->type() == OPT_INT);
 
-  option->ival = value;
+  option->ival_ = value;
 }
 
 void MaoOptions::SetOption(const char *pass_name,
@@ -108,9 +108,9 @@ void MaoOptions::SetOption(const char *pass_name,
                            bool        value) {
   MaoOptionArray *entry = FindOptionArray(pass_name);
   MaoOption      *option = entry->FindOption(option_name);
-  MAO_ASSERT(option->type == OPT_BOOL);
+  MAO_ASSERT(option->type() == OPT_BOOL);
 
-  option->bval = value;
+  option->bval_ = value;
 
 }
 
@@ -119,9 +119,9 @@ void MaoOptions::SetOption(const char *pass_name,
                            const char *value) {
   MaoOptionArray *entry = FindOptionArray(pass_name);
   MaoOption      *option = entry->FindOption(option_name);
-  MAO_ASSERT(option->type == OPT_STRING);
+  MAO_ASSERT(option->type_ == OPT_STRING);
 
-  option->cval = value;
+  option->cval_ = value;
 }
 
 
@@ -150,8 +150,20 @@ static char *gobble_garbage(char *arg, char **next) {
   return p;
 }
 
+void MaoOptions::Reparse() {
+  Parse(mao_options_, false);
+}
 
-void MaoOptions::Parse(char *arg) {
+void MaoOptions::Parse(char *arg, bool collect) {
+  if (collect) {
+    if (!mao_options_)
+      mao_options_ = strdup(arg);
+    else {
+      mao_options_ = strcat(mao_options_, ",");
+      mao_options_ = strcat(mao_options_, arg);
+    }
+  }
+
   // Standard options?
   while (arg[0]) {
     gobble_garbage(arg, &arg);
@@ -182,24 +194,92 @@ void MaoOptions::Parse(char *arg) {
       }
       continue;
     }
+
     // Pass name?
     if (isascii(arg[0])) {
       char *pass = next_token(arg, &arg);
 
-      if (FindOptionArray(pass)) {
-        char *options;
+      if (arg[0] == '=' || arg[0] == ':') {
+        MaoOptionArray *current_opts = FindOptionArray(pass);
+        MAO_ASSERT(current_opts);
+
+        char *option;
         while (1) {
-          options = next_token(arg, &arg);
-          if (arg[0] != '+') break;
+          option = next_token(arg, &arg);
+          if (!option || option[0] == '\0')
+            break;
+
+          if (!strcasecmp(option, "enable") || !strcasecmp(option, "on")) {
+            MaoPass *mao_pass = FindPass(current_opts->array());
+            if (mao_pass)
+              mao_pass->set_enabled(true);
+            break;
+          }
+          if (!strcasecmp(option, "trace")) {
+            MaoPass *mao_pass = FindPass(current_opts->array());
+            if (mao_pass)
+              mao_pass->set_tracing_level(3);;
+            break;
+          }
+          if (!strcasecmp(option, "disable") || !strcasecmp(option, "off")) {
+            MaoPass *mao_pass = FindPass(current_opts->array());
+            if (mao_pass)
+              mao_pass->set_enabled(false);
+            break;
+          }
+
+          MaoOption *opt = current_opts->FindOption(option);
+          MAO_ASSERT_MSG(opt, "Could not find option: %s", option);
+
+          if (arg[0] == '(' || arg[0] == '[' || arg[0] == '=') {
+            char delim = arg[0];
+
+            ++arg;
+            char *param = next_token(arg, &arg);
+
+            if (delim != '=') {
+              MAO_ASSERT_MSG(arg[0] == ')' || arg[0] == ']',
+                             "Ill formatted parameter to option: %s", arg);
+              ++arg; // skip closing bracket
+            }
+
+            if (opt->type() == OPT_INT)
+              opt->ival_ = atoi(param);
+            else if (opt->type() == OPT_STRING)
+              opt->cval_ = strdup(param);
+            else if (opt->type() == OPT_BOOL) {
+              if (param[0] == '0' ||
+                  param[0] == 'n' || param[0] == 'N' ||
+                  param[0] == 'f' || param[0] == 'F' ||
+                  (param[0] == 'o' && param[1] == 'f'))
+                opt->bval_ = false; else
+              if (param[0] == '1' ||
+                  param[0] == 'y' || param[0] == 'Y' ||
+                  param[0] == 't' || param[0] == 'T' ||
+                  (param[0] == 'o' && param[1] == 'n'))
+                opt->bval_ = true;
+            }
+          } else {
+            if (opt->type() == OPT_BOOL)
+              opt->bval_ = true;
+            else
+              MAO_ASSERT_MSG(false, "non-boolean option %s used as boolean",
+                             option);
+          }
           if (arg[0] == '\0') break;
+          if (arg[0] == ':' || arg[0] == '|' || arg[0] == ';') {
+            ++arg;
+            break;
+          }
           ++arg;
         }
         gobble_garbage(arg, &arg);
       }
+
+      continue;
     }
-    else {
-      fprintf(stderr, "Unknown input: %s\n", arg);
-      ++arg;
-    }
+
+    fprintf(stderr, "Unknown input: %s\n", arg);
+    ++arg;
   }
 }
