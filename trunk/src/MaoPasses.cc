@@ -39,7 +39,8 @@ MaoPass *FindPass(MaoOption *arr) {
 
 MaoPass::MaoPass(const char *name, MaoOptions *mao_options,
                  MaoOption *options) :
-  name_(name), options_(options), enabled_(true), tracing_level_(0),
+  name_(name), options_(options), enabled_(true),
+  tracing_level_(mao_options ? (mao_options->verbose() ? 3 : 0) : 0),
   trace_file_(stderr), mao_options_(mao_options) {
   option_to_pass_map[options_] = this;
   if (mao_options_)
