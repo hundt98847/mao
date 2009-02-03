@@ -62,7 +62,7 @@ public:
 
   const char *name() const { return name_; }
   MaoOption  *array() { return array_; }
-
+  int         num_entries() { return num_entries_; }
 private:
   const char *name_;
   MaoOption  *array_;
@@ -71,6 +71,40 @@ private:
 
 // Maintain static list of all option arrays.
 static std::list<MaoOptionArray *> option_array_list;
+
+// Unprocessed flags are passed on to as_main (which is the GNU Assembler
+// main function). Everything else is handed to the MAO Option processor
+//
+void MaoOptions::ProvideHelp() {
+  if (!help()) return;
+
+  fprintf(stderr,
+          "Mao %s\n",
+          MAO_VERSION);
+  fprintf(stderr,
+            "Usage: mao [-mao:mao-options]* "
+            "[regular-assembler-options]* input-file \n"
+            "\n\nwith 'mao-options' being one of (and separated with a ,) :\n\n"
+            "-h          display this help text\n"
+            "-v          verbose\n"
+            "-ofname     specify assembly output file\n"
+            "\n"
+            "PHASE=[phase-options]\n"
+            "\n\nwith availble 'phase-options' being:\n\n"
+            );
+
+  for (std::list<MaoOptionArray *>::iterator it = option_array_list.begin();
+       it != option_array_list.end(); ++it) {
+    fprintf(stderr, "Pass: %s\n", (*it)->name());
+    MaoOption *arr = (*it)->array();
+    for (int i = 0; i < (*it)->num_entries(); i++) {
+      fprintf(stderr, "  %-10s: %s\n", arr[i].name(), arr[i].description());
+    }
+  }
+  exit(0);
+}
+
+
 
 // Simple (static) constructor to allow registration of
 // option arrays.

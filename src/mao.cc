@@ -27,35 +27,6 @@
 #include "MaoLoops.h"
 
 
-// Unprocessed flags are passed on to as_main (which is the GNU Assembler
-// main function). Everything else is handed to the MAO Option processor
-//
-static int ProvideHelp(MaoOptions *mao_options) {
-  if (mao_options->help()) {
-    fprintf(stderr,
-            "Mao %s\n",
-            MAO_VERSION);
-    fprintf(stderr,
-            "Usage: mao [-mao:mao-options]* "
-            "[regular-assembler-options]* input-file \n"
-            "\n\nwith 'mao-options' being one of:\n\n"
-            "-h          display this help text\n"
-            "-v          verbose\n"
-            "-ofname     specify assembler output file\n"
-            "\n"
-            "PHASE=[phase-options]\n"
-            "\n\nwith 'phase-options' being one of:\n\n"
-            "db          dump IR before phase\n"
-            "da          dump IR before phase\n"
-            "db|da[type] dump something before phase,"
-            " with 'type' being one of ir, cfg, vcg, mem, time\n"
-            );
-    exit(0);
-  }
-  return 0;
-}
-
-
 //==================================
 // MAO Main Entry
 //==================================
@@ -76,7 +47,7 @@ int main(int argc, const char *argv[]) {
   }
 
   // Static Initialization
-  ProvideHelp(&mao_options);
+  mao_options.ProvideHelp();
   register_mao_unit(&mao_unit);
 
   // Make Passes...

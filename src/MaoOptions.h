@@ -18,7 +18,6 @@
 #ifndef MAOOPTIONS_H_
 #define MAOOPTIONS_H_
 
-
 enum MaoOptionType {
   OPT_INT, OPT_STRING, OPT_BOOL
 };
@@ -26,6 +25,7 @@ enum MaoOptionType {
 typedef struct MaoOption {
   MaoOptionType   type() const { return type_; }
   const char     *name() const { return name_; }
+  const char     *description() const { return description_; }
   MaoOptionType   type_;
   const char     *name_;
   const char     *description_;
@@ -80,6 +80,7 @@ class MaoOptions {
 
   void        Parse(char *arg, bool collect = true);
   void        Reparse();
+  void        ProvideHelp();
   static void SetOption(const char *pass_name,
                         const char *option_name,
                         int         value);
