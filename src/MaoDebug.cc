@@ -1,4 +1,4 @@
-//
+///
 // Copyright 2008 Google Inc.
 //
 // This program is free software; you can redistribute it and/or
@@ -24,12 +24,8 @@
 
 // Default output for asserts and traces
 #define MAO_DEFAULT_ASSERT_OUTPUT stderr
-#define MAO_DEFAULT_TRACE_OUTPUT stdout
-
 
 FILE *MaoDebug::assert_file_ = MAO_DEFAULT_ASSERT_OUTPUT;
-FILE *MaoDebug::trace_file_ = MAO_DEFAULT_TRACE_OUTPUT;
-unsigned char MaoDebug::trace_treshold_ = MAO_DEFAULT_TRACE_THRESHOLD;
 
 void MaoDebug::Assert(const char *file_name, int line_number,
                       bool condition, const char *expr_string,
@@ -51,19 +47,3 @@ void MaoDebug::SetAssertOutPut(FILE *file) {
   assert_file_ = file;
 }
 
-void MaoDebug::SetTraceOutPut(FILE *file) {
-  trace_file_ = file;
-}
-
-void MaoDebug::Trace(const char *file_name, int line_number,
-                     unsigned int level, const char *format_string, ...) {
-  if( level <= trace_treshold_) {
-    fprintf(trace_file_, "*** TRACE! (%d): ", level);
-    va_list argList;
-    va_start(argList, format_string);
-    vfprintf(trace_file_, format_string, argList);
-    va_end(argList);
-    fprintf(trace_file_, " [%s:%d]\n",  file_name?file_name:"<unknown>",
-            line_number);
-  }
-}
