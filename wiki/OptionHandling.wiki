@@ -16,7 +16,7 @@ Initial option handling code has been finalized. It's pretty ugly and likely non
   * Starting mao with no options, or with -mao:-h, displays the help text, which shows all currently registered options:
 <pre>
 Mao 0.1
-Usage: mao [-mao:mao-options]\* [regular-assembler-options]\* input-file
+Usage: mao [-mao:mao-options]+ [regular-assembler-options]+ input-file
 
 'mao-options' are seperated by commas, and are:
 
@@ -24,7 +24,7 @@ Usage: mao [-mao:mao-options]\* [regular-assembler-options]\* input-file
 -v          verbose (set trace level to 3)
 -ofname     specify assembly output file (also -o,fname)
 
-PASS=[phase-option][,phase-option]\*
+PASS=[phase-option][,phase-option]+
 
 with PASS and 'phase-option' being:
 
@@ -71,16 +71,16 @@ To enable option processing for a pass in the mao source code:
         <tt>MaoPass</tt>
 
     * Options are defined via the MAO_OPTIONS_DEFINE macro, such as:
-<pre>
+{{{
       MAO_OPTIONS_DEFINE(CFG,1) {
         OPTION_BOOL("callsplit", false, "Split Basic Blocks at call sites"),
       };
-</pre>
+}}}
 
     * Any number of options can be specified here as a comma separated list. The number of options must be passed to the MAO_OPTIONS_DEFINE macro.
 
     * The options array is being passed to the MaoPass as a parameter via the MAO_OPTIONS macro. For example, the current CFG implementation looks like this:
-<pre>
+{{{
       // --------------------------------------------------------------------
       CFGBuilder::CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
                              Section *section, CFG *CFG)
@@ -88,7 +88,7 @@ To enable option processing for a pass in the mao source code:
           mao_unit_(mao_unit), section_(section), CFG_(CFG), next_id_(0) {
         split_basic_blocks_ = GetOptionBool("callsplit");
       }
-</pre>
+}}}
 
     * Options should be held as class local variables, and can be "queried" via the GetOption... member functions from MaoPass. This is slow, and should therefore be done in the constructor of the pass, once.
 
