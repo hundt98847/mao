@@ -59,8 +59,14 @@ symbolS abs_symbol;
 #define debug_verify_symchain(root, last) ((void) 0)
 #endif
 
-#define DOLLAR_LABEL_CHAR	'\001'
-#define LOCAL_LABEL_CHAR	'\002'
+//#define DOLLAR_LABEL_CHAR	'\001'
+#define DOLLAR_LABEL_CHAR	'-'
+//#define LOCAL_LABEL_CHAR	'\002'
+#define LOCAL_LABEL_CHAR	'_'
+
+#define LOCAL_LABEL_PREFIX_STR  "L__MAO_LOCAL__"
+#define LOCAL_LABEL_PREFIX_LEN  14
+
 
 struct obstack notes;
 #ifdef USE_UNIQUE
@@ -1649,7 +1655,7 @@ dollar_label_name (register long n,	/* we just saw "n$:" : n a number.  */
 {
   long i;
   /* Returned to caller, then copied.  Used for created names ("4f").  */
-  static char symbol_name_build[24];
+  static char symbol_name_build[24+LOCAL_LABEL_PREFIX_LEN];
   register char *p;
   register char *q;
   char symbol_name_temporary[20];	/* Build up a number, BACKWARDS.  */
@@ -1659,6 +1665,12 @@ dollar_label_name (register long n,	/* we just saw "n$:" : n a number.  */
   p = symbol_name_build;
 #ifdef LOCAL_LABEL_PREFIX
   *p++ = LOCAL_LABEL_PREFIX;
+#endif
+#ifdef LOCAL_LABEL_PREFIX_STR
+  char *prefix_ptr = LOCAL_LABEL_PREFIX_STR;
+  while (*prefix_ptr) {
+    *p++ = *prefix_ptr++;
+  }
 #endif
   *p++ = 'L';
 
@@ -1816,7 +1828,7 @@ fb_label_name (long n,	/* We just saw "n:", "nf" or "nb" : n a number.  */
 {
   long i;
   /* Returned to caller, then copied.  Used for created names ("4f").  */
-  static char symbol_name_build[24];
+  static char symbol_name_build[24+LOCAL_LABEL_PREFIX_LEN];
   register char *p;
   register char *q;
   char symbol_name_temporary[20];	/* Build up a number, BACKWARDS.  */
@@ -1831,7 +1843,16 @@ fb_label_name (long n,	/* We just saw "n:", "nf" or "nb" : n a number.  */
 #ifdef LOCAL_LABEL_PREFIX
   *p++ = LOCAL_LABEL_PREFIX;
 #endif
+#ifdef LOCAL_LABEL_PREFIX_STR
+  char *prefix_ptr = LOCAL_LABEL_PREFIX_STR;
+  while (*prefix_ptr) {
+    *p++ = *prefix_ptr++;
+  }
+#endif
   *p++ = 'L';
+
+  //
+
 
   /* Next code just does sprintf( {}, "%d", n);  */
   /* Label number.  */
@@ -1877,6 +1898,15 @@ decode_local_label_name (char *s)
 #ifdef LOCAL_LABEL_PREFIX
   if (s[index] == LOCAL_LABEL_PREFIX)
     ++index;
+#endif
+#ifdef LOCAL_LABEL_PREFIX_STR
+  char *prefix_ptr = LOCAL_LABEL_PREFIX_STR;
+  while (*prefix_ptr) {
+    if (s[index] != *prefix_ptr)
+      return s;
+    ++index;
+    ++prefix_ptr;
+  }
 #endif
 
   if (s[index] != 'L')
