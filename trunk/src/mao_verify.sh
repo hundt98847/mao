@@ -155,7 +155,7 @@ echo "Processing: ${IN_FILE}"
 # the target platform in gcc (yet).
 # TODO(martint): Find a good way to use a gcc as a wrapper for mao.
 #                ${CC} -B"${BIN_DIR}" -c -Wa,"-mao_o,${MAO_FILE}" "${S_FILE}" -o "${TMP_O_FILE}"
-${MAO} -mao_o "${MAO_FILE}" "${S_FILE}"
+${MAO} -mao:-o"${MAO_FILE}" "${S_FILE}"
 
 # # Generate object files from both
 ${AS} -o "${S_FILE}.o"   "${S_FILE}" 
