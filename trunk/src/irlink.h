@@ -25,6 +25,8 @@
 #define MAX_DIRECTIVE_NAME_LENGTH 1024
 #define MAX_REGISTER_NAME_LENGTH 16
 
+#include "MaoUtil.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,7 +42,9 @@ extern "C" {
     FUNCTION_SYMBOL,
     NOTYPE_SYMBOL,
     FILE_SYMBOL,
-    SECTION_SYMBOL
+    SECTION_SYMBOL,
+    TLS_SYMBOL,
+    COMMON_SYMBOL
   };
 
   // Link back an instruction from gas
@@ -48,15 +52,12 @@ extern "C" {
                  const char *line_verbatim);
   // Link back a label from gas
   void link_label(const char *name, const char *line_verbatim);
-  // Link back directives (e.g. .file, .data, .size) from gas
-  void link_directive(const char *key, const char *value,
-                      const char *line_verbatim);
   // Link back debug info (e.g. dwarf information) from gas.
   void link_debug(const char *key, const char *value,
                   const char *line_verbatim);
   // Link back sections from gas (i.e. data, text, bss and section directives)
-  void link_section(const char *name, const char *arguments,
-                    const char *create_op, const char *line_verbatim);
+  void link_section(int push, const char *name,
+                    struct MaoStringPiece arguments);
   // Link symbols from gas
   void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,
                    const char *line_verbatim);
@@ -64,11 +65,32 @@ extern "C" {
   void link_comm(const char *name, unsigned int common_size,
                  unsigned int common_align, const char *line_verbatim);
   // Link .type directives from gas.
-  void link_type(const char *name, enum SymbolType symbol_type,
+  void link_type(symbolS *symbol, enum SymbolType symbol_type,
                  const char *line_verbatim);
   // Link .size directives from gas
   void link_size(const char *name, unsigned int size,
                  const char *line_verbatim);
+  // Link .file directives from gas
+  void link_file_directive(const char *name);
+  // Link .global/.globl directives from gas
+  void link_global_directive(symbolS *symbol);
+  // Link .local directives from gas
+  void link_local_directive(symbolS *symbol);
+  // Link .weak directives from gas
+  void link_weak_directive(symbolS *symbol);
+  // Link .size directives from gas
+  void link_size_directive(symbolS *symbol, expressionS *expr);
+  // Link .dc.b/dc.w/dc.l/.byte/.word/.long/.quad/etc directives from gas
+  void link_dc_directive(int size, int rva, expressionS *expr);
+  // Link .string/.string32/.ascii/.asciz/etc directives from gas
+  void link_string_directive(int bitsize, int append_zero,
+                             struct MaoStringPiece value);
+  // Link .uleb128/.sleb128 directives from gas
+  void link_leb128_directive (expressionS *expr, int sign);
+  // Link .align/.balign/.p2align directives from gas
+  void link_align_directive(int align, int fill_len, int fill, int max);
+  void link_space_directive(expressionS *size, expressionS *fill, int mult);
+
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 

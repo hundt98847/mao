@@ -28,9 +28,9 @@
 #include "gen-opcodes.h"
 #include "irlink.h"
 #include "SymbolTable.h"
+#include "MaoUtil.h"
 
-#define DEFAULT_SECTION_NAME "text"
-#define DEFAULT_SECTION_CREATION_OP "\t.text"
+#define DEFAULT_SECTION_NAME ".text"
 
 
 // Maps the label to a block, and the offset into this block
@@ -95,8 +95,7 @@ class MaoUnit {
   // code. (.text, .data, .text.)
   // This will be create several SubSection objects with .text in the
   // sub_sections_ member.
-  void SetSubSection(const char *section_name, unsigned int subsection_number,
-                     const char *creation_op);
+  void SetSubSection(const char *section_name, unsigned int subsection_number);
 
   SubSection *GetSubSection(unsigned int subsection_number) {
     return sub_sections_[subsection_number];
@@ -246,16 +245,102 @@ class DirectiveEntry : public MaoUnitEntryBase {
   //  .ident ""
   //  .section
  public:
-  DirectiveEntry(const char *key, const char* value, unsigned int line_number,
-                 const char* line_verbatim)
+  enum Opcode {
+    FILE = 0,
+    SECTION,
+    GLOBAL,
+    LOCAL,
+    WEAK,
+    TYPE,
+    SIZE,
+    BYTE,
+    WORD,
+    LONG,
+    QUAD,
+    RVA,
+    ASCII,
+    STRING8,
+    STRING16,
+    STRING32,
+    STRING64,
+    SLEB128,
+    ULEB128,
+    P2ALIGN,
+    P2ALIGNW,
+    P2ALIGNL,
+    SPACE,
+    DS_B,
+    DS_W,
+    DS_L,
+    DS_D,
+    DS_X,
+    NUM_OPCODES
+  };
+
+  static const char *const kOpcodeNames[NUM_OPCODES];
+
+  enum OperandType {
+    NO_OPERAND = 0,
+    STRING,
+    INT,
+    SYMBOL,
+    EXPRESSION,
+    EMPTY_OPERAND,
+  };
+
+  class Operand {
+   public:
+    explicit Operand() : type(EMPTY_OPERAND) { }
+    explicit Operand(const char *str) : type(STRING) {
+      data.str = new std::string(str);
+    }
+    explicit Operand(std::string str) : type(STRING) {
+      data.str = new std::string();
+      data.str->swap(str);
+    }
+    explicit Operand(const MaoStringPiece &str) : type(STRING) {
+      data.str = new std::string(str.data, str.length);
+    }
+    explicit Operand(symbolS *sym) : type(SYMBOL) { data.sym = sym; }
+    explicit Operand(expressionS *expr) : type(EXPRESSION) {
+      data.expr = (expressionS *)malloc(sizeof(expressionS));
+      *data.expr = *expr;
+    }
+    explicit Operand(int value) : type(INT) { data.i = value; }
+    ~Operand() {
+      if (type == STRING)
+        delete data.str;
+      if (type == EXPRESSION)
+        free(data.expr);
+    }
+
+    OperandType type;
+    union  {
+      std::string *str;
+      int i;
+      symbolS *sym;
+      expressionS *expr;
+    } data;
+  };
+
+  DirectiveEntry(Opcode op, const std::vector<Operand *> &operands,
+                 unsigned int line_number, const char* line_verbatim)
       : MaoUnitEntryBase(line_number, line_verbatim),
-        key_(key), value_(value) { }
+        op_(op), operands_(operands) { }
 
-  const std::string &key() const { return key_; }
-  const std::string &value() const { return value_; }
+  virtual ~DirectiveEntry() {
+    for (std::vector<Operand *>::iterator iter = operands_.begin();
+         iter != operands_.end(); ++iter) {
+      delete *iter;
+    }
+  }
 
-  virtual void PrintEntry(FILE *out) const;
-  virtual void PrintIR(FILE *out) const;
+  const char *GetOpcodeName() const {
+    return kOpcodeNames[op_];
+  }
+
+  virtual void PrintEntry(::FILE *out) const;
+  virtual void PrintIR(::FILE *out) const;
   virtual MaoUnitEntryBase::EntryType  Type() const;
   virtual char GetDescriptiveChar() const {return 'D';}
 
@@ -266,10 +351,15 @@ class DirectiveEntry : public MaoUnitEntryBase {
   virtual bool IsReturn() const { return false; }
 
  private:
-  // key_ holds the name of the directive
-  const std::string key_;
-  // value holds the arguments to the directive
-  const std::string value_;
+  const std::string &DirectiveEntry::OperandsToString(std::string *out) const;
+  const std::string &DirectiveEntry::OperandToString(const Operand &operand,
+                                                     std::string *out) const;
+
+  // op_ holds the type of directive
+  const Opcode op_;
+
+  // operands_ hold the operands of the directive
+  std::vector<Operand *> operands_;
 };
 
 // An Entry of the type Debug
@@ -382,17 +472,14 @@ class SubSection {
  public:
   // Constructor needs subsection number, a pointer to the actual section, and
   // the assembly code needed to create the subsection.
-  explicit SubSection(unsigned int subsection_number, const char *name,
-                      const char *creation_op)
+  explicit SubSection(unsigned int subsection_number, const char *name)
       : number_(subsection_number),
         name_(name),
         first_entry_index_(0),
-        last_entry_index_(0),
-        creation_op_(creation_op) { }
+        last_entry_index_(0) { }
 
   unsigned int number() const { return number_; }
   const std::string &name() const { return name_; }
-  const std::string &creation_op() const { return creation_op_; }
 
   entry_index_t first_entry_index() const { return first_entry_index_;}
   entry_index_t last_entry_index() const { return last_entry_index_;}
@@ -408,9 +495,6 @@ class SubSection {
   // Value is stored as index into the entry vector.
   entry_index_t first_entry_index_;
   entry_index_t last_entry_index_;
-
-  // The assembly code needed to create this subsection.
-  std::string creation_op_;
 };
 
 
@@ -531,7 +615,7 @@ class Section {
   }
 
  private:
-  char *name_;  // .text -> "text", .data -> "data"
+  char *name_;  // e.g. ".text", ".data", etc.
   std::vector<subsection_index_t> sub_section_indexes_;
 };
 

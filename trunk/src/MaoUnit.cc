@@ -18,6 +18,9 @@
 #include "MaoDebug.h"
 #include "MaoUnit.h"
 
+#include <iostream>
+#include <sstream>
+
 extern "C" const char *S_GET_NAME(symbolS *s);
 
 //
@@ -116,9 +119,8 @@ void MaoUnit::PrintIR(FILE *out) const {
   for (std::vector<SubSection *>::const_iterator iter = sub_sections_.begin();
        iter != sub_sections_.end(); ++iter) {
     SubSection *ss = *iter;
-    fprintf(out, "[%3d] [%d-%d]: %s (%s)\n", index,
-            ss->first_entry_index(), ss->last_entry_index(), ss->name().c_str(),
-            ss->creation_op().c_str());
+    fprintf(out, "[%3d] [%d-%d]: %s\n", index,
+            ss->first_entry_index(), ss->last_entry_index(), ss->name().c_str());
     index++;
   }
 }
@@ -140,15 +142,13 @@ Section *MaoUnit::FindOrCreateAndFind(const char *section_name) {
 
 // Called when found a new subsection reference in the assembly.
 void MaoUnit::SetSubSection(const char *section_name,
-                            unsigned int subsection_number,
-                            const char *creation_op) {
+                            unsigned int subsection_number) {
   // Get (and possibly create) the section
   Section *section = FindOrCreateAndFind(section_name);
   MAO_ASSERT(section);
   // Create a new subsection, even if the same subsection number
   // have already been used.
-  SubSection *subsection = new SubSection(subsection_number, section_name,
-                                          creation_op);
+  SubSection *subsection = new SubSection(subsection_number, section_name);
   sub_sections_.push_back(subsection);
   section->AddSubSectionIndex(sub_sections_.size()-1);
 
@@ -194,7 +194,7 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool build_sections,
 
   // Create a subsection if necessary
   if (build_sections && (create_default_section && !current_subsection_)) {
-    SetSubSection(DEFAULT_SECTION_NAME, 0, DEFAULT_SECTION_CREATION_OP);
+    SetSubSection(DEFAULT_SECTION_NAME, 0);
     MAO_ASSERT(current_subsection_);
   }
 
@@ -798,17 +798,90 @@ void LabelEntry::PrintIR(FILE *out) const {
 // Class: DirectiveEntry
 //
 
-void DirectiveEntry::PrintEntry(FILE *out) const {
-  fprintf(out, "\t%s\t%s", key_.c_str(), value_.c_str());
+const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
+  ".file",
+  ".section",
+  ".globl",
+  ".local",
+  ".weak",
+  ".type",
+  ".size",
+  ".byte",
+  ".word",
+  ".long",
+  ".quad",
+  ".rva",
+  ".ascii",
+  ".string",
+  ".string16",
+  ".string32",
+  ".string64",
+  ".sleb128",
+  ".uleb128",
+  ".p2align",
+  ".p2alignw",
+  ".p2alignl",
+  ".space",
+  ".ds.b",
+  ".ds.w",
+  ".ds.l",
+  ".ds.d",
+  ".ds.x",
+};
+
+void DirectiveEntry::PrintEntry(::FILE *out) const {
+  std::string operands;
+  fprintf(out, "\t%s\t%s", GetOpcodeName(),
+          OperandsToString(&operands).c_str());
   fprintf(out, "\t # [%d]\t%s", line_number(),
           line_verbatim() ? line_verbatim() : "");
   fprintf(out, "\n");
 }
 
-void DirectiveEntry::PrintIR(FILE *out) const {
-  fprintf(out, "%s %s", key_.c_str(), value_.c_str());
+void DirectiveEntry::PrintIR(::FILE *out) const {
+  std::string operands;
+  fprintf(out, "%s %s", GetOpcodeName(), OperandsToString(&operands).c_str());
 }
 
+const std::string &DirectiveEntry::OperandsToString(std::string *out) const {
+  for (std::vector<Operand *>::const_iterator iter = operands_.begin();
+       iter != operands_.end(); ++iter) {
+    if (iter != operands_.begin())
+      out->append(", ");
+    OperandToString(**iter, out);
+  }
+
+  return *out;
+}
+
+const std::string &DirectiveEntry::OperandToString(const Operand &operand,
+                                                   std::string *out) const {
+  switch(operand.type) {
+    case NO_OPERAND:
+      break;
+    case STRING:
+      out->append(*operand.data.str);
+      break;
+    case INT: {
+      std::ostringstream int_string;
+      int_string << std::hex << operand.data.i;
+      out->append(int_string.str());
+      break;
+    }
+    case SYMBOL:
+      out->append(S_GET_NAME(operand.data.sym));
+      break;
+    case EXPRESSION:
+      // TODO(nvachhar): Fill me in
+      break;
+    case EMPTY_OPERAND:
+      // Nothing to do
+      break;
+    default:
+      MAO_ASSERT(false);
+  }
+  return *out;
+}
 
 MaoUnitEntryBase::EntryType DirectiveEntry::Type() const {
   return DIRECTIVE;

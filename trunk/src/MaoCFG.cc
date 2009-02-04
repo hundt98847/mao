@@ -198,7 +198,7 @@ void CFGBuilder::Build() {
 
 
 void CreateCFG(MaoUnit *mao_unit, CFG *cfg) {
-  Section *section = mao_unit->FindOrCreateAndFind("text");
+  Section *section = mao_unit->FindOrCreateAndFind(".text");
 
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), section, cfg);
   builder.Build();

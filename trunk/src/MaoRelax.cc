@@ -30,13 +30,7 @@ extern "C" {
 
 void MaoRelaxer::Relax() {
   struct frag *fragments = BuildFragments();
-
-  // TODO(nvachhar): Why is the dot('.') omitted from the section
-  // name?  Can we add it back to avoid this hackery?
-  std::string section_name(".");
-  section_name.append(section_->name());
-  asection *section = bfd_get_section_by_name(stdoutput, section_name.c_str());
-
+  asection *section = bfd_get_section_by_name(stdoutput, section_->name());
   for (int change = 1, pass = 0; change; pass++)
     change = relax_segment(fragments, section, pass);
 
@@ -64,13 +58,12 @@ struct frag *MaoRelaxer::BuildFragments() {
         break;
       }
       case MaoUnitEntryBase::DIRECTIVE: {
-        DirectiveEntry *directive = static_cast<DirectiveEntry*>(entry);
-        printf("%s %s\n", directive->key().c_str(), directive->value().c_str());
+        // TODO(nvachhar): Fill me in
         break;
       }
       case MaoUnitEntryBase::LABEL:
       case MaoUnitEntryBase::DEBUG:
-        /* Nothing to do */
+        // Nothing to do
         break;
       case MaoUnitEntryBase::UNDEFINED:
       default:
@@ -78,7 +71,7 @@ struct frag *MaoRelaxer::BuildFragments() {
     }
   }
 
-  if (!strcmp(section_->name(), "text"))
+  if (!strcmp(section_->name(), ".text"))
     EndFragmentCodeAlign(0, 0, frag, false);
   else
     // TODO(nvachhar):
