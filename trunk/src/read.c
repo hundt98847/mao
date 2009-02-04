@@ -1080,7 +1080,9 @@ read_a_source_file (char *name)
 		  && *input_line_pointer++ == ':')
 		{
 		  fb_label_instance_inc (temp);
-		  colon (fb_label_name (temp, 0));
+                  char *temp_label_name = fb_label_name (temp, 0);
+                  link_label(temp_label_name, 0);
+		  colon (temp_label_name);
 		  continue;
 		}
 
