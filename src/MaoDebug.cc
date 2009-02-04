@@ -39,7 +39,7 @@ void MaoDebug::Assert(const char *file_name, int line_number,
     va_start(argList, format_string);
     vfprintf(assert_file_, format_string, argList);
     va_end(argList);
-    exit(1);
+    abort();
   }
 }
 

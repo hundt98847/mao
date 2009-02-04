@@ -397,8 +397,7 @@ obj_elf_local (int ignore ATTRIBUTE_UNUSED)
       c = get_symbol_end ();
       symbolP = symbol_find_or_make (name);
 
-      // could be several symbols here!
-      link_directive("\t.local", name, 0);
+      link_local_directive(symbolP);
 
       *input_line_pointer = c;
       SKIP_WHITESPACE ();
@@ -430,7 +429,7 @@ obj_elf_weak (int ignore ATTRIBUTE_UNUSED)
       symbolP = symbol_find_or_make (name);
 
       // could be several symbols here!
-      link_directive("\t.weak", name, 0);
+      link_weak_directive(symbolP);
 
 
       *input_line_pointer = c;
@@ -942,6 +941,10 @@ obj_elf_section (int push)
       ++input_line_pointer;
       SKIP_WHITESPACE ();
 
+      struct MaoStringPiece arguments =
+          { input_line_pointer, strcspn(input_line_pointer, "\n") };
+      link_section(push, name, arguments);
+
       if (push && ISDIGIT (*input_line_pointer))
 	{
 	  /* .pushsection has an optional subsection.  */
@@ -1063,6 +1066,13 @@ obj_elf_section (int push)
 	  --input_line_pointer;
 	}
     }
+  else
+    {
+      struct MaoStringPiece arguments =
+          { NULL, 0 };
+      link_section(push, name, arguments);
+    }
+
 
 done:
   demand_empty_rest_of_line ();
@@ -1560,6 +1570,9 @@ obj_elf_size (int ignore ATTRIBUTE_UNUSED)
       symbol_get_obj (sym)->size = xmalloc (sizeof (expressionS));
       *symbol_get_obj (sym)->size = exp;
     }
+
+  // TODO(nvachhar): Ensure that expression is not evaluated
+  link_size_directive(sym, &exp);
   demand_empty_rest_of_line ();
 }
 
@@ -1692,16 +1705,16 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
   elfsym->symbol.flags |= type;
 
   if (type & BSF_FUNCTION)
-      link_type((char *)elfsym->symbol.name, FUNCTION_SYMBOL, 0);
-  else if (type & BSF_OBJECT)
-    link_type((char *)elfsym->symbol.name, OBJECT_SYMBOL, 0);
-  else
-    link_type((char *)elfsym->symbol.name, NOTYPE_SYMBOL, 0);
-
-  char buffer[MAX_OPERANDS_STRING_LENGTH];
-
-  sprintf(buffer, "%s, @%s", (char *)elfsym->symbol.name, my_type);
-  link_directive(".type", buffer, 0);
+      link_type(sym, FUNCTION_SYMBOL, 0);
+  else if (type & (BSF_OBJECT | BSF_THREAD_LOCAL))
+    link_type(sym, TLS_SYMBOL, 0);
+  else if (type & BSF_OBJECT) {
+    if (S_GET_SEGMENT(sym) == bfd_com_section_ptr)
+      link_type(sym, COMMON_SYMBOL, 0);
+    else
+      link_type(sym, OBJECT_SYMBOL, 0);
+  } else
+    link_type(sym, NOTYPE_SYMBOL, 0);
 
   demand_empty_rest_of_line ();
 
@@ -1730,7 +1743,11 @@ obj_elf_ident (int ignore ATTRIBUTE_UNUSED)
     }
   else
     subseg_set (comment_section, 0);
+
+  struct MaoStringPiece arguments = { NULL, 0 };
+  link_section(0, ".comment", arguments);
   stringer (8 + 1);
+  link_section(0, old_section->name, arguments);
   subseg_set (old_section, old_subsection);
 }
 

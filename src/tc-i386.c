@@ -8457,6 +8457,9 @@ s_bss (int ignore ATTRIBUTE_UNUSED)
   temp = get_absolute_expression ();
   subseg_set (bss_section, (subsegT) temp);
   demand_empty_rest_of_line ();
+
+  struct MaoStringPiece arguments = { NULL, 0 };
+  link_section(0, ".bss", arguments);
 }
 
 #endif
