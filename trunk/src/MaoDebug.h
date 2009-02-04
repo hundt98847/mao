@@ -28,10 +28,6 @@
 #define MAO_ASSERT_MSG(condition, format_string,...)  MAO_ASSERT_DBG(condition, format_string, ## __VA_ARGS__)
 #define MAO_RASSERT(condition)                        MAO_ASSERT_REL(condition, "")
 #define MAO_RASSERT_MSG(condition, format_string,...) MAO_ASSERT_REL(condition, format_string, ## __VA_ARGS__)
-#define MAO_TRACE(format_string,...)                  MAO_TRACE_REL(format_string, ##  __VA_ARGS__)
-#define MAO_TRACE_N(level, format_string,...)         MAO_TRACE_N_REL(level, format_string, ##  __VA_ARGS__)
-#define MAO_DTRACE(format_string,...)                 MAO_TRACE_DBG(format_string, ##  __VA_ARGS__)
-#define MAO_DTRACE_N(level, format_string,...)        MAO_TRACE_N_DBG(level, format_string, ##  __VA_ARGS__)
 
 
 // Helper macros for implementation
@@ -42,18 +38,7 @@
 #endif
 #define MAO_ASSERT_REL(condition,...) MaoDebug::Assert((__FILE__), __LINE__, (condition), __STRING(condition),  ##  __VA_ARGS__)
 
-#define MAO_TRACE_REL(format_string,...)             MaoDebug::Trace((__FILE__), __LINE__, MAO_DEFAULT_TRACE_LEVEL, (format_string), ## __VA_ARGS__ )
-#define MAO_TRACE_N_REL(level, format_string,...)    MaoDebug::Trace((__FILE__), __LINE__, level, (format_string), ## __VA_ARGS__ )
-
-#ifdef NDEBUG
-  #define MAO_TRACE_DBG(format_string,...)
-  #define MAO_TRACE_N_DBG(level, format_string,...)
-#else
-  #define MAO_TRACE_DBG(format_string,...)           MaoDebug::Trace((__FILE__), __LINE__, MAO_DEFAULT_TRACE_LEVEL, (format_string), ## __VA_ARGS__ )
-  #define MAO_TRACE_N_DBG(level, format_string,...)  MaoDebug::Trace((__FILE__), __LINE__, level, (format_string), ## __VA_ARGS__ )
-#endif
-
-// Static functions used for asserts and trace
+// Static functions used for asserts
 class MaoDebug {
  public:
   // Main assert function
@@ -62,26 +47,11 @@ class MaoDebug {
                      const char *format_string, ...);
   // Change output file for assert
   static void SetAssertOutPut(FILE *file);
-  // Main trace function
-  static void Trace(const char *file_name, int line_number,
-                    unsigned int level, const char *format_string, ...)
-      __attribute__((format(printf, 4, 5)));
-  // Change output file for trace
-  static void SetTraceOutPut(FILE *file);
-  // Change threshold
-  static void SetTraceTreshold(unsigned char level) {trace_treshold_ = level;}
-  // Get file handles
-  static FILE *trace_file() { return trace_file_; }
   static FILE *assert_file() { return assert_file_; }
 
  private:
   // Assert file
   static FILE *assert_file_;
-  // Trace file
-  static FILE *trace_file_;
-  // Only traces with level <= trace_treshold_ will be printed
-  static unsigned char trace_treshold_;
-
 }; // MaoDebug
 
 #endif  // MAODEBUG_H_
