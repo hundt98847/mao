@@ -126,7 +126,7 @@ $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)/GenOpcodes: GenOpcodes.cc Makefile
-	$(CXX) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc
+	$(CC) $(CFLAGS) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc
 
 gen-opcodes.h: $(OBJDIR)/GenOpcodes
 	$(OBJDIR)/GenOpcodes $(BINUTILSRC)/opcodes/i386-opc.tbl
@@ -134,7 +134,7 @@ gen-opcodes.h: $(OBJDIR)/GenOpcodes
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
 $(BINDIR)/mao-$(TARGET): stamp-bin gen-opcodes.h $(OBJDIR) $(OBJS)
-	$(CC) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ)
+	$(CC) $(CFLAGS) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ)
 
 .PHONY : clean all mao-$(TARGET)
 
