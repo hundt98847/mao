@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 #include <list>
+#include <vector>
 
 #include <stdio.h>
 #include <ctype.h>
@@ -70,7 +71,8 @@ private:
 };
 
 // Maintain static list of all option arrays.
-static std::list<MaoOptionArray *> option_array_list;
+typedef std::vector<MaoOptionArray *> OptionVector;
+static OptionVector option_array_list;
 
 // Unprocessed flags are passed on to as_main (which is the GNU Assembler
 // main function). Everything else is handed to the MAO Option processor
@@ -96,7 +98,7 @@ void MaoOptions::ProvideHelp(bool always) {
           "  trace     : (int)    Set trace level to 'val' (0..3)\n"
           );
 
-  for (std::list<MaoOptionArray *>::iterator it = option_array_list.begin();
+  for (OptionVector::iterator it = option_array_list.begin();
        it != option_array_list.end(); ++it) {
     fprintf(stderr, "Pass: %s\n", (*it)->name());
     MaoOption *arr = (*it)->array();
@@ -121,13 +123,13 @@ void MaoOptions::ProvideHelp(bool always) {
 MaoOptionRegister::MaoOptionRegister(const char *name,
                                      MaoOption  *array,
                                      int N) {
-  option_array_list.push_back(
-    new MaoOptionArray(name, array, N) );
+  MaoOptionArray *tmp = new MaoOptionArray(name, array, N);
+  option_array_list.push_back(tmp);
 }
 
 
 static MaoOptionArray *FindOptionArray(const char *pass_name) {
-  for (std::list<MaoOptionArray *>::iterator it = option_array_list.begin();
+  for (OptionVector::iterator it = option_array_list.begin();
        it != option_array_list.end(); ++it) {
     if (!strcasecmp((*it)->name(), pass_name))
       return (*it);
