@@ -268,8 +268,8 @@ void MaoOptions::Parse(char *arg, bool collect) {
       mao_options_ = strcat(mao_options_, arg);
     }
   }
-
-  while (arg[0]) {
+  
+  while (arg && arg[0]) {
     GobbleGarbage(arg, &arg);
 
     // Standard options start with a '-'.

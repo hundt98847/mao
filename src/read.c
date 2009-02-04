@@ -1328,6 +1328,30 @@ do_align (int n, char *fill, int len, int max)
       len = 0;
     }
 
+  /* inserts the align directive as a "directive" */
+  char buffer[MAX_OPERANDS_STRING_LENGTH];
+  if (fill == NULL) {
+    sprintf(buffer,"%d, , %d", n, max);
+    link_directive(".p2align", buffer, 0);
+  } else if( len == 1 && fill != NULL) {
+    sprintf(buffer,"%d, 0x%x , %d", n, *fill, max);
+    link_directive(".p2align", buffer, 0);
+  } else if ( len == 2 && fill != NULL) {
+    sprintf(buffer,"%d, 0x%x%x , %d", n,
+            *(fill+1) & 0xff,
+            *(fill+0) & 0xff,
+            max);
+    link_directive(".p2alignw", buffer, 0);
+  } else if ( len == 4 && fill != NULL) {
+    sprintf(buffer,"%d, 0x%x%x%x%x, %d", n,
+            *(fill+3) & 0xff,
+            *(fill+2) & 0xff,
+            *(fill+1) & 0xff,
+            *(fill+0) & 0xff,
+            max);
+    link_directive(".p2alignl", buffer, 0);
+  }
+
 #ifdef md_flush_pending_output
   md_flush_pending_output ();
 #endif
@@ -1376,18 +1400,6 @@ s_align (int arg, int bytes_p)
   offsetT fill = 0;
   int max;
   int fill_p;
-
-
-  //// inserts the align directive as a "directive
-  char buffer[MAX_OPERANDS_STRING_LENGTH];
-  char *p_buffer = buffer;
-  char *p_str = input_line_pointer;
-  while( *p_str && *p_str != '\n'){
-    *p_buffer++ = *p_str++;
-  }
-  *p_buffer = '\0';
-  link_directive(".align", buffer, 0);
-  /////
 
   if (flag_mri)
     stop = mri_comment_field (&stopc);
