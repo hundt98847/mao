@@ -23,9 +23,21 @@
 #include "MaoRelax.h"
 #include "tc-i386-helper.h"
 
+/* TODO(nvachhar): Unparsed directives that end fragments:
+   s_fill <- ".fill"
+   do_org <- s_org <- ".org"
+          <- assign_symbol <- s_set <- ".equ", ".equiv", ".eqv", ".set"
+                           <- equals <- read_a_source_file <- ??
+   bss_alloc <- ??
+   do_align <- read_a_source_file <- ??
+*/
+
 extern "C" {
   extern bfd *stdoutput;
   int relax_segment(struct frag *segment_frag_root, void *segT, int pass);
+  void convert_to_bignum(expressionS *exp);
+  int sizeof_leb128(valueT value, int sign);
+  int output_big_leb128 (char *p, LITTLENUM_TYPE *bignum, int size, int sign);
 }
 
 void MaoRelaxer::Relax() {
@@ -40,6 +52,8 @@ void MaoRelaxer::Relax() {
 struct frag *MaoRelaxer::BuildFragments() {
   struct frag *fragments, *frag;
   fragments = frag = NewFragment();
+
+  bool is_text = !strcmp(section_->name(), ".text");
 
   for (SectionEntryIterator iter = section_->EntryBegin(mao_);
        iter != section_->EntryEnd(mao_); ++iter) {
@@ -58,7 +72,112 @@ struct frag *MaoRelaxer::BuildFragments() {
         break;
       }
       case MaoUnitEntryBase::DIRECTIVE: {
-        // TODO(nvachhar): Fill me in
+        DirectiveEntry *dentry = static_cast<DirectiveEntry*>(entry);
+        switch (dentry->op()) {
+          case DirectiveEntry::P2ALIGN:
+          case DirectiveEntry::P2ALIGNW:
+          case DirectiveEntry::P2ALIGNL: {
+            MAO_ASSERT(dentry->NumOperands() == 3);
+            const DirectiveEntry::Operand *alignment = dentry->GetOperand(0);
+            const DirectiveEntry::Operand *max = dentry->GetOperand(2);
+
+            MAO_ASSERT(alignment->type == DirectiveEntry::INT);
+            MAO_ASSERT(max->type == DirectiveEntry::INT);
+
+            frag = EndFragmentAlign(is_text, alignment->data.i,
+                                    max->data.i, frag, true);
+            break;
+          }
+          case DirectiveEntry::SLEB128:
+          case DirectiveEntry::ULEB128: {
+            bool is_signed = dentry->op() == DirectiveEntry::SLEB128;
+            MAO_ASSERT(dentry->NumOperands() == 1);
+            const DirectiveEntry::Operand *value = dentry->GetOperand(0);
+            MAO_ASSERT(value->type == DirectiveEntry::EXPRESSION);
+            expressionS *expr = value->data.expr;
+
+            if (expr->X_op == O_constant && is_signed &&
+                (expr->X_add_number < 0) != !expr->X_unsigned) {
+              // TODO(nvachhar): Should we assert instead of changing the IR?
+              // We're outputting a signed leb128 and the sign of X_add_number
+              // doesn't reflect the sign of the original value.  Convert EXP
+              // to a correctly-extended bignum instead.
+              convert_to_bignum (expr);
+            }
+
+            if (expr->X_op == O_constant) {
+              // If we've got a constant, compute its size right now
+              int size =
+                  sizeof_leb128 (expr->X_add_number, is_signed ? 1 : 0);
+              frag->fr_fix += size;
+            } else if (expr->X_op == O_big) {
+              // O_big is a different sort of constant.
+              int size =
+                  output_big_leb128 (NULL, generic_bignum,
+                                     expr->X_add_number, is_signed ? 1 : 0);
+              frag->fr_fix += size;
+            } else
+              // Otherwise, end the fragment
+              frag = EndFragmentLeb128(value, is_signed, frag, true);
+            break;
+          }
+          case DirectiveEntry::BYTE:
+            frag->fr_fix++;
+            break;
+          case DirectiveEntry::WORD:
+            frag->fr_fix += 2;
+            break;
+          case DirectiveEntry::RVA:
+          case DirectiveEntry::LONG:
+            frag->fr_fix += 4;
+            break;
+          case DirectiveEntry::QUAD:
+            frag->fr_fix += 8;
+            break;
+          case DirectiveEntry::ASCII:
+            frag->fr_fix += StringSize(dentry, 1, false);
+            break;
+          case DirectiveEntry::STRING8:
+            frag->fr_fix += StringSize(dentry, 1, true);
+            break;
+          case DirectiveEntry::STRING16:
+            frag->fr_fix += StringSize(dentry, 2, true);
+            break;
+          case DirectiveEntry::STRING32:
+            frag->fr_fix += StringSize(dentry, 4, true);
+            break;
+          case DirectiveEntry::STRING64:
+            frag->fr_fix += StringSize(dentry, 8, true);
+            break;
+          case DirectiveEntry::SPACE:
+            frag = HandleSpace(dentry, 0, frag, true);
+            break;
+          case DirectiveEntry::DS_B:
+            frag = HandleSpace(dentry, 1, frag, true);
+            break;
+          case DirectiveEntry::DS_W:
+            frag = HandleSpace(dentry, 2, frag, true);
+            break;
+          case DirectiveEntry::DS_L:
+            frag = HandleSpace(dentry, 4, frag, true);
+            break;
+          case DirectiveEntry::DS_D:
+            frag = HandleSpace(dentry, 8, frag, true);
+            break;
+          case DirectiveEntry::DS_X:
+            frag = HandleSpace(dentry, 12, frag, true);
+            break;
+          case DirectiveEntry::FILE:
+          case DirectiveEntry::SECTION:
+          case DirectiveEntry::GLOBAL:
+          case DirectiveEntry::LOCAL:
+          case DirectiveEntry::WEAK:
+          case DirectiveEntry::TYPE:
+          case DirectiveEntry::SIZE:
+          case DirectiveEntry::NUM_OPCODES:
+            // Nothing to do
+            break;
+        }
         break;
       }
       case MaoUnitEntryBase::LABEL:
@@ -71,11 +190,7 @@ struct frag *MaoRelaxer::BuildFragments() {
     }
   }
 
-  if (!strcmp(section_->name(), ".text"))
-    EndFragmentCodeAlign(0, 0, frag, false);
-  else
-    // TODO(nvachhar):
-    MAO_ASSERT(false);
+  EndFragmentAlign(is_text, 0, 0, frag, false);
 
   return fragments;
 }
@@ -149,15 +264,72 @@ struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
 }
 
 
-struct frag *MaoRelaxer::EndFragmentCodeAlign(int alignment, int max,
-                                              struct frag *frag,
-                                              bool new_frag) {
-  return FragVar(rs_align_code, 1,
+struct frag *MaoRelaxer::EndFragmentAlign(bool code,
+                                          int alignment, int max,
+                                          struct frag *frag,
+                                          bool new_frag) {
+  relax_stateT state = code ? rs_align_code : rs_align_code;
+  return FragVar(state, 1,
                  static_cast<relax_substateT>(max), NULL,
                  static_cast<offsetT>(alignment), NULL,
                  frag, new_frag);
 }
 
+struct frag *MaoRelaxer::EndFragmentLeb128(
+    const DirectiveEntry::Operand *value,
+    bool is_signed,
+    struct frag *frag,
+    bool new_frag) {
+  // TODO(nvachhar): Ugh... we have to create a symbol
+  // here to store in the fragment.  This means each
+  // execution of relaxation allocates memory that will
+  // never be freed.  Let's hope relaxation doesn't run
+  // too often.
+  return FragVar(rs_leb128, 0,
+                 static_cast<relax_substateT>(is_signed),
+                 make_expr_symbol(value->data.expr),
+                 static_cast<offsetT>(0), NULL,
+                 frag, new_frag);
+}
+
+int MaoRelaxer::StringSize(DirectiveEntry *entry, int multiplier,
+                           bool null_terminate) {
+  MAO_ASSERT(entry->NumOperands() == 1);
+  const DirectiveEntry::Operand *value = entry->GetOperand(0);
+  MAO_ASSERT(value->type == DirectiveEntry::STRING);
+
+  // Subtract 2 for the quotes, add the null terminator if necessary
+  // and then multiply by the character size.
+  return multiplier * ((value->data.str->length() - 2) +
+                       (null_terminate ? 1 : 0));
+}
+
+struct frag *MaoRelaxer::HandleSpace(DirectiveEntry *entry,
+                                     int mult,
+                                     struct frag *frag,
+                                     bool new_frag) {
+  MAO_ASSERT(entry->NumOperands() == 2);
+  const DirectiveEntry::Operand *size_opnd = entry->GetOperand(0);
+  MAO_ASSERT(size_opnd->type == DirectiveEntry::EXPRESSION);
+  expressionS *size = size_opnd->data.expr;
+
+  if (size->X_op == O_constant) {
+    int increment = size->X_add_number * (mult ? mult : 1);
+    MAO_ASSERT(increment > 0);
+    frag->fr_fix += increment;
+  } else {
+    MAO_ASSERT(mult == 0 || mult == 1);
+    // TODO(nvachhar): Ugh... we have to create a symbol
+    // here to store in the fragment.  This means each
+    // execution of relaxation allocates memory that will
+    // never be freed.  Let's hope relaxation doesn't run
+    // too often.
+    frag = FragVar(rs_space, 1, (relax_substateT) 0, make_expr_symbol (size),
+                   (offsetT) 0, NULL, frag, new_frag);
+  }
+
+  return frag;
+}
 
 struct frag *MaoRelaxer::FragVar(relax_stateT type, int var,
                                  relax_substateT subtype,

@@ -1163,7 +1163,7 @@ read_a_source_file (char *name)
 /* Convert O_constant expression EXP into the equivalent O_big representation.
    Take the sign of the number from X_unsigned rather than X_add_number.  */
 
-static void
+void
 convert_to_bignum (expressionS *exp)
 {
   valueT value;
@@ -4921,7 +4921,7 @@ output_big_uleb128 (char *p, LITTLENUM_TYPE *bignum, int size)
   return p - orig;
 }
 
-static int
+int
 output_big_leb128 (char *p, LITTLENUM_TYPE *bignum, int size, int sign)
 {
   if (sign)

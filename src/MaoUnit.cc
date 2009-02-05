@@ -907,7 +907,7 @@ void DirectiveEntry::PrintIR(::FILE *out) const {
 }
 
 const std::string &DirectiveEntry::OperandsToString(std::string *out) const {
-  for (std::vector<Operand *>::const_iterator iter = operands_.begin();
+  for (OperandVector::const_iterator iter = operands_.begin();
        iter != operands_.end(); ++iter) {
     if (iter != operands_.begin())
       out->append(", ");
