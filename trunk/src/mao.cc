@@ -24,7 +24,9 @@
 #include "MaoOptions.h"
 #include "MaoUnit.h"
 #include "MaoPasses.h"
+#include "MaoCFG.h"
 #include "MaoLoops.h"
+#include "MaoRelax.h"
 
 
 //==================================
@@ -62,6 +64,18 @@ int main(int argc, const char *argv[]) {
   //     TODO(rhundt): add loop over functinos
   CreateCFG(&mao_unit, &cfg);
   PerformLoopRecognition(&mao_unit, &cfg);
+
+  // for (section iterator...)
+  //     TODO(nvachhar): add loop over sections
+  MaoRelaxer::SizeMap sizes;
+  Section *section = mao_unit.FindOrCreateAndFind(".text");
+  Relax(&mao_unit, section, &sizes);
+  for (SectionEntryIterator iter = section->EntryBegin(&mao_unit);
+       iter != section->EntryEnd(&mao_unit); ++iter) {
+    MaoUnitEntryBase *entry = *iter;
+    printf("%02d:\t", sizes[entry]);
+    entry->PrintEntry(stdout);
+  }
 
   // global finalization passes
   mao_pass_man->LinkPass(new AssemblyPass(&mao_options, &mao_unit));

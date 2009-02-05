@@ -1,4 +1,4 @@
-	.section .data
+	.section .text
 L1:	.byte	1	# Should be address 0x00
 	.align	8
 L2:	.byte	2	# Should be address 0x08
