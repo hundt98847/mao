@@ -201,8 +201,14 @@ void CFGBuilder::Build() {
 void CreateCFG(MaoUnit *mao_unit, CFG *cfg) {
   Section *section = mao_unit->FindOrCreateAndFind(".data");
 
-  MaoRelaxer relaxer(mao_unit, section);
-  relaxer.Relax();
+  MaoRelaxer::SizeMap sizes;
+  Relax(mao_unit, section, &sizes);
+  for (SectionEntryIterator iter = section->EntryBegin(mao_unit);
+       iter != section->EntryEnd(mao_unit); ++iter) {
+    MaoUnitEntryBase *entry = *iter;
+    printf("%02d:\t", sizes[entry]);
+    entry->PrintEntry(stdout);
+  }
 
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), section, cfg);
   builder.Build();

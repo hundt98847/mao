@@ -20,14 +20,50 @@
 #include "MaoDebug.h"
 #include "tc-i386-helper.h"
 
+#include <map>
+
 class MaoRelaxer {
  public:
-  MaoRelaxer(MaoUnit *mao, Section *section)
-      : mao_(mao), section_(section) { }
+  typedef std::map<MaoUnitEntryBase *, int> SizeMap;
 
-  void Relax();
+  MaoRelaxer() { };
+  void Relax(MaoUnit *mao, Section *section, SizeMap *size_map);
 
  private:
+  typedef std::map<struct frag *, MaoUnitEntryBase *> FragToEntryMap;
+
+  static struct frag *BuildFragments(
+      MaoUnit *mao, Section *section, SizeMap *size_map,
+      FragToEntryMap *relax_map);
+
+  static struct frag *EndFragmentInstruction(
+      InstructionEntry *entry, struct frag *frag, bool new_frag);
+
+  static struct frag *EndFragmentAlign(
+      bool code, int alignment, int max, struct frag *frag, bool new_frag);
+
+  static struct frag *EndFragmentLeb128(
+      const DirectiveEntry::Operand *value, bool is_signed,
+      struct frag *frag, bool new_frag);
+
+  static struct frag *HandleSpace(
+      DirectiveEntry *entry, int mult, struct frag *frag,
+      bool new_frag, SizeMap *size_map, FragToEntryMap *relax_map);
+
+  static void HandleString(
+      DirectiveEntry *entry, int multiplier, bool null_terminate,
+      struct frag *frag, SizeMap *size_map);
+
+  static int StringSize(
+      DirectiveEntry *entry, int multiplier, bool null_terminate);
+
+  static struct frag *FragVar(
+      relax_stateT type, int var, relax_substateT subtype,
+      symbolS *symbol, offsetT offset, char *opcode, struct frag *frag,
+      bool new_frag);
+
+  static void FragInitOther(struct frag *frag);
+
   static struct frag *NewFragment() {
     struct frag *frag =
         static_cast<struct frag *>(calloc(1, sizeof(struct frag)));
@@ -42,37 +78,7 @@ class MaoRelaxer {
       free(fragments);
     }
   }
-
-  static int StringSize(DirectiveEntry *entry, int multiplier,
-                        bool null_terminate);
-
-  static struct frag *EndFragmentInstruction(
-      InstructionEntry *entry, struct frag *frag, bool new_frag);
-
-  static struct frag *EndFragmentAlign(
-      bool code, int alignment, int max, struct frag *frag, bool new_frag);
-
-  static struct frag *EndFragmentLeb128(const DirectiveEntry::Operand *value,
-                                        bool is_signed,
-                                        struct frag *frag,
-                                        bool new_frag);
-
-  static struct frag *MaoRelaxer::HandleSpace(DirectiveEntry *entry,
-                                              int mult,
-                                              struct frag *frag,
-                                              bool new_frag);
-
-  static struct frag *FragVar(
-      relax_stateT type, int var, relax_substateT subtype,
-      symbolS *symbol, offsetT offset, char *opcode, struct frag *frag,
-      bool new_frag);
-
-  static void FragInitOther(struct frag *frag);
-
-  struct frag *BuildFragments();
-
-
-
-  MaoUnit *mao_;
-  Section *section_;
 };
+
+// External entry point
+void Relax(MaoUnit *mao, Section *section, MaoRelaxer::SizeMap *size_map);
