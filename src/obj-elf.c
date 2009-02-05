@@ -1706,7 +1706,7 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
 
   if (type & BSF_FUNCTION)
       link_type(sym, FUNCTION_SYMBOL, 0);
-  else if (type & (BSF_OBJECT | BSF_THREAD_LOCAL))
+  else if ((type & BSF_OBJECT) && (type & BSF_THREAD_LOCAL))
     link_type(sym, TLS_SYMBOL, 0);
   else if (type & BSF_OBJECT) {
     if (S_GET_SEGMENT(sym) == bfd_com_section_ptr)
