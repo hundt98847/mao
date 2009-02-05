@@ -196,9 +196,13 @@ void CFGBuilder::Build() {
     Link(previous, sink, true);
 }
 
+#include "MaoRelax.h"
 
 void CreateCFG(MaoUnit *mao_unit, CFG *cfg) {
-  Section *section = mao_unit->FindOrCreateAndFind(".text");
+  Section *section = mao_unit->FindOrCreateAndFind(".data");
+
+  MaoRelaxer relaxer(mao_unit, section);
+  relaxer.Relax();
 
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), section, cfg);
   builder.Build();

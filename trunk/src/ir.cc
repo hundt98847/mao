@@ -68,7 +68,7 @@ struct link_context_s get_link_context() {
 
 static void link_directive_tail(
     DirectiveEntry::Opcode opcode,
-    std::vector<DirectiveEntry::Operand *> operands) {
+    DirectiveEntry::OperandVector operands) {
   struct link_context_s link_context = get_link_context();
   DirectiveEntry *directive =
       new DirectiveEntry(opcode, operands,
@@ -175,9 +175,9 @@ void link_section(int push,
   MAO_ASSERT(maounit_);
   maounit_->SetSubSection(section_name, 0);
 
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(
-                         quote_c_string(section_name)));
+                         section_name));
   if (arguments.length)
     operands.push_back(new DirectiveEntry::Operand(arguments));
   link_directive_tail(DirectiveEntry::SECTION, operands);
@@ -192,7 +192,7 @@ void link_type(symbolS *symbol, SymbolType symbol_type,
   MAO_ASSERT(mao_symbol);
   mao_symbol->set_symbol_type(symbol_type);
 
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(symbol));
   const char *type_name;
   switch (symbol_type) {
@@ -224,38 +224,38 @@ void link_size(const char *name, unsigned int size, const char *line_verbatim) {
 void link_file_directive(const char *name) {
   std::string quoted_name = quote_c_string(name);
 
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(quoted_name));
   link_directive_tail(DirectiveEntry::FILE, operands);
 }
 
 void link_global_directive(symbolS *symbol) {
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(symbol));
   link_directive_tail(DirectiveEntry::GLOBAL, operands);
 }
 
 void link_local_directive(symbolS *symbol) {
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(symbol));
   link_directive_tail(DirectiveEntry::LOCAL, operands);
 }
 
 void link_weak_directive(symbolS *symbol) {
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(symbol));
   link_directive_tail(DirectiveEntry::WEAK, operands);
 }
 
 void link_size_directive(symbolS *symbol, expressionS *expr) {
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(symbol));
   operands.push_back(new DirectiveEntry::Operand(expr));
   link_directive_tail(DirectiveEntry::SIZE, operands);
 }
 
 void link_dc_directive(int size, int rva, expressionS *expr) {
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(expr));
 
   DirectiveEntry::Opcode opcode;
@@ -276,7 +276,7 @@ void link_string_directive(int bitsize, int append_zero,
                            MaoStringPiece value) {
   std::string quoted_value = quote_string_piece(value);
 
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(quoted_value));
 
   DirectiveEntry::Opcode opcode;
@@ -296,7 +296,7 @@ void link_string_directive(int bitsize, int append_zero,
 void link_leb128_directive (expressionS *expr, int sign) {
   DirectiveEntry::Opcode opcode = sign ? DirectiveEntry::SLEB128 :
       DirectiveEntry::ULEB128;
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(expr));
   link_directive_tail(opcode, operands);
 }
@@ -312,7 +312,7 @@ void link_align_directive(int align, int fill_len, int fill, int max) {
     default: MAO_ASSERT(false);
   }
 
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(align));
   if (fill_len)
     operands.push_back(new DirectiveEntry::Operand(fill));
@@ -335,7 +335,7 @@ void link_space_directive(expressionS *size, expressionS *fill, int mult) {
     default: MAO_ASSERT(false);
   }
 
-  std::vector<DirectiveEntry::Operand *> operands;
+  DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(size));
   operands.push_back(new DirectiveEntry::Operand(fill));
   link_directive_tail(opcode, operands);

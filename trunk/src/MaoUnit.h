@@ -323,21 +323,27 @@ class DirectiveEntry : public MaoUnitEntryBase {
     } data;
   };
 
-  DirectiveEntry(Opcode op, const std::vector<Operand *> &operands,
+  typedef std::vector<Operand *> OperandVector;
+
+  DirectiveEntry(Opcode op, const OperandVector &operands,
                  unsigned int line_number, const char* line_verbatim)
       : MaoUnitEntryBase(line_number, line_verbatim),
         op_(op), operands_(operands) { }
 
   virtual ~DirectiveEntry() {
-    for (std::vector<Operand *>::iterator iter = operands_.begin();
+    for (OperandVector::iterator iter = operands_.begin();
          iter != operands_.end(); ++iter) {
       delete *iter;
     }
   }
 
+  Opcode op() { return op_; }
   const char *GetOpcodeName() const {
     return kOpcodeNames[op_];
   }
+
+  int NumOperands() { return operands_.size(); }
+  const Operand *GetOperand(int num) { return operands_[num]; }
 
   virtual void PrintEntry(::FILE *out) const;
   virtual void PrintIR(::FILE *out) const;
@@ -362,7 +368,7 @@ class DirectiveEntry : public MaoUnitEntryBase {
   const Opcode op_;
 
   // operands_ hold the operands of the directive
-  std::vector<Operand *> operands_;
+  OperandVector operands_;
 };
 
 // An Entry of the type Debug
