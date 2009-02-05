@@ -372,143 +372,6 @@ bool AsmInstruction::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.regxmm);
 }
 
-void AsmInstruction::PrintExpression(FILE *out, const expressionS *expr) const {
-  switch (expr->X_op) {
-    /* An illegal expression.  */
-    case O_illegal:
-      break;
-      /* A nonexistent expression.  */
-    case O_absent:
-      break;
-      /* X_add_number (a constant expression).  */
-    case O_constant:
-      break;
-      /* X_add_symbol + X_add_number.  */
-    case O_symbol:
-      break;
-      /* X_add_symbol + X_add_number - the base address of the image.  */
-    case O_symbol_rva:
-      break;
-      /* A register (X_add_number is register number).  */
-    case O_register:
-      break;
-      /* A big value.  If X_add_number is negative or 0, the value is in
-         generic_floating_point_number.  Otherwise the value is in
-         generic_bignum, and X_add_number is the number of LITTLENUMs in
-         the value.  */
-    case O_big:
-      break;
-      /* (- X_add_symbol) + X_add_number.  */
-    case O_uminus:
-      break;
-      /* (~ X_add_symbol) + X_add_number.  */
-    case O_bit_not:
-      break;
-      /* (! X_add_symbol) + X_add_number.  */
-    case O_logical_not:
-      break;
-      /* (X_add_symbol * X_op_symbol) + X_add_number.  */
-    case O_multiply:
-      break;
-      /* (X_add_symbol / X_op_symbol) + X_add_number.  */
-    case O_divide:
-      break;
-      /* (X_add_symbol % X_op_symbol) + X_add_number.  */
-    case O_modulus:
-      break;
-      /* (X_add_symbol << X_op_symbol) + X_add_number.  */
-    case O_left_shift:
-      break;
-      /* (X_add_symbol >> X_op_symbol) + X_add_number.  */
-    case O_right_shift:
-      break;
-      /* (X_add_symbol | X_op_symbol) + X_add_number.  */
-    case O_bit_inclusive_or:
-      break;
-      /* (X_add_symbol |~ X_op_symbol) + X_add_number.  */
-    case O_bit_or_not:
-      break;
-      /* (X_add_symbol ^ X_op_symbol) + X_add_number.  */
-    case O_bit_exclusive_or:
-      break;
-      /* (X_add_symbol & X_op_symbol) + X_add_number.  */
-    case O_bit_and:
-      break;
-      /* (X_add_symbol + X_op_symbol) + X_add_number.  */
-    case O_add:
-      break;
-      /* (X_add_symbol - X_op_symbol) + X_add_number.  */
-    case O_subtract:
-      break;
-      /* (X_add_symbol == X_op_symbol) + X_add_number.  */
-    case O_eq:
-      break;
-      /* (X_add_symbol != X_op_symbol) + X_add_number.  */
-    case O_ne:
-      break;
-      /* (X_add_symbol < X_op_symbol) + X_add_number.  */
-    case O_lt:
-      break;
-      /* (X_add_symbol <= X_op_symbol) + X_add_number.  */
-    case O_le:
-      break;
-      /* (X_add_symbol >= X_op_symbol) + X_add_number.  */
-    case O_ge:
-      break;
-      /* (X_add_symbol > X_op_symbol) + X_add_number.  */
-    case O_gt:
-      break;
-      /* (X_add_symbol && X_op_symbol) + X_add_number.  */
-    case O_logical_and:
-      break;
-      /* (X_add_symbol || X_op_symbol) + X_add_number.  */
-    case O_logical_or:
-      break;
-      /* X_op_symbol [ X_add_symbol ] */
-    case O_index:
-      break;
-      /* machine dependent operators */
-    case O_md1:
-    case O_md2:
-    case O_md3:
-    case O_md4:
-    case O_md5:
-    case O_md6:
-    case O_md7:
-    case O_md8:
-    case O_md9:
-    case O_md10:
-    case O_md11:
-    case O_md12:
-    case O_md13:
-    case O_md14:
-    case O_md15:
-    case O_md16:
-    case O_md17:
-    case O_md18:
-    case O_md19:
-    case O_md20:
-    case O_md21:
-    case O_md22:
-    case O_md23:
-    case O_md24:
-    case O_md25:
-    case O_md26:
-    case O_md27:
-    case O_md28:
-    case O_md29:
-    case O_md30:
-    case O_md31:
-    case O_md32:
-  /* this must be the largest value */
-    case O_max:
-    default:
-      MAO_ASSERT_MSG(0, "PrintExpression does not support the symbol %d",
-                     expr->X_op);
-      break;
-  }
-}
-
 void AsmInstruction::PrintImmediateOperand(FILE *out,
                                            const expressionS *expr) const {
   switch (expr->X_op) {
@@ -1044,6 +907,159 @@ const std::string &DirectiveEntry::OperandsToString(std::string *out) const {
   return *out;
 }
 
+const std::string &DirectiveEntry::OperandExpressionToString(
+    const expressionS *expr, std::string *out) const {
+  switch (expr->X_op) {
+    // SUPPORTED
+      /* X_add_number (a constant expression).  */
+    case O_constant:
+      {
+        std::ostringstream int_string;
+        int_string << expr->X_add_number;
+        out->append(int_string.str());
+      }
+      break;
+      /* X_add_symbol + X_add_number.  */
+    case O_symbol:
+      {
+        std::ostringstream exp_string;
+        if (expr->X_add_symbol) {
+          exp_string << S_GET_NAME(expr->X_add_symbol) << "+";
+        }
+        exp_string << expr->X_add_number;
+        out->append(exp_string.str());
+      }
+      break;
+      /* (X_add_symbol + X_op_symbol) + X_add_number.  */
+    case O_add:
+      {
+        std::ostringstream exp_string;
+        if (expr->X_add_symbol) {
+          exp_string << S_GET_NAME(expr->X_add_symbol) << "+";
+        }
+        if (expr->X_op_symbol) {
+          exp_string << S_GET_NAME(expr->X_op_symbol) << "+";;
+        }
+        exp_string << expr->X_add_number;
+        out->append(exp_string.str());
+      }
+      break;
+      /* (X_add_symbol - X_op_symbol) + X_add_number.  */
+    case O_subtract:
+      {
+        std::ostringstream exp_string;
+        if (expr->X_add_symbol) {
+          exp_string << S_GET_NAME(expr->X_add_symbol) << "-";
+        }
+        if (expr->X_op_symbol) {
+          exp_string << S_GET_NAME(expr->X_op_symbol) << "+";;
+        }
+        exp_string << expr->X_add_number;
+        out->append(exp_string.str());
+      }
+      break;
+
+    // UNSUPPORTED
+    /* An illegal expression.  */
+    case O_illegal:
+      /* A nonexistent expression.  */
+    case O_absent:
+      /* X_add_symbol + X_add_number - the base address of the image.  */
+    case O_symbol_rva:
+      /* A register (X_add_number is register number).  */
+    case O_register:
+      /* A big value.  If X_add_number is negative or 0, the value is in
+         generic_floating_point_number.  Otherwise the value is in
+         generic_bignum, and X_add_number is the number of LITTLENUMs in
+         the value.  */
+    case O_big:
+      /* (- X_add_symbol) + X_add_number.  */
+    case O_uminus:
+      /* (~ X_add_symbol) + X_add_number.  */
+    case O_bit_not:
+      /* (! X_add_symbol) + X_add_number.  */
+    case O_logical_not:
+      /* (X_add_symbol * X_op_symbol) + X_add_number.  */
+    case O_multiply:
+      /* (X_add_symbol / X_op_symbol) + X_add_number.  */
+    case O_divide:
+      /* (X_add_symbol % X_op_symbol) + X_add_number.  */
+    case O_modulus:
+      /* (X_add_symbol << X_op_symbol) + X_add_number.  */
+    case O_left_shift:
+      /* (X_add_symbol >> X_op_symbol) + X_add_number.  */
+    case O_right_shift:
+      /* (X_add_symbol | X_op_symbol) + X_add_number.  */
+    case O_bit_inclusive_or:
+      /* (X_add_symbol |~ X_op_symbol) + X_add_number.  */
+    case O_bit_or_not:
+      /* (X_add_symbol ^ X_op_symbol) + X_add_number.  */
+    case O_bit_exclusive_or:
+      /* (X_add_symbol & X_op_symbol) + X_add_number.  */
+    case O_bit_and:
+      /* (X_add_symbol == X_op_symbol) + X_add_number.  */
+    case O_eq:
+      /* (X_add_symbol != X_op_symbol) + X_add_number.  */
+    case O_ne:
+      /* (X_add_symbol < X_op_symbol) + X_add_number.  */
+    case O_lt:
+      /* (X_add_symbol <= X_op_symbol) + X_add_number.  */
+    case O_le:
+      /* (X_add_symbol >= X_op_symbol) + X_add_number.  */
+    case O_ge:
+      /* (X_add_symbol > X_op_symbol) + X_add_number.  */
+    case O_gt:
+      /* (X_add_symbol && X_op_symbol) + X_add_number.  */
+    case O_logical_and:
+      /* (X_add_symbol || X_op_symbol) + X_add_number.  */
+    case O_logical_or:
+      /* X_op_symbol [ X_add_symbol ] */
+    case O_index:
+      /* machine dependent operators */
+    case O_md1:
+    case O_md2:
+    case O_md3:
+    case O_md4:
+    case O_md5:
+    case O_md6:
+    case O_md7:
+    case O_md8:
+    case O_md9:
+    case O_md10:
+    case O_md11:
+    case O_md12:
+    case O_md13:
+    case O_md14:
+    case O_md15:
+    case O_md16:
+    case O_md17:
+    case O_md18:
+    case O_md19:
+    case O_md20:
+    case O_md21:
+    case O_md22:
+    case O_md23:
+    case O_md24:
+    case O_md25:
+    case O_md26:
+    case O_md27:
+    case O_md28:
+    case O_md29:
+    case O_md30:
+    case O_md31:
+    case O_md32:
+  /* this must be the largest value */
+    case O_max:
+    default:
+      MAO_ASSERT_MSG(
+          0,
+          "OperandExpressionToString does not support the symbol %d\n",
+          expr->X_op);
+      break;
+  }
+  return *out;
+}
+
 const std::string &DirectiveEntry::OperandToString(const Operand &operand,
                                                    std::string *out) const {
   switch (operand.type) {
@@ -1062,7 +1078,7 @@ const std::string &DirectiveEntry::OperandToString(const Operand &operand,
       out->append(S_GET_NAME(operand.data.sym));
       break;
     case EXPRESSION:
-      // TODO(nvachhar): Fill me in
+      OperandExpressionToString(operand.data.expr, out);
       break;
     case EMPTY_OPERAND:
       // Nothing to do

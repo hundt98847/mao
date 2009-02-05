@@ -355,6 +355,9 @@ class DirectiveEntry : public MaoUnitEntryBase {
   const std::string &DirectiveEntry::OperandToString(const Operand &operand,
                                                      std::string *out) const;
 
+  const std::string &DirectiveEntry::OperandExpressionToString(const expressionS *expr,
+                                                               std::string *out) const;
+
   // op_ holds the type of directive
   const Opcode op_;
 
@@ -437,7 +440,6 @@ class AsmInstruction {
                           const enum bfd_reloc_code_real reloc,
                           const expressionS *expr,
                           const char *segment_overried) const;
-  void PrintExpression(FILE *out, const expressionS *expr) const;
   char *GetRelocString(const enum bfd_reloc_code_real reloc) const;
 };
 
