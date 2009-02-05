@@ -70,12 +70,16 @@ int main(int argc, const char *argv[]) {
   MaoRelaxer::SizeMap sizes;
   Section *section = mao_unit.FindOrCreateAndFind(".text");
   Relax(&mao_unit, section, &sizes);
+  int section_size = 0;
   for (SectionEntryIterator iter = section->EntryBegin(&mao_unit);
        iter != section->EntryEnd(&mao_unit); ++iter) {
     MaoUnitEntryBase *entry = *iter;
-    printf("%02d:\t", sizes[entry]);
+    int size = sizes[entry];
+    printf("%04x %02d:\t", section_size, size);
+    section_size += size;
     entry->PrintEntry(stdout);
   }
+  printf("Size of .text section: %d\n", section_size);
 
   // global finalization passes
   mao_pass_man->LinkPass(new AssemblyPass(&mao_options, &mao_unit));
