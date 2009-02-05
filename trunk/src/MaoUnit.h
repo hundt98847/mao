@@ -432,6 +432,13 @@ class AsmInstruction {
   void FreeInstruction();
   bool IsInList(const MaoOpcode opcode, const MaoOpcode list[],
                 const unsigned int number_of_elements) const;
+  void PrintImmediateOperand(FILE *out, const expressionS *expr) const;
+  void PrintMemoryOperand(FILE *out, const i386_operand_type &operand_type,
+                          const enum bfd_reloc_code_real reloc,
+                          const expressionS *expr,
+                          const char *segment_overried) const;
+  void PrintExpression(FILE *out, const expressionS *expr) const;
+  char *GetRelocString(const enum bfd_reloc_code_real reloc) const;
 };
 
 // An Entry of the type Instruction
