@@ -597,6 +597,16 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
       }
     }
 
+    // XMM registers
+    if (instruction_->types[i].bitfield.regmmx) {
+      if (instruction_->tm.operand_types[i].bitfield.regmmx) {
+        fprintf(out, "%%mm%d", instruction_->rm.reg);
+      }else if (instruction_->tm.operand_types[i].bitfield.regxmm) {
+        fprintf(out, "%%xmm%d", instruction_->rm.reg);
+      }
+    }
+
+
     if (IsRegisterOperand(instruction_, i)) {
       if (instruction_->types[i].bitfield.jumpabsolute) {
         fprintf(out, "*");
