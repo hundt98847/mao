@@ -60,8 +60,8 @@ int main(int argc, const char *argv[]) {
 
   // for (function iterator....)
   //     TODO(rhundt): add loop over functinos
-//   CreateCFG(&mao_unit, &cfg);
-//   PerformLoopRecognition(&mao_unit, &cfg);
+  CreateCFG(&mao_unit, &cfg);
+  PerformLoopRecognition(&mao_unit, &cfg);
 
   // global finalization passes
   mao_pass_man->LinkPass(new AssemblyPass(&mao_options, &mao_unit));
