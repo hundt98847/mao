@@ -357,12 +357,12 @@ class DirectiveEntry : public MaoUnitEntryBase {
   virtual bool IsReturn() const { return false; }
 
  private:
-  const std::string &DirectiveEntry::OperandsToString(std::string *out) const;
-  const std::string &DirectiveEntry::OperandToString(const Operand &operand,
-                                                     std::string *out) const;
+  const std::string &OperandsToString(std::string *out) const;
+  const std::string &OperandToString(const Operand &operand,
+                                     std::string *out) const;
 
-  const std::string &DirectiveEntry::OperandExpressionToString(const expressionS *expr,
-                                                               std::string *out) const;
+  const std::string &OperandExpressionToString(const expressionS *expr,
+                                               std::string *out) const;
 
   // op_ holds the type of directive
   const Opcode op_;
@@ -446,7 +446,7 @@ class AsmInstruction {
                           const enum bfd_reloc_code_real reloc,
                           const expressionS *expr,
                           const char *segment_overried) const;
-  char *GetRelocString(const enum bfd_reloc_code_real reloc) const;
+  const char *GetRelocString(const enum bfd_reloc_code_real reloc) const;
 };
 
 // An Entry of the type Instruction

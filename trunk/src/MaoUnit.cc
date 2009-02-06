@@ -415,8 +415,8 @@ void AsmInstruction::PrintImmediateOperand(FILE *out,
   return;
 }
 
-char *AsmInstruction::GetRelocString(const enum bfd_reloc_code_real reloc)
-    const {
+const char *AsmInstruction::GetRelocString(
+  const enum bfd_reloc_code_real reloc) const {
   switch (reloc) {
     case BFD_RELOC_X86_64_PLT32:
       return "@PLT";
@@ -579,7 +579,7 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
         default:
           fprintf(stderr, "Unable to find segement regsiter sreg2%d\n",
                   instruction_->rm.reg);
-          assert(0);
+          MAO_ASSERT(false);
       }
     }
     if (instruction_->types[i].bitfield.sreg3) {
@@ -593,7 +593,7 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
         default:
           fprintf(stderr, "Unable to find segement regsiter sreg3%d\n",
                   instruction_->rm.reg);
-          assert(0);
+          MAO_ASSERT(false);
       }
     }
 
