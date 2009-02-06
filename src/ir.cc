@@ -125,6 +125,12 @@ void link_comm(const char *name, unsigned int common_size,
   MAO_ASSERT(name);
   MAO_ASSERT(maounit_);
   maounit_->AddCommSymbol(name, common_size, common_align);
+
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(name));
+  operands.push_back(new DirectiveEntry::Operand(common_size));
+  operands.push_back(new DirectiveEntry::Operand(common_align));
+  link_directive_tail(DirectiveEntry::COMM, operands);
 }
 
 

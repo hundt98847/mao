@@ -1441,6 +1441,31 @@ s_altmacro (int on)
   macro_set_alternate (on);
 }
 
+
+/* MAO requires the alignment parameter to be linked in .comm
+   directives. It turned out to be difficult to get it from the
+   sections, so this simple function parses it from the
+   input_line_pointer. */
+int
+my_parse_align ()
+{
+  char *input = input_line_pointer;
+  int retval = 0;
+  if (*input == ',') {
+    /* move past the comma */
+    ++input;
+    /* ignore whitespaces */
+    while(*input && (*input == ' ' || *input == '\t'))
+      ++input;
+    /* get the alignment */
+    while(*input >= '0' && *input <= '9') {
+      retval = retval*10 + *input-'0';
+      ++input;
+    }
+  }
+  return retval;
+}
+
 symbolS *
 s_comm_internal (int param,
 		 symbolS *(*comm_parse_extra) (int, symbolS *, addressT))
@@ -1453,6 +1478,8 @@ s_comm_internal (int param,
   char *stop = NULL;
   char stopc = 0;
   expressionS exp;
+
+  int my_alignment = 0;
 
   if (flag_mri)
     stop = mri_comment_field (&stopc);
@@ -1521,9 +1548,11 @@ s_comm_internal (int param,
 	     name, (long) size, (long) temp);
 
   *p = c;
-  if (comm_parse_extra != NULL)
+  if (comm_parse_extra != NULL) {
+    /* get alignment from input string */
+    my_alignment = my_parse_align();
     symbolP = (*comm_parse_extra) (param, symbolP, size);
-  else
+  } else
     {
       S_SET_VALUE (symbolP, (valueT) size);
       S_SET_EXTERNAL (symbolP);
@@ -1542,13 +1571,17 @@ s_comm_internal (int param,
   if (flag_mri)
     mri_comment_end (stop, stopc);
 
-
-  // get the subsection
-  // since bss_section seems to be initialized, the align doesnt seem to be necessary
-  //  segT s = subseg_get (BSS_SECTION_NAME, 0);
-  int al = get_recorded_alignment (bss_section);
-  // note that alignment is given in the numebr of bits. i.e. 16 bytes = 4
-  link_comm((char *)(symbolP->bsym->name), size, al, 0);
+//   int is_local = symbol_get_obj (symbolP)->local;
+//   if (is_local) {
+//      // The following code does not work for alignment values of 1 and 2
+//     int tmp = get_recorded_alignment (bss_section);
+//     al = 1;
+//     while(tmp--)
+//       al = al * 2;
+//   } else {
+//     al = (int)S_GET_ALIGN(symbolP);
+//   }
+  link_comm((char *)(symbolP->bsym->name), size, my_alignment, 0);
   return symbolP;
 }
 

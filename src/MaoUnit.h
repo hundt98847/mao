@@ -275,6 +275,7 @@ class DirectiveEntry : public MaoUnitEntryBase {
     DS_L,
     DS_D,
     DS_X,
+    COMM,
     NUM_OPCODES
   };
 
@@ -364,6 +365,9 @@ class DirectiveEntry : public MaoUnitEntryBase {
 
   const std::string &OperandExpressionToString(const expressionS *expr,
                                                std::string *out) const;
+
+  const char *DirectiveEntry::GetDotOrSymbol(symbolS *symbol) const;
+
 
   // op_ holds the type of directive
   const Opcode op_;
