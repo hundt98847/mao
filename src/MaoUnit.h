@@ -452,6 +452,9 @@ class AsmInstruction {
                           const expressionS *expr,
                           const char *segment_overried) const;
   const char *GetRelocString(const enum bfd_reloc_code_real reloc) const;
+
+  // Determines if the suffix needs to be printed
+  bool PrintSuffix() const;
 };
 
 // An Entry of the type Instruction
