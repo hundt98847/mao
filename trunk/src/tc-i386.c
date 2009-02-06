@@ -2872,10 +2872,12 @@ md_assemble (char *line)
   else if (i.rex != 0)
     add_prefix (REX_OPCODE | i.rex);
 
+  link_insn(&i, sizeof(i), line_verbatim);
+
   /* We are ready to output the insn.  */
   output_insn ();
 
-  link_insn(&i, sizeof(i), line_verbatim);
+
 }
 
 static char *

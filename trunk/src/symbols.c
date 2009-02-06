@@ -64,8 +64,8 @@ symbolS abs_symbol;
 //#define LOCAL_LABEL_CHAR	'\002'
 #define LOCAL_LABEL_CHAR	'_'
 
-#define LOCAL_LABEL_PREFIX_STR  "L__MAO_LOCAL__"
-#define LOCAL_LABEL_PREFIX_LEN  14
+#define LOCAL_LABEL_PREFIX_STR  ".L__MAO_LOCAL__"
+#define LOCAL_LABEL_PREFIX_LEN  15
 
 
 struct obstack notes;

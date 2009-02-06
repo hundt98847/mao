@@ -386,29 +386,29 @@ void AsmInstruction::PrintImmediateOperand(FILE *out,
         fprintf(out, "$%s+",
                 S_GET_NAME(expr->X_add_symbol));
       }
-      fprintf(out, "$%lld",
+      fprintf(out, "%lld",
               (long long)expr->X_add_number);
       break;
     case O_subtract:
+      fprintf(out, "$(");
       /* (X_add_symbol - X_op_symbol) + X_add_number.  */
-      break;
       if (expr->X_add_symbol || expr->X_op_symbol) {
         fprintf(out, "(");
       }
       if (expr->X_add_symbol) {
-        fprintf(out, "$%s",
+        fprintf(out, "%s",
                 S_GET_NAME(expr->X_add_symbol));
       }
       if (expr->X_op_symbol) {
-        fprintf(out, "-$%s",
+        fprintf(out, "-%s",
                 S_GET_NAME(expr->X_op_symbol));
       }
       if (expr->X_add_symbol || expr->X_op_symbol) {
         fprintf(out, ")+");
       }
-      fprintf(out, "$%lld",
+      fprintf(out, "%lld)",
               (long long)expr->X_add_number);
-
+      break;
     default:
       MAO_ASSERT_MSG(0, "Unable to print unsupported expression");
   }
@@ -455,16 +455,39 @@ void AsmInstruction::PrintMemoryOperand(FILE                  *out,
     switch (expr->X_op) {
       case O_constant:
         /* X_add_number (a constant expression).  */
-        fprintf(out, "%lld",
+        fprintf(out, "(%lld)",
                 (long long)expr->X_add_number);
         break;
       case O_symbol:
+        fprintf(out, "(");
         /* X_add_symbol + X_add_number.  */
         if (expr->X_add_symbol) {
-          fprintf(out, "%s+",
-                  S_GET_NAME(expr->X_add_symbol));
+          fprintf(out, "%s%s+",
+                  S_GET_NAME(expr->X_add_symbol),
+                  GetRelocString(reloc));
         }
         fprintf(out, "%lld", (long long)expr->X_add_number);
+        fprintf(out, ")");
+        break;
+        /* (X_add_symbol - X_op_symbol) + X_add_number.  */
+      case O_subtract:
+        if (expr->X_add_symbol || expr->X_op_symbol) {
+          fprintf(out, "(");
+        }
+        if (expr->X_add_symbol) {
+          fprintf(out, "%s%s",
+                  S_GET_NAME(expr->X_add_symbol),
+                  GetRelocString(reloc));
+        }
+        if (expr->X_op_symbol) {
+          fprintf(out, "-%s",
+                  S_GET_NAME(expr->X_op_symbol));
+        }
+        if (expr->X_add_symbol || expr->X_op_symbol) {
+          fprintf(out, ")+");
+        }
+        fprintf(out, "%lld",
+                (long long)expr->X_add_number);
         break;
       default:
         MAO_ASSERT_MSG(0, "Unable to print unsupported expression: %d",
@@ -601,7 +624,7 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
     if (instruction_->types[i].bitfield.regmmx) {
       if (instruction_->tm.operand_types[i].bitfield.regmmx) {
         fprintf(out, "%%mm%d", instruction_->rm.reg);
-      }else if (instruction_->tm.operand_types[i].bitfield.regxmm) {
+      } else if (instruction_->tm.operand_types[i].bitfield.regxmm) {
         fprintf(out, "%%xmm%d", instruction_->rm.reg);
       }
     }
@@ -680,6 +703,8 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
         new_inst->op[i].disps->X_add_number =
             in_inst->op[i].disps->X_add_number;
         new_inst->op[i].disps->X_op = in_inst->op[i].disps->X_op;
+        new_inst->op[i].disps->X_op_symbol =
+            in_inst->op[i].disps->X_op_symbol;
       } else {
         new_inst->op[i].disps = 0;
       }
@@ -890,6 +915,7 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".ds.l",
   ".ds.d",
   ".ds.x",
+  ".comm",
 };
 
 void DirectiveEntry::PrintEntry(::FILE *out) const {
@@ -917,6 +943,16 @@ const std::string &DirectiveEntry::OperandsToString(std::string *out) const {
   return *out;
 }
 
+const char *DirectiveEntry::GetDotOrSymbol(symbolS *symbol) const {
+  const char *s = S_GET_NAME(symbol);
+  MAO_ASSERT(s);
+  if (strcmp(s, "L0\001") == 0) {
+    return ".";
+  } else {
+    return s;
+  }
+}
+
 const std::string &DirectiveEntry::OperandExpressionToString(
     const expressionS *expr, std::string *out) const {
   switch (expr->X_op) {
@@ -934,7 +970,8 @@ const std::string &DirectiveEntry::OperandExpressionToString(
       {
         std::ostringstream exp_string;
         if (expr->X_add_symbol) {
-          exp_string << S_GET_NAME(expr->X_add_symbol) << "+";
+          exp_string << GetDotOrSymbol(expr->X_add_symbol)
+                     << "+";
         }
         exp_string << expr->X_add_number;
         out->append(exp_string.str());
@@ -945,10 +982,12 @@ const std::string &DirectiveEntry::OperandExpressionToString(
       {
         std::ostringstream exp_string;
         if (expr->X_add_symbol) {
-          exp_string << S_GET_NAME(expr->X_add_symbol) << "+";
+          exp_string << GetDotOrSymbol(expr->X_add_symbol)
+                     << "+";
         }
         if (expr->X_op_symbol) {
-          exp_string << S_GET_NAME(expr->X_op_symbol) << "+";;
+          exp_string << GetDotOrSymbol(expr->X_op_symbol)
+                     << "+";
         }
         exp_string << expr->X_add_number;
         out->append(exp_string.str());
@@ -959,10 +998,12 @@ const std::string &DirectiveEntry::OperandExpressionToString(
       {
         std::ostringstream exp_string;
         if (expr->X_add_symbol) {
-          exp_string << S_GET_NAME(expr->X_add_symbol) << "-";
+          exp_string << GetDotOrSymbol(expr->X_add_symbol)
+                     << "-";
         }
         if (expr->X_op_symbol) {
-          exp_string << S_GET_NAME(expr->X_op_symbol) << "+";;
+          exp_string << GetDotOrSymbol(expr->X_op_symbol)
+                     << "+";
         }
         exp_string << expr->X_add_number;
         out->append(exp_string.str());
@@ -1080,7 +1121,7 @@ const std::string &DirectiveEntry::OperandToString(const Operand &operand,
       break;
     case INT: {
       std::ostringstream int_string;
-      int_string << std::hex << operand.data.i;
+      int_string << operand.data.i;
       out->append(int_string.str());
       break;
     }
