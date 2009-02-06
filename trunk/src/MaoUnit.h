@@ -450,7 +450,8 @@ class AsmInstruction {
   void PrintMemoryOperand(FILE *out, const i386_operand_type &operand_type,
                           const enum bfd_reloc_code_real reloc,
                           const expressionS *expr,
-                          const char *segment_overried) const;
+                          const char *segment_overried,
+                          const bool jumpabsolute) const;
   const char *GetRelocString(const enum bfd_reloc_code_real reloc) const;
 
   // Determines if the suffix needs to be printed
