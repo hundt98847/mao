@@ -172,14 +172,14 @@ char *get_section_name(const char *arguments, char *buffer) {
 // or
 // .section ARGUMENTS
 //
-void link_section(int push,
+int link_section(int push,
                   const char *section_name,
                   MaoStringPiece arguments) {
   // TODO(nvachhar): handle .pushsection
   MAO_ASSERT(!push);
   MAO_ASSERT(section_name);
   MAO_ASSERT(maounit_);
-  maounit_->SetSubSection(section_name, 0);
+  bool new_section = maounit_->SetSubSection(section_name, 0);
 
   DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(
@@ -187,6 +187,8 @@ void link_section(int push,
   if (arguments.length)
     operands.push_back(new DirectiveEntry::Operand(arguments));
   link_directive_tail(DirectiveEntry::SECTION, operands);
+
+  return new_section;
 }
 
 void link_type(symbolS *symbol, SymbolType symbol_type,

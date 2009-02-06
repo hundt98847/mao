@@ -126,7 +126,9 @@ void MaoUnit::PrintIR(FILE *out) const {
   }
 }
 
-Section *MaoUnit::FindOrCreateAndFind(const char *section_name) {
+std::pair<bool, Section *> MaoUnit::FindOrCreateAndFind(
+    const char *section_name) {
+  bool new_section = false;
   Section *section;
   std::map<const char *, Section *, ltstr>::const_iterator it =
       sections_.find(section_name);
@@ -134,18 +136,20 @@ Section *MaoUnit::FindOrCreateAndFind(const char *section_name) {
     // create it!
     section = new Section(section_name);
     sections_[section->name()] = section;
+    new_section = true;
   } else {
     section = it->second;
   }
   MAO_ASSERT(section);
-  return section;
+  return std::make_pair(new_section, section);
 }
 
 // Called when found a new subsection reference in the assembly.
-void MaoUnit::SetSubSection(const char *section_name,
+bool MaoUnit::SetSubSection(const char *section_name,
                             unsigned int subsection_number) {
   // Get (and possibly create) the section
-  Section *section = FindOrCreateAndFind(section_name);
+  std::pair<bool, Section *> section_pair = FindOrCreateAndFind(section_name);
+  Section *section = section_pair.second;
   MAO_ASSERT(section);
   // Create a new subsection, even if the same subsection number
   // have already been used.
@@ -158,6 +162,8 @@ void MaoUnit::SetSubSection(const char *section_name,
 
   current_subsection_->set_first_entry_index(entry_list_.size());
   current_subsection_->set_last_entry_index(entry_list_.size());
+
+  return section_pair.first;
 }
 
 LabelEntry *MaoUnit::GetLabelEntry(const char *label_name) const {
