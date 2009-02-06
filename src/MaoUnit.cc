@@ -439,11 +439,12 @@ void AsmInstruction::PrintMemoryOperand(FILE                  *out,
                                         const i386_operand_type &operand_type,
                                         const enum bfd_reloc_code_real reloc,
                                         const expressionS     *expr,
-                                        const char            *segment_override)
+                                        const char            *segment_override,
+                                        const bool            jumpabsolute)
     const {
   int scale[] = { 1, 2, 4, 8 };
 
-  if (operand_type.bitfield.jumpabsolute) {
+  if (jumpabsolute) {
     fprintf(out, "*");
   }
 
@@ -587,7 +588,9 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
                          instruction_->types[i],
                          instruction_->reloc[i],
                          instruction_->op[i].disps,
-                         instruction_->seg[0]?instruction_->seg[0]->seg_name:0);
+                         instruction_->seg[0]?instruction_->seg[0]->seg_name:0,
+                         instruction_->types[i].bitfield.jumpabsolute ||
+                         instruction_->tm.operand_types[i].bitfield.jumpabsolute);
     }
 
     // ACC register
