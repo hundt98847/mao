@@ -96,7 +96,7 @@ class MaoUnit {
   // code. (.text, .data, .text.)
   // This will be create several SubSection objects with .text in the
   // sub_sections_ member.
-  void SetSubSection(const char *section_name, unsigned int subsection_number);
+  bool SetSubSection(const char *section_name, unsigned int subsection_number);
 
   SubSection *GetSubSection(unsigned int subsection_number) {
     return sub_sections_[subsection_number];
@@ -104,7 +104,7 @@ class MaoUnit {
 
   // Create the section section_name if it does not already exists. Returns a
   // pointer the section.
-  Section *FindOrCreateAndFind(const char *section_name);
+  std::pair<bool, Section *> FindOrCreateAndFind(const char *section_name);
 
   LabelEntry *GetLabelEntry(const char *label_name) const;
 

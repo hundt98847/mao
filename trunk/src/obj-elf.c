@@ -1745,7 +1745,11 @@ obj_elf_ident (int ignore ATTRIBUTE_UNUSED)
     subseg_set (comment_section, 0);
 
   struct MaoStringPiece arguments = { NULL, 0 };
-  link_section(0, ".comment", arguments);
+  if (link_section(0, ".comment", arguments))
+    {
+      expressionS zero = { NULL, NULL, 0, O_constant, 1, 0};
+      link_dc_directive(1, 0, &zero);
+    }
   stringer (8 + 1);
   link_section(0, old_section->name, arguments);
   subseg_set (old_section, old_subsection);

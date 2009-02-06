@@ -199,7 +199,9 @@ void CFGBuilder::Build() {
 #include "MaoRelax.h"
 
 void CreateCFG(MaoUnit *mao_unit, CFG *cfg) {
-  Section *section = mao_unit->FindOrCreateAndFind(".data");
+  std::pair<bool, Section *> text_pair =
+      mao_unit->FindOrCreateAndFind(".text");
+  Section *section = text_pair.second;
 
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), section, cfg);
   builder.Build();
