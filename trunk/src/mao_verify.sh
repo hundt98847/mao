@@ -157,6 +157,12 @@ echo "Processing: ${IN_FILE}"
 #                ${CC} -B"${BIN_DIR}" -c -Wa,"-mao_o,${MAO_FILE}" "${S_FILE}" -o "${TMP_O_FILE}"
 ${MAO} -mao:-o"${MAO_FILE}" "${S_FILE}"
 
+if [ $? -ne 0 ]; then
+  echo "Error creating assembly";
+  exit;
+fi
+
+
 # # Generate object files from both
 ${AS} -o "${S_FILE}.o"   "${S_FILE}" 
 ${AS} -o "${MAO_FILE}.o" "${MAO_FILE}" 

@@ -202,6 +202,10 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           case DirectiveEntry::DS_X:
             frag = HandleSpace(dentry, 12, frag, true, size_map, relax_map);
             break;
+          case DirectiveEntry::COMM:
+            MAO_ASSERT_MSG(false, "Relaxation does not yet support the COMM symbol.");
+          case DirectiveEntry::IDENT:
+            MAO_ASSERT_MSG(false, "Relaxation does not yet support the IDENT symbol.");
           case DirectiveEntry::FILE:
           case DirectiveEntry::SECTION:
           case DirectiveEntry::GLOBAL:
@@ -209,7 +213,6 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           case DirectiveEntry::WEAK:
           case DirectiveEntry::TYPE:
           case DirectiveEntry::SIZE:
-          case DirectiveEntry::COMM:
           case DirectiveEntry::NUM_OPCODES:
             (*size_map)[entry] = 0;
             // Nothing to do

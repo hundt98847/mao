@@ -43,6 +43,8 @@
 #include "irlink.h"
 #include "struc-symbol.h"
 
+#include "read-mao.h"
+
 #ifndef TC_START_LABEL
 #define TC_START_LABEL(x,y) (x == ':')
 #endif
@@ -5099,16 +5101,10 @@ stringer_append_char (int c, int bitsize)
     FRAG_APPEND_1_CHAR (c);
 }
 
-/* Worker to do .ascii etc statements.
-   Reads 0 or more ',' separated, double-quoted strings.
-   Caller should have checked need_pass_2 is FALSE because we don't
-   check it.
-   Checks for end-of-line.
-   BITS_APPENDZERO says how many bits are in a target char.
-   The bottom bit is set if a NUL char should be appended to the strings.  */
+
 
 void
-stringer (int bits_appendzero)
+stringer_imp (int bits_appendzero, int link_string)
 {
   const int bitsize = bits_appendzero & ~7;
   const int append_zero = bits_appendzero & 1;
@@ -5159,7 +5155,7 @@ stringer (int bits_appendzero)
 
 	  know (input_line_pointer[-1] == '\"');
 
-          {
+          if (link_string) {
             struct MaoStringPiece string =
                 { start, input_line_pointer-start-1 };
             link_string_directive(bitsize, append_zero, string);
@@ -5205,6 +5201,20 @@ stringer (int bits_appendzero)
 
   demand_empty_rest_of_line ();
 }
+
+/* Worker to do .ascii etc statements.
+   Reads 0 or more ',' separated, double-quoted strings.
+   Caller should have checked need_pass_2 is FALSE because we don't
+   check it.
+   Checks for end-of-line.
+   BITS_APPENDZERO says how many bits are in a target char.
+   The bottom bit is set if a NUL char should be appended to the strings.  */
+void
+stringer (int bits_appendzero)
+{
+  stringer_imp(bits_appendzero, 1);
+}
+
 
 /* FIXME-SOMEDAY: I had trouble here on characters with the
     high bits set.  We'll probably also have trouble with

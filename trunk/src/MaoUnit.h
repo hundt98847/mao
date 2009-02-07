@@ -276,7 +276,8 @@ class DirectiveEntry : public MaoUnitEntryBase {
     DS_D,
     DS_X,
     COMM,
-    NUM_OPCODES
+    IDENT,
+    NUM_OPCODES // Used to get the size of the array
   };
 
   static const char *const kOpcodeNames[NUM_OPCODES];
@@ -446,7 +447,8 @@ class AsmInstruction {
   void FreeInstruction();
   bool IsInList(const MaoOpcode opcode, const MaoOpcode list[],
                 const unsigned int number_of_elements) const;
-  void PrintImmediateOperand(FILE *out, const expressionS *expr) const;
+  void PrintImmediateOperand(FILE *out, const enum bfd_reloc_code_real reloc,
+                             const expressionS *expr) const;
   void PrintMemoryOperand(FILE *out, const i386_operand_type &operand_type,
                           const enum bfd_reloc_code_real reloc,
                           const expressionS *expr,

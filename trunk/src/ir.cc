@@ -353,3 +353,11 @@ void register_mao_unit(MaoUnit *maounit) {
   MAO_ASSERT(maounit);
   maounit_ = maounit;
 }
+
+void link_ident_directive(MaoStringPiece value) {
+  DirectiveEntry::OperandVector operands;
+  std::string quoted_value = quote_string_piece(value);
+  operands.push_back(new DirectiveEntry::Operand(quoted_value));
+
+  link_directive_tail(DirectiveEntry::IDENT, operands);
+}

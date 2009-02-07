@@ -90,7 +90,7 @@ extern "C" {
   // Link .align/.balign/.p2align directives from gas
   void link_align_directive(int align, int fill_len, int fill, int max);
   void link_space_directive(expressionS *size, expressionS *fill, int mult);
-
+  void link_ident_directive(struct MaoStringPiece value);
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 
