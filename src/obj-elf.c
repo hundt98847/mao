@@ -29,6 +29,7 @@
 #include "dwarf2dbg.h"
 
 #include "irlink.h"
+#include "read-mao.h"
 
 #ifndef ECOFF_DEBUGGING
 #define ECOFF_DEBUGGING 0
@@ -1721,6 +1722,21 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
   free(my_type);
 }
 
+void get_string_from_input_line(char *buffer){
+  char *ip = input_line_pointer;
+  while (*ip == ' ') {
+    ++ip;
+  }
+  assert(*ip == '\"');
+  ++ip;
+  while (is_a_char (*ip) && *ip != '\n') {
+    *buffer++ = *ip++;
+  }
+  assert(buffer[-1] == '\"');
+  buffer[-1] = '\0';
+  
+}
+
 static void
 obj_elf_ident (int ignore ATTRIBUTE_UNUSED)
 {
@@ -1744,14 +1760,21 @@ obj_elf_ident (int ignore ATTRIBUTE_UNUSED)
   else
     subseg_set (comment_section, 0);
 
-  struct MaoStringPiece arguments = { NULL, 0 };
-  if (link_section(0, ".comment", arguments))
-    {
-      expressionS zero = { NULL, NULL, 0, O_constant, 1, 0};
-      link_dc_directive(1, 0, &zero);
-    }
-  stringer (8 + 1);
-  link_section(0, old_section->name, arguments);
+
+  // get the ident string
+  char buffer[1024];
+  get_string_from_input_line(buffer);
+
+  struct MaoStringPiece arguments = { buffer, strlen(buffer) };
+  //  struct MaoStringPiece arguments = { NULL, 0 };
+  link_ident_directive(arguments);
+//   if (link_section(0, ".comment", arguments))
+//     {
+//       expressionS zero = { NULL, NULL, 0, O_constant, 1, 0};
+//       link_dc_directive(1, 0, &zero);
+//     }
+  stringer_imp (8 + 1, 0);
+  // link_section(0, old_section->name, arguments);
   subseg_set (old_section, old_subsection);
 }
 
