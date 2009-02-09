@@ -441,7 +441,7 @@ const char *AsmInstruction::GetRelocString(
     case BFD_RELOC_NONE:  // found in "leaq    .LC0(%rip), %rcx"
       return "";
     default:
-      MAO_ASSERT_MSG(false, "Unable to find info about reloc: %d (%d)", reloc);
+      MAO_ASSERT_MSG(false, "Unable to find info about reloc: %d", reloc);
       break;
   }
   return "";
