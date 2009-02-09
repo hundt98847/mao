@@ -361,3 +361,17 @@ void link_ident_directive(MaoStringPiece value) {
 
   link_directive_tail(DirectiveEntry::IDENT, operands);
 }
+
+void link_set_directive(symbolS *symbol, expressionS *expr) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(symbol));
+  operands.push_back(new DirectiveEntry::Operand(expr));
+  link_directive_tail(DirectiveEntry::SET, operands);
+}
+
+void link_equiv_directive(symbolS *symbol, expressionS *expr) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(symbol));
+  operands.push_back(new DirectiveEntry::Operand(expr));
+  link_directive_tail(DirectiveEntry::EQUIV, operands);
+}

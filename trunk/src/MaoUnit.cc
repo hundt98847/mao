@@ -440,6 +440,8 @@ const char *AsmInstruction::GetRelocString(
       return "@DTPOFF";
     case BFD_RELOC_NONE:  // found in "leaq    .LC0(%rip), %rcx"
       return "";
+    case BFD_RELOC_X86_64_GOTTPOFF:
+      return "@GOTTPOFF";
     default:
       MAO_ASSERT_MSG(false, "Unable to find info about reloc: %d", reloc);
       break;
@@ -608,6 +610,17 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
             break;
           case DATA_PREFIX_OPCODE:
             // do nothing: example: cmpw    %cx, %ax
+            break;
+
+          case CS_PREFIX_OPCODE:
+          case DS_PREFIX_OPCODE:
+          case ES_PREFIX_OPCODE:
+          case FS_PREFIX_OPCODE:
+          case GS_PREFIX_OPCODE:
+          case SS_PREFIX_OPCODE:
+            break;
+          case ADDR_PREFIX_OPCODE:
+            // used in movl (%eax), %eax
             break;
           default:
             MAO_ASSERT_MSG(false, "Unknown prefix found 0x%x\n",
@@ -1015,6 +1028,8 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".ds.x",
   ".comm",
   ".ident",
+  ".set", // identical to .equ
+  ".equiv"
 };
 
 void DirectiveEntry::PrintEntry(::FILE *out) const {

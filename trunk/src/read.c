@@ -3099,7 +3099,7 @@ assign_symbol (char *name, int mode)
   else if (mode < 0)
     S_SET_FORWARD_REF (symbolP);
 
-  pseudo_set (symbolP);
+  pseudo_set_imp (symbolP, mode);
 }
 
 /* Handle the .equ, .equiv, .eqv, and .set directives.  If EQUIV is 1,
@@ -3627,7 +3627,14 @@ set_zero_frag (symbolS *symbolP)
     symbol_set_frag (symbolP, &zero_address_frag);
 }
 
+void
+pseudo_set (symbolS *symbolP) {
+  pseudo_set_imp (symbolP, 0);
+}
+
+
 /* In:	Pointer to a symbol.
+        Mode (as used in assign_symbol)
 	Input_line_pointer->expression.
 
    Out:	Input_line_pointer->just after any whitespace after expression.
@@ -3635,7 +3642,7 @@ set_zero_frag (symbolS *symbolP)
 	Will change symbols type, value, and frag;  */
 
 void
-pseudo_set (symbolS *symbolP)
+pseudo_set_imp (symbolS *symbolP, int mode)
 {
   expressionS exp;
   segT seg;
@@ -3739,6 +3746,11 @@ pseudo_set (symbolS *symbolP)
       set_zero_frag (symbolP);
       break;
     }
+  if (mode == 0) {
+    link_set_directive(symbolP, &exp);
+  } else {
+    link_equiv_directive(symbolP, &exp);
+  }
 }
 
 /*			cons()
