@@ -24,9 +24,9 @@
 #define MAO_DEFAULT_TRACE_LEVEL 0
 
 // Main assert/trace macros
-#define MAO_ASSERT(condition)                         MAO_ASSERT_DBG(condition,"")
+#define MAO_ASSERT(condition)                         MAO_ASSERT_DBG(condition,"%s", "")
 #define MAO_ASSERT_MSG(condition, format_string,...)  MAO_ASSERT_DBG(condition, format_string, ## __VA_ARGS__)
-#define MAO_RASSERT(condition)                        MAO_ASSERT_REL(condition, "")
+#define MAO_RASSERT(condition)                        MAO_ASSERT_REL(condition, "%s", "")
 #define MAO_RASSERT_MSG(condition, format_string,...) MAO_ASSERT_REL(condition, format_string, ## __VA_ARGS__)
 
 
@@ -44,7 +44,9 @@ class MaoDebug {
   // Main assert function
   static void Assert(const char *file_name, int line_number,
                      bool condition, const char *expr_string,
-                     const char *format_string, ...);
+                     const char *format_string, ...) 
+    __attribute__ ((format (printf, 5, 6)));
+
   // Change output file for assert
   static void SetAssertOutPut(FILE *file);
   static FILE *assert_file() { return assert_file_; }
