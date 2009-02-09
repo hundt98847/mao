@@ -277,6 +277,8 @@ class DirectiveEntry : public MaoUnitEntryBase {
     DS_X,
     COMM,
     IDENT,
+    SET,        // Same as .equ
+    EQUIV,
     NUM_OPCODES // Used to get the size of the array
   };
 
