@@ -786,11 +786,9 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
       new_inst->op[i].imms = (expressionS *)malloc(sizeof(expressionS) );
       MAO_ASSERT(new_inst->op[i].imms);
       new_inst->op[i].imms->X_op = in_inst->op[i].imms->X_op;
-
-      // TODO(martint): Check if we need to allocate memory for these instead
-      // of just blindly copying them.
       new_inst->op[i].imms->X_add_number = in_inst->op[i].imms->X_add_number;
       new_inst->op[i].imms->X_add_symbol = in_inst->op[i].imms->X_add_symbol;
+      new_inst->op[i].imms->X_op_symbol = in_inst->op[i].imms->X_op_symbol;
     }
 
     //   if (in_inst->tm.opcode_modifier.jump ||
