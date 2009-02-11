@@ -501,7 +501,7 @@ void AsmInstruction::PrintMemoryOperand(FILE                  *out,
                   S_GET_NAME(expr->X_add_symbol),
                   GetRelocString(reloc));
         }
-        // When GOTPCREL is used, the secnod symbol is implicit and
+        // When GOTPCREL is used, the second symbol is implicit and
         // should not be printed.
         if (reloc != BFD_RELOC_32_PCREL) {
           if (expr->X_op_symbol) {
@@ -547,7 +547,7 @@ bool AsmInstruction::PrintSuffix() const {
     OP_cwtl, OP_cltd
   };
   const MaoOpcode opcode_has_w_suffix[] =  {
-    OP_cbtw
+    OP_cbtw, OP_fnstsw, OP_movsbw
   };
   const MaoOpcode opcode_has_b_suffix[] =  {
     OP_setb
