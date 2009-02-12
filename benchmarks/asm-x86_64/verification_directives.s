@@ -26,3 +26,8 @@ Label2:
 	.align 8
 Label3:
 Label4:
+	.set   l1, 3
+	.equiv l2, 2
+	.equ   l3, 1
+	.eqv   l4, 4
+	
