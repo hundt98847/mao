@@ -7,6 +7,7 @@
  movl (,%ebx,2), %eax
  movl -10(%eax), %eax
  movl %ds:-10(%ebp), %eax
+ movl %fs:-10(%ebp), %eax
 
 #registers
  mov 0, %eax
