@@ -211,7 +211,7 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool build_sections,
       break;
     case MaoUnitEntryBase::LABEL:
       // A Label will generate in a new symbol in the symbol table
-      label_entry = (LabelEntry *)entry;
+      label_entry = static_cast<LabelEntry *>(entry);
       MAO_ASSERT(labels_.insert(std::make_pair(label_entry->name(),
                                                label_entry)).second);
       symbol = symbol_table_.FindOrCreateAndFind(label_entry->name());
@@ -314,14 +314,14 @@ void AsmInstruction::FreeInstruction() {
       free(instruction_->op[i].disps);
     }
     if (IsRegisterOperand(instruction_, i)) {
-      free((reg_entry *)instruction_->op[i].regs);
+      free(const_cast<reg_entry *>(instruction_->op[i].regs));
     }
   }
   for (unsigned int i = 0; i < 2; i++) {
-    free((seg_entry *)instruction_->seg[i]);
+    free(const_cast<seg_entry *>(instruction_->seg[i]));
   }
-  free((reg_entry *)instruction_->base_reg);
-  free((reg_entry *)instruction_->index_reg);
+  free(const_cast<reg_entry *>(instruction_->base_reg));
+  free(const_cast<reg_entry *>(instruction_->index_reg));
   free(instruction_);
 }
 
@@ -331,7 +331,7 @@ reg_entry *AsmInstruction::CopyRegEntry(const reg_entry *in_reg) {
   if (!in_reg)
     return 0;
   reg_entry *tmp_r;
-  tmp_r = (reg_entry *)malloc(sizeof(reg_entry) );
+  tmp_r = static_cast<reg_entry *>(malloc(sizeof(reg_entry)));
   MAO_ASSERT(tmp_r);
   MAO_ASSERT(strlen(in_reg->reg_name) < kMaxRegisterNameLength);
   tmp_r->reg_name = strdup(in_reg->reg_name);
@@ -601,7 +601,8 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
           case REPNE_PREFIX_OPCODE:
             if (IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
               fprintf(out, "repne ");
-            } else if (IsInList(op(), rep_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
+            } else if (IsInList(op(), rep_ops,
+                                sizeof(repe_ops)/sizeof(MaoOpcode))) {
               MAO_ASSERT_MSG(false,
                              "Found prefix does not match the instruction.");
             } else {
@@ -612,35 +613,34 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
           case REPE_PREFIX_OPCODE:
             if (IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
               fprintf(out, "repe ");
-            } else if (IsInList(op(), rep_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
+            } else if (IsInList(op(), rep_ops,
+                                sizeof(repe_ops)/sizeof(MaoOpcode))) {
               fprintf(out, "rep ");
             } else {
               MAO_ASSERT_MSG(false,
                              "Unable to find instruction with rep* prefix");
             }
             break;
-          case REX_OPCODE+0:
-          case REX_OPCODE+1:
+            // Rex prefixes are used for 64-bit extention
+          case REX_OPCODE+0:  // e.g.: movb    %sil, -24(%rbp)
+          case REX_OPCODE+1:  // e.g.: movl    $.LC0, %r8d
           case REX_OPCODE+2:
           case REX_OPCODE+3:
-          case REX_OPCODE+4:
-          case REX_OPCODE+5:
+          case REX_OPCODE+4:  // e.g.: movl    %r8d, -100(%rbp)
+          case REX_OPCODE+5:  // e.g.: movl    %r13d, %r8d
           case REX_OPCODE+6:
           case REX_OPCODE+7:
-          case REX_OPCODE+8:
-          case REX_OPCODE+9:
+          case REX_OPCODE+8:  // e.g.: add $1, %rax
+          case REX_OPCODE+9:  // e.g.: add $1, %r9
           case REX_OPCODE+10:
           case REX_OPCODE+11:
-          case REX_OPCODE+12:
-          case REX_OPCODE+13:
+          case REX_OPCODE+12:  // e.g.: mov    %r9, (%eax)
+          case REX_OPCODE+13:  // e.g : movq    %r12, %r9
           case REX_OPCODE+14:
           case REX_OPCODE+15:
-            // do nothing: example: movq    %rsp, %rbp
             break;
-          case DATA_PREFIX_OPCODE:
-            // do nothing: example: cmpw    %cx, %ax
+          case DATA_PREFIX_OPCODE:  // e.g. : cmpw    %cx, %ax
             break;
-
           case CS_PREFIX_OPCODE:
           case DS_PREFIX_OPCODE:
           case ES_PREFIX_OPCODE:
@@ -693,26 +693,25 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
     // Segment overrides are always placed in seg[0], even
     // if it applies to the second operand.
     if (IsMemOperand(instruction_, i)) {
-
       // Ugly hack:
       // for some string instruction, both operands have baseindex == 1
       // though only the first should be printed...
       // the first is implicit "(%edi)".
       // e.g.: rep   CMPSb (%edi), (%esi)
-
       if (instruction_->operands == 2 &&
           i == 0 &&
           IsMemOperand(instruction_, 1) &&
           IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
         fprintf(out, "%s", "(%edi) ");
       } else {
-        PrintMemoryOperand(out,
-                           instruction_->types[i],
-                           instruction_->reloc[i],
-                           instruction_->op[i].disps,
-                           instruction_->seg[0]?instruction_->seg[0]->seg_name:0,
-                           instruction_->types[i].bitfield.jumpabsolute ||
-                           instruction_->tm.operand_types[i].bitfield.jumpabsolute);
+        PrintMemoryOperand(
+            out,
+            instruction_->types[i],
+            instruction_->reloc[i],
+            instruction_->op[i].disps,
+            instruction_->seg[0]?instruction_->seg[0]->seg_name:0,
+            instruction_->types[i].bitfield.jumpabsolute ||
+            instruction_->tm.operand_types[i].bitfield.jumpabsolute);
       }
     }
 
@@ -810,7 +809,7 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
 // From an instruction given by gas, allocate new memory and populate the
 // members.
 i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
-  i386_insn *new_inst = (i386_insn *)malloc(sizeof(i386_insn) );
+  i386_insn *new_inst = static_cast<i386_insn *>(malloc(sizeof(i386_insn)));
   MAO_ASSERT(new_inst);
 
   // Template related members
@@ -833,7 +832,8 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
   for (unsigned int i = 0; i < new_inst->operands; i++) {
     // Copy the correct part of the op[i] union
     if (IsImmediateOperand(in_inst, i)) {
-      new_inst->op[i].imms = (expressionS *)malloc(sizeof(expressionS) );
+      new_inst->op[i].imms =
+          static_cast<expressionS *>(malloc(sizeof(expressionS)));
       MAO_ASSERT(new_inst->op[i].imms);
       new_inst->op[i].imms->X_op = in_inst->op[i].imms->X_op;
       new_inst->op[i].imms->X_add_number = in_inst->op[i].imms->X_add_number;
@@ -855,7 +855,8 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
 
     if (IsMemOperand(in_inst, i)) {
       if (in_inst->op[i].disps) {
-        new_inst->op[i].disps = (expressionS *)malloc(sizeof(expressionS));
+        new_inst->op[i].disps =
+            static_cast<expressionS *>(malloc(sizeof(expressionS)));
         MAO_ASSERT(new_inst->op[i].disps);
         new_inst->op[i].disps->X_add_symbol =
             in_inst->op[i].disps->X_add_symbol;
@@ -888,7 +889,8 @@ i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
   // Segment overrides
   for (unsigned int i = 0; i < 2; i++) {
     if (in_inst->seg[i]) {
-      seg_entry *tmp_seg = (seg_entry *)malloc(sizeof(seg_entry));
+      //      seg_entry *tmp_seg = (seg_entry *)malloc(sizeof(seg_entry));
+      seg_entry *tmp_seg = static_cast<seg_entry *>(malloc(sizeof(seg_entry)));
       MAO_ASSERT(tmp_seg);
       MAO_ASSERT(strlen(in_inst->seg[i]->seg_name) < MAX_SEGMENT_NAME_LENGTH);
       tmp_seg->seg_name = strdup(in_inst->seg[i]->seg_name);
@@ -1076,7 +1078,7 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".ds.x",
   ".comm",
   ".ident",
-  ".set", // identical to .equ
+  ".set",  // identical to .equ
   ".equiv"
 };
 
