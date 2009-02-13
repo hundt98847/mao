@@ -129,7 +129,7 @@ class CFG {
   typedef std::vector<BasicBlock *> BBVector;
   typedef std::map<const char *, BasicBlock *, ltstr> LabelToBBMap;
 
-  CFG(MaoUnit *mao_unit) : mao_unit_(mao_unit) { }
+  explicit CFG(MaoUnit *mao_unit) : mao_unit_(mao_unit) { }
   ~CFG() {
     for (BBVector::iterator iter = basic_blocks_.begin();
          iter != basic_blocks_.end(); ++iter) {
@@ -200,7 +200,7 @@ class CFGBuilder : public MaoPass {
     bool is_control_transfer = entry->IsControlTransfer();
     bool is_call = entry->IsCall();
 
-    // TODO: Parameterize this to decide whether calls end BBs
+    // TODO(nvachhar): Parameterize this to decide whether calls end BBs
     return (is_control_transfer && !is_call) || !has_fall_through;
   }
 
@@ -219,7 +219,7 @@ class CFGBuilder : public MaoPass {
     MaoUnit::EntryIterator entry_iter = bb->BeginEntries();
 
     // Advance entry_iter to label
-    for(; entry_iter != bb->EndEntries(); ++entry_iter) {
+    for (; entry_iter != bb->EndEntries(); ++entry_iter) {
       MaoUnitEntryBase *entry = *entry_iter;
       if (entry->Type() == MaoUnitEntryBase::LABEL &&
           static_cast<LabelEntry *>(entry) == label) {

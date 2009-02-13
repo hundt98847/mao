@@ -48,7 +48,7 @@ void MaoOptions::set_ir_output_file_name(const char *file_name) {
 // Maintain mapping between option array and pass name.
 //
 class MaoOptionArray {
-public:
+ public:
   MaoOptionArray(const char *name, MaoOption *array, int num_entries)
     : name_(name), array_(array), num_entries_(num_entries) {
   }
@@ -64,7 +64,7 @@ public:
   const char *name() const { return name_; }
   MaoOption  *array() { return array_; }
   int         num_entries() { return num_entries_; }
-private:
+ private:
   const char *name_;
   MaoOption  *array_;
   int         num_entries_;
@@ -95,8 +95,7 @@ void MaoOptions::ProvideHelp(bool always) {
           "\nwith PASS and 'phase-option' being:\n\n"
           "Pass: ALL\n"
           "  enable    : (bool)   En/Disable a pass\n"
-          "  trace     : (int)    Set trace level to 'val' (0..3)\n"
-          );
+          "  trace     : (int)    Set trace level to 'val' (0..3)\n");
 
   for (OptionVector::iterator it = option_array_list.begin();
        it != option_array_list.end(); ++it) {
@@ -156,7 +155,6 @@ void MaoOptions::SetOption(const char *pass_name,
   MAO_ASSERT(option->type() == OPT_BOOL);
 
   option->bval_ = value;
-
 }
 
 void MaoOptions::SetOption(const char *pass_name,
@@ -183,7 +181,7 @@ static char *NextToken(char *arg, char **next) {
     token_buff[i++] = *p++;
 
   token_buff[i]='\0';
-  *next=p;
+  *next = p;
   return token_buff;
 }
 
@@ -211,7 +209,7 @@ static bool GetParam(char *arg, char **next, char **param) {
     if (delim != ':') {
       MAO_ASSERT_MSG(arg[0] == ')' || arg[0] == ']',
                      "Ill formatted parameter to option: %s", arg);
-      ++arg; // skip closing bracket
+      ++arg;  // skip closing bracket
     }
     *next = arg;
     return true;
@@ -241,7 +239,7 @@ bool SetPassSpecificOptions(char *option, char *arg, char **next,
       level = atoi(param);
     MaoPass *mao_pass = FindPass(current_opts->array());
     if (mao_pass)
-      mao_pass->set_tracing_level(level);;
+      mao_pass->set_tracing_level(level);
     return true;
   }
   if (!strcasecmp(option, "disable") || !strcasecmp(option, "off")) {
@@ -263,14 +261,13 @@ void MaoOptions::Reparse() {
 
 void MaoOptions::Parse(char *arg, bool collect) {
   if (collect) {
-    if (!mao_options_)
+    if (!mao_options_) {
       mao_options_ = strdup(arg);
-    else {
+    } else {
       mao_options_ = strcat(mao_options_, ",");
       mao_options_ = strcat(mao_options_, arg);
     }
   }
-  
   while (arg && arg[0]) {
     GobbleGarbage(arg, &arg);
 
@@ -281,20 +278,17 @@ void MaoOptions::Parse(char *arg, bool collect) {
       if (arg[0] == 'v') {
         set_verbose();
         ++arg;
-      } else
-      if (arg[0] == 'h') {
+      } else if (arg[0] == 'h') {
         set_help();
         ++arg;
-      } else
-      if (arg[0] == 'o') {
+      } else if (arg[0] == 'o') {
         ++arg;
         char *filename;
         filename = NextToken(arg, &arg);
         if (!strcmp(filename, "stderr")) {
           set_output_is_stderr();
           set_assembly_output_file_name("<stderr>");
-        }
-        else {
+        } else {
           set_assembly_output_file_name(strdup(filename));
         }
       } else {

@@ -164,7 +164,7 @@ class HavlakLoopFinder {
     DFS(*CFG_->Begin(), &nodes, &number, &last);
 
     // DEBUG code - leave it in here for now
-    //for (std::list<BasicBlock *>::iterator bb_iter =
+    // for (std::list<BasicBlock *>::iterator bb_iter =
     //       CFG_->GetBasicBlocks()->begin();
     //     bb_iter != CFG_->GetBasicBlocks()->end(); ++bb_iter) {
     //  fprintf(stderr,
@@ -436,14 +436,14 @@ const int HavlakLoopFinder::kMaxNonBackPreds;
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(LFIND,3) {
+MAO_OPTIONS_DEFINE(LFIND, 3) {
   OPTION_BOOL("vcg", false, "Dump VCG file"),
   OPTION_BOOL("cfg", false, "Dump CFG in text format"),
   OPTION_BOOL("lsg", false, "Dump LSG in text format"),
 };
 
 class LoopFinderPass : public MaoPass {
-public:
+ public:
   LoopFinderPass(MaoUnit *mao, const CFG *cfg) :
     MaoPass("LFIND", mao->mao_options(), MAO_OPTIONS(LFIND)),
     mao_(mao), cfg_(cfg) {
@@ -468,7 +468,7 @@ public:
     return LSG;
   }
 
-private:
+ private:
   bool       dump_vcg_, dump_cfg_, dump_lsg_;
   MaoUnit   *mao_;
   const CFG *cfg_;

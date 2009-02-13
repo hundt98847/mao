@@ -39,16 +39,15 @@ void CFG::DumpVCG(const char *fname) const {
           "\n"
           "node.color: lightyellow\n"
           "node.textcolor: blue\n"
-          "edge.arrowsize: 15\n"
-          );
+          "edge.arrowsize: 15\n");
 
   for (BBVector::const_iterator biter = basic_blocks_.begin();
        biter != basic_blocks_.end(); ++biter) {
-    fprintf(f,"node: { title: \"bb%d\" label: \"bb%d: %s\" %s",
+    fprintf(f, "node: { title: \"bb%d\" label: \"bb%d: %s\" %s",
             (*biter)->id(), (*biter)->id(), (*biter)->label(),
             (*biter)->id() < 2 ? "color: red" : "");
 
-#if 0 // TODO(nvachhar): Fix this to properly escape characters
+#if 0  // TODO(nvachhar): Fix this to properly escape characters
     fprintf(f, "info1: \"");
     for (MaoUnit::EntryIterator it = (*biter)->BeginEntries();
          it != (*biter)->EndEntries(); ++it) {
@@ -76,7 +75,7 @@ void CFG::DumpVCG(const char *fname) const {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(CFG,1) {
+MAO_OPTIONS_DEFINE(CFG, 1) {
   OPTION_BOOL("callsplit", false, "Split Basic Blocks at call sites"),
 };
 

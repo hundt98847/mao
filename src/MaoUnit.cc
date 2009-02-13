@@ -12,8 +12,10 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// along with this program; if not, write to the
+//   Free Software Foundation, Inc.,
+//   51 Franklin Street, Fifth Floor,
+//   Boston, MA  02110-1301, USA.
 
 #include "MaoDebug.h"
 #include "MaoUnit.h"
@@ -702,7 +704,7 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
           i == 0 &&
           IsMemOperand(instruction_, 1) &&
           IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
-        fprintf(out, "%s", "(%edi) ");
+        fprintf(out, "(%%edi) ");
       } else {
         PrintMemoryOperand(
             out,
@@ -793,7 +795,7 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
     // Handle spacial case found in tc-i386.c:7326
     if (instruction_->types[i].bitfield.inoutportreg) {
       // its a register name!
-      fprintf(out, "%s", "(%dx)");
+      fprintf(out, "(%%dx)");
     }
 
     if (instruction_->types[i].bitfield.shiftcount) {
