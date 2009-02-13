@@ -37,7 +37,7 @@ extern "C" {
   int relax_segment(struct frag *segment_frag_root, void *segT, int pass);
   void convert_to_bignum(expressionS *exp);
   int sizeof_leb128(valueT value, int sign);
-  int output_big_leb128 (char *p, LITTLENUM_TYPE *bignum, int size, int sign);
+  int output_big_leb128(char *p, LITTLENUM_TYPE *bignum, int size, int sign);
 }
 
 
@@ -129,27 +129,28 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
               // We're outputting a signed leb128 and the sign of X_add_number
               // doesn't reflect the sign of the original value.  Convert EXP
               // to a correctly-extended bignum instead.
-              convert_to_bignum (expr);
+              convert_to_bignum(expr);
             }
 
             if (expr->X_op == O_constant) {
               // If we've got a constant, compute its size right now
               int size =
-                  sizeof_leb128 (expr->X_add_number, is_signed ? 1 : 0);
+                  sizeof_leb128(expr->X_add_number, is_signed ? 1 : 0);
               frag->fr_fix += size;
               (*size_map)[entry] = size;
             } else if (expr->X_op == O_big) {
               // O_big is a different sort of constant.
               int size =
-                  output_big_leb128 (NULL, generic_bignum,
-                                     expr->X_add_number, is_signed ? 1 : 0);
+                  output_big_leb128(NULL, generic_bignum,
+                                    expr->X_add_number, is_signed ? 1 : 0);
               (*size_map)[entry] = size;
               frag->fr_fix += size;
-            } else
+            } else {
               // Otherwise, end the fragment
               (*size_map)[entry] = 0;
               (*relax_map)[frag] = entry;
               frag = EndFragmentLeb128(value, is_signed, frag, true);
+            }
             break;
           }
           case DirectiveEntry::BYTE:
@@ -203,9 +204,11 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
             frag = HandleSpace(dentry, 12, frag, true, size_map, relax_map);
             break;
           case DirectiveEntry::COMM:
-            MAO_ASSERT_MSG(false, "Relaxation does not yet support the COMM symbol.");
+            MAO_ASSERT_MSG(false,
+                           "Relaxation does not yet support the COMM symbol.");
           case DirectiveEntry::IDENT:
-            MAO_ASSERT_MSG(false, "Relaxation does not yet support the IDENT symbol.");
+            MAO_ASSERT_MSG(false,
+                           "Relaxation does not yet support the IDENT symbol.");
           case DirectiveEntry::FILE:
           case DirectiveEntry::SECTION:
           case DirectiveEntry::GLOBAL:
@@ -247,11 +250,11 @@ struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
 #define COND_JUMP86 2
 
 /* Sizes.  */
-#define CODE16	1
-#define SMALL	0
+#define CODE16  1
+#define SMALL   0
 #define SMALL16 (SMALL | CODE16)
-#define BIG	2
-#define BIG16	(BIG | CODE16)
+#define BIG     2
+#define BIG16   (BIG | CODE16)
 
 #define ENCODE_RELAX_STATE(type, size) \
   ((relax_substateT) (((type) << 2) | (size)))
@@ -259,7 +262,7 @@ struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
   i386_insn *insn = entry->instruction()->instruction();
 
   // Only jumps should end fragments
-  MAO_ASSERT (insn->tm.opcode_modifier.jump);
+  MAO_ASSERT(insn->tm.opcode_modifier.jump);
 
   int code16 = 0;
   if (flag_code == CODE_16BIT)
@@ -270,11 +273,11 @@ struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
 
   relax_substateT subtype;
   if (insn->tm.base_opcode == JUMP_PC_RELATIVE)
-    subtype = ENCODE_RELAX_STATE (UNCOND_JUMP, SMALL);
+    subtype = ENCODE_RELAX_STATE(UNCOND_JUMP, SMALL);
   else if (cpu_arch_flags.bitfield.cpui386)
-    subtype = ENCODE_RELAX_STATE (COND_JUMP, SMALL);
+    subtype = ENCODE_RELAX_STATE(COND_JUMP, SMALL);
   else
-    subtype = ENCODE_RELAX_STATE (COND_JUMP86, SMALL);
+    subtype = ENCODE_RELAX_STATE(COND_JUMP86, SMALL);
   subtype |= code16;
 
   symbolS *sym = insn->op[0].disps->X_add_symbol;
@@ -283,7 +286,7 @@ struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
   if (insn->op[0].disps->X_op != O_constant &&
       insn->op[0].disps->X_op != O_symbol) {
     /* Handle complex expressions.  */
-    sym = make_expr_symbol (insn->op[0].disps);
+    sym = make_expr_symbol(insn->op[0].disps);
     off = 0;
   }
 
@@ -361,7 +364,7 @@ struct frag *MaoRelaxer::HandleSpace(DirectiveEntry *entry,
     // too often.
     (*size_map)[entry] = 0;
     (*relax_map)[frag] = entry;
-    frag = FragVar(rs_space, 1, (relax_substateT) 0, make_expr_symbol (size),
+    frag = FragVar(rs_space, 1, (relax_substateT) 0, make_expr_symbol(size),
                    (offsetT) 0, NULL, frag, new_frag);
   }
 
@@ -417,7 +420,7 @@ void MaoRelaxer::FragInitOther(struct frag *frag) {
   frag->fr_cgen.opinfo = 0;
 #endif
 #ifdef TC_FRAG_INIT
-  TC_FRAG_INIT (frag);
+  TC_FRAG_INIT(frag);
 #endif
 }
 

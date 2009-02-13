@@ -64,7 +64,7 @@ class MaoUnit {
   typedef EntryVector::iterator EntryIterator;
   typedef EntryVector::const_iterator ConstEntryIterator;
 
-  MaoUnit(MaoOptions *mao_options);
+  explicit MaoUnit(MaoOptions *mao_options);
   ~MaoUnit();
 
   // Inserts an entry (Label, Instruction, Directive, ...) to the compilation
@@ -277,9 +277,9 @@ class DirectiveEntry : public MaoUnitEntryBase {
     DS_X,
     COMM,
     IDENT,
-    SET,        // Same as .equ
+    SET,         // Same as .equ
     EQUIV,
-    NUM_OPCODES // Used to get the size of the array
+    NUM_OPCODES  // Used to get the size of the array
   };
 
   static const char *const kOpcodeNames[NUM_OPCODES];
@@ -308,7 +308,7 @@ class DirectiveEntry : public MaoUnitEntryBase {
     }
     explicit Operand(symbolS *sym) : type(SYMBOL) { data.sym = sym; }
     explicit Operand(expressionS *expr) : type(EXPRESSION) {
-      data.expr = (expressionS *)malloc(sizeof(expressionS));
+      data.expr = static_cast<expressionS *>(malloc(sizeof(expressionS)));
       *data.expr = *expr;
     }
     explicit Operand(int value) : type(INT) { data.i = value; }
@@ -554,7 +554,7 @@ class SectionEntryIterator {
       }
 
       sub_section = mao_->GetSubSection(*sub_section_iter_);
-      while((*entry_iter_)->index() != sub_section->first_entry_index())
+      while ((*entry_iter_)->index() != sub_section->first_entry_index())
         ++entry_iter_;
     } else {
       ++entry_iter_;
@@ -562,7 +562,7 @@ class SectionEntryIterator {
     return *this;
   }
 
-  SectionEntryIterator operator ++(int) {
+  SectionEntryIterator operator ++(int var) {
     SectionEntryIterator tmp = *this;
     ++(*this);
     return tmp;
@@ -574,7 +574,7 @@ class SectionEntryIterator {
     if (entry->index() == sub_section->first_entry_index()) {
       --sub_section_iter_;
       sub_section = mao_->GetSubSection(*sub_section_iter_);
-      while((*entry_iter_)->index() != sub_section->last_entry_index())
+      while ((*entry_iter_)->index() != sub_section->last_entry_index())
         --entry_iter_;
     } else {
       --entry_iter_;
@@ -582,7 +582,7 @@ class SectionEntryIterator {
     return *this;
   }
 
-  SectionEntryIterator operator --(int) {
+  SectionEntryIterator operator --(int var) {
     SectionEntryIterator tmp = *this;
     --(*this);
     return tmp;
@@ -627,7 +627,7 @@ class Section {
       SubSection *sub_section = mao->GetSubSection(*sub_section_iter);
 
       std::list<MaoUnitEntryBase *>::iterator entry_iter = mao->EntryBegin();
-      while((*entry_iter)->index() != sub_section->first_entry_index())
+      while ((*entry_iter)->index() != sub_section->first_entry_index())
         ++entry_iter;
       return SectionEntryIterator(mao, sub_section_iter,
                                   sub_section_indexes_.end(), entry_iter);

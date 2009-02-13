@@ -35,13 +35,13 @@ void X86InstructionSizeHelper::MergeSizePair(const std::pair<int, bool> &from,
 }
 
 std::pair<int, bool> X86InstructionSizeHelper::SizeOfBranch() {
-  int size = 1;			// At least 1 opcode byte
+  int size = 1;                 // At least 1 opcode byte
 
   if (insn_->prefix[DATA_PREFIX] != 0)
     size++;
 
   /* Pentium4 branch hints.  */
-  if (insn_->prefix[SEG_PREFIX] == CS_PREFIX_OPCODE	/* not taken */
+  if (insn_->prefix[SEG_PREFIX] == CS_PREFIX_OPCODE    /* not taken */
       || insn_->prefix[SEG_PREFIX] == DS_PREFIX_OPCODE /* taken */ ) {
     size++;
   }
@@ -53,7 +53,7 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfBranch() {
 }
 
 std::pair<int, bool> X86InstructionSizeHelper::SizeOfJump() {
-  int size = 1; // 1 byte for the opcode
+  int size = 1;  // 1 byte for the opcode
 
   if (insn_->tm.opcode_modifier.jumpbyte) {
     /* This is a loop or jecxz type instruction.  */
@@ -112,7 +112,7 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfDisp() {
   int size = 0;
 
   for (n = 0; n < insn_->operands; n++) {
-    if (operand_type_check (insn_->types[n], disp)) {
+    if (operand_type_check(insn_->types[n], disp)) {
       if (insn_->types[n].bitfield.disp64)
         size += 8;
       else if (insn_->types[n].bitfield.disp8)
@@ -131,7 +131,7 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfImm() {
   int size = 0;
 
   for (n = 0; n < insn_->operands; n++) {
-    if (operand_type_check (insn_->types[n], imm)) {
+    if (operand_type_check(insn_->types[n], imm)) {
       if (insn_->types[n].bitfield.imm64)
         size += 8;
       else if (insn_->types[n].bitfield.imm8 || insn_->types[n].bitfield.imm8s)
@@ -215,11 +215,12 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfInstruction() {
   // Size jumps.
   if (insn_->tm.opcode_modifier.jump)
     size = SizeOfBranch();
-  else if (insn_->tm.opcode_modifier.jumpbyte || insn_->tm.opcode_modifier.jumpdword)
+  else if (insn_->tm.opcode_modifier.jumpbyte ||
+           insn_->tm.opcode_modifier.jumpdword)
     size = SizeOfJump();
-  else if (insn_->tm.opcode_modifier.jumpintersegment)
+  else if (insn_->tm.opcode_modifier.jumpintersegment) {
     size = SizeOfIntersegJump();
-  else {
+  } else {
     /* Output normal instructions here.  */
     unsigned char *q;
     unsigned int j;
@@ -243,8 +244,9 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfInstruction() {
               if (prefix != REPE_PREFIX_OPCODE || (insn_->prefix[LOCKREP_PREFIX]
                                                    != REPE_PREFIX_OPCODE))
                 AddPrefix(prefix);
-            } else
+            } else {
               AddPrefix(prefix);
+            }
           }
           break;
         case 1:
