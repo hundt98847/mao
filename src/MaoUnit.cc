@@ -17,11 +17,11 @@
 //   51 Franklin Street, Fifth Floor,
 //   Boston, MA  02110-1301, USA.
 
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-
 #include <iostream>
 #include <sstream>
+
+#include "MaoDebug.h"
+#include "MaoUnit.h"
 
 extern "C" const char *S_GET_NAME(symbolS *s);
 
@@ -310,21 +310,21 @@ void AsmInstruction::FreeInstruction() {
   MAO_ASSERT(instruction_);
   for (unsigned int i = 0; i < instruction_->operands; i++) {
     if (IsImmediateOperand(instruction_, i)) {
-      free(instruction_->op[i].imms);
+      delete instruction_->op[i].imms;
     }
     if (IsMemOperand(instruction_, i)) {
-      free(instruction_->op[i].disps);
+      delete instruction_->op[i].disps;
     }
     if (IsRegisterOperand(instruction_, i)) {
-      free(const_cast<reg_entry *>(instruction_->op[i].regs));
+      delete instruction_->op[i].regs;
     }
   }
   for (unsigned int i = 0; i < 2; i++) {
-    free(const_cast<seg_entry *>(instruction_->seg[i]));
+    delete instruction_->seg[i];
   }
-  free(const_cast<reg_entry *>(instruction_->base_reg));
-  free(const_cast<reg_entry *>(instruction_->index_reg));
-  free(instruction_);
+  delete instruction_->base_reg;
+  delete instruction_->index_reg;
+  delete instruction_;
 }
 
 
@@ -333,7 +333,7 @@ reg_entry *AsmInstruction::CopyRegEntry(const reg_entry *in_reg) {
   if (!in_reg)
     return 0;
   reg_entry *tmp_r;
-  tmp_r = static_cast<reg_entry *>(malloc(sizeof(reg_entry)));
+  tmp_r = new reg_entry;
   MAO_ASSERT(tmp_r);
   MAO_ASSERT(strlen(in_reg->reg_name) < kMaxRegisterNameLength);
   tmp_r->reg_name = strdup(in_reg->reg_name);
@@ -811,109 +811,42 @@ void AsmInstruction::PrintInstruction(FILE *out) const {
 // From an instruction given by gas, allocate new memory and populate the
 // members.
 i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
-  i386_insn *new_inst = static_cast<i386_insn *>(malloc(sizeof(i386_insn)));
+  i386_insn *new_inst = new i386_insn;
   MAO_ASSERT(new_inst);
 
-  // Template related members
-  new_inst->tm = in_inst->tm;
-  new_inst->suffix = in_inst->suffix;
-  new_inst->operands = in_inst->operands;
-  new_inst->reg_operands = in_inst->reg_operands;
-  new_inst->disp_operands = in_inst->disp_operands;
-  new_inst->mem_operands = in_inst->mem_operands;
-  new_inst->imm_operands = in_inst->imm_operands;
+  // Copy all non-pointer data
+  memcpy(new_inst, in_inst, sizeof(i386_insn));
 
-  // Types
+  // Copy references
   for (unsigned int i = 0; i < new_inst->operands; i++) {
-    for (unsigned int j = 0; j < OTNumOfUints; j++) {
-      new_inst->types[i].array[j] = in_inst->types[i].array[j];
-    }
-  }
-
-  // Ops
-  for (unsigned int i = 0; i < new_inst->operands; i++) {
-    // Copy the correct part of the op[i] union
+    // Select the correct part of the operand union.
     if (IsImmediateOperand(in_inst, i)) {
-      new_inst->op[i].imms =
-          static_cast<expressionS *>(malloc(sizeof(expressionS)));
+      new_inst->op[i].imms = new expressionS;
       MAO_ASSERT(new_inst->op[i].imms);
-      new_inst->op[i].imms->X_op = in_inst->op[i].imms->X_op;
-      new_inst->op[i].imms->X_add_number = in_inst->op[i].imms->X_add_number;
-      new_inst->op[i].imms->X_add_symbol = in_inst->op[i].imms->X_add_symbol;
-      new_inst->op[i].imms->X_op_symbol = in_inst->op[i].imms->X_op_symbol;
-    }
-
-    //   if (in_inst->tm.opcode_modifier.jump ||
-    //       in_inst->tm.opcode_modifier.jumpdword ||
-    //       in_inst->tm.opcode_modifier.jumpbyte) {
-    //     // TODO(martint): make sure the full contents off disps is copied
-    //       new_inst->op[i].disps = (expressionS *)malloc(sizeof(expressionS));
-    //       new_inst->op[i].disps->X_add_symbol =
-    //          in_inst->op[i].disps->X_add_symbol; // ERROR
-    //       new_inst->op[i].disps->X_add_number =
-    //          in_inst->op[i].disps->X_add_number; // ERROR
-    //       new_inst->op[i].disps->X_op = in_inst->op[i].disps->X_op;
-    //   }
-
-    if (IsMemOperand(in_inst, i)) {
-      if (in_inst->op[i].disps) {
-        new_inst->op[i].disps =
-            static_cast<expressionS *>(malloc(sizeof(expressionS)));
-        MAO_ASSERT(new_inst->op[i].disps);
-        new_inst->op[i].disps->X_add_symbol =
-            in_inst->op[i].disps->X_add_symbol;
-        new_inst->op[i].disps->X_add_number =
-            in_inst->op[i].disps->X_add_number;
-        new_inst->op[i].disps->X_op = in_inst->op[i].disps->X_op;
-        new_inst->op[i].disps->X_op_symbol =
-            in_inst->op[i].disps->X_op_symbol;
-      } else {
-        new_inst->op[i].disps = 0;
-      }
-    }
-    if (IsRegisterOperand(in_inst, i)) {
+      *new_inst->op[i].imms = *in_inst->op[i].imms;
+    } else if (IsMemOperand(in_inst, i) && in_inst->op[i].disps) {
+      new_inst->op[i].disps = new expressionS;
+      MAO_ASSERT(new_inst->op[i].disps);
+      *new_inst->op[i].disps = *in_inst->op[i].disps;
+    } else if (IsRegisterOperand(in_inst, i) ||
+              in_inst->types[i].bitfield.shiftcount ) {
       new_inst->op[i].regs = CopyRegEntry(in_inst->op[i].regs);
     }
-    if (in_inst->types[i].bitfield.shiftcount) {
-      new_inst->op[i].regs = CopyRegEntry(in_inst->op[i].regs);
-    }
-  }
-  for (unsigned int i = 0; i < new_inst->operands; i++) {
-    new_inst->flags[i]= in_inst->flags[i];
-  }
-  for (unsigned int i = 0; i < new_inst->operands; i++) {
-    new_inst->reloc[i] = in_inst->reloc[i];
   }
   new_inst->base_reg = CopyRegEntry(in_inst->base_reg);
   new_inst->index_reg = CopyRegEntry(in_inst->index_reg);
-  new_inst->log2_scale_factor = in_inst->log2_scale_factor;
 
   // Segment overrides
   for (unsigned int i = 0; i < 2; i++) {
     if (in_inst->seg[i]) {
-      //      seg_entry *tmp_seg = (seg_entry *)malloc(sizeof(seg_entry));
-      seg_entry *tmp_seg = static_cast<seg_entry *>(malloc(sizeof(seg_entry)));
+      seg_entry *tmp_seg = new seg_entry;
       MAO_ASSERT(tmp_seg);
       MAO_ASSERT(strlen(in_inst->seg[i]->seg_name) < MAX_SEGMENT_NAME_LENGTH);
       tmp_seg->seg_name = strdup(in_inst->seg[i]->seg_name);
       tmp_seg->seg_prefix = in_inst->seg[i]->seg_prefix;
       new_inst->seg[i] = tmp_seg;
-    } else {
-      new_inst->seg[i] = 0;
     }
   }
-
-  // Prefixes
-  new_inst->prefixes = in_inst->prefixes;
-  for (unsigned int i = 0; i < MAX_PREFIXES; i++) {
-    new_inst->prefix[i] = in_inst->prefix[i];
-  }
-
-  new_inst->rm = in_inst->rm;
-  new_inst->rex = in_inst->rex;
-  new_inst->sib = in_inst->sib;
-  new_inst->drex = in_inst->drex;
-  new_inst->vex = in_inst->vex;
 
   return new_inst;
 }
