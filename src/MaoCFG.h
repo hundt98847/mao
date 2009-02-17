@@ -106,9 +106,9 @@ class BasicBlock {
   MaoUnit::EntryIterator      EndEntries  ()       { return entries_.end(); }
   MaoUnit::ConstEntryIterator EndEntries  () const { return entries_.end(); }
 
-  void AddEntry(MaoUnitEntryBase *entry) { entries_.push_back(entry); }
+  void AddEntry(MaoEntry *entry) { entries_.push_back(entry); }
   void InsertEntry(MaoUnit::EntryVector::iterator pos,
-                   MaoUnitEntryBase *entry) { entries_.insert(pos, entry); }
+                   MaoEntry *entry) { entries_.insert(pos, entry); }
   MaoUnit::EntryIterator EraseEntry(MaoUnit::EntryIterator pos) {
     return entries_.erase(pos);
   }
@@ -182,20 +182,20 @@ class CFGBuilder : public MaoPass {
     return bb;
   }
 
-  static bool BelongsInBasicBlock(const MaoUnitEntryBase *entry) {
+  static bool BelongsInBasicBlock(const MaoEntry *entry) {
     switch (entry->Type()) {
-      case MaoUnitEntryBase::INSTRUCTION: return true;
-      case MaoUnitEntryBase::LABEL: return true;
-      case MaoUnitEntryBase::DIRECTIVE: return false;
-      case MaoUnitEntryBase::DEBUG: return false;
-      case MaoUnitEntryBase::UNDEFINED:
+      case MaoEntry::INSTRUCTION: return true;
+      case MaoEntry::LABEL: return true;
+      case MaoEntry::DIRECTIVE: return false;
+      case MaoEntry::DEBUG: return false;
+      case MaoEntry::UNDEFINED:
       default:
         MAO_ASSERT(false);
         return false;
     }
   }
 
-  bool EndsBasicBlock(const MaoUnitEntryBase *entry) {
+  bool EndsBasicBlock(const MaoEntry *entry) {
     bool has_fall_through = entry->HasFallThrough();
     bool is_control_transfer = entry->IsControlTransfer();
     bool is_call = entry->IsCall();
@@ -220,8 +220,8 @@ class CFGBuilder : public MaoPass {
 
     // Advance entry_iter to label
     for (; entry_iter != bb->EndEntries(); ++entry_iter) {
-      MaoUnitEntryBase *entry = *entry_iter;
-      if (entry->Type() == MaoUnitEntryBase::LABEL &&
+      MaoEntry *entry = *entry_iter;
+      if (entry->Type() == MaoEntry::LABEL &&
           static_cast<LabelEntry *>(entry) == label) {
         break;
       }
@@ -252,9 +252,9 @@ class CFGBuilder : public MaoPass {
   }
 
   template <class OutputIterator>
-  void GetTargets(MaoUnitEntryBase *entry, OutputIterator iter) const {
+  void GetTargets(MaoEntry *entry, OutputIterator iter) const {
     // TODO(nvachhar): Generalize this to handle indirect jumps
-    if (entry->Type() == MaoUnitEntryBase::INSTRUCTION) {
+    if (entry->Type() == MaoEntry::INSTRUCTION) {
       InstructionEntry *insn_entry = static_cast<InstructionEntry *>(entry);
       if (!insn_entry->IsCall() && !insn_entry->IsReturn())
         *iter++ = insn_entry->GetTarget();

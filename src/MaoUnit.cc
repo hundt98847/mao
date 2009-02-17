@@ -25,6 +25,8 @@
 
 extern "C" const char *S_GET_NAME(symbolS *s);
 
+
+
 //
 // Class: MaoUnit
 //
@@ -41,7 +43,7 @@ MaoUnit::MaoUnit(MaoOptions *mao_options)
 
 MaoUnit::~MaoUnit() {
   // Remove entries and free allocated memory
-  for (std::list<MaoUnitEntryBase *>::iterator iter =
+  for (std::list<MaoEntry *>::iterator iter =
            entry_list_.begin();
        iter != entry_list_.end(); ++iter) {
     delete *iter;
@@ -68,10 +70,10 @@ void MaoUnit::PrintMaoUnit() const {
 
 // Prints all entries in the MaoUnit
 void MaoUnit::PrintMaoUnit(FILE *out) const {
-  for (std::list<MaoUnitEntryBase *>::const_iterator iter =
+  for (std::list<MaoEntry *>::const_iterator iter =
            entry_list_.begin();
        iter != entry_list_.end(); ++iter) {
-    MaoUnitEntryBase *e = *iter;
+    MaoEntry *e = *iter;
     e->PrintEntry(out);
   }
 }
@@ -83,12 +85,12 @@ void MaoUnit::PrintIR() const {
 
 void MaoUnit::PrintIR(FILE *out) const {
   // Print the entries
-  for (std::list<MaoUnitEntryBase *>::const_iterator e_iter =
+  for (std::list<MaoEntry *>::const_iterator e_iter =
            entry_list_.begin();
        e_iter != entry_list_.end(); ++e_iter) {
-    MaoUnitEntryBase *e = *e_iter;
-    fprintf(out, "[%5d][%c] ", e->index(), e->GetDescriptiveChar());
-    if (MaoUnitEntryBase::INSTRUCTION == e->Type()) {
+    MaoEntry *e = *e_iter;
+    fprintf(out, "[%5d][%c] ", e->id(), e->GetDescriptiveChar());
+    if (MaoEntry::INSTRUCTION == e->Type()) {
       fprintf(out, "\t");
     }
     e->PrintIR(out);
@@ -104,9 +106,9 @@ void MaoUnit::PrintIR(FILE *out) const {
     Section *section = iter->second;
     fprintf(out, "[%3d] %s [", index, section->name());
     // Print out the subsections in this section as a list of indexes
-    std::vector<subsection_index_t> *subsection_indexes =
+    std::vector<SubSectionID> *subsection_indexes =
         section->GetSubSectionIndexes();
-    for (std::vector<subsection_index_t>::const_iterator si_iter =
+    for (std::vector<SubSectionID>::const_iterator si_iter =
              subsection_indexes->begin();
          si_iter != subsection_indexes->end(); ++si_iter) {
       fprintf(out, " %d", *si_iter);
@@ -175,31 +177,25 @@ LabelEntry *MaoUnit::GetLabelEntry(const char *label_name) const {
   return iter->second;
 }
 
-MaoUnitEntryBase *MaoUnit::GetEntryByID(const entry_index_t id) const {
-  MAO_ASSERT(id < entry_vector_.size());
-  MAO_ASSERT(entry_vector_[id] != 0);
-  return entry_vector_[id];
-}
-
-bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool build_sections,
+bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
                        bool create_default_section) {
   return AddEntry(entry, build_sections, create_default_section,
                   entry_list_.end());
 }
 
 // Add an entry to the MaoUnit list
-bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool build_sections,
+bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
                        bool create_default_section,
-                       std::list<MaoUnitEntryBase *>::iterator list_iter) {
+                       std::list<MaoEntry *>::iterator list_iter) {
   // Variables that _might_ get used.
   LabelEntry *label_entry;
   Symbol *symbol;
 
   // next free ID for the entry
-  entry_index_t entry_index = entry_vector_.size();
+  EntryID entry_index = entry_vector_.size();
 
   MAO_ASSERT(entry);
-  entry->set_index(entry_index);
+  entry->set_id(entry_index);
 
   // Create a subsection if necessary
   if (build_sections && (create_default_section && !current_subsection_)) {
@@ -209,9 +205,9 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool build_sections,
 
   // Check the type
   switch (entry->Type()) {
-    case MaoUnitEntryBase::INSTRUCTION:
+    case MaoEntry::INSTRUCTION:
       break;
-    case MaoUnitEntryBase::LABEL:
+    case MaoEntry::LABEL:
       // A Label will generate in a new symbol in the symbol table
       label_entry = static_cast<LabelEntry *>(entry);
       MAO_ASSERT(labels_.insert(std::make_pair(label_entry->name(),
@@ -221,11 +217,11 @@ bool MaoUnit::AddEntry(MaoUnitEntryBase *entry, bool build_sections,
       // TODO(martint): The codes does not currently set the correct
       //                section for all labels in the symboltable.
       break;
-    case MaoUnitEntryBase::DEBUG:
+    case MaoEntry::DEBUG:
       break;
-    case MaoUnitEntryBase::DIRECTIVE:
+    case MaoEntry::DIRECTIVE:
       break;
-    case MaoUnitEntryBase::UNDEFINED:
+    case MaoEntry::UNDEFINED:
       break;
     default:
       // should never happen. Catch all cases above.
@@ -283,664 +279,16 @@ const char *MaoUnit::BBNameGen::GetUniqueName() {
   return buff;
 }
 
-//
-// Class: AsmInstruction
-//
 
-AsmInstruction::AsmInstruction(i386_insn *instruction, MaoOpcode opcode)
-  : op_(opcode) {
-  MAO_ASSERT(instruction);
-  MAO_ASSERT(op_ != OP_invalid);
-  instruction_ = CreateInstructionCopy(instruction);
-}
-
-AsmInstruction::~AsmInstruction() {
-  MAO_ASSERT(instruction_);
-  FreeInstruction();
-}
-
-const char *AsmInstruction::GetOp() const {
-  MAO_ASSERT(instruction_);
-  MAO_ASSERT(instruction_->tm.name);
-  return(instruction_->tm.name);
-}
-
-// This deallocates memory allocated in CreateInstructionCopy().
-void AsmInstruction::FreeInstruction() {
-  MAO_ASSERT(instruction_);
-  for (unsigned int i = 0; i < instruction_->operands; i++) {
-    if (IsImmediateOperand(instruction_, i)) {
-      delete instruction_->op[i].imms;
-    }
-    if (IsMemOperand(instruction_, i)) {
-      delete instruction_->op[i].disps;
-    }
-    if (IsRegisterOperand(instruction_, i)) {
-      delete instruction_->op[i].regs;
-    }
-  }
-  for (unsigned int i = 0; i < 2; i++) {
-    delete instruction_->seg[i];
-  }
-  delete instruction_->base_reg;
-  delete instruction_->index_reg;
-  delete instruction_;
-}
-
-
-// Given a register, create a copy to be used in our instruction
-reg_entry *AsmInstruction::CopyRegEntry(const reg_entry *in_reg) {
-  if (!in_reg)
-    return 0;
-  reg_entry *tmp_r;
-  tmp_r = new reg_entry;
-  MAO_ASSERT(tmp_r);
-  MAO_ASSERT(strlen(in_reg->reg_name) < kMaxRegisterNameLength);
-  tmp_r->reg_name = strdup(in_reg->reg_name);
-  tmp_r->reg_type = in_reg->reg_type;
-  tmp_r->reg_flags = in_reg->reg_flags;
-  tmp_r->reg_num = in_reg->reg_num;
-  return tmp_r;
-}
-
-
-bool AsmInstruction::IsMemOperand(const i386_insn *instruction,
-                                  const unsigned int op_index) {
-  MAO_ASSERT(instruction->operands > op_index);
-  i386_operand_type t = instruction->types[op_index];
-  return (t.bitfield.disp8
-          || t.bitfield.disp16
-          || t.bitfield.disp32
-          || t.bitfield.disp32s
-          || t.bitfield.disp64
-          || t.bitfield.baseindex);
-}
-
-bool AsmInstruction::IsImmediateOperand(const i386_insn *instruction,
-                                        const unsigned int op_index) {
-  MAO_ASSERT(instruction->operands > op_index);
-  i386_operand_type t = instruction->types[op_index];
-  return (t.bitfield.imm1
-          || t.bitfield.imm8
-          || t.bitfield.imm8s
-          || t.bitfield.imm16
-          || t.bitfield.imm32
-          || t.bitfield.imm32s
-          || t.bitfield.imm64);
-}
-
-bool AsmInstruction::IsRegisterOperand(const i386_insn *instruction,
-                                       const unsigned int op_index) {
-  MAO_ASSERT(instruction->operands > op_index);
-  i386_operand_type t = instruction->types[op_index];
-  return (t.bitfield.reg8
-          || t.bitfield.reg16
-          || t.bitfield.reg32
-          || t.bitfield.reg64
-          || t.bitfield.floatreg
-          || t.bitfield.regxmm);
-}
-
-void AsmInstruction::PrintImmediateOperand(FILE *out,
-                                           const enum bfd_reloc_code_real reloc,
-                                           const expressionS *expr) const {
-  switch (expr->X_op) {
-    case O_constant:
-      /* X_add_number (a constant expression).  */
-      fprintf(out, "$%lld",
-              (long long)expr->X_add_number);
-      break;
-    case O_symbol:
-      /* X_add_symbol + X_add_number.  */
-      if (expr->X_add_symbol) {
-        fprintf(out, "$%s%s+",
-                S_GET_NAME(expr->X_add_symbol),
-                GetRelocString(reloc));
-      }
-      fprintf(out, "%lld",
-              (long long)expr->X_add_number);
-      break;
-    case O_subtract:
-      fprintf(out, "$(");
-      /* (X_add_symbol - X_op_symbol) + X_add_number.  */
-      if (expr->X_add_symbol || expr->X_op_symbol) {
-        fprintf(out, "(");
-      }
-      if (expr->X_add_symbol) {
-        fprintf(out, "%s%s",
-                S_GET_NAME(expr->X_add_symbol),
-                GetRelocString(reloc));
-      }
-      if (expr->X_op_symbol) {
-        fprintf(out, "-%s",
-                S_GET_NAME(expr->X_op_symbol));
-      }
-      if (expr->X_add_symbol || expr->X_op_symbol) {
-        fprintf(out, ")+");
-      }
-      fprintf(out, "%lld)",
-              (long long)expr->X_add_number);
-      break;
-    default:
-      MAO_ASSERT_MSG(0, "Unable to print unsupported expression");
-  }
-  return;
-}
-
-const char *AsmInstruction::GetRelocString(
-  const enum bfd_reloc_code_real reloc) const {
-  switch (reloc) {
-    case BFD_RELOC_X86_64_PLT32:
-      return "@PLT";
-    case BFD_RELOC_32_PCREL:
-      return "@GOTPCREL";
-    case BFD_RELOC_X86_64_TLSLD:
-      return "@TLSLD";
-    case BFD_RELOC_X86_64_TLSGD:
-      return "@TLSGD";
-    case BFD_RELOC_X86_64_DTPOFF32:
-      return "@DTPOFF";
-    case BFD_RELOC_NONE:  // found in "leaq    .LC0(%rip), %rcx"
-      return "";
-    case BFD_RELOC_X86_64_GOTTPOFF:
-      return "@GOTTPOFF";
-    default:
-      MAO_ASSERT_MSG(false, "Unable to find info about reloc: %d", reloc);
-      break;
-  }
-  return "";
-}
-
-// segment-override:signed-offset(base,index,scale)
-void AsmInstruction::PrintMemoryOperand(FILE                  *out,
-                                        const i386_operand_type &operand_type,
-                                        const enum bfd_reloc_code_real reloc,
-                                        const expressionS     *expr,
-                                        const char            *segment_override,
-                                        const bool            jumpabsolute)
-    const {
-  int scale[] = { 1, 2, 4, 8 };
-
-  if (jumpabsolute) {
-    fprintf(out, "*");
-  }
-
-  // segment-override:
-  if (segment_override) {
-    fprintf(out, "%%%s:", segment_override);
-  }
-
-  if (operand_type.bitfield.disp8 ||
-      operand_type.bitfield.disp16 ||
-      operand_type.bitfield.disp32 ||
-      operand_type.bitfield.disp32s ||
-      operand_type.bitfield.disp64) {
-    // Signed-offset:
-    switch (expr->X_op) {
-      case O_constant:
-        /* X_add_number (a constant expression).  */
-        fprintf(out, "(%lld)",
-                (long long)expr->X_add_number);
-        break;
-      case O_symbol:
-        fprintf(out, "(");
-        /* X_add_symbol + X_add_number.  */
-        if (expr->X_add_symbol) {
-          fprintf(out, "%s%s+",
-                  S_GET_NAME(expr->X_add_symbol),
-                  GetRelocString(reloc));
-        }
-        fprintf(out, "%lld", (long long)expr->X_add_number);
-        fprintf(out, ")");
-        break;
-        /* (X_add_symbol - X_op_symbol) + X_add_number.  */
-      case O_subtract:
-        if (expr->X_add_symbol || expr->X_op_symbol) {
-          fprintf(out, "(");
-        }
-        if (expr->X_add_symbol) {
-          fprintf(out, "%s%s",
-                  S_GET_NAME(expr->X_add_symbol),
-                  GetRelocString(reloc));
-        }
-        // When GOTPCREL is used, the second symbol is implicit and
-        // should not be printed.
-        if (reloc != BFD_RELOC_32_PCREL) {
-          if (expr->X_op_symbol) {
-            fprintf(out, "-%s",
-                    S_GET_NAME(expr->X_op_symbol));
-          }
-        }
-        if (expr->X_add_symbol || expr->X_op_symbol) {
-          fprintf(out, ")+");
-        }
-        fprintf(out, "%lld",
-                (long long)expr->X_add_number);
-        break;
-      default:
-        MAO_ASSERT_MSG(0, "Unable to print unsupported expression: %d",
-                       expr->X_op);
-    }
-  }
-
-  // (base,index,scale)
-  if (instruction_->base_reg || instruction_->index_reg)
-    fprintf(out, "(");
-  if (instruction_->base_reg)
-    fprintf(out, "%%%s", instruction_->base_reg->reg_name);
-  if (instruction_->index_reg)
-    fprintf(out, ",%%%s", instruction_->index_reg->reg_name);
-  if (instruction_->log2_scale_factor)
-    fprintf(out, ",%d", scale[instruction_->log2_scale_factor]);
-  if (instruction_->base_reg || instruction_->index_reg)
-    fprintf(out, ")");
-
-  return;
-}
-
-
-
-bool AsmInstruction::PrintSuffix() const {
-  if (instruction_->suffix == 0) {
-    return false;
-  }
-  const MaoOpcode opcode_has_l_suffix[] =  {
-    OP_movsbl, OP_movswl, OP_movzbl, OP_movzwl, OP_movswl, OP_cmovl, OP_cmovnl,
-    OP_cwtl, OP_cltd
-  };
-  const MaoOpcode opcode_has_w_suffix[] =  {
-    OP_cbtw, OP_fnstsw, OP_movsbw
-  };
-  const MaoOpcode opcode_has_b_suffix[] =  {
-    OP_setb
-  };
-  if ((instruction_->suffix == 'l') &&
-      IsInList(op(), opcode_has_l_suffix,
-               sizeof(opcode_has_l_suffix)/sizeof(MaoOpcode))) {
-    return false;
-  }
-  if ((instruction_->suffix == 'w') &&
-      IsInList(op(), opcode_has_w_suffix,
-               sizeof(opcode_has_w_suffix)/sizeof(MaoOpcode))) {
-    return false;
-  }
-  if ((instruction_->suffix == 'b') &&
-      IsInList(op(), opcode_has_b_suffix,
-               sizeof(opcode_has_b_suffix)/sizeof(MaoOpcode))) {
-    return false;
-  }
-  if (instruction_->suffix == 'q' &&
-      instruction_->tm.name[strlen(instruction_->tm.name)-1] == 'q') {
-    return false;
-  }
-
-
-  return true;
-}
-
-// Prints out the instruction.
-// Goal is to make it print instructions generated by gcc
-void AsmInstruction::PrintInstruction(FILE *out) const {
-  const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
-  const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
-
-  // Prefixes
-  fprintf(out, "\t");
-  if (instruction_->prefixes > 0) {
-    for (unsigned int i = 0;
-         i < sizeof(instruction_->prefix)/sizeof(unsigned char);
-         ++i) {
-      if (instruction_->prefix[i] != 0) {
-        switch (instruction_->prefix[i]) {
-          // http://www.intel.com/software/products/documentation/vlin/mergedprojects/analyzer_ec/mergedprojects/reference_olh/mergedProjects/instructions/instruct32_hh/vc276.htm
-          // Repeats a string instruction the number of times specified in the
-          // count register ((E)CX) or until the indicated condition of the ZF
-          // flag is no longer met.
-          // REP (repeat)                                 ins: INS, OUTS, MOVS
-          //                                                   LODS, STOS
-          // REPE,  REPZ (repeat while equal, zero)          ins: CMPS, SCAS
-          // REPNE, REPNZ (repeat while not equal, not zero) ins: CMPS, SCAS
-          case REPNE_PREFIX_OPCODE:
-            if (IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
-              fprintf(out, "repne ");
-            } else if (IsInList(op(), rep_ops,
-                                sizeof(repe_ops)/sizeof(MaoOpcode))) {
-              MAO_ASSERT_MSG(false,
-                             "Found prefix does not match the instruction.");
-            } else {
-              MAO_ASSERT_MSG(false,
-                             "Unable to find instruction with rep* prefix");
-            }
-            break;
-          case REPE_PREFIX_OPCODE:
-            if (IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
-              fprintf(out, "repe ");
-            } else if (IsInList(op(), rep_ops,
-                                sizeof(repe_ops)/sizeof(MaoOpcode))) {
-              fprintf(out, "rep ");
-            } else {
-              MAO_ASSERT_MSG(false,
-                             "Unable to find instruction with rep* prefix");
-            }
-            break;
-            // Rex prefixes are used for 64-bit extention
-          case REX_OPCODE+0:  // e.g.: movb    %sil, -24(%rbp)
-          case REX_OPCODE+1:  // e.g.: movl    $.LC0, %r8d
-          case REX_OPCODE+2:
-          case REX_OPCODE+3:
-          case REX_OPCODE+4:  // e.g.: movl    %r8d, -100(%rbp)
-          case REX_OPCODE+5:  // e.g.: movl    %r13d, %r8d
-          case REX_OPCODE+6:
-          case REX_OPCODE+7:
-          case REX_OPCODE+8:  // e.g.: add $1, %rax
-          case REX_OPCODE+9:  // e.g.: add $1, %r9
-          case REX_OPCODE+10:
-          case REX_OPCODE+11:
-          case REX_OPCODE+12:  // e.g.: mov    %r9, (%eax)
-          case REX_OPCODE+13:  // e.g : movq    %r12, %r9
-          case REX_OPCODE+14:
-          case REX_OPCODE+15:
-            break;
-          case DATA_PREFIX_OPCODE:  // e.g. : cmpw    %cx, %ax
-            break;
-          case CS_PREFIX_OPCODE:
-          case DS_PREFIX_OPCODE:
-          case ES_PREFIX_OPCODE:
-          case FS_PREFIX_OPCODE:
-          case GS_PREFIX_OPCODE:
-          case SS_PREFIX_OPCODE:
-            break;
-          case ADDR_PREFIX_OPCODE:
-            // used in movl (%eax), %eax
-            break;
-          default:
-            MAO_ASSERT_MSG(false, "Unknown prefix found 0x%x\n",
-                           instruction_->prefix[i]);
-        }
-      }
-    }
-  }
-
-  // Do not print suffixes that are already in the template
-  if (!PrintSuffix()) {
-    fprintf(out, "%s\t", instruction_->tm.name);
-  } else {
-    fprintf(out, "%s%c\t", instruction_->tm.name, instruction_->suffix);
-  }
-
-  // Loop over operands
-  for (unsigned int i = 0; i < instruction_->operands; ++i) {
-    // IMMEDIATE
-    // Immext means that an opcode modifier is encoded
-    // in the instruction structure as an extra operand,
-    // even though its not one!
-    if (!instruction_->tm.opcode_modifier.immext &&
-        IsImmediateOperand(instruction_, i)) {
-      PrintImmediateOperand(out, instruction_->reloc[i],
-                            instruction_->op[i].imms);
-    }
-    // This case is now handles in the displacement
-    //     if (instruction_->tm.opcode_modifier.jump ||
-    //         instruction_->tm.opcode_modifier.jumpdword ||
-    //         instruction_->tm.opcode_modifier.jumpbyte) {
-    //       if (instruction_->op[i].disps->X_op == O_symbol)
-    //         fprintf(out, "%s",
-    //                 S_GET_NAME(instruction_->op[i].disps->X_add_symbol) );
-    //       else
-    //         fprintf(out, "*unk*");
-    //     }
-
-    // MEMORY OPERANDS
-
-    // Segment overrides are always placed in seg[0], even
-    // if it applies to the second operand.
-    if (IsMemOperand(instruction_, i)) {
-      // Ugly hack:
-      // for some string instruction, both operands have baseindex == 1
-      // though only the first should be printed...
-      // the first is implicit "(%edi)".
-      // e.g.: rep   CMPSb (%edi), (%esi)
-      if (instruction_->operands == 2 &&
-          i == 0 &&
-          IsMemOperand(instruction_, 1) &&
-          IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
-        fprintf(out, "(%%edi) ");
-      } else {
-        PrintMemoryOperand(
-            out,
-            instruction_->types[i],
-            instruction_->reloc[i],
-            instruction_->op[i].disps,
-            instruction_->seg[0]?instruction_->seg[0]->seg_name:0,
-            instruction_->types[i].bitfield.jumpabsolute ||
-            instruction_->tm.operand_types[i].bitfield.jumpabsolute);
-      }
-    }
-
-    // ACC register
-    if (instruction_->types[i].bitfield.acc) {
-      // need to find out size in order to print the correct ACC register!
-      if (instruction_->types[i].bitfield.byte )
-        fprintf(out, "%%al");
-      if (instruction_->types[i].bitfield.word )
-        fprintf(out, "%%ax");
-      if (instruction_->types[i].bitfield.dword )
-        fprintf(out, "%%eax");
-      if (instruction_->types[i].bitfield.qword )
-        fprintf(out, "%%rax");
-    }
-
-    // ACC register
-    if (instruction_->types[i].bitfield.floatacc) {
-        fprintf(out, "%%st");
-    }
-    // TODO(martint): fix floatacc
-    // if ((instruction_->types[i].bitfield.floatacc)...
-
-    // REGISTERS
-
-    // Segment register
-    if (instruction_->types[i].bitfield.sreg2) {
-      switch (instruction_->rm.reg) {
-        case 0:
-          fprintf(out, "%%es");
-          break;
-        case 1:
-          fprintf(out, "%%cs");
-          break;
-        case 2:
-          fprintf(out, "%%ss");
-          break;
-        case 3:
-          fprintf(out, "%%ds");
-          break;
-        default:
-          fprintf(stderr, "Unable to find segement regsiter sreg2%d\n",
-                  instruction_->rm.reg);
-          MAO_ASSERT(false);
-      }
-    }
-    if (instruction_->types[i].bitfield.sreg3) {
-      switch (instruction_->rm.reg) {
-        case 4:
-          fprintf(out, "%%fs");
-          break;
-        case 5:
-          fprintf(out, "%%gs");
-          break;
-        default:
-          fprintf(stderr, "Unable to find segement regsiter sreg3%d\n",
-                  instruction_->rm.reg);
-          MAO_ASSERT(false);
-      }
-    }
-
-    // XMM registers
-    if (instruction_->types[i].bitfield.regmmx) {
-      if (instruction_->tm.operand_types[i].bitfield.regmmx) {
-        fprintf(out, "%%mm%d", instruction_->rm.reg);
-      } else if (instruction_->tm.operand_types[i].bitfield.regxmm) {
-        fprintf(out, "%%xmm%d", instruction_->rm.reg);
-      }
-    }
-
-
-    if (IsRegisterOperand(instruction_, i)) {
-      if (instruction_->types[i].bitfield.jumpabsolute) {
-        fprintf(out, "*");
-      }
-      fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
-    }
-
-    // Handle spacial case found in tc-i386.c:7326
-    if (instruction_->types[i].bitfield.inoutportreg) {
-      // its a register name!
-      fprintf(out, "(%%dx)");
-    }
-
-    if (instruction_->types[i].bitfield.shiftcount) {
-      // its a register name!
-      fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
-    }
-
-    if (i < instruction_->operands-1)
-      fprintf(out, ", ");
-  }
-}
-
-// From an instruction given by gas, allocate new memory and populate the
-// members.
-i386_insn *AsmInstruction::CreateInstructionCopy(i386_insn *in_inst) {
-  i386_insn *new_inst = new i386_insn;
-  MAO_ASSERT(new_inst);
-
-  // Copy all non-pointer data
-  memcpy(new_inst, in_inst, sizeof(i386_insn));
-
-  // Copy references
-  for (unsigned int i = 0; i < new_inst->operands; i++) {
-    // Select the correct part of the operand union.
-    if (IsImmediateOperand(in_inst, i)) {
-      new_inst->op[i].imms = new expressionS;
-      MAO_ASSERT(new_inst->op[i].imms);
-      *new_inst->op[i].imms = *in_inst->op[i].imms;
-    } else if (IsMemOperand(in_inst, i) && in_inst->op[i].disps) {
-      new_inst->op[i].disps = new expressionS;
-      MAO_ASSERT(new_inst->op[i].disps);
-      *new_inst->op[i].disps = *in_inst->op[i].disps;
-    } else if (IsRegisterOperand(in_inst, i) ||
-              in_inst->types[i].bitfield.shiftcount ) {
-      new_inst->op[i].regs = CopyRegEntry(in_inst->op[i].regs);
-    }
-  }
-  new_inst->base_reg = CopyRegEntry(in_inst->base_reg);
-  new_inst->index_reg = CopyRegEntry(in_inst->index_reg);
-
-  // Segment overrides
-  for (unsigned int i = 0; i < 2; i++) {
-    if (in_inst->seg[i]) {
-      seg_entry *tmp_seg = new seg_entry;
-      MAO_ASSERT(tmp_seg);
-      MAO_ASSERT(strlen(in_inst->seg[i]->seg_name) < MAX_SEGMENT_NAME_LENGTH);
-      tmp_seg->seg_name = strdup(in_inst->seg[i]->seg_name);
-      tmp_seg->seg_prefix = in_inst->seg[i]->seg_prefix;
-      new_inst->seg[i] = tmp_seg;
-    }
-  }
-
-  return new_inst;
-}
-
-bool AsmInstruction::IsInList(MaoOpcode opcode, const MaoOpcode list[],
-                              const unsigned int number_of_elements) const {
-  for (unsigned int i = 0; i < number_of_elements; i++) {
-    if (opcode == list[i])
-      return true;
-  }
-  return false;
-}
-
-const MaoOpcode cond_jumps[] = {
-  // Conditional jumps.
-  OP_jo,  OP_jno, OP_jb,   OP_jc,  OP_jnae, OP_jnb,  OP_jnc, OP_jae, OP_je,
-  OP_jz,  OP_jne, OP_jnz,  OP_jbe, OP_jna,  OP_jnbe, OP_ja,  OP_js,  OP_jns,
-  OP_jp,  OP_jpe, OP_jnp,  OP_jpo, OP_jl,   OP_jnge, OP_jnl, OP_jge, OP_jle,
-  OP_jng,  OP_jnle, OP_jg,
-
-  // jcxz vs. jecxz is chosen on the basis of the address size prefix.
-  OP_jcxz, OP_jecxz, OP_jecxz, OP_jrcxz,
-
-  // loop variants
-  OP_loop, OP_loopz, OP_loope, OP_loopnz, OP_loopne
-};
-
-bool AsmInstruction::HasFallThrough() const {
-  // TODO(martint): Get this info from the i386_insn structure
-  //                or complete the list
-  if (IsReturn()) return false;
-  if (!HasTarget()) return true;
-  if (IsCall()) return true;
-  if (IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode))) {
-    return true;
-  }
-
-  return false;
-}
-
-bool AsmInstruction::HasTarget() const {
-  // TODO(martint): Get this info from the i386_insn structure
-  //                or complete the list
-  const MaoOpcode insn[] = {OP_jmp, OP_ljmp};
-  if (IsInList(op(), insn, sizeof(insn)/sizeof(MaoOpcode)))
-    return true;
-  if (IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode)))
-    return true;
-
-  return false;
-}
-
-const char *AsmInstruction::GetTarget() const {
-  //
-  for (unsigned int i =0; i < instruction_->operands; i++) {
-    if (IsMemOperand(instruction_, i)) {
-      // symbol?
-      if (instruction_->types[i].bitfield.disp8 ||
-          instruction_->types[i].bitfield.disp16 ||
-          instruction_->types[i].bitfield.disp32 ||
-          instruction_->types[i].bitfield.disp32s ||
-          instruction_->types[i].bitfield.disp64) {
-        if (instruction_->op[i].disps->X_op == O_symbol) {
-          return S_GET_NAME(instruction_->op[i].disps->X_add_symbol);
-        }
-      }
-    }
-  }
-  return "<UKNOWN>";
-}
-
-bool AsmInstruction::IsCall() const {
-  const MaoOpcode calls[] = {
-    OP_call, OP_lcall, OP_vmcall, OP_syscall, OP_vmmcall
-  };
-  return IsInList(op(), calls, sizeof(calls)/sizeof(MaoOpcode));
-}
-
-bool AsmInstruction::IsReturn() const {
-  const MaoOpcode rets[] = {
-    OP_ret, OP_lret, OP_retf, OP_iret, OP_sysret
-  };
-  return IsInList(op(), rets, sizeof(rets)/sizeof(MaoOpcode));
-}
 
 
 //
-// Class: MaoUnitEntryBase
+// Class: MaoEntry
 //
 
-MaoUnitEntryBase::MaoUnitEntryBase(unsigned int line_number,
-                                   const char *line_verbatim) :
-    line_number_(line_number),
-    index_(0) {
+MaoEntry::MaoEntry(unsigned int line_number, const char *line_verbatim,
+                   const MaoUnit *maounit) :
+    id_(0), next_(0), prev_(0), line_number_(line_number), maounit_(maounit) {
   if (line_verbatim) {
     MAO_ASSERT(strlen(line_verbatim) < MAX_VERBATIM_ASSEMBLY_STRING_LENGTH);
     line_verbatim_ = strdup(line_verbatim);
@@ -949,11 +297,11 @@ MaoUnitEntryBase::MaoUnitEntryBase(unsigned int line_number,
   }
 }
 
-MaoUnitEntryBase::~MaoUnitEntryBase() {
+MaoEntry::~MaoEntry() {
 }
 
 
-void MaoUnitEntryBase::Spaces(unsigned int n, FILE *outfile) const {
+void MaoEntry::Spaces(unsigned int n, FILE *outfile) const {
   for (unsigned int i = 0; i < n; i++) {
     fprintf(outfile, " ");
   }
@@ -1239,7 +587,7 @@ const std::string &DirectiveEntry::OperandToString(const Operand &operand,
   return *out;
 }
 
-MaoUnitEntryBase::EntryType DirectiveEntry::Type() const {
+MaoEntry::EntryType DirectiveEntry::Type() const {
   return DIRECTIVE;
 }
 
@@ -1260,7 +608,7 @@ void DebugEntry::PrintIR(FILE *out) const {
 }
 
 
-MaoUnitEntryBase::EntryType DebugEntry::Type() const {
+MaoEntry::EntryType DebugEntry::Type() const {
   return DEBUG;
 }
 
@@ -1271,33 +619,669 @@ MaoUnitEntryBase::EntryType DebugEntry::Type() const {
 
 InstructionEntry::InstructionEntry(i386_insn *instruction,
                                    unsigned int line_number,
-                                   const char* line_verbatim) :
-    MaoUnitEntryBase(line_number, line_verbatim) {
-  instruction_ = new AsmInstruction(instruction,
-                                    GetOpcode(instruction->tm.name));
+                                   const char* line_verbatim,
+                                   const MaoUnit *maounit) :
+    MaoEntry(line_number, line_verbatim, maounit) {
+  op_ = GetOpcode(instruction->tm.name);
+  MAO_ASSERT(op_ != OP_invalid);
+  MAO_ASSERT(instruction);
+  instruction_ = CreateInstructionCopy(instruction);
 }
 
 InstructionEntry::~InstructionEntry() {
-  delete instruction_;
+  MAO_ASSERT(instruction_);
+  FreeInstruction();
 }
 
 void InstructionEntry::PrintEntry(FILE *out) const {
-  instruction_->PrintInstruction(out);
+  PrintInstruction(out);
   fprintf(out, "\t # [%d]\t%s", line_number(),
           line_verbatim() ? line_verbatim() : "");
   fprintf(out, "\n");
 }
 
-
 void InstructionEntry::PrintIR(FILE *out) const {
-  MAO_ASSERT(instruction_);
-  instruction_->PrintInstruction(out);
+  PrintInstruction(out);
 }
 
-
-MaoUnitEntryBase::EntryType InstructionEntry::Type() const {
+MaoEntry::EntryType InstructionEntry::Type() const {
   return INSTRUCTION;
 }
+
+const char *InstructionEntry::GetOp() const {
+  MAO_ASSERT(instruction_);
+  MAO_ASSERT(instruction_->tm.name);
+  return(instruction_->tm.name);
+}
+
+// This deallocates memory allocated in CreateInstructionCopy().
+void InstructionEntry::FreeInstruction() {
+  MAO_ASSERT(instruction_);
+  for (unsigned int i = 0; i < instruction_->operands; i++) {
+    if (IsImmediateOperand(instruction_, i)) {
+      delete instruction_->op[i].imms;
+    }
+    if (IsMemOperand(instruction_, i)) {
+      delete instruction_->op[i].disps;
+    }
+    if (IsRegisterOperand(instruction_, i)) {
+      delete instruction_->op[i].regs;
+    }
+  }
+  for (unsigned int i = 0; i < 2; i++) {
+    delete instruction_->seg[i];
+  }
+  delete instruction_->base_reg;
+  delete instruction_->index_reg;
+  delete instruction_;
+}
+
+
+// Given a register, create a copy to be used in our instruction
+reg_entry *InstructionEntry::CopyRegEntry(const reg_entry *in_reg) {
+  if (!in_reg)
+    return 0;
+  reg_entry *tmp_r;
+  tmp_r = new reg_entry;
+  MAO_ASSERT(tmp_r);
+  MAO_ASSERT(strlen(in_reg->reg_name) < kMaxRegisterNameLength);
+  tmp_r->reg_name = strdup(in_reg->reg_name);
+  tmp_r->reg_type = in_reg->reg_type;
+  tmp_r->reg_flags = in_reg->reg_flags;
+  tmp_r->reg_num = in_reg->reg_num;
+  return tmp_r;
+}
+
+
+bool InstructionEntry::IsMemOperand(const i386_insn *instruction,
+                                  const unsigned int op_index) {
+  MAO_ASSERT(instruction->operands > op_index);
+  i386_operand_type t = instruction->types[op_index];
+  return (t.bitfield.disp8
+          || t.bitfield.disp16
+          || t.bitfield.disp32
+          || t.bitfield.disp32s
+          || t.bitfield.disp64
+          || t.bitfield.baseindex);
+}
+
+bool InstructionEntry::IsImmediateOperand(const i386_insn *instruction,
+                                        const unsigned int op_index) {
+  MAO_ASSERT(instruction->operands > op_index);
+  i386_operand_type t = instruction->types[op_index];
+  return (t.bitfield.imm1
+          || t.bitfield.imm8
+          || t.bitfield.imm8s
+          || t.bitfield.imm16
+          || t.bitfield.imm32
+          || t.bitfield.imm32s
+          || t.bitfield.imm64);
+}
+
+bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
+                                       const unsigned int op_index) {
+  MAO_ASSERT(instruction->operands > op_index);
+  i386_operand_type t = instruction->types[op_index];
+  return (t.bitfield.reg8
+          || t.bitfield.reg16
+          || t.bitfield.reg32
+          || t.bitfield.reg64
+          || t.bitfield.floatreg
+          || t.bitfield.regxmm);
+}
+
+void InstructionEntry::PrintImmediateOperand(FILE *out,
+                                           const enum bfd_reloc_code_real reloc,
+                                           const expressionS *expr) const {
+  switch (expr->X_op) {
+    case O_constant:
+      /* X_add_number (a constant expression).  */
+      fprintf(out, "$%lld",
+              (long long)expr->X_add_number);
+      break;
+    case O_symbol:
+      /* X_add_symbol + X_add_number.  */
+      if (expr->X_add_symbol) {
+        fprintf(out, "$%s%s+",
+                S_GET_NAME(expr->X_add_symbol),
+                GetRelocString(reloc));
+      }
+      fprintf(out, "%lld",
+              (long long)expr->X_add_number);
+      break;
+    case O_subtract:
+      fprintf(out, "$(");
+      /* (X_add_symbol - X_op_symbol) + X_add_number.  */
+      if (expr->X_add_symbol || expr->X_op_symbol) {
+        fprintf(out, "(");
+      }
+      if (expr->X_add_symbol) {
+        fprintf(out, "%s%s",
+                S_GET_NAME(expr->X_add_symbol),
+                GetRelocString(reloc));
+      }
+      if (expr->X_op_symbol) {
+        fprintf(out, "-%s",
+                S_GET_NAME(expr->X_op_symbol));
+      }
+      if (expr->X_add_symbol || expr->X_op_symbol) {
+        fprintf(out, ")+");
+      }
+      fprintf(out, "%lld)",
+              (long long)expr->X_add_number);
+      break;
+    default:
+      MAO_ASSERT_MSG(0, "Unable to print unsupported expression");
+  }
+  return;
+}
+
+const char *InstructionEntry::GetRelocString(
+  const enum bfd_reloc_code_real reloc) const {
+  switch (reloc) {
+    case BFD_RELOC_X86_64_PLT32:
+      return "@PLT";
+    case BFD_RELOC_32_PCREL:
+      return "@GOTPCREL";
+    case BFD_RELOC_X86_64_TLSLD:
+      return "@TLSLD";
+    case BFD_RELOC_X86_64_TLSGD:
+      return "@TLSGD";
+    case BFD_RELOC_X86_64_DTPOFF32:
+      return "@DTPOFF";
+    case BFD_RELOC_NONE:  // found in "leaq    .LC0(%rip), %rcx"
+      return "";
+    case BFD_RELOC_X86_64_GOTTPOFF:
+      return "@GOTTPOFF";
+    default:
+      MAO_ASSERT_MSG(false, "Unable to find info about reloc: %d", reloc);
+      break;
+  }
+  return "";
+}
+
+// segment-override:signed-offset(base,index,scale)
+void InstructionEntry::PrintMemoryOperand(FILE                  *out,
+                                        const i386_operand_type &operand_type,
+                                        const enum bfd_reloc_code_real reloc,
+                                        const expressionS     *expr,
+                                        const char            *segment_override,
+                                        const bool            jumpabsolute)
+    const {
+  int scale[] = { 1, 2, 4, 8 };
+
+  if (jumpabsolute) {
+    fprintf(out, "*");
+  }
+
+  // segment-override:
+  if (segment_override) {
+    fprintf(out, "%%%s:", segment_override);
+  }
+
+  if (operand_type.bitfield.disp8 ||
+      operand_type.bitfield.disp16 ||
+      operand_type.bitfield.disp32 ||
+      operand_type.bitfield.disp32s ||
+      operand_type.bitfield.disp64) {
+    // Signed-offset:
+    switch (expr->X_op) {
+      case O_constant:
+        /* X_add_number (a constant expression).  */
+        fprintf(out, "(%lld)",
+                (long long)expr->X_add_number);
+        break;
+      case O_symbol:
+        fprintf(out, "(");
+        /* X_add_symbol + X_add_number.  */
+        if (expr->X_add_symbol) {
+          fprintf(out, "%s%s+",
+                  S_GET_NAME(expr->X_add_symbol),
+                  GetRelocString(reloc));
+        }
+        fprintf(out, "%lld", (long long)expr->X_add_number);
+        fprintf(out, ")");
+        break;
+        /* (X_add_symbol - X_op_symbol) + X_add_number.  */
+      case O_subtract:
+        if (expr->X_add_symbol || expr->X_op_symbol) {
+          fprintf(out, "(");
+        }
+        if (expr->X_add_symbol) {
+          fprintf(out, "%s%s",
+                  S_GET_NAME(expr->X_add_symbol),
+                  GetRelocString(reloc));
+        }
+        // When GOTPCREL is used, the second symbol is implicit and
+        // should not be printed.
+        if (reloc != BFD_RELOC_32_PCREL) {
+          if (expr->X_op_symbol) {
+            fprintf(out, "-%s",
+                    S_GET_NAME(expr->X_op_symbol));
+          }
+        }
+        if (expr->X_add_symbol || expr->X_op_symbol) {
+          fprintf(out, ")+");
+        }
+        fprintf(out, "%lld",
+                (long long)expr->X_add_number);
+        break;
+      default:
+        MAO_ASSERT_MSG(0, "Unable to print unsupported expression: %d",
+                       expr->X_op);
+    }
+  }
+
+  // (base,index,scale)
+  if (instruction_->base_reg || instruction_->index_reg)
+    fprintf(out, "(");
+  if (instruction_->base_reg)
+    fprintf(out, "%%%s", instruction_->base_reg->reg_name);
+  if (instruction_->index_reg)
+    fprintf(out, ",%%%s", instruction_->index_reg->reg_name);
+  if (instruction_->log2_scale_factor)
+    fprintf(out, ",%d", scale[instruction_->log2_scale_factor]);
+  if (instruction_->base_reg || instruction_->index_reg)
+    fprintf(out, ")");
+
+  return;
+}
+
+
+
+bool InstructionEntry::PrintSuffix() const {
+  if (instruction_->suffix == 0) {
+    return false;
+  }
+  const MaoOpcode opcode_has_l_suffix[] =  {
+    OP_movsbl, OP_movswl, OP_movzbl, OP_movzwl, OP_movswl, OP_cmovl, OP_cmovnl,
+    OP_cwtl, OP_cltd
+  };
+  const MaoOpcode opcode_has_w_suffix[] =  {
+    OP_cbtw, OP_fnstsw, OP_movsbw
+  };
+  const MaoOpcode opcode_has_b_suffix[] =  {
+    OP_setb
+  };
+  if ((instruction_->suffix == 'l') &&
+      IsInList(op(), opcode_has_l_suffix,
+               sizeof(opcode_has_l_suffix)/sizeof(MaoOpcode))) {
+    return false;
+  }
+  if ((instruction_->suffix == 'w') &&
+      IsInList(op(), opcode_has_w_suffix,
+               sizeof(opcode_has_w_suffix)/sizeof(MaoOpcode))) {
+    return false;
+  }
+  if ((instruction_->suffix == 'b') &&
+      IsInList(op(), opcode_has_b_suffix,
+               sizeof(opcode_has_b_suffix)/sizeof(MaoOpcode))) {
+    return false;
+  }
+  if (instruction_->suffix == 'q' &&
+      instruction_->tm.name[strlen(instruction_->tm.name)-1] == 'q') {
+    return false;
+  }
+
+
+  return true;
+}
+
+// Prints out the instruction.
+// Goal is to make it print instructions generated by gcc
+void InstructionEntry::PrintInstruction(FILE *out) const {
+  const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
+  const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
+
+  // Prefixes
+  fprintf(out, "\t");
+  if (instruction_->prefixes > 0) {
+    for (unsigned int i = 0;
+         i < sizeof(instruction_->prefix)/sizeof(unsigned char);
+         ++i) {
+      if (instruction_->prefix[i] != 0) {
+        switch (instruction_->prefix[i]) {
+          // http://www.intel.com/software/products/documentation/vlin/mergedprojects/analyzer_ec/mergedprojects/reference_olh/mergedProjects/instructions/instruct32_hh/vc276.htm
+          // Repeats a string instruction the number of times specified in the
+          // count register ((E)CX) or until the indicated condition of the ZF
+          // flag is no longer met.
+          // REP (repeat)                                 ins: INS, OUTS, MOVS
+          //                                                   LODS, STOS
+          // REPE,  REPZ (repeat while equal, zero)          ins: CMPS, SCAS
+          // REPNE, REPNZ (repeat while not equal, not zero) ins: CMPS, SCAS
+          case REPNE_PREFIX_OPCODE:
+            if (IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
+              fprintf(out, "repne ");
+            } else if (IsInList(op(), rep_ops,
+                                sizeof(repe_ops)/sizeof(MaoOpcode))) {
+              MAO_ASSERT_MSG(false,
+                             "Found prefix does not match the instruction.");
+            } else {
+              MAO_ASSERT_MSG(false,
+                             "Unable to find instruction with rep* prefix");
+            }
+            break;
+          case REPE_PREFIX_OPCODE:
+            if (IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
+              fprintf(out, "repe ");
+            } else if (IsInList(op(), rep_ops,
+                                sizeof(repe_ops)/sizeof(MaoOpcode))) {
+              fprintf(out, "rep ");
+            } else {
+              MAO_ASSERT_MSG(false,
+                             "Unable to find instruction with rep* prefix");
+            }
+            break;
+            // Rex prefixes are used for 64-bit extention
+          case REX_OPCODE+0:  // e.g.: movb    %sil, -24(%rbp)
+          case REX_OPCODE+1:  // e.g.: movl    $.LC0, %r8d
+          case REX_OPCODE+2:
+          case REX_OPCODE+3:
+          case REX_OPCODE+4:  // e.g.: movl    %r8d, -100(%rbp)
+          case REX_OPCODE+5:  // e.g.: movl    %r13d, %r8d
+          case REX_OPCODE+6:
+          case REX_OPCODE+7:
+          case REX_OPCODE+8:  // e.g.: add $1, %rax
+          case REX_OPCODE+9:  // e.g.: add $1, %r9
+          case REX_OPCODE+10:
+          case REX_OPCODE+11:
+          case REX_OPCODE+12:  // e.g.: mov    %r9, (%eax)
+          case REX_OPCODE+13:  // e.g : movq    %r12, %r9
+          case REX_OPCODE+14:
+          case REX_OPCODE+15:
+            break;
+          case DATA_PREFIX_OPCODE:  // e.g. : cmpw    %cx, %ax
+            break;
+          case CS_PREFIX_OPCODE:
+          case DS_PREFIX_OPCODE:
+          case ES_PREFIX_OPCODE:
+          case FS_PREFIX_OPCODE:
+          case GS_PREFIX_OPCODE:
+          case SS_PREFIX_OPCODE:
+            break;
+          case ADDR_PREFIX_OPCODE:
+            // used in movl (%eax), %eax
+            break;
+          default:
+            MAO_ASSERT_MSG(false, "Unknown prefix found 0x%x\n",
+                           instruction_->prefix[i]);
+        }
+      }
+    }
+  }
+
+  // Do not print suffixes that are already in the template
+  if (!PrintSuffix()) {
+    fprintf(out, "%s\t", instruction_->tm.name);
+  } else {
+    fprintf(out, "%s%c\t", instruction_->tm.name, instruction_->suffix);
+  }
+
+  // Loop over operands
+  for (unsigned int i = 0; i < instruction_->operands; ++i) {
+    // IMMEDIATE
+    // Immext means that an opcode modifier is encoded
+    // in the instruction structure as an extra operand,
+    // even though its not one!
+    if (!instruction_->tm.opcode_modifier.immext &&
+        IsImmediateOperand(instruction_, i)) {
+      PrintImmediateOperand(out, instruction_->reloc[i],
+                            instruction_->op[i].imms);
+    }
+    // This case is now handles in the displacement
+    //     if (instruction_->tm.opcode_modifier.jump ||
+    //         instruction_->tm.opcode_modifier.jumpdword ||
+    //         instruction_->tm.opcode_modifier.jumpbyte) {
+    //       if (instruction_->op[i].disps->X_op == O_symbol)
+    //         fprintf(out, "%s",
+    //                 S_GET_NAME(instruction_->op[i].disps->X_add_symbol) );
+    //       else
+    //         fprintf(out, "*unk*");
+    //     }
+
+    // MEMORY OPERANDS
+
+    // Segment overrides are always placed in seg[0], even
+    // if it applies to the second operand.
+    if (IsMemOperand(instruction_, i)) {
+      // Ugly hack:
+      // for some string instruction, both operands have baseindex == 1
+      // though only the first should be printed...
+      // the first is implicit "(%edi)".
+      // e.g.: rep   CMPSb (%edi), (%esi)
+      if (instruction_->operands == 2 &&
+          i == 0 &&
+          IsMemOperand(instruction_, 1) &&
+          IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
+        fprintf(out, "(%%edi) ");
+      } else {
+        PrintMemoryOperand(
+            out,
+            instruction_->types[i],
+            instruction_->reloc[i],
+            instruction_->op[i].disps,
+            instruction_->seg[0]?instruction_->seg[0]->seg_name:0,
+            instruction_->types[i].bitfield.jumpabsolute ||
+            instruction_->tm.operand_types[i].bitfield.jumpabsolute);
+      }
+    }
+
+    // ACC register
+    if (instruction_->types[i].bitfield.acc) {
+      // need to find out size in order to print the correct ACC register!
+      if (instruction_->types[i].bitfield.byte )
+        fprintf(out, "%%al");
+      if (instruction_->types[i].bitfield.word )
+        fprintf(out, "%%ax");
+      if (instruction_->types[i].bitfield.dword )
+        fprintf(out, "%%eax");
+      if (instruction_->types[i].bitfield.qword )
+        fprintf(out, "%%rax");
+    }
+
+    // ACC register
+    if (instruction_->types[i].bitfield.floatacc) {
+        fprintf(out, "%%st");
+    }
+    // TODO(martint): fix floatacc
+    // if ((instruction_->types[i].bitfield.floatacc)...
+
+    // REGISTERS
+
+    // Segment register
+    if (instruction_->types[i].bitfield.sreg2) {
+      switch (instruction_->rm.reg) {
+        case 0:
+          fprintf(out, "%%es");
+          break;
+        case 1:
+          fprintf(out, "%%cs");
+          break;
+        case 2:
+          fprintf(out, "%%ss");
+          break;
+        case 3:
+          fprintf(out, "%%ds");
+          break;
+        default:
+          fprintf(stderr, "Unable to find segement regsiter sreg2%d\n",
+                  instruction_->rm.reg);
+          MAO_ASSERT(false);
+      }
+    }
+    if (instruction_->types[i].bitfield.sreg3) {
+      switch (instruction_->rm.reg) {
+        case 4:
+          fprintf(out, "%%fs");
+          break;
+        case 5:
+          fprintf(out, "%%gs");
+          break;
+        default:
+          fprintf(stderr, "Unable to find segement regsiter sreg3%d\n",
+                  instruction_->rm.reg);
+          MAO_ASSERT(false);
+      }
+    }
+
+    // XMM registers
+    if (instruction_->types[i].bitfield.regmmx) {
+      if (instruction_->tm.operand_types[i].bitfield.regmmx) {
+        fprintf(out, "%%mm%d", instruction_->rm.reg);
+      } else if (instruction_->tm.operand_types[i].bitfield.regxmm) {
+        fprintf(out, "%%xmm%d", instruction_->rm.reg);
+      }
+    }
+
+
+    if (IsRegisterOperand(instruction_, i)) {
+      if (instruction_->types[i].bitfield.jumpabsolute) {
+        fprintf(out, "*");
+      }
+      fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+    }
+
+    // Handle spacial case found in tc-i386.c:7326
+    if (instruction_->types[i].bitfield.inoutportreg) {
+      // its a register name!
+      fprintf(out, "(%%dx)");
+    }
+
+    if (instruction_->types[i].bitfield.shiftcount) {
+      // its a register name!
+      fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+    }
+
+    if (i < instruction_->operands-1)
+      fprintf(out, ", ");
+  }
+}
+
+// From an instruction given by gas, allocate new memory and populate the
+// members.
+i386_insn *InstructionEntry::CreateInstructionCopy(i386_insn *in_inst) {
+  i386_insn *new_inst = new i386_insn;
+  MAO_ASSERT(new_inst);
+
+  // Copy all non-pointer data
+  memcpy(new_inst, in_inst, sizeof(i386_insn));
+
+  // Copy references
+  for (unsigned int i = 0; i < new_inst->operands; i++) {
+    // Select the correct part of the operand union.
+    if (IsImmediateOperand(in_inst, i)) {
+      new_inst->op[i].imms = new expressionS;
+      MAO_ASSERT(new_inst->op[i].imms);
+      *new_inst->op[i].imms = *in_inst->op[i].imms;
+    } else if (IsMemOperand(in_inst, i) && in_inst->op[i].disps) {
+      new_inst->op[i].disps = new expressionS;
+      MAO_ASSERT(new_inst->op[i].disps);
+      *new_inst->op[i].disps = *in_inst->op[i].disps;
+    } else if (IsRegisterOperand(in_inst, i) ||
+              in_inst->types[i].bitfield.shiftcount ) {
+      new_inst->op[i].regs = CopyRegEntry(in_inst->op[i].regs);
+    }
+  }
+  new_inst->base_reg = CopyRegEntry(in_inst->base_reg);
+  new_inst->index_reg = CopyRegEntry(in_inst->index_reg);
+
+  // Segment overrides
+  for (unsigned int i = 0; i < 2; i++) {
+    if (in_inst->seg[i]) {
+      seg_entry *tmp_seg = new seg_entry;
+      MAO_ASSERT(tmp_seg);
+      MAO_ASSERT(strlen(in_inst->seg[i]->seg_name) < MAX_SEGMENT_NAME_LENGTH);
+      tmp_seg->seg_name = strdup(in_inst->seg[i]->seg_name);
+      tmp_seg->seg_prefix = in_inst->seg[i]->seg_prefix;
+      new_inst->seg[i] = tmp_seg;
+    }
+  }
+
+  return new_inst;
+}
+
+bool InstructionEntry::IsInList(MaoOpcode opcode, const MaoOpcode list[],
+                              const unsigned int number_of_elements) const {
+  for (unsigned int i = 0; i < number_of_elements; i++) {
+    if (opcode == list[i])
+      return true;
+  }
+  return false;
+}
+
+const MaoOpcode cond_jumps[] = {
+  // Conditional jumps.
+  OP_jo,  OP_jno, OP_jb,   OP_jc,  OP_jnae, OP_jnb,  OP_jnc, OP_jae, OP_je,
+  OP_jz,  OP_jne, OP_jnz,  OP_jbe, OP_jna,  OP_jnbe, OP_ja,  OP_js,  OP_jns,
+  OP_jp,  OP_jpe, OP_jnp,  OP_jpo, OP_jl,   OP_jnge, OP_jnl, OP_jge, OP_jle,
+  OP_jng,  OP_jnle, OP_jg,
+
+  // jcxz vs. jecxz is chosen on the basis of the address size prefix.
+  OP_jcxz, OP_jecxz, OP_jecxz, OP_jrcxz,
+
+  // loop variants
+  OP_loop, OP_loopz, OP_loope, OP_loopnz, OP_loopne
+};
+
+bool InstructionEntry::HasFallThrough() const {
+  // TODO(martint): Get this info from the i386_insn structure
+  //                or complete the list
+  if (IsReturn()) return false;
+  if (!HasTarget()) return true;
+  if (IsCall()) return true;
+  if (IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode))) {
+    return true;
+  }
+
+  return false;
+}
+
+bool InstructionEntry::HasTarget() const {
+  // TODO(martint): Get this info from the i386_insn structure
+  //                or complete the list
+  const MaoOpcode insn[] = {OP_jmp, OP_ljmp};
+  if (IsInList(op(), insn, sizeof(insn)/sizeof(MaoOpcode)))
+    return true;
+  if (IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode)))
+    return true;
+
+  return false;
+}
+
+const char *InstructionEntry::GetTarget() const {
+  //
+  for (unsigned int i =0; i < instruction_->operands; i++) {
+    if (IsMemOperand(instruction_, i)) {
+      // symbol?
+      if (instruction_->types[i].bitfield.disp8 ||
+          instruction_->types[i].bitfield.disp16 ||
+          instruction_->types[i].bitfield.disp32 ||
+          instruction_->types[i].bitfield.disp32s ||
+          instruction_->types[i].bitfield.disp64) {
+        if (instruction_->op[i].disps->X_op == O_symbol) {
+          return S_GET_NAME(instruction_->op[i].disps->X_add_symbol);
+        }
+      }
+    }
+  }
+  return "<UKNOWN>";
+}
+
+bool InstructionEntry::IsCall() const {
+  const MaoOpcode calls[] = {
+    OP_call, OP_lcall, OP_vmcall, OP_syscall, OP_vmmcall
+  };
+  return IsInList(op(), calls, sizeof(calls)/sizeof(MaoOpcode));
+}
+
+bool InstructionEntry::IsReturn() const {
+  const MaoOpcode rets[] = {
+    OP_ret, OP_lret, OP_retf, OP_iret, OP_sysret
+  };
+  return IsInList(op(), rets, sizeof(rets)/sizeof(MaoOpcode));
+}
+
+
 
 
 //
@@ -1320,6 +1304,6 @@ Section::~Section() {
   free(name_);
 }
 
-void Section::AddSubSectionIndex(subsection_index_t index) {
+void Section::AddSubSectionIndex(SubSectionID index) {
   sub_section_indexes_.push_back(index);
 }

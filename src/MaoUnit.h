@@ -21,46 +21,46 @@
 
 #include <list>
 #include <map>
-#include <vector>
-#include <utility>
 #include <string>
+#include <utility>
+#include <vector>
 
-#include "ir-gas.h"
-#include "gen-opcodes.h"
-#include "irlink.h"
-#include "SymbolTable.h"
-#include "MaoUtil.h"
+#include "./gen-opcodes.h"
+#include "./ir-gas.h"
+#include "./irlink.h"
+#include "./MaoOptions.h"
+#include "./MaoUtil.h"
+#include "./SymbolTable.h"
 
 #define DEFAULT_SECTION_NAME ".text"
 
-
-// Maps the label to a block, and the offset into this block
 struct ltstr {
   bool operator()(const char* s1, const char* s2) const {
     return strcmp(s1, s2) < 0;
   }
 };
 
-typedef unsigned int entry_index_t;
-typedef unsigned int subsection_index_t;
-typedef unsigned int basicblock_index_t;
-typedef std::map<const char *,
-                 std::pair<basicblock_index_t, unsigned int>,
-                 ltstr> labels2basicblock_map_t;
+typedef int ID;
 
+// Each ID is uniq within its own domain.
+typedef ID EntryID;
+typedef ID SectionID;
+typedef ID SubSectionID;
+typedef ID FunctionID;
+
+class DirectiveEntry;
+class Function;
+class InstructionEntry;
+class LabelEntry;
+class MaoEntry;
 class Section;
 class SubSection;
-class DirectiveEntry;
-class SymbolTable;
 class Symbol;
-class InstructionEntry;
-class MaoUnitEntryBase;
-class LabelEntry;
-class MaoOptions;
+class SymbolTable;
 
 class MaoUnit {
  public:
-  typedef std::vector<MaoUnitEntryBase *> EntryVector;
+  typedef std::vector<MaoEntry *> EntryVector;
   typedef EntryVector::iterator EntryIterator;
   typedef EntryVector::const_iterator ConstEntryIterator;
 
@@ -78,14 +78,11 @@ class MaoUnit {
   //                  typically not when adding extra entries later on.
   // create_default_section - signals if an entry can trigger automatic creation
   //                          of a new section, if there is no "current" section
-  // TODO(martint): Check if we should build the sections in a new pass instead?
-  //                That would simplify the code.
-  //
-  bool AddEntry(MaoUnitEntryBase *entry, bool build_sections,
+  bool AddEntry(MaoEntry *entry, bool build_sections,
                 bool create_default_section);
-  bool AddEntry(MaoUnitEntryBase *entry, bool build_sections,
+  bool AddEntry(MaoEntry *entry, bool build_sections,
                 bool create_default_section,
-                std::list<MaoUnitEntryBase *>::iterator list_iter);
+                std::list<MaoEntry *>::iterator list_iter);
   // Add a common symbol to the symbol table
   bool AddCommSymbol(const char *name, unsigned int common_size,
                      unsigned int common_align);
@@ -113,11 +110,11 @@ class MaoUnit {
   void PrintIR() const;
   void PrintIR(FILE *out) const;
 
-  std::list<MaoUnitEntryBase *>::iterator EntryBegin() {
+  std::list<MaoEntry *>::iterator EntryBegin() {
     return entry_list_.begin();
   }
 
-  std::list<MaoUnitEntryBase *>::iterator EntryEnd() {
+  std::list<MaoEntry *>::iterator EntryEnd() {
     return entry_list_.begin();
   }
 
@@ -136,10 +133,12 @@ class MaoUnit {
 
   // Vector of the entries in the unit. The id of the entry
   // is also the index into this vector.
+  // TODO(martint): fix the code that handles prev/next pointers.
   EntryVector entry_vector_;
 
   // List of all the entries in the unit.
-  std::list<MaoUnitEntryBase *> entry_list_;
+  // TODO(martint): complete code that makes this redundant.
+  std::list<MaoEntry *> entry_list_;
 
   // A list of all subsections found in the unit.
   // Each subsection should have a pointer to the first and last
@@ -156,9 +155,14 @@ class MaoUnit {
   // One symbol table holds all symbols found in the assembly file.
   SymbolTable symbol_table_;
 
+  // Maps label-names to the corresponding label entry.
   std::map<const char *, LabelEntry *> labels_;
 
-  MaoUnitEntryBase *GetEntryByID(basicblock_index_t id) const;
+
+  // Maps an entry to the corresponding Function and SubSection.
+  std::map<MaoEntry *, Function *>   entry_to_function_;
+  std::map<MaoEntry *, SubSection *> entry_to_subsection_;
+
 
   MaoOptions *mao_options_;
 };
@@ -166,7 +170,7 @@ class MaoUnit {
 
 // Base class for all types of entries in the MaoUnit. Example of entries
 // are Labels, Directives, and Instructions
-class MaoUnitEntryBase {
+class MaoEntry {
  public:
   // Types of possible entries
   enum EntryType {
@@ -177,16 +181,17 @@ class MaoUnitEntryBase {
     DEBUG,
   };
 
-  MaoUnitEntryBase(unsigned int line_number, const char *const line_verbatim);
-  virtual ~MaoUnitEntryBase();
+  MaoEntry(unsigned int line_number, const char *const line_verbatim,
+           const MaoUnit *maounit);
+  virtual ~MaoEntry();
 
   virtual void PrintEntry(FILE *out) const = 0;
   virtual void PrintIR(FILE *out) const = 0;
   virtual char GetDescriptiveChar() const = 0;
   virtual EntryType Type() const = 0;
 
-  entry_index_t index() const { return index_; }
-  void set_index(entry_index_t index) {index_ = index;}
+  EntryID id() const { return id_; }
+  void set_id(EntryID id) {id_ = id;}
 
   // Property methods
   virtual bool HasFallThrough() const = 0;
@@ -201,24 +206,31 @@ class MaoUnitEntryBase {
   const char *const line_verbatim() const { return line_verbatim_; }
 
  private:
+  EntryID id_;
+
+  // Section-local pointers to previous and next entry.
+  // Null-value in prev/next means first/last entry in section.
+  MaoUnit *next_;
+  MaoUnit *prev_;
+
   // Line number assembly was found in the original file
   const unsigned int line_number_;
-
   // A verbatim copy of the assembly instruction this entry is
   // generated from. Might be NULL for some entries.
   const char *line_verbatim_;
 
-  entry_index_t index_;
+  const MaoUnit *maounit_;
 };
 
 
 // An Entry of the type Label
-class LabelEntry : public MaoUnitEntryBase {
+class LabelEntry : public MaoEntry {
  public:
   LabelEntry(const char *const name,
              unsigned int line_number,
-             const char *const line_verbatim)
-      : MaoUnitEntryBase(line_number, line_verbatim),
+             const char *const line_verbatim,
+             const MaoUnit *maounit)
+      : MaoEntry(line_number, line_verbatim, maounit),
         name_(strdup(name)) { }
   ~LabelEntry() { delete name_; }
 
@@ -239,7 +251,7 @@ class LabelEntry : public MaoUnitEntryBase {
 };
 
 // An Entry of the type Directive
-class DirectiveEntry : public MaoUnitEntryBase {
+class DirectiveEntry : public MaoEntry {
   // examples of directives
   //  .file "filename.c"
   //  .text
@@ -331,8 +343,9 @@ class DirectiveEntry : public MaoUnitEntryBase {
   typedef std::vector<Operand *> OperandVector;
 
   DirectiveEntry(Opcode op, const OperandVector &operands,
-                 unsigned int line_number, const char* line_verbatim)
-      : MaoUnitEntryBase(line_number, line_verbatim),
+                 unsigned int line_number, const char* line_verbatim,
+                 const MaoUnit *maounit)
+      : MaoEntry(line_number, line_verbatim, maounit),
         op_(op), operands_(operands) { }
 
   virtual ~DirectiveEntry() {
@@ -352,7 +365,7 @@ class DirectiveEntry : public MaoUnitEntryBase {
 
   virtual void PrintEntry(::FILE *out) const;
   virtual void PrintIR(::FILE *out) const;
-  virtual MaoUnitEntryBase::EntryType  Type() const;
+  virtual MaoEntry::EntryType  Type() const;
   virtual char GetDescriptiveChar() const {return 'D';}
 
   // Property methods
@@ -381,15 +394,15 @@ class DirectiveEntry : public MaoUnitEntryBase {
 
 // An Entry of the type Debug
 // Used for debug directives.
-class DebugEntry : public MaoUnitEntryBase {
+class DebugEntry : public MaoEntry {
  public:
   DebugEntry(const char *key, const char* value, unsigned int line_number,
-             const char* line_verbatim)
-      : MaoUnitEntryBase(line_number, line_verbatim),
+             const char* line_verbatim, const MaoUnit *maounit)
+      : MaoEntry(line_number, line_verbatim, maounit),
         key_(key), value_(value) { }
   virtual void PrintEntry(FILE *out) const;
   virtual void PrintIR(FILE *out) const;
-  virtual MaoUnitEntryBase::EntryType  Type() const;
+  virtual MaoEntry::EntryType  Type() const;
   virtual char GetDescriptiveChar() const {return 'g';}
 
   // Property methods
@@ -399,39 +412,45 @@ class DebugEntry : public MaoUnitEntryBase {
   virtual bool IsReturn() const { return false; }
 
  private:
-  // key_ holds the name of the directive
+  // key_ holds the name of the directive.
   const std::string key_;
-  // value holds the arguments to the directive
+  // value holds the arguments to the directive.
   const std::string value_;
 };
 
-// Asm instruction is a wrapper around i386_insn structure used
-// by the GNU Assembler 2.19.
-class AsmInstruction {
+// An Entry of the type Instruction.
+class InstructionEntry : public MaoEntry {
  public:
-  // Allocates memory in the constructor and frees it in the destructor
-  explicit AsmInstruction(i386_insn *inst, MaoOpcode opcode);
-  ~AsmInstruction();
+  InstructionEntry(i386_insn* instruction, unsigned int line_number,
+                   const char* line_verbatim, const MaoUnit *maounit);
+  ~InstructionEntry();
+  virtual void PrintEntry(FILE *out) const;
+  virtual void PrintIR(FILE *out) const;
+  virtual MaoEntry::EntryType  Type() const;
+  const char *GetOp() const;
+  const char *GetTarget() const;
+  virtual char GetDescriptiveChar() const {return 'I';}
+
   void PrintInstruction(FILE *out) const;
   static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
-  const char *GetOp() const;
-  MaoOpcode   op() const { return op_; }
-  bool HasFallThrough() const;
-  bool HasTarget() const;
-  bool IsCall() const;
-  bool IsReturn() const;
 
-  const char *GetTarget() const;
+  MaoOpcode   op() const { return op_; }
+  bool HasTarget() const;
+
+  // Property methods.
+  virtual bool HasFallThrough() const;
+  virtual bool IsControlTransfer() const {
+    return HasTarget() || IsCall() || IsReturn();
+  }
+  virtual bool IsCall() const;
+  virtual bool IsReturn() const;
 
   i386_insn *instruction() { return instruction_; }
-
  private:
   i386_insn *instruction_;
   MaoOpcode  op_;
 
-  // Helper functions
-
-  // Used to determine type of operand
+  // Used to determine type of operand.
   static bool IsMemOperand(const i386_insn *instruction,
                            const unsigned int op_index);
   static bool IsImmediateOperand(const i386_insn *instruction,
@@ -462,34 +481,6 @@ class AsmInstruction {
   bool PrintSuffix() const;
 };
 
-// An Entry of the type Instruction
-class InstructionEntry : public MaoUnitEntryBase {
- public:
-  InstructionEntry(i386_insn* instruction, unsigned int line_number,
-                   const char* line_verbatim);
-  ~InstructionEntry();
-  virtual void PrintEntry(FILE *out) const;
-  virtual void PrintIR(FILE *out) const;
-  virtual MaoUnitEntryBase::EntryType  Type() const;
-  const char *GetOp() const  {return instruction_->GetOp();}
-  const char *GetTarget() const  {return instruction_->GetTarget();}
-  virtual char GetDescriptiveChar() const {return 'I';}
-  bool HasTarget() const {return instruction_->HasTarget();}
-
-  // Property methods
-  virtual bool HasFallThrough() const { return instruction_->HasFallThrough(); }
-  virtual bool IsControlTransfer() const {
-    return instruction_->HasTarget() || IsCall() || IsReturn();
-  }
-  virtual bool IsCall() const { return instruction_->IsCall(); }
-  virtual bool IsReturn() const { return instruction_->IsReturn(); }
-
-  AsmInstruction *instruction() { return instruction_; }
-
- private:
-  AsmInstruction *instruction_;
-};
-
 
 
 // A Subsection is part of a section. The subsection concept allows the assembly
@@ -509,32 +500,32 @@ class SubSection {
   unsigned int number() const { return number_; }
   const std::string &name() const { return name_; }
 
-  entry_index_t first_entry_index() const { return first_entry_index_;}
-  entry_index_t last_entry_index() const { return last_entry_index_;}
-  void set_first_entry_index(entry_index_t index) { first_entry_index_ = index;}
-  void set_last_entry_index(entry_index_t index) { last_entry_index_ = index;}
+  EntryID first_entry_index() const { return first_entry_index_;}
+  EntryID last_entry_index() const { return last_entry_index_;}
+  void set_first_entry_index(EntryID index) { first_entry_index_ = index;}
+  void set_last_entry_index(EntryID index) { last_entry_index_ = index;}
  private:
 
   // The subsection number
   const unsigned int number_;
-  std::string name_;
+  const std::string name_;
 
   // Points to the first and last entry for the subsection.
   // Value is stored as index into the entry vector.
-  entry_index_t first_entry_index_;
-  entry_index_t last_entry_index_;
+  EntryID first_entry_index_;
+  EntryID last_entry_index_;
 };
 
 
 class SectionEntryIterator {
  public:
-  typedef MaoUnitEntryBase *Entry;
+  typedef MaoEntry *Entry;
 
   SectionEntryIterator(
       MaoUnit *mao,
-      std::vector<subsection_index_t>::iterator sub_section_iter,
-      std::vector<subsection_index_t>::iterator sub_section_iter_end,
-      std::list<MaoUnitEntryBase *>::iterator entry_iter)
+      std::vector<SubSectionID>::iterator sub_section_iter,
+      std::vector<SubSectionID>::iterator sub_section_iter_end,
+      std::list<MaoEntry *>::iterator entry_iter)
       : mao_(mao),
         sub_section_iter_(sub_section_iter),
         sub_section_iter_end_(sub_section_iter_end),
@@ -545,7 +536,7 @@ class SectionEntryIterator {
   SectionEntryIterator &operator ++() {
     SubSection *sub_section = mao_->GetSubSection(*sub_section_iter_);
     Entry entry = *entry_iter_;
-    if (entry->index() == sub_section->last_entry_index()) {
+    if (entry->id() == sub_section->last_entry_index()) {
       ++sub_section_iter_;
 
       if (sub_section_iter_ == sub_section_iter_end_) {
@@ -554,7 +545,7 @@ class SectionEntryIterator {
       }
 
       sub_section = mao_->GetSubSection(*sub_section_iter_);
-      while ((*entry_iter_)->index() != sub_section->first_entry_index())
+      while ((*entry_iter_)->id() != sub_section->first_entry_index())
         ++entry_iter_;
     } else {
       ++entry_iter_;
@@ -571,10 +562,10 @@ class SectionEntryIterator {
   SectionEntryIterator &operator --() {
     SubSection *sub_section = mao_->GetSubSection(*sub_section_iter_);
     Entry entry = *entry_iter_;
-    if (entry->index() == sub_section->first_entry_index()) {
+    if (entry->id() == sub_section->first_entry_index()) {
       --sub_section_iter_;
       sub_section = mao_->GetSubSection(*sub_section_iter_);
-      while ((*entry_iter_)->index() != sub_section->last_entry_index())
+      while ((*entry_iter_)->id() != sub_section->last_entry_index())
         --entry_iter_;
     } else {
       --entry_iter_;
@@ -600,9 +591,30 @@ class SectionEntryIterator {
 
  private:
   MaoUnit *mao_;
-  std::vector<subsection_index_t>::iterator sub_section_iter_;
-  std::vector<subsection_index_t>::iterator sub_section_iter_end_;
-  std::list<MaoUnitEntryBase *>::iterator entry_iter_;
+  std::vector<SubSectionID>::iterator sub_section_iter_;
+  std::vector<SubSectionID>::iterator sub_section_iter_end_;
+  std::list<MaoEntry *>::iterator entry_iter_;
+};
+
+// Function class
+// TODO(martint): Complete this class
+class Function {
+ public:
+  explicit Function(const std::string &name) :
+      name_(name) {}
+ private:
+  // Name of the function, as given by the function symbol.
+  const std::string name_;
+
+  // Pointers to the first and last entry of the function.
+  MaoEntry *first_entry_;
+  MaoEntry *last_entry_;
+
+  // The uniq id of this function.
+  FunctionID id_;
+
+  // Pointer to subsection that this function starts in.
+  SubSection *subsection_;
 };
 
 
@@ -614,20 +626,20 @@ class Section {
   explicit Section(const char *name);
   ~Section();
   const char *name() const;
-  void AddSubSectionIndex(subsection_index_t index);
-  std::vector<subsection_index_t> *GetSubSectionIndexes() {
+  void AddSubSectionIndex(SubSectionID index);
+  std::vector<SubSectionID> *GetSubSectionIndexes() {
     return &sub_section_indexes_;
   }
 
   SectionEntryIterator EntryBegin(MaoUnit *mao) {
-    std::vector<subsection_index_t>::iterator sub_section_iter =
+    std::vector<SubSectionID>::iterator sub_section_iter =
         sub_section_indexes_.begin();
 
     if (sub_section_iter != sub_section_indexes_.end()) {
       SubSection *sub_section = mao->GetSubSection(*sub_section_iter);
 
-      std::list<MaoUnitEntryBase *>::iterator entry_iter = mao->EntryBegin();
-      while ((*entry_iter)->index() != sub_section->first_entry_index())
+      std::list<MaoEntry *>::iterator entry_iter = mao->EntryBegin();
+      while ((*entry_iter)->id() != sub_section->first_entry_index())
         ++entry_iter;
       return SectionEntryIterator(mao, sub_section_iter,
                                   sub_section_indexes_.end(), entry_iter);
@@ -644,7 +656,7 @@ class Section {
 
  private:
   char *name_;  // e.g. ".text", ".data", etc.
-  std::vector<subsection_index_t> sub_section_indexes_;
+  std::vector<SubSectionID> sub_section_indexes_;
 };
 
 

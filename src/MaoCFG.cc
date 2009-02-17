@@ -51,8 +51,8 @@ void CFG::DumpVCG(const char *fname) const {
     fprintf(f, "info1: \"");
     for (MaoUnit::EntryIterator it = (*biter)->BeginEntries();
          it != (*biter)->EndEntries(); ++it) {
-      if ( (*it)->Type() == MaoUnitEntryBase::INSTRUCTION ||
-           (*it)->Type() == MaoUnitEntryBase::LABEL)
+      if ( (*it)->Type() == MaoEntry::INSTRUCTION ||
+           (*it)->Type() == MaoEntry::LABEL)
         (*it)->PrintEntry(f);
       else
         fprintf(f, "...\n");
@@ -106,13 +106,13 @@ void CFGBuilder::Build() {
   // TODO(nvachhar): This should iterate over a given function
   for (SectionEntryIterator e_iter = section_->EntryBegin(mao_unit_);
        e_iter != section_->EntryEnd(mao_unit_); ++e_iter) {
-    MaoUnitEntryBase *entry = *e_iter;
+    MaoEntry *entry = *e_iter;
 
     if (!BelongsInBasicBlock(entry))
       continue;
 
     // If the current entry starts a new basic block, end the previous one
-    if (current && entry->Type() == MaoUnitEntryBase::LABEL &&
+    if (current && entry->Type() == MaoEntry::LABEL &&
         CFG_->FindBasicBlock(static_cast<LabelEntry*>(entry)->name()) != NULL) {
       create_fall_through = true;
       previous = current;
@@ -122,7 +122,7 @@ void CFGBuilder::Build() {
     // If there is no current basic block, find or create one
     if (!current) {
       const char *label;
-      if (entry->Type() == MaoUnitEntryBase::LABEL)
+      if (entry->Type() == MaoEntry::LABEL)
         label = static_cast<LabelEntry *>(entry)->name();
       else
         label = MaoUnit::BBNameGen::GetUniqueName();
@@ -141,7 +141,7 @@ void CFGBuilder::Build() {
     current->AddEntry(entry);
 
     // If the current entry is a label, update the map of labels
-    if (entry->Type() == MaoUnitEntryBase::LABEL)
+    if (entry->Type() == MaoEntry::LABEL)
       label_to_bb_map_[static_cast<LabelEntry *>(entry)->name()] = current;
 
     // Check to see if this operation creates out edges
