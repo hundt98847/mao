@@ -24,13 +24,13 @@
 
 class MaoRelaxer {
  public:
-  typedef std::map<MaoUnitEntryBase *, int> SizeMap;
+  typedef std::map<MaoEntry *, int> SizeMap;
 
-  MaoRelaxer() { };
+  MaoRelaxer() {}
   void Relax(MaoUnit *mao, Section *section, SizeMap *size_map);
 
  private:
-  typedef std::map<struct frag *, MaoUnitEntryBase *> FragToEntryMap;
+  typedef std::map<struct frag *, MaoEntry *> FragToEntryMap;
 
   static struct frag *BuildFragments(
       MaoUnit *mao, Section *section, SizeMap *size_map,

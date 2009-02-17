@@ -30,7 +30,7 @@
 #include "MaoUnit.h"
 
 extern "C" const char *S_GET_NAME(symbolS *s);
-extern "C" void   as_where (char **, unsigned int *);
+extern "C" void   as_where(char **, unsigned int *);
 
 // Reference to a the mao_unit.
 MaoUnit *maounit_;
@@ -72,7 +72,7 @@ static void link_directive_tail(
   struct link_context_s link_context = get_link_context();
   DirectiveEntry *directive =
       new DirectiveEntry(opcode, operands,
-                         link_context.line_number, NULL);
+                         link_context.line_number, NULL, maounit_);
   maounit_->AddEntry(directive, true, false);
 }
 
@@ -84,7 +84,7 @@ void link_insn(i386_insn *insn, size_t SizeOfInsn, const char *line_verbatim) {
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new InstructionEntry(inst,
                                           link_context.line_number,
-                                          line_verbatim), true, true);
+                                          line_verbatim, maounit_), true, true);
 }
 
 void link_label(const char *name, const char *line_verbatim) {
@@ -94,7 +94,7 @@ void link_label(const char *name, const char *line_verbatim) {
   struct link_context_s link_context = get_link_context();
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new LabelEntry(name, link_context.line_number,
-                                    line_verbatim), true, true);
+                                    line_verbatim, maounit_), true, true);
 }
 
 void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,
@@ -140,7 +140,7 @@ void link_debug(const char *key, const char *value, const char *line_verbatim) {
   struct link_context_s link_context = get_link_context();
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new DebugEntry(key, value, link_context.line_number,
-                                    line_verbatim), true, false);
+                                    line_verbatim, maounit_), true, false);
 }
 
 
@@ -270,12 +270,14 @@ void link_dc_directive(int size, int rva, expressionS *expr) {
   if (rva) {
     MAO_ASSERT(size == 4);
     opcode = DirectiveEntry::RVA;
-  } else switch(size) {
-    case 1: opcode = DirectiveEntry::BYTE; break;
-    case 2: opcode = DirectiveEntry::WORD; break;
-    case 4: opcode = DirectiveEntry::LONG; break;
-    case 8: opcode = DirectiveEntry::QUAD; break;
-    default: MAO_ASSERT(false);
+  } else {
+    switch (size) {
+      case 1: opcode = DirectiveEntry::BYTE; break;
+      case 2: opcode = DirectiveEntry::WORD; break;
+      case 4: opcode = DirectiveEntry::LONG; break;
+      case 8: opcode = DirectiveEntry::QUAD; break;
+      default: MAO_ASSERT(false);
+    }
   }
   link_directive_tail(opcode, operands);
 }
@@ -291,17 +293,19 @@ void link_string_directive(int bitsize, int append_zero,
   if (!append_zero) {
     MAO_ASSERT(bitsize == 8);
     opcode = DirectiveEntry::ASCII;
-  } else switch(bitsize) {
-    case 8: opcode = DirectiveEntry::STRING8; break;
-    case 16: opcode = DirectiveEntry::STRING16; break;
-    case 32: opcode = DirectiveEntry::STRING32; break;
-    case 64: opcode = DirectiveEntry::STRING64; break;
-    default: MAO_ASSERT(false);
+  } else {
+    switch (bitsize) {
+      case 8: opcode = DirectiveEntry::STRING8; break;
+      case 16: opcode = DirectiveEntry::STRING16; break;
+      case 32: opcode = DirectiveEntry::STRING32; break;
+      case 64: opcode = DirectiveEntry::STRING64; break;
+      default: MAO_ASSERT(false);
+    }
   }
   link_directive_tail(opcode, operands);
 }
 
-void link_leb128_directive (expressionS *expr, int sign) {
+void link_leb128_directive(expressionS *expr, int sign) {
   DirectiveEntry::Opcode opcode = sign ? DirectiveEntry::SLEB128 :
       DirectiveEntry::ULEB128;
   DirectiveEntry::OperandVector operands;
@@ -312,7 +316,7 @@ void link_leb128_directive (expressionS *expr, int sign) {
 void link_align_directive(int align, int fill_len, int fill, int max) {
   DirectiveEntry::Opcode opcode;
 
-  switch(fill_len) {
+  switch (fill_len) {
     case 0:
     case 1: opcode = DirectiveEntry::P2ALIGN; break;
     case 2: opcode = DirectiveEntry::P2ALIGNW; break;
@@ -332,8 +336,7 @@ void link_align_directive(int align, int fill_len, int fill, int max) {
 
 void link_space_directive(expressionS *size, expressionS *fill, int mult) {
   DirectiveEntry::Opcode opcode;
-
-  switch(mult) {
+  switch (mult) {
     case  0: opcode = DirectiveEntry::SPACE; break;
     case  1: opcode = DirectiveEntry::DS_B; break;
     case  2: opcode = DirectiveEntry::DS_W; break;

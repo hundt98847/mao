@@ -54,7 +54,7 @@ void MaoRelaxer::Relax(MaoUnit *mao, Section *section, SizeMap *size_map) {
 
   // Update sizes based on relaxation
   for (struct frag *frag = fragments; frag; frag = frag->fr_next) {
-    std::map<struct frag *, MaoUnitEntryBase *>::iterator entry =
+    std::map<struct frag *, MaoEntry *>::iterator entry =
         relax_map.find(frag);
     if (entry == relax_map.end()) continue;
 
@@ -79,12 +79,12 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
 
   for (SectionEntryIterator iter = section->EntryBegin(mao);
        iter != section->EntryEnd(mao); ++iter) {
-    MaoUnitEntryBase *entry = *iter;
+    MaoEntry *entry = *iter;
     switch (entry->Type()) {
-      case MaoUnitEntryBase::INSTRUCTION: {
+      case MaoEntry::INSTRUCTION: {
         InstructionEntry *ientry = static_cast<InstructionEntry*>(entry);
         X86InstructionSizeHelper size_helper(
-            ientry->instruction()->instruction());
+            ientry->instruction());
         std::pair<int, bool> size_pair = size_helper.SizeOfInstruction();
         frag->fr_fix += size_pair.first;
         (*size_map)[entry] = size_pair.first;
@@ -96,7 +96,7 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
 
         break;
       }
-      case MaoUnitEntryBase::DIRECTIVE: {
+      case MaoEntry::DIRECTIVE: {
         DirectiveEntry *dentry = static_cast<DirectiveEntry*>(entry);
         switch (dentry->op()) {
           case DirectiveEntry::P2ALIGN:
@@ -225,11 +225,11 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
         }
         break;
       }
-      case MaoUnitEntryBase::LABEL:
-      case MaoUnitEntryBase::DEBUG:
+      case MaoEntry::LABEL:
+      case MaoEntry::DEBUG:
         // Nothing to do
         break;
-      case MaoUnitEntryBase::UNDEFINED:
+      case MaoEntry::UNDEFINED:
       default:
         MAO_ASSERT(0);
     }
@@ -259,7 +259,7 @@ struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
 #define ENCODE_RELAX_STATE(type, size) \
   ((relax_substateT) (((type) << 2) | (size)))
 
-  i386_insn *insn = entry->instruction()->instruction();
+  i386_insn *insn = entry->instruction();
 
   // Only jumps should end fragments
   MAO_ASSERT(insn->tm.opcode_modifier.jump);

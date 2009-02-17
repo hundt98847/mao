@@ -75,7 +75,7 @@ int main(int argc, const char *argv[]) {
   int section_size = 0;
   for (SectionEntryIterator iter = section->EntryBegin(&mao_unit);
        iter != section->EntryEnd(&mao_unit); ++iter) {
-    MaoUnitEntryBase *entry = *iter;
+    MaoEntry *entry = *iter;
     int size = sizes[entry];
     printf("%04x %02d:\t", section_size, size);
     section_size += size;
