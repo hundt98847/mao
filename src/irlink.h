@@ -56,7 +56,7 @@ extern "C" {
   void link_debug(const char *key, const char *value,
                   const char *line_verbatim);
   // Link back sections from gas (i.e. data, text, bss and section directives)
-  int link_section(int push, const char *name,
+  void link_section(int push, const char *name,
                    struct MaoStringPiece arguments);
   // Link symbols from gas
   void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,

@@ -100,44 +100,54 @@ void MaoUnit::PrintIR(FILE *out) const {
   // Print the sections
   unsigned int index = 0;
   fprintf(out, "Sections : \n");
-  for (std::map<const char *, Section *, ltstr>::const_iterator iter =
-           sections_.begin();
-       iter != sections_.end(); ++iter) {
-    Section *section = iter->second;
+
+  for(ConstSectionIterator iter = ConstSectionBegin();
+      iter != ConstSectionEnd();
+      ++iter) {
+    Section *section = *iter;
     fprintf(out, "[%3d] %s [", index, section->name());
-    // Print out the subsections in this section as a list of indexes
-    std::vector<SubSectionID> *subsection_indexes =
-        section->GetSubSectionIndexes();
-    for (std::vector<SubSectionID>::const_iterator si_iter =
-             subsection_indexes->begin();
-         si_iter != subsection_indexes->end(); ++si_iter) {
-      fprintf(out, " %d", *si_iter);
+
+
+    const std::vector<SubSectionID> subsectionIDs = section->GetSubsectionIDs();
+    for (std::vector<SubSectionID>::const_iterator ss_iter = subsectionIDs.begin();
+         ss_iter != subsectionIDs.end();
+         ++ss_iter) {
+      fprintf(out, " %d", *ss_iter);
     }
     fprintf(out, "]\n");
-    index++;
   }
 
   // Print the subsections
-  index = 0;
   fprintf(out, "Subsections : \n");
   for (std::vector<SubSection *>::const_iterator iter = sub_sections_.begin();
        iter != sub_sections_.end(); ++iter) {
     SubSection *ss = *iter;
-    fprintf(out, "[%3d] [%d-%d]: %s\n", index,
-            ss->first_entry_index(), ss->last_entry_index(),
+    fprintf(out, "[%3d] [%d-%d]: %s\n", ss->id(),
+            ss->first_entry()->id(), ss->last_entry()->id(),
             ss->name().c_str());
-    index++;
   }
+}
+
+Section *MaoUnit::GetSection(const std::string &section_name) const {
+  Section *section = NULL;
+  // See if section already have been created.
+  std::map<const char *, Section *, ltstr>::const_iterator it =
+      sections_.find(section_name.c_str());
+  if (it != sections_.end()) {
+    section = it->second;
+  }
+  return section;
 }
 
 std::pair<bool, Section *> MaoUnit::FindOrCreateAndFind(
     const char *section_name) {
   bool new_section = false;
   Section *section;
+  // See if section already have been created.
   std::map<const char *, Section *, ltstr>::const_iterator it =
       sections_.find(section_name);
   if (it == sections_.end()) {
-    // create it!
+    // Create it!
     section = new Section(section_name);
     sections_[section->name()] = section;
     new_section = true;
@@ -150,22 +160,26 @@ std::pair<bool, Section *> MaoUnit::FindOrCreateAndFind(
 
 // Called when found a new subsection reference in the assembly.
 bool MaoUnit::SetSubSection(const char *section_name,
-                            unsigned int subsection_number) {
+                            unsigned int subsection_number,
+                            MaoEntry *entry) {
   // Get (and possibly create) the section
   std::pair<bool, Section *> section_pair = FindOrCreateAndFind(section_name);
   Section *section = section_pair.second;
   MAO_ASSERT(section);
   // Create a new subsection, even if the same subsection number
   // have already been used.
-  SubSection *subsection = new SubSection(subsection_number, section_name);
+  // TODO(martint): create ID factory
+  SubSection *subsection = new SubSection(sub_sections_.size(), subsection_number, section_name);
   sub_sections_.push_back(subsection);
-  section->AddSubSectionIndex(sub_sections_.size()-1);
+  section->AddSubSection(subsection);
 
   // set current_subsection!
   current_subsection_ = subsection;
 
-  current_subsection_->set_first_entry_index(entry_list_.size());
-  current_subsection_->set_last_entry_index(entry_list_.size());
+  // Assume that the section is only one entry long.
+  // last_entry is updated as we add entries..
+  current_subsection_->set_first_entry(entry);
+  current_subsection_->set_last_entry(entry);
 
   return section_pair.first;
 }
@@ -189,6 +203,7 @@ bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
                        std::list<MaoEntry *>::iterator list_iter) {
   // Variables that _might_ get used.
   LabelEntry *label_entry;
+  DirectiveEntry *directive_entry;
   Symbol *symbol;
 
   // next free ID for the entry
@@ -198,8 +213,8 @@ bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
   entry->set_id(entry_index);
 
   // Create a subsection if necessary
-  if (build_sections && (create_default_section && !current_subsection_)) {
-    SetSubSection(DEFAULT_SECTION_NAME, 0);
+  if (build_sections && create_default_section && !current_subsection_) {
+    SetSubSection(DEFAULT_SECTION_NAME, 0, entry);
     MAO_ASSERT(current_subsection_);
   }
 
@@ -220,6 +235,19 @@ bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
     case MaoEntry::DEBUG:
       break;
     case MaoEntry::DIRECTIVE:
+      // Update sections when necessary. Doing it here instead of
+      // in ir.cc makes it possible to add the entry
+      // when creating a new subsection.
+      directive_entry = static_cast<DirectiveEntry *>(entry);
+      if (directive_entry->op() == DirectiveEntry::SECTION) {
+        // the name from operand
+        MAO_ASSERT(directive_entry->NumOperands() > 0);
+        const DirectiveEntry::Operand *section_name =
+            directive_entry->GetOperand(0);
+        MAO_ASSERT(section_name->type == DirectiveEntry::STRING);
+        std::string *s_section_name = section_name->data.str;
+        SetSubSection(s_section_name->c_str(), 0, entry);
+      }
       break;
     case MaoEntry::UNDEFINED:
       break;
@@ -234,7 +262,7 @@ bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
 
   // Update subsection information
   if (build_sections && current_subsection_) {
-    current_subsection_->set_last_entry_index(entry_index);
+    current_subsection_->set_last_entry(entry);
   }
 
   return true;
@@ -277,6 +305,77 @@ const char *MaoUnit::BBNameGen::GetUniqueName() {
   sprintf(buff, ".mao_label_%04d", i);
   i++;
   return buff;
+}
+
+SectionIterator MaoUnit::SectionBegin() {
+  return SectionIterator(sections_.begin());
+}
+
+SectionIterator MaoUnit::SectionEnd() {
+  return SectionIterator(sections_.end());
+}
+
+
+ConstSectionIterator MaoUnit::ConstSectionBegin() const {
+  return ConstSectionIterator(sections_.begin());
+}
+
+ConstSectionIterator MaoUnit::ConstSectionEnd() const {
+  return ConstSectionIterator(sections_.end());
+}
+
+
+//
+// Class: SectionIterator
+//
+
+Section *&SectionIterator::operator *() const {
+  return section_iter_->second;
+}
+
+SectionIterator &SectionIterator::operator ++() {
+  ++section_iter_;
+  return *this;
+}
+
+SectionIterator &SectionIterator::operator --() {
+  --section_iter_;
+  return *this;
+}
+
+bool SectionIterator::operator ==(const SectionIterator &other) const {
+  return (section_iter_ == other.section_iter_);
+}
+
+bool SectionIterator::operator !=(const SectionIterator &other) const {
+  return !((*this) == other);
+}
+
+
+//
+// Class: ConstSectionIterator
+//
+
+Section * const &ConstSectionIterator::operator *() const {
+  return section_iter_->second;
+}
+
+ConstSectionIterator const &ConstSectionIterator::operator ++() {
+  ++section_iter_;
+  return *this;
+}
+
+ConstSectionIterator const &ConstSectionIterator::operator --() {
+  --section_iter_;
+  return *this;
+}
+
+bool ConstSectionIterator::operator ==(const ConstSectionIterator &other) const {
+  return (section_iter_ == other.section_iter_);
+}
+
+bool ConstSectionIterator::operator !=(const ConstSectionIterator &other) const {
+  return !((*this) == other);
 }
 
 
@@ -1304,6 +1403,17 @@ Section::~Section() {
   free(name_);
 }
 
-void Section::AddSubSectionIndex(SubSectionID index) {
-  sub_section_indexes_.push_back(index);
+void Section::AddSubSection(SubSection  *subsection) {
+  subsections_.push_back(subsection);
+}
+
+
+std::vector<SubSectionID> Section::GetSubsectionIDs() const {
+  std::vector<SubSectionID> subsections;
+  for (std::vector<SubSection *>::const_iterator ss_iter = subsections_.begin();
+       ss_iter != subsections_.end();
+       ++ss_iter) {
+    subsections.push_back((*ss_iter)->id());
+  }
+  return subsections;
 }

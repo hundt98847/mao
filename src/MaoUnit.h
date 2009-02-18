@@ -34,12 +34,6 @@
 
 #define DEFAULT_SECTION_NAME ".text"
 
-struct ltstr {
-  bool operator()(const char* s1, const char* s2) const {
-    return strcmp(s1, s2) < 0;
-  }
-};
-
 typedef int ID;
 
 // Each ID is uniq within its own domain.
@@ -48,21 +42,30 @@ typedef ID SectionID;
 typedef ID SubSectionID;
 typedef ID FunctionID;
 
+class ConstSectionIterator;
 class DirectiveEntry;
 class Function;
 class InstructionEntry;
 class LabelEntry;
 class MaoEntry;
 class Section;
+class SectionIterator;
 class SubSection;
 class Symbol;
 class SymbolTable;
 
+// Used by the STL-maps of sections and subsections.
+struct ltstr {
+  bool operator()(const char* s1, const char* s2) const {
+    return strcmp(s1, s2) < 0;
+  }
+};
+
 class MaoUnit {
  public:
-  typedef std::vector<MaoEntry *> EntryVector;
-  typedef EntryVector::iterator EntryIterator;
-  typedef EntryVector::const_iterator ConstEntryIterator;
+  typedef std::vector<MaoEntry *>      EntryVector;
+  typedef EntryVector::iterator        EntryIterator;
+  typedef EntryVector::const_iterator  ConstEntryIterator;
 
   explicit MaoUnit(MaoOptions *mao_options);
   ~MaoUnit();
@@ -93,15 +96,12 @@ class MaoUnit {
   // code. (.text, .data, .text.)
   // This will be create several SubSection objects with .text in the
   // sub_sections_ member.
-  bool SetSubSection(const char *section_name, unsigned int subsection_number);
+  bool SetSubSection(const char *section_name, unsigned int subsection_number,
+                     MaoEntry *entry);
 
   SubSection *GetSubSection(unsigned int subsection_number) {
     return sub_sections_[subsection_number];
   }
-
-  // Create the section section_name if it does not already exists. Returns a
-  // pointer the section.
-  std::pair<bool, Section *> FindOrCreateAndFind(const char *section_name);
 
   LabelEntry *GetLabelEntry(const char *label_name) const;
 
@@ -118,6 +118,10 @@ class MaoUnit {
     return entry_list_.begin();
   }
 
+  // Returns the section matching the given name. Returns
+  // NULL if no match is found.
+  Section * GetSection(const std::string &section_name) const;
+
   // Simple class for generating unique names for mao-created labels.
   class BBNameGen {
    public:
@@ -128,8 +132,16 @@ class MaoUnit {
 
   MaoOptions *mao_options() { return mao_options_; }
 
+  // Iterate over the sections
+  SectionIterator SectionBegin();
+  SectionIterator SectionEnd();
+  ConstSectionIterator ConstSectionBegin() const;
+  ConstSectionIterator ConstSectionEnd() const;
+
  private:
-  // Used by the STL-maps of sections and subsections.
+  // Create the section section_name if it does not already exists. Returns a
+  // pointer the section.
+  std::pair<bool, Section *> FindOrCreateAndFind(const char *section_name);
 
   // Vector of the entries in the unit. The id of the entry
   // is also the index into this vector.
@@ -163,9 +175,39 @@ class MaoUnit {
   std::map<MaoEntry *, Function *>   entry_to_function_;
   std::map<MaoEntry *, SubSection *> entry_to_subsection_;
 
-
   MaoOptions *mao_options_;
 };
+
+// Iterator wrapper for iterating over all the Sections in a MaoUnit.
+class SectionIterator {
+ public:
+  SectionIterator(std::map<const char *, Section *, ltstr>::iterator
+                  section_iter)
+      : section_iter_(section_iter) { }
+  Section *&operator *() const;
+  SectionIterator &operator ++();
+  SectionIterator &operator --();
+  bool operator ==(const SectionIterator &other) const;
+  bool operator !=(const SectionIterator &other) const;
+ private:
+  std::map<const char *, Section *, ltstr>::iterator section_iter_;
+};
+
+class ConstSectionIterator {
+ public:
+  ConstSectionIterator(std::map<const char *, Section *, ltstr>::const_iterator
+                       section_iter)
+      : section_iter_(section_iter) { }
+  Section *const &operator *() const;
+  ConstSectionIterator const &operator ++();
+  ConstSectionIterator const &operator --();
+  bool operator ==(const ConstSectionIterator &other) const;
+  bool operator !=(const ConstSectionIterator &other) const;
+ private:
+  std::map<const char *, Section *, ltstr>::const_iterator section_iter_;
+};
+
+
 
 
 // Base class for all types of entries in the MaoUnit. Example of entries
@@ -481,8 +523,6 @@ class InstructionEntry : public MaoEntry {
   bool PrintSuffix() const;
 };
 
-
-
 // A Subsection is part of a section. The subsection concept allows the assembly
 // file to write the code more freely, but still keep the data organized in
 // sections. Each subsection has a pointer to the section it belongs, as well
@@ -491,29 +531,34 @@ class SubSection {
  public:
   // Constructor needs subsection number, a pointer to the actual section, and
   // the assembly code needed to create the subsection.
-  explicit SubSection(unsigned int subsection_number, const char *name)
+  explicit SubSection(const SubSectionID id, unsigned int subsection_number,
+                      const char *name)
       : number_(subsection_number),
         name_(name),
-        first_entry_index_(0),
-        last_entry_index_(0) { }
+        id_(id),
+        first_entry_(NULL),
+        last_entry_(NULL) { }
 
   unsigned int number() const { return number_; }
   const std::string &name() const { return name_; }
 
-  EntryID first_entry_index() const { return first_entry_index_;}
-  EntryID last_entry_index() const { return last_entry_index_;}
-  void set_first_entry_index(EntryID index) { first_entry_index_ = index;}
-  void set_last_entry_index(EntryID index) { last_entry_index_ = index;}
+  MaoEntry * first_entry() const { return first_entry_;}
+  MaoEntry * last_entry() const { return last_entry_;}
+  void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
+  void set_last_entry(MaoEntry *entry) { last_entry_ = entry;}
+  SubSectionID id() const { return id_;}
+
  private:
 
   // The subsection number
   const unsigned int number_;
   const std::string name_;
 
+  const SubSectionID id_;
+
   // Points to the first and last entry for the subsection.
-  // Value is stored as index into the entry vector.
-  EntryID first_entry_index_;
-  EntryID last_entry_index_;
+  MaoEntry *first_entry_;
+  MaoEntry *last_entry_;
 };
 
 
@@ -523,8 +568,8 @@ class SectionEntryIterator {
 
   SectionEntryIterator(
       MaoUnit *mao,
-      std::vector<SubSectionID>::iterator sub_section_iter,
-      std::vector<SubSectionID>::iterator sub_section_iter_end,
+      std::vector<SubSection *>::iterator sub_section_iter,
+      std::vector<SubSection *>::iterator sub_section_iter_end,
       std::list<MaoEntry *>::iterator entry_iter)
       : mao_(mao),
         sub_section_iter_(sub_section_iter),
@@ -534,9 +579,9 @@ class SectionEntryIterator {
   Entry &operator *() const { return *entry_iter_; }
 
   SectionEntryIterator &operator ++() {
-    SubSection *sub_section = mao_->GetSubSection(*sub_section_iter_);
+    SubSection *sub_section = *sub_section_iter_;
     Entry entry = *entry_iter_;
-    if (entry->id() == sub_section->last_entry_index()) {
+    if (entry == sub_section->last_entry()) {
       ++sub_section_iter_;
 
       if (sub_section_iter_ == sub_section_iter_end_) {
@@ -544,8 +589,8 @@ class SectionEntryIterator {
         return *this;
       }
 
-      sub_section = mao_->GetSubSection(*sub_section_iter_);
-      while ((*entry_iter_)->id() != sub_section->first_entry_index())
+      sub_section = *sub_section_iter_;
+      while ((*entry_iter_) != sub_section->first_entry())
         ++entry_iter_;
     } else {
       ++entry_iter_;
@@ -560,12 +605,12 @@ class SectionEntryIterator {
   }
 
   SectionEntryIterator &operator --() {
-    SubSection *sub_section = mao_->GetSubSection(*sub_section_iter_);
+    SubSection *sub_section = *sub_section_iter_;
     Entry entry = *entry_iter_;
-    if (entry->id() == sub_section->first_entry_index()) {
+    if (entry == sub_section->first_entry()) {
       --sub_section_iter_;
-      sub_section = mao_->GetSubSection(*sub_section_iter_);
-      while ((*entry_iter_)->id() != sub_section->last_entry_index())
+      sub_section = *sub_section_iter_;
+      while ((*entry_iter_) != sub_section->last_entry())
         --entry_iter_;
     } else {
       --entry_iter_;
@@ -591,8 +636,8 @@ class SectionEntryIterator {
 
  private:
   MaoUnit *mao_;
-  std::vector<SubSectionID>::iterator sub_section_iter_;
-  std::vector<SubSectionID>::iterator sub_section_iter_end_;
+  std::vector<SubSection *>::iterator sub_section_iter_;
+  std::vector<SubSection *>::iterator sub_section_iter_end_;
   std::list<MaoEntry *>::iterator entry_iter_;
 };
 
@@ -626,37 +671,38 @@ class Section {
   explicit Section(const char *name);
   ~Section();
   const char *name() const;
-  void AddSubSectionIndex(SubSectionID index);
-  std::vector<SubSectionID> *GetSubSectionIndexes() {
-    return &sub_section_indexes_;
-  }
+
+  void AddSubSection(SubSection *subsection);
 
   SectionEntryIterator EntryBegin(MaoUnit *mao) {
-    std::vector<SubSectionID>::iterator sub_section_iter =
-        sub_section_indexes_.begin();
+    std::vector<SubSection *>::iterator subsection_iter =
+        subsections_.begin();
 
-    if (sub_section_iter != sub_section_indexes_.end()) {
-      SubSection *sub_section = mao->GetSubSection(*sub_section_iter);
-
+    if (subsection_iter != subsections_.end()) {
+      SubSection *subsection = *subsection_iter;
+      // Loop to find the first entry in this subsection
+      // This gives a list-iterator to the first entry
       std::list<MaoEntry *>::iterator entry_iter = mao->EntryBegin();
-      while ((*entry_iter)->id() != sub_section->first_entry_index())
+      while ((*entry_iter) != subsection->first_entry())
         ++entry_iter;
-      return SectionEntryIterator(mao, sub_section_iter,
-                                  sub_section_indexes_.end(), entry_iter);
+      return SectionEntryIterator(mao, subsection_iter,
+                                  subsections_.end(), entry_iter);
     } else {
-      return SectionEntryIterator(mao, sub_section_iter,
-                                  sub_section_indexes_.end(), mao->EntryEnd());
+      // No subsections in the section.
+      return SectionEntryIterator(mao, subsection_iter,
+                                  subsections_.end(), mao->EntryEnd());
     }
   }
 
   SectionEntryIterator EntryEnd(MaoUnit *mao) {
-    return SectionEntryIterator(mao, sub_section_indexes_.end(),
-                                sub_section_indexes_.end(), mao->EntryEnd());
+    return SectionEntryIterator(mao, subsections_.end(),
+                                subsections_.end(), mao->EntryEnd());
   }
-
+  std::vector<SubSectionID> GetSubsectionIDs() const;
  private:
+
   char *name_;  // e.g. ".text", ".data", etc.
-  std::vector<SubSectionID> sub_section_indexes_;
+  std::vector<SubSection *> subsections_;
 };
 
 
