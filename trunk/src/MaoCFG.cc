@@ -206,7 +206,7 @@ void CFGBuilder::Build() {
 
 void CreateCFG(MaoUnit *mao_unit, CFG *cfg) {
   Section *section = mao_unit->GetSection(".text");
-  MAO_ASSERT(section != NULL);
+  if (!section) return;
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), section, cfg);
   builder.Build();
 }

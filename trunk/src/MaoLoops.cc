@@ -141,6 +141,8 @@ class HavlakLoopFinder {
   //
   void FindLoops() {
     int                size = CFG_->GetNumOfNodes();
+    if (!size) return;
+
     IntSetVector       nonBackPreds(size);
     IntListVector      backPreds(size);
     IntVector          header(size);
