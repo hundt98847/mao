@@ -25,6 +25,23 @@
 #include "MaoDebug.h"
 #include "MaoPasses.h"
 
+class PassDebugAction : public MaoDebugAction {
+ public:
+  PassDebugAction(const char *pass_name) :
+    pass_name_(pass_name) {}
+
+  void set_pass_name(const char *name) { pass_name_ = name; }
+
+  virtual void Invoke(FILE *output) {
+    fprintf(output, "***   Last pass:  %s\n", pass_name_);
+  }
+
+ private:
+  const char *pass_name_;
+};
+
+static PassDebugAction *pass_debug_action = NULL;
+
 static std::map<MaoOption *, MaoPass *> option_to_pass_map;
 
 MaoPass *FindPass(MaoOption *arr) {
@@ -45,6 +62,10 @@ MaoPass::MaoPass(const char *name, MaoOptions *mao_options,
   option_to_pass_map[options_] = this;
   if (mao_options_)
     mao_options_->Reparse();
+  if (!pass_debug_action)
+    pass_debug_action = new PassDebugAction(name);
+  else
+    pass_debug_action->set_pass_name(name);
   if (enabled_)
     Trace(1, "begin");
 }

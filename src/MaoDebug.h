@@ -44,7 +44,7 @@ class MaoDebug {
   // Main assert function
   static void Assert(const char *file_name, int line_number,
                      bool condition, const char *expr_string,
-                     const char *format_string, ...) 
+                     const char *format_string, ...)
     __attribute__ ((format (printf, 5, 6)));
 
   // Change output file for assert
@@ -55,5 +55,22 @@ class MaoDebug {
   // Assert file
   static FILE *assert_file_;
 }; // MaoDebug
+
+
+// MaoDebugAction
+class MaoDebugAction {
+public:
+  MaoDebugAction();
+  virtual ~MaoDebugAction();
+  MaoDebugAction *next() { return next_; }
+
+  void set_next(MaoDebugAction *ptr) { next_ = ptr; }
+
+  // main invocation routine. Must be defined.
+  virtual void Invoke(FILE *output) = 0;
+
+private:
+  MaoDebugAction *next_;
+};
 
 #endif  // MAODEBUG_H_
