@@ -1064,7 +1064,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             if (IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
               fprintf(out, "repe ");
             } else if (IsInList(op(), rep_ops,
-                                sizeof(repe_ops)/sizeof(MaoOpcode))) {
+                                sizeof(rep_ops)/sizeof(MaoOpcode))) {
               fprintf(out, "rep ");
             } else {
               MAO_ASSERT_MSG(false,
