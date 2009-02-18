@@ -108,6 +108,10 @@ void CFGBuilder::Build() {
        e_iter != section_->EntryEnd(mao_unit_); ++e_iter) {
     MaoEntry *entry = *e_iter;
 
+    if (tracing_level() > 2) {
+      fprintf(stderr, "CFG: Working on: ");
+      entry->PrintEntry(stderr);
+    }
     if (!BelongsInBasicBlock(entry))
       continue;
 

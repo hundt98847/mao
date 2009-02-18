@@ -63,6 +63,11 @@ struct ltstr {
 
 class MaoUnit {
  public:
+  struct ltstr {
+    bool operator()(const char* s1, const char* s2) const {
+      return strcmp(s1, s2) < 0;
+    }
+  };
   typedef std::vector<MaoEntry *>      EntryVector;
   typedef EntryVector::iterator        EntryIterator;
   typedef EntryVector::const_iterator  ConstEntryIterator;
@@ -168,7 +173,7 @@ class MaoUnit {
   SymbolTable symbol_table_;
 
   // Maps label-names to the corresponding label entry.
-  std::map<const char *, LabelEntry *> labels_;
+  std::map<const char *, LabelEntry *, ltstr> labels_;
 
 
   // Maps an entry to the corresponding Function and SubSection.
