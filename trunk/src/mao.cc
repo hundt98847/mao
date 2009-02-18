@@ -68,9 +68,8 @@ int main(int argc, const char *argv[]) {
   // for (section iterator...)
   //     TODO(nvachhar): add loop over sections
   MaoRelaxer::SizeMap sizes;
-  std::pair<bool, Section *> text_pair = mao_unit.FindOrCreateAndFind(".text");
-  MAO_ASSERT(!text_pair.first);
-  Section *section = text_pair.second;
+  Section *section = mao_unit.GetSection(".text");
+  MAO_ASSERT(section);
   Relax(&mao_unit, section, &sizes);
   int section_size = 0;
   for (SectionEntryIterator iter = section->EntryBegin(&mao_unit);
