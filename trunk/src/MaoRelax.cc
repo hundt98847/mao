@@ -290,6 +290,15 @@ struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
     off = 0;
   }
 
+  // TODO(martint): Fix the code below
+  // The following code makes sure the relaxer does not
+  // segfault. Further investigation is needed to make
+  // sure it will produce the correct result!
+  struct local_symbol *lsym = (struct local_symbol *)sym;
+  lsym->lsy_section = 0;
+  lsym->u.lsy_frag = frag;
+
+
   return FragVar(rs_machine_dependent, insn->reloc[0],
                  subtype, sym, off,
                  reinterpret_cast<char*>(&insn->tm.base_opcode),
