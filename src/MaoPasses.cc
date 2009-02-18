@@ -159,6 +159,29 @@ MaoPassManager *InitPasses() {
   return &mao_pass_man;
 }
 
+
+// Source Correlation
+extern "C" {
+  void as_where (char **namep, unsigned int *linep);
+}
+
+class SourceDebugAction : public MaoDebugAction {
+ public:
+  SourceDebugAction() {}
+
+  virtual void Invoke(FILE *output) {
+    char *filename;
+    unsigned int linep;
+    as_where(&filename, &linep);
+
+    if (filename) {
+      fprintf(output, "***   Processing: %s, line: %d\n", filename, linep);
+    }
+  }
+};
+
+
 void ReadInput(int argc, char *argv[]) {
+  SourceDebugAction spos;
   ReadInputPass reader(argc, argv);
 }
