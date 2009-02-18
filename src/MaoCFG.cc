@@ -161,15 +161,18 @@ void CFGBuilder::Build() {
           // TODO(nvachhar): This should deal with indirect branches
           MAO_ASSERT(false);
         } else {
-          CFG::LabelToBBMap::iterator target_ptr = label_to_bb_map_.find(label);
-          if (target_ptr == label_to_bb_map_.end()) {
-            target = CreateBasicBlock(label);
-            CFG_->MapBasicBlock(target);
-          } else {
-            target = target_ptr->second;
-            if (strcmp(label, target->label())) {
-              target = BreakUpBBAtLabel(target,
-                                        mao_unit_->GetLabelEntry(label));
+          target = CFG_->FindBasicBlock(label);
+          if (target == NULL) {
+            CFG::LabelToBBMap::iterator target_ptr = label_to_bb_map_.find(label);
+            if (target_ptr == label_to_bb_map_.end()) {
+              target = CreateBasicBlock(label);
+              CFG_->MapBasicBlock(target);
+            } else {
+              target = target_ptr->second;
+              if (strcmp(label, target->label())) {
+                target = BreakUpBBAtLabel(target,
+                                          mao_unit_->GetLabelEntry(label));
+              }
             }
           }
         }
