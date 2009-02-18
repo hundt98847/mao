@@ -53,25 +53,6 @@ MaoDebugAction::~MaoDebugAction() {
 }
 
 
-// Source Correlation
-extern "C" {
-  void as_where (char **namep, unsigned int *linep);
-}
-
-class SourceDebugAction : public MaoDebugAction {
- public:
-  SourceDebugAction() {}
-
-  virtual void Invoke(FILE *output) {
-    char *filename;
-    unsigned int linep;
-    as_where(&filename, &linep);
-
-    if (filename) {
-      fprintf(output, "***   Processing: %s, line: %d\n", filename, linep);
-    }
-  }
-};
 
 static void ProcessDebugActions(FILE *assert_file) {
   MaoDebugAction *action = debugAction;
@@ -98,7 +79,6 @@ void MaoDebug::Assert(const char *file_name, int line_number,
     va_end(argList);
     fprintf(assert_file_, "\n");
 
-    new SourceDebugAction();
     ProcessDebugActions(assert_file_);
     abort();
   }
