@@ -233,6 +233,7 @@ class MaoEntry {
   virtual ~MaoEntry();
 
   virtual void PrintEntry(FILE *out) const = 0;
+  void PrintSourceInfo(FILE *out) const;
   virtual void PrintIR(FILE *out) const = 0;
   virtual char GetDescriptiveChar() const = 0;
   virtual EntryType Type() const = 0;
@@ -246,11 +247,12 @@ class MaoEntry {
   virtual bool IsCall() const = 0;
   virtual bool IsReturn() const = 0;
 
+  unsigned int line_number() const { return line_number_; }
+  const char *const line_verbatim() const { return line_verbatim_; }
+
  protected:
   // Helper function to indent
   void Spaces(unsigned int n, FILE *outfile) const;
-  unsigned int line_number() const { return line_number_; }
-  const char *const line_verbatim() const { return line_verbatim_; }
 
  private:
   EntryID id_;

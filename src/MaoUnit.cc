@@ -68,12 +68,32 @@ void MaoUnit::PrintMaoUnit() const {
   PrintMaoUnit(stdout);
 }
 
+class EntryDumper : public MaoDebugAction {
+ public:
+  EntryDumper() {}
+
+  void set_entry(MaoEntry *e) { entry_ = e; }
+
+  virtual void Invoke(FILE *outfile) {
+    fprintf(outfile, "***   generating asm for entry [%d], line: %d\n",
+            entry_->id(), entry_->line_number());
+  }
+
+private:
+  MaoEntry *entry_;
+};
+
+
 // Prints all entries in the MaoUnit
 void MaoUnit::PrintMaoUnit(FILE *out) const {
+  EntryDumper entry_dumper;
+
   for (std::list<MaoEntry *>::const_iterator iter =
            entry_list_.begin();
        iter != entry_list_.end(); ++iter) {
     MaoEntry *e = *iter;
+
+    entry_dumper.set_entry(e);
     e->PrintEntry(out);
   }
 }
@@ -406,6 +426,11 @@ void MaoEntry::Spaces(unsigned int n, FILE *outfile) const {
   }
 }
 
+void MaoEntry::PrintSourceInfo(FILE *out) const {
+  fprintf(out, "\t # [%d], line: %d\t%s\n", id(), line_number(),
+          line_verbatim() ? line_verbatim() : "");
+}
+
 
 //
 // Class: LabelEntry
@@ -414,9 +439,7 @@ void MaoEntry::Spaces(unsigned int n, FILE *outfile) const {
 void LabelEntry::PrintEntry(FILE *out) const {
   MAO_ASSERT(name_);
   fprintf(out, "%s:", name_);
-  fprintf(out, "\t # [%d]\t%s", line_number(),
-          line_verbatim() ? line_verbatim() : "");
-  fprintf(out, "\n");
+  MaoEntry::PrintSourceInfo(out);
 }
 
 void LabelEntry::PrintIR(FILE *out) const {
@@ -468,9 +491,7 @@ void DirectiveEntry::PrintEntry(::FILE *out) const {
   std::string operands;
   fprintf(out, "\t%s\t%s", GetOpcodeName(),
           OperandsToString(&operands).c_str());
-  fprintf(out, "\t # [%d]\t%s", line_number(),
-          line_verbatim() ? line_verbatim() : "");
-  fprintf(out, "\n");
+  PrintSourceInfo(out);
 }
 
 void DirectiveEntry::PrintIR(::FILE *out) const {
@@ -697,9 +718,7 @@ MaoEntry::EntryType DirectiveEntry::Type() const {
 
 void DebugEntry::PrintEntry(FILE *out) const {
   fprintf(out, "\t%s\t%s", key_.c_str(), value_.c_str());
-  fprintf(out, "\t # [%d]\t%s", line_number(),
-          line_verbatim() ? line_verbatim() : "");
-  fprintf(out, "\n");
+  PrintSourceInfo(out);
 }
 
 void DebugEntry::PrintIR(FILE *out) const {
@@ -734,9 +753,7 @@ InstructionEntry::~InstructionEntry() {
 
 void InstructionEntry::PrintEntry(FILE *out) const {
   PrintInstruction(out);
-  fprintf(out, "\t # [%d]\t%s", line_number(),
-          line_verbatim() ? line_verbatim() : "");
-  fprintf(out, "\n");
+  PrintSourceInfo(out);
 }
 
 void InstructionEntry::PrintIR(FILE *out) const {
