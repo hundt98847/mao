@@ -27,7 +27,7 @@
 
 class PassDebugAction : public MaoDebugAction {
  public:
-  PassDebugAction(const char *pass_name) :
+  explicit PassDebugAction(const char *pass_name) :
     pass_name_(pass_name) {}
 
   void set_pass_name(const char *name) { pass_name_ = name; }
@@ -55,8 +55,8 @@ MaoPass *FindPass(MaoOption *arr) {
 
 
 MaoPass::MaoPass(const char *name, MaoOptions *mao_options,
-                 MaoOption *options) :
-  name_(name), options_(options), enabled_(true),
+                 MaoOption *options, bool enabled) :
+  name_(name), options_(options), enabled_(enabled),
   tracing_level_(mao_options ? (mao_options->verbose() ? 3 : 0) : 0),
   trace_file_(stderr), mao_options_(mao_options) {
   option_to_pass_map[options_] = this;
@@ -126,7 +126,7 @@ int MaoPass::GetOptionInt(const char *name) {
 // Dummy pass to mark begin of compilation
 class BeginPass : public MaoPass {
   public:
-  BeginPass() : MaoPass("BEG", NULL, NULL) {
+  BeginPass() : MaoPass("BEG", NULL, NULL, true) {
   }
 
   bool Go() {
@@ -138,7 +138,7 @@ class BeginPass : public MaoPass {
 // Dummy pass to mark end of compilation
 class EndPass : public MaoPass {
   public:
-  EndPass() : MaoPass("END", NULL, NULL) {
+  EndPass() : MaoPass("END", NULL, NULL, true) {
   }
 
   bool Go() {
@@ -162,7 +162,7 @@ MaoPassManager *InitPasses() {
 
 // Source Correlation
 extern "C" {
-  void as_where (char **namep, unsigned int *linep);
+  void as_where(char **namep, unsigned int *linep);
 }
 
 class SourceDebugAction : public MaoDebugAction {
@@ -184,4 +184,32 @@ class SourceDebugAction : public MaoDebugAction {
 void ReadInput(int argc, char *argv[]) {
   SourceDebugAction spos;
   ReadInputPass reader(argc, argv);
+}
+
+
+// DumpIrPass
+
+MAO_OPTIONS_DEFINE(IR, 1) {
+  OPTION_STR("o", "/dev/stdout", "Filename to dump IR to."),
+};
+
+//
+// Pass to to dump out the IR in text format.
+//
+DumpIrPass::DumpIrPass(MaoUnit *mao_unit)
+    : MaoPass("IR", mao_unit->mao_options(), MAO_OPTIONS(IR), false),
+      mao_unit_(mao_unit) {
+}
+
+bool DumpIrPass::Go() {
+  const char *ir_output_filename = GetOptionString("o");
+
+  Trace(1, "Generate IR Dump File: %s", ir_output_filename);
+  FILE *outfile = fopen(ir_output_filename, "w");
+
+  MAO_ASSERT_MSG(outfile, "Unable to open %s for writing\n",
+                 ir_output_filename);
+  mao_unit_->PrintIR(outfile, true, true, true);
+  fclose(outfile);
+  return true;
 }

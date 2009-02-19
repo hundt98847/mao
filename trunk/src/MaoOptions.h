@@ -38,9 +38,9 @@ typedef struct MaoOption {
 
 // This is how to define options, build up an array consisting of
 // entries of this type:
-#define OPTION_INT(name,val,desc) { OPT_INT, name, desc, { ival_: val } }
-#define OPTION_BOOL(name,val,desc){ OPT_BOOL, name, desc, { bval_: val } }
-#define OPTION_STR(name,val,desc) { OPT_STRING, name, desc, { cval_: val } }
+#define OPTION_INT(name, val, desc)  { OPT_INT, name, desc, { ival_: val } }
+#define OPTION_BOOL(name, val, desc) { OPT_BOOL, name, desc, { bval_: val } }
+#define OPTION_STR(name, val, desc)  { OPT_STRING, name, desc, { cval_: val } }
 
 // Define an array of options with help of this macro.
 // Usage (please note the final trainling comma):
@@ -60,7 +60,7 @@ typedef struct MaoOption {
 #define MAO_OPTIONS(pass) pass##_opts
 
 class MaoOptionRegister {
-public:
+ public:
   MaoOptionRegister(const char *name, MaoOption *array, int N);
 };
 
@@ -101,7 +101,6 @@ class MaoOptions {
   const char *assembly_output_file_name();
   const char *ir_output_file_name();
   void set_assembly_output_file_name(const char *file_name);
-  void set_ir_output_file_name(const char *file_name);
   void set_output_is_stderr() { output_is_stderr_ = true; }
   void set_verbose() { verbose_ = true; }
   void set_help() { help_ = true; }

@@ -38,12 +38,6 @@ void MaoOptions::set_assembly_output_file_name(const char *file_name) {
   assembly_output_file_name_ = file_name;
 }
 
-void MaoOptions::set_ir_output_file_name(const char *file_name) {
-  MAO_ASSERT(file_name);
-  write_ir_ = true;
-  ir_output_file_name_ = file_name;
-}
-
 
 // Maintain mapping between option array and pass name.
 //
@@ -72,7 +66,7 @@ class MaoOptionArray {
 
 // Maintain static list of all option arrays.
 typedef std::vector<MaoOptionArray *> OptionVector;
-static OptionVector option_array_list;
+static OptionVector *option_array_list;
 
 // Unprocessed flags are passed on to as_main (which is the GNU Assembler
 // main function). Everything else is handed to the MAO Option processor
@@ -97,8 +91,8 @@ void MaoOptions::ProvideHelp(bool always) {
           "  enable    : (bool)   En/Disable a pass\n"
           "  trace     : (int)    Set trace level to 'val' (0..3)\n");
 
-  for (OptionVector::iterator it = option_array_list.begin();
-       it != option_array_list.end(); ++it) {
+  for (OptionVector::iterator it = option_array_list->begin();
+       it != option_array_list->end(); ++it) {
     fprintf(stderr, "Pass: %s\n", (*it)->name());
     MaoOption *arr = (*it)->array();
     for (int i = 0; i < (*it)->num_entries(); i++) {
@@ -115,7 +109,6 @@ void MaoOptions::ProvideHelp(bool always) {
 }
 
 
-
 // Simple (static) constructor to allow registration of
 // option arrays.
 //
@@ -123,13 +116,15 @@ MaoOptionRegister::MaoOptionRegister(const char *name,
                                      MaoOption  *array,
                                      int N) {
   MaoOptionArray *tmp = new MaoOptionArray(name, array, N);
-  option_array_list.push_back(tmp);
+  if (!option_array_list) {
+    option_array_list = new OptionVector;
+  }
+  option_array_list->push_back(tmp);
 }
 
-
 static MaoOptionArray *FindOptionArray(const char *pass_name) {
-  for (OptionVector::iterator it = option_array_list.begin();
-       it != option_array_list.end(); ++it) {
+  for (OptionVector::iterator it = option_array_list->begin();
+       it != option_array_list->end(); ++it) {
     if (!strcasecmp((*it)->name(), pass_name))
       return (*it);
   }
