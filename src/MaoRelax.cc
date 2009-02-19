@@ -78,8 +78,8 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
 
   bool is_text = !section->name().compare(".text");
 
-  for (SectionEntryIterator iter = section->EntryBegin(mao);
-       iter != section->EntryEnd(mao); ++iter) {
+  for (SectionEntryIterator iter = section->EntryBegin();
+       iter != section->EntryEnd(); ++iter) {
     MaoEntry *entry = *iter;
     switch (entry->Type()) {
       case MaoEntry::INSTRUCTION: {

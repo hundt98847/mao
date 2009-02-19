@@ -1448,29 +1448,15 @@ std::vector<SubSectionID> Section::GetSubsectionIDs() const {
   return subsections;
 }
 
-SectionEntryIterator Section::EntryBegin(MaoUnit *mao) {
-  std::vector<SubSection *>::iterator subsection_iter =
-      subsections_.begin();
-
-  if (subsection_iter != subsections_.end()) {
-    SubSection *subsection = *subsection_iter;
-    // Loop to find the first entry in this subsection
-    // This gives a list-iterator to the first entry
-    std::list<MaoEntry *>::iterator entry_iter = mao->EntryBegin();
-    while ((*entry_iter) != subsection->first_entry())
-      ++entry_iter;
-    return SectionEntryIterator(mao, subsection_iter,
-                                subsections_.end(), entry_iter);
-  } else {
-    // No subsections in the section.
-    return SectionEntryIterator(mao, subsection_iter,
-                                subsections_.end(), mao->EntryEnd());
-  }
+SectionEntryIterator Section::EntryBegin() {
+  if (subsections_.size() == 0)
+    return EntryEnd();
+  SubSection *ss = subsections_[0];
+  return SectionEntryIterator(ss->first_entry());
 }
 
-SectionEntryIterator Section::EntryEnd(MaoUnit *mao) {
-  return SectionEntryIterator(mao, subsections_.end(),
-                              subsections_.end(), mao->EntryEnd());
+SectionEntryIterator Section::EntryEnd() {
+  return SectionEntryIterator(NULL);
 }
 
 SubSection *Section::GetLastSubSection() const {
@@ -1479,4 +1465,35 @@ SubSection *Section::GetLastSubSection() const {
   } else {
     return subsections_[subsections_.size()-1];
   }
+}
+
+//
+// Class: SectionEntryIterator
+//
+
+SectionEntryIterator::SectionEntryIterator(MaoEntry *entry)
+    : current_entry_(entry) {
+  return;
+}
+
+SectionEntryIterator &SectionEntryIterator::operator ++() {
+  current_entry_ = current_entry_->next();
+  return *this;
+}
+
+// TODO(martint): What should happen if we iterate before the beginning?
+//                Currently it will create a NULL pointer.
+SectionEntryIterator &SectionEntryIterator::operator --() {
+  current_entry_ = current_entry_->prev();
+  return *this;
+}
+
+bool SectionEntryIterator::operator ==(const SectionEntryIterator &other)
+    const {
+  return (current_entry_ == other.current_entry_);
+}
+
+bool SectionEntryIterator::operator !=(const SectionEntryIterator &other)
+    const {
+  return !((*this) == other);
 }
