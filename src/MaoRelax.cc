@@ -48,7 +48,8 @@ void MaoRelaxer::Relax(MaoUnit *mao, Section *section, SizeMap *size_map) {
       BuildFragments(mao, section, size_map, &relax_map);
 
   // Run relaxation
-  asection *bfd_section = bfd_get_section_by_name(stdoutput, section->name());
+  asection *bfd_section = bfd_get_section_by_name(stdoutput,
+                                                  section->name().c_str());
   for (int change = 1, pass = 0; change; pass++)
     change = relax_segment(fragments, bfd_section, pass);
 
@@ -75,7 +76,7 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
   struct frag *fragments, *frag;
   fragments = frag = NewFragment();
 
-  bool is_text = !strcmp(section->name(), ".text");
+  bool is_text = !section->name().compare(".text");
 
   for (SectionEntryIterator iter = section->EntryBegin(mao);
        iter != section->EntryEnd(mao); ++iter) {
