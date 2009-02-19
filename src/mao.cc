@@ -84,6 +84,7 @@ int main(int argc, const char *argv[]) {
 
   // global finalization passes
   mao_pass_man->LinkPass(new AssemblyPass(&mao_options, &mao_unit));
+  mao_pass_man->LinkPass(new DumpIrPass(&mao_unit));
 
   // run the passes
   mao_pass_man->Run();

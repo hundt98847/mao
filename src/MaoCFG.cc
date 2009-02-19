@@ -83,7 +83,7 @@ MAO_OPTIONS_DEFINE(CFG, 1) {
 // --------------------------------------------------------------------
 CFGBuilder::CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
                        Section *section, CFG *CFG)
-  : MaoPass("CFG", mao_options, MAO_OPTIONS(CFG)),
+  : MaoPass("CFG", mao_unit->mao_options(), MAO_OPTIONS(CFG), true),
     mao_unit_(mao_unit), section_(section), CFG_(CFG), next_id_(0) {
   split_basic_blocks_ = GetOptionBool("callsplit");
 }

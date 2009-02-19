@@ -39,7 +39,8 @@
 //
 class MaoPass {
  public:
-  MaoPass(const char *name, MaoOptions* mao_options, MaoOption *options);
+  MaoPass(const char *name, MaoOptions* mao_options, MaoOption *options,
+          bool enabled);
   virtual ~MaoPass();
 
   virtual void Trace(unsigned int level, const char *fmt, ...);
@@ -55,7 +56,7 @@ class MaoPass {
 
   // Setters/Getters
   const char  *name() { return name_; }
-  bool         enabled() { return enabled_; };
+  bool         enabled() { return enabled_; }
   unsigned int tracing_level() { return tracing_level_; }
   bool         tracing() { return tracing_level_ > 0; }
 
@@ -142,9 +143,9 @@ class MaoPassManager {
 // Pass to dump out the IR in assembly format
 //
 class AssemblyPass : public MaoPass {
-public:
+ public:
   AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("ASM", mao_options, NULL), mao_unit_(mao_unit),
+    MaoPass("ASM", mao_options, NULL, true), mao_unit_(mao_unit),
     mao_options_(mao_options) {
   }
 
@@ -174,7 +175,7 @@ public:
     return true;
   }
 
-private:
+ private:
   MaoUnit    *mao_unit_;
   MaoOptions *mao_options_;
 };
@@ -185,10 +186,9 @@ private:
 // Read/parse the input asm file and generate the IR
 //
 class ReadInputPass : public MaoPass {
-public:
-  ReadInputPass(int argc, char *argv[]) :
-    MaoPass("READ", NULL, NULL) {
-
+ public:
+  ReadInputPass(int argc, char *argv[])
+      : MaoPass("READ", NULL, NULL, true) {
     MAO_ASSERT(!as_main(argc, argv));
   }
 };
@@ -197,30 +197,16 @@ void ReadInput(int argc, char *argv[]);
 
 
 // DumpIrPass
+
 //
 // Pass to to dump out the IR in IR format
 //
 class DumpIrPass : public MaoPass {
-public:
-  DumpIrPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("IR", mao_options, NULL), mao_unit_(mao_unit),
-    mao_options_(mao_options) {
-  }
-  bool Go() {
-    if (mao_options_->write_ir()) {
-      Trace(1, "Generate IR Dump File: %s",
-            mao_options_->ir_output_file_name());
-
-      FILE *outfile =  fopen(mao_options_->ir_output_file_name(), "w");
-      MAO_ASSERT(outfile);
-      mao_unit_->PrintIR(true, true, true);
-    }
-    return true;
-  }
-
-private:
+ public:
+  explicit DumpIrPass(MaoUnit *mao_unit);
+  bool Go();
+ private:
   MaoUnit    *mao_unit_;
-  MaoOptions *mao_options_;
 };
 
 //
