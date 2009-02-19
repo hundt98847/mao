@@ -213,7 +213,7 @@ public:
 
       FILE *outfile =  fopen(mao_options_->ir_output_file_name(), "w");
       MAO_ASSERT(outfile);
-      mao_unit_->PrintIR();
+      mao_unit_->PrintIR(true, true, true);
     }
     return true;
   }

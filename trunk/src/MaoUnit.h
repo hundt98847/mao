@@ -112,8 +112,10 @@ class MaoUnit {
 
   void PrintMaoUnit() const;
   void PrintMaoUnit(FILE *out) const;
-  void PrintIR() const;
-  void PrintIR(FILE *out) const;
+  void PrintIR(bool print_entries, bool print_sections,
+               bool print_subsections) const;
+  void PrintIR(FILE *out, bool print_entries, bool print_sections,
+               bool print_subsections) const;
 
   std::list<MaoEntry *>::iterator EntryBegin() {
     return entry_list_.begin();
@@ -247,6 +249,12 @@ class MaoEntry {
   virtual bool IsCall() const = 0;
   virtual bool IsReturn() const = 0;
 
+  void set_next(MaoEntry *entry) {next_ = entry;}
+  void set_prev(MaoEntry *entry) {prev_ = entry;}
+
+  MaoEntry *next() {return next_;}
+  MaoEntry *prev() {return prev_;}
+
   unsigned int line_number() const { return line_number_; }
   const char *const line_verbatim() const { return line_verbatim_; }
 
@@ -259,8 +267,8 @@ class MaoEntry {
 
   // Section-local pointers to previous and next entry.
   // Null-value in prev/next means first/last entry in section.
-  MaoUnit *next_;
-  MaoUnit *prev_;
+  MaoEntry *next_;
+  MaoEntry *prev_;
 
   // Line number assembly was found in the original file
   const unsigned int line_number_;
@@ -552,11 +560,12 @@ class SubSection {
   MaoEntry * first_entry() const { return first_entry_;}
   MaoEntry * last_entry() const { return last_entry_;}
   void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
-  void set_last_entry(MaoEntry *entry) { last_entry_ = entry;}
+  void set_last_entry(MaoEntry *entry);
   SubSectionID id() const { return id_;}
 
- private:
+  //  Section *section() const { return section_; }
 
+ private:
   // The subsection number
   const unsigned int number_;
   const std::string name_;
@@ -569,6 +578,8 @@ class SubSection {
 };
 
 
+// TODO(martint): Replace this with a new iterator once the prev/next pointers
+// are implemented and tested
 class SectionEntryIterator {
  public:
   typedef MaoEntry *Entry;
@@ -648,12 +659,13 @@ class SectionEntryIterator {
   std::list<MaoEntry *>::iterator entry_iter_;
 };
 
+
 // Function class
 // TODO(martint): Complete this class
 class Function {
  public:
-  explicit Function(const std::string &name) :
-      name_(name) {}
+  explicit Function(const std::string &name, FunctionID id) :
+      name_(name), id_(id) {}
  private:
   // Name of the function, as given by the function symbol.
   const std::string name_;
@@ -675,40 +687,27 @@ class Section {
  public:
   // Memory for the name is allocated in the constructor and freed
   // in the destructor.
-  explicit Section(const char *name);
-  ~Section();
-  const char *name() const;
+  explicit Section(const char *name, SectionID id) :
+      name_(name), id_(id) {}
+  ~Section() {}
+  std::string name() const {return name_;}
+  SectionID id() const {return id_;}
 
   void AddSubSection(SubSection *subsection);
 
-  SectionEntryIterator EntryBegin(MaoUnit *mao) {
-    std::vector<SubSection *>::iterator subsection_iter =
-        subsections_.begin();
+  SectionEntryIterator EntryBegin(MaoUnit *mao);
+  SectionEntryIterator EntryEnd(MaoUnit *mao);
 
-    if (subsection_iter != subsections_.end()) {
-      SubSection *subsection = *subsection_iter;
-      // Loop to find the first entry in this subsection
-      // This gives a list-iterator to the first entry
-      std::list<MaoEntry *>::iterator entry_iter = mao->EntryBegin();
-      while ((*entry_iter) != subsection->first_entry())
-        ++entry_iter;
-      return SectionEntryIterator(mao, subsection_iter,
-                                  subsections_.end(), entry_iter);
-    } else {
-      // No subsections in the section.
-      return SectionEntryIterator(mao, subsection_iter,
-                                  subsections_.end(), mao->EntryEnd());
-    }
-  }
-
-  SectionEntryIterator EntryEnd(MaoUnit *mao) {
-    return SectionEntryIterator(mao, subsections_.end(),
-                                subsections_.end(), mao->EntryEnd());
-  }
   std::vector<SubSectionID> GetSubsectionIDs() const;
+
+  // Return the last subsection in the section or NULL if section is empty.
+  SubSection *GetLastSubSection() const;
+
  private:
 
-  char *name_;  // e.g. ".text", ".data", etc.
+  const std::string name_;  // e.g. ".text", ".data", etc.
+  SectionID id_;
+
   std::vector<SubSection *> subsections_;
 };
 
