@@ -104,8 +104,8 @@ void CFGBuilder::Build() {
 
   // Main loop processing the IR entries
   // TODO(nvachhar): This should iterate over a given function
-  for (SectionEntryIterator e_iter = section_->EntryBegin(mao_unit_);
-       e_iter != section_->EntryEnd(mao_unit_); ++e_iter) {
+  for (SectionEntryIterator e_iter = section_->EntryBegin();
+       e_iter != section_->EntryEnd(); ++e_iter) {
     MaoEntry *entry = *e_iter;
 
     if (tracing_level() > 2) {

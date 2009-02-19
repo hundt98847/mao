@@ -557,8 +557,8 @@ class SubSection {
   unsigned int number() const { return number_; }
   const std::string &name() const { return name_; }
 
-  MaoEntry * first_entry() const { return first_entry_;}
-  MaoEntry * last_entry() const { return last_entry_;}
+  MaoEntry *first_entry() const { return first_entry_;}
+  MaoEntry *last_entry() const { return last_entry_;}
   void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
   void set_last_entry(MaoEntry *entry);
   SubSectionID id() const { return id_;}
@@ -577,88 +577,19 @@ class SubSection {
   MaoEntry *last_entry_;
 };
 
-
-// TODO(martint): Replace this with a new iterator once the prev/next pointers
-// are implemented and tested
 class SectionEntryIterator {
+  // This class uses the prev/next of the Entries to move.
  public:
   typedef MaoEntry *Entry;
-
-  SectionEntryIterator(
-      MaoUnit *mao,
-      std::vector<SubSection *>::iterator sub_section_iter,
-      std::vector<SubSection *>::iterator sub_section_iter_end,
-      std::list<MaoEntry *>::iterator entry_iter)
-      : mao_(mao),
-        sub_section_iter_(sub_section_iter),
-        sub_section_iter_end_(sub_section_iter_end),
-        entry_iter_(entry_iter) { }
-
-  Entry &operator *() const { return *entry_iter_; }
-
-  SectionEntryIterator &operator ++() {
-    SubSection *sub_section = *sub_section_iter_;
-    Entry entry = *entry_iter_;
-    if (entry == sub_section->last_entry()) {
-      ++sub_section_iter_;
-
-      if (sub_section_iter_ == sub_section_iter_end_) {
-        entry_iter_ = mao_->EntryEnd();
-        return *this;
-      }
-
-      sub_section = *sub_section_iter_;
-      while ((*entry_iter_) != sub_section->first_entry())
-        ++entry_iter_;
-    } else {
-      ++entry_iter_;
-    }
-    return *this;
-  }
-
-  SectionEntryIterator operator ++(int var) {
-    SectionEntryIterator tmp = *this;
-    ++(*this);
-    return tmp;
-  }
-
-  SectionEntryIterator &operator --() {
-    SubSection *sub_section = *sub_section_iter_;
-    Entry entry = *entry_iter_;
-    if (entry == sub_section->first_entry()) {
-      --sub_section_iter_;
-      sub_section = *sub_section_iter_;
-      while ((*entry_iter_) != sub_section->last_entry())
-        --entry_iter_;
-    } else {
-      --entry_iter_;
-    }
-    return *this;
-  }
-
-  SectionEntryIterator operator --(int var) {
-    SectionEntryIterator tmp = *this;
-    --(*this);
-    return tmp;
-  }
-
-  bool operator ==(const SectionEntryIterator &other) const {
-    return (mao_ == other.mao_ &&
-            sub_section_iter_ == other.sub_section_iter_ &&
-            entry_iter_ == other.entry_iter_);
-  }
-
-  bool operator !=(const SectionEntryIterator &other) const {
-    return !((*this) == other);
-  }
-
+  explicit SectionEntryIterator(MaoEntry *entry);
+  MaoEntry *operator *() {return current_entry_;}
+  SectionEntryIterator &operator ++();
+  SectionEntryIterator &operator --();
+  bool operator ==(const SectionEntryIterator &other) const;
+  bool operator !=(const SectionEntryIterator &other) const;
  private:
-  MaoUnit *mao_;
-  std::vector<SubSection *>::iterator sub_section_iter_;
-  std::vector<SubSection *>::iterator sub_section_iter_end_;
-  std::list<MaoEntry *>::iterator entry_iter_;
+  MaoEntry *current_entry_;  // NULL is used for signalling the end.
 };
-
 
 // Function class
 // TODO(martint): Complete this class
@@ -695,8 +626,8 @@ class Section {
 
   void AddSubSection(SubSection *subsection);
 
-  SectionEntryIterator EntryBegin(MaoUnit *mao);
-  SectionEntryIterator EntryEnd(MaoUnit *mao);
+  SectionEntryIterator EntryBegin();
+  SectionEntryIterator EntryEnd();
 
   std::vector<SubSectionID> GetSubsectionIDs() const;
 

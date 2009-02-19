@@ -72,8 +72,8 @@ int main(int argc, const char *argv[]) {
   MAO_ASSERT(section);
   Relax(&mao_unit, section, &sizes);
   int section_size = 0;
-  for (SectionEntryIterator iter = section->EntryBegin(&mao_unit);
-       iter != section->EntryEnd(&mao_unit); ++iter) {
+  for (SectionEntryIterator iter = section->EntryBegin();
+       iter != section->EntryEnd(); ++iter) {
     MaoEntry *entry = *iter;
     int size = sizes[entry];
     printf("%04x %02d:\t", section_size, size);
