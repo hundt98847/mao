@@ -174,8 +174,23 @@ void CFGBuilder::Build() {
             } else {
               target = target_ptr->second;
               if (strcmp(label, target->label())) {
+                bool current_is_target = (target == current);
                 target = BreakUpBBAtLabel(target,
                                           mao_unit_->GetLabelEntry(label));
+
+                // Update label_to_bb_map_ to reflect the split.
+                for (MaoUnit::EntryIterator entry_iter = target->BeginEntries();
+                     entry_iter != target->EndEntries(); ++entry_iter) {
+                  MaoEntry *temp_entry = *entry_iter;
+                  if (temp_entry->Type() == MaoEntry::LABEL) {
+                    LabelEntry *temp_label = static_cast<LabelEntry *>(temp_entry);
+                    label_to_bb_map_[temp_label->name()] = target;
+                  }
+                }
+
+                // The new BB may need to become the current BB
+                if (current_is_target)
+                  current = target;
               }
             }
           }
