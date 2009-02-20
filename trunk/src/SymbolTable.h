@@ -22,6 +22,22 @@
 
 #include "irlink.h"
 
+class SymbolIterator;
+
+struct cltstr {
+  bool operator()(const char* s1, const char* s2) const {
+    return strcmp(s1, s2) < 0;
+  }
+};
+
+
+// TODO(martint):
+// Look at "Generating binary equivalent ..." document and
+// update the symbol table to match the properties listed
+
+// TODO(martint):
+// Create iterators for the symboltable
+
 class Symbol {
   // allocates memory INSIDE the constructor!
  public:
@@ -45,6 +61,7 @@ class Symbol {
   void set_common_align(const unsigned int common_align);
   const char *section_name() const;
   void set_section_name(const char *section_name);
+  bool IsFunction() const {return symbol_type_ == FUNCTION_SYMBOL;}
 
   static const unsigned int kMaxSymbolLength = MAX_SYMBOL_NAME_LENGTH;
 
@@ -70,6 +87,8 @@ class Symbol {
 // Symbol table
 class SymbolTable {
  public:
+
+
   SymbolTable();
   ~SymbolTable();
   Symbol *Add(const char *name, Symbol *symbol);
@@ -83,15 +102,36 @@ class SymbolTable {
   // Prints out the symbol table.
   void Print() const;
   void Print(FILE *out) const;
+
+  typedef std::map<const char *, Symbol *, cltstr> SymbolMap;
+  typedef SymbolMap::const_iterator                ConstSymbolIterator;
+
+  SymbolIterator Begin();
+  SymbolIterator End();
+  ConstSymbolIterator ConstBegin() const;
+  ConstSymbolIterator ConstEnd() const;
+
  private:
   // Used for the map of symbols
-  struct ltstr {
-    bool operator()(const char* s1, const char* s2) const {
-      return strcmp(s1, s2) < 0;
-    }
-  };
-  std::map<const char *, Symbol *, ltstr> table_;
+  SymbolMap table_;
 };
+
+
+// Iterator wrapper for iterating over all the Symbols in a MaoUnit.
+class SymbolIterator {
+ public:
+  SymbolIterator(std::map<const char *, Symbol *, cltstr>::iterator
+                  symbol_iter)
+      : symbol_iter_(symbol_iter) { }
+  Symbol *&operator *() const;
+  SymbolIterator &operator ++();
+  SymbolIterator &operator --();
+  bool operator ==(const SymbolIterator &other) const;
+  bool operator !=(const SymbolIterator &other) const;
+ private:
+  std::map<const char *, Symbol *, cltstr>::iterator symbol_iter_;
+};
+
 
 
 #endif  // SYMBOLTABLE_H_

@@ -24,6 +24,8 @@
 
 #include "MaoDebug.h"
 #include "MaoUnit.h"
+#include "SymbolTable.h"
+
 
 // Class SymbolTable
 
@@ -100,6 +102,52 @@ Symbol *SymbolTable::FindOrCreateAndFind(const char *name) {
   }
   MAO_RASSERT(1);
 }
+
+SymbolIterator SymbolTable::Begin() {
+  return table_.begin();
+}
+
+SymbolIterator SymbolTable::End() {
+  return table_.end();
+}
+
+SymbolTable::ConstSymbolIterator SymbolTable::ConstBegin() const {
+  return table_.begin();
+}
+
+SymbolTable::ConstSymbolIterator SymbolTable::ConstEnd() const {
+  return table_.end();
+}
+
+
+//
+// Class: SymbolIterator
+//
+
+Symbol *&SymbolIterator::operator *() const {
+  return symbol_iter_->second;
+}
+
+SymbolIterator &SymbolIterator::operator ++() {
+  ++symbol_iter_;
+  return *this;
+}
+
+SymbolIterator &SymbolIterator::operator --() {
+  --symbol_iter_;
+  return *this;
+}
+
+bool SymbolIterator::operator ==(const SymbolIterator &other) const {
+  return (symbol_iter_ == other.symbol_iter_);
+}
+
+bool SymbolIterator::operator !=(const SymbolIterator &other) const {
+  return !((*this) == other);
+}
+
+
+
 
 //
 // Class: Symbol

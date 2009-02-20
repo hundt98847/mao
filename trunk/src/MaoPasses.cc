@@ -209,7 +209,7 @@ bool DumpIrPass::Go() {
 
   MAO_ASSERT_MSG(outfile, "Unable to open %s for writing\n",
                  ir_output_filename);
-  mao_unit_->PrintIR(outfile, true, true, true);
+  mao_unit_->PrintIR(outfile, true, true, true, true);
   fclose(outfile);
   return true;
 }

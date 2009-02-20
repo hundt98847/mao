@@ -191,6 +191,7 @@ class ReadInputPass : public MaoPass {
       : MaoPass("READ", NULL, NULL, true) {
     // Use gas to parse input file.
     MAO_ASSERT(!as_main(argc, argv));
+    mao_unit->FindFunctions();
   }
 };
 

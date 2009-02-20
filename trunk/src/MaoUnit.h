@@ -63,14 +63,20 @@ struct ltstr {
 
 class MaoUnit {
  public:
-  struct ltstr {
-    bool operator()(const char* s1, const char* s2) const {
-      return strcmp(s1, s2) < 0;
-    }
-  };
+//   struct ltstr {
+//     bool operator()(const char* s1, const char* s2) const {
+//       return strcmp(s1, s2) < 0;
+//     }
+//   };
   typedef std::vector<MaoEntry *>      EntryVector;
   typedef EntryVector::iterator        EntryIterator;
   typedef EntryVector::const_iterator  ConstEntryIterator;
+
+
+  typedef std::vector<Function *>         FunctionVector;
+  typedef FunctionVector::iterator        FunctionIterator;
+  typedef FunctionVector::const_iterator  ConstFunctionIterator;
+
 
   explicit MaoUnit(MaoOptions *mao_options);
   ~MaoUnit();
@@ -87,9 +93,7 @@ class MaoUnit {
   // create_default_section - signals if an entry can trigger automatic creation
   //                          of a new section, if there is no "current" section
   bool AddEntry(MaoEntry *entry, bool create_default_section);
-//   bool AddEntry(MaoEntry *entry, bool build_sections,
-//                 bool create_default_section,
-//                 std::list<MaoEntry *>::iterator list_iter);
+
   // Add a common symbol to the symbol table
   bool AddCommSymbol(const char *name, unsigned int common_size,
                      unsigned int common_align);
@@ -112,9 +116,9 @@ class MaoUnit {
   void PrintMaoUnit() const;
   void PrintMaoUnit(FILE *out) const;
   void PrintIR(bool print_entries, bool print_sections,
-               bool print_subsections) const;
+               bool print_subsections, bool print_functions) const;
   void PrintIR(FILE *out, bool print_entries, bool print_sections,
-               bool print_subsections) const;
+               bool print_subsections, bool print_functions) const;
 
 
   // Returns the section matching the given name. Returns
@@ -137,6 +141,15 @@ class MaoUnit {
   ConstSectionIterator ConstSectionBegin() const;
   ConstSectionIterator ConstSectionEnd() const;
 
+  FunctionIterator FunctionBegin();
+  FunctionIterator FunctionEnd();
+  ConstFunctionIterator ConstFunctionBegin() const;
+  ConstFunctionIterator ConstFunctionEnd() const;
+
+
+  // Populate the function_ member
+  void FindFunctions();
+
  private:
   // Create the section section_name if it does not already exists. Returns a
   // pointer the section.
@@ -144,7 +157,6 @@ class MaoUnit {
 
   // Vector of the entries in the unit. The id of the entry
   // is also the index into this vector.
-  // TODO(martint): fix the code that handles prev/next pointers.
   EntryVector entry_vector_;
 
   // A list of all subsections found in the unit.
@@ -156,6 +168,9 @@ class MaoUnit {
   // its section.
   std::map<const char *, Section *, ltstr> sections_;
 
+  // Holds the function identified in the MaoUnit
+  FunctionVector  functions_;
+
   // Pointer to current subsection. Used when parsing the assembly file.
   SubSection *current_subsection_;
 
@@ -165,8 +180,8 @@ class MaoUnit {
   // Maps label-names to the corresponding label entry.
   std::map<const char *, LabelEntry *, ltstr> labels_;
 
-
   // Maps an entry to the corresponding Function and SubSection.
+  // TODO(martint): populate these maps
   std::map<MaoEntry *, Function *>   entry_to_function_;
   std::map<MaoEntry *, SubSection *> entry_to_subsection_;
 
@@ -201,9 +216,6 @@ class ConstSectionIterator {
  private:
   std::map<const char *, Section *, ltstr>::const_iterator section_iter_;
 };
-
-
-
 
 // Base class for all types of entries in the MaoUnit. Example of entries
 // are Labels, Directives, and Instructions
@@ -596,17 +608,26 @@ class SubSection {
 class Function {
  public:
   explicit Function(const std::string &name, const FunctionID id) :
-      name_(name), id_(id) {}
+      name_(name), id_(id), first_entry_(0), last_entry_(0) {}
+
+  void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
+  void set_last_entry(MaoEntry *entry) { last_entry_ = entry;}
+  MaoEntry *first_entry() const { return first_entry_;}
+  MaoEntry *last_entry() const { return last_entry_;}
+
+  const std::string name() const {return name_;}
+  FunctionID id() const {return id_;}
+
  private:
   // Name of the function, as given by the function symbol.
   const std::string name_;
 
+  // The uniq id of this function.
+  const FunctionID id_;
+
   // Pointers to the first and last entry of the function.
   MaoEntry *first_entry_;
   MaoEntry *last_entry_;
-
-  // The uniq id of this function.
-  const FunctionID id_;
 
   // Pointer to subsection that this function starts in.
   SubSection *subsection_;
