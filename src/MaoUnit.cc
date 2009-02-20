@@ -38,6 +38,7 @@ MaoUnit::MaoUnit(MaoOptions *mao_options)
   entry_vector_.clear();
   sub_sections_.clear();
   sections_.clear();
+  functions_.clear();
 }
 
 MaoUnit::~MaoUnit() {
@@ -93,13 +94,13 @@ void MaoUnit::PrintMaoUnit(FILE *out) const {
 }
 
 void MaoUnit::PrintIR(bool print_entries, bool print_sections,
-                      bool print_subsections) const {
+                      bool print_subsections, bool print_functions) const {
   PrintIR(stdout, print_entries, print_sections, print_subsections);
 }
 
 
 void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
-                      bool print_subsections) const {
+                      bool print_subsections, bool print_functions) const {
   if (print_entries) {
     // Print the entries
     for (std::vector<SubSection *>::const_iterator iter = sub_sections_.begin();
@@ -148,6 +149,20 @@ void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
       fprintf(out, "[%3d] [%d-%d]: %s\n", ss->id(),
               ss->first_entry()->id(), ss->last_entry()->id(),
               ss->name().c_str());
+    }
+  }
+
+  if (print_functions) {
+    // Print the functions
+    fprintf(out, "Functions : \n");
+    for (MaoUnit::ConstFunctionIterator iter = ConstFunctionBegin();
+         iter != ConstFunctionEnd();
+         ++iter) {
+      Function *function = *iter;
+      fprintf(out, "[%3d] [%3d-]: %s\n",
+              function->id(),
+              function->first_entry()->id(),
+              function->name().c_str());
     }
   }
 }
@@ -342,6 +357,22 @@ const char *MaoUnit::BBNameGen::GetUniqueName() {
   return buff;
 }
 
+MaoUnit::FunctionIterator MaoUnit::FunctionBegin() {
+  return functions_.begin();
+}
+
+MaoUnit::FunctionIterator MaoUnit::FunctionEnd() {
+  return functions_.end();
+}
+
+MaoUnit::ConstFunctionIterator MaoUnit::ConstFunctionBegin() const {
+  return functions_.begin();
+}
+
+MaoUnit::ConstFunctionIterator MaoUnit::ConstFunctionEnd() const {
+  return functions_.end();
+}
+
 SectionIterator MaoUnit::SectionBegin() {
   return SectionIterator(sections_.begin());
 }
@@ -350,7 +381,6 @@ SectionIterator MaoUnit::SectionEnd() {
   return SectionIterator(sections_.end());
 }
 
-
 ConstSectionIterator MaoUnit::ConstSectionBegin() const {
   return ConstSectionIterator(sections_.begin());
 }
@@ -358,6 +388,31 @@ ConstSectionIterator MaoUnit::ConstSectionBegin() const {
 ConstSectionIterator MaoUnit::ConstSectionEnd() const {
   return ConstSectionIterator(sections_.end());
 }
+
+
+void MaoUnit::FindFunctions() {
+  // Iterate over the entries, and identify the functions.
+
+  // Use the symbol-table to find out the names of
+  // the functions in the code!
+  for (SymbolIterator iter = symbol_table_.Begin();
+       iter != symbol_table_.End();
+       ++iter) {
+    Symbol *symbol = *iter;
+    if (symbol->IsFunction()) {
+      // Find the entry given the label now
+      MaoEntry *entry = GetLabelEntry(symbol->name());
+      // TODO(martint): make sure we free the functions
+      // TODO(martint): create ID factory for functions
+      Function *function = new Function(symbol->name(), functions_.size());
+      function->set_first_entry(entry);
+      functions_.push_back(function);
+      // TODO(martint): identify the last entry!
+    }
+  }
+  return;
+}
+
 
 //
 // Class: SectionIterator
