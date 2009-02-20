@@ -36,19 +36,11 @@ extern "C" const char *S_GET_NAME(symbolS *s);
 MaoUnit::MaoUnit(MaoOptions *mao_options)
     : current_subsection_(0), mao_options_(mao_options) {
   entry_vector_.clear();
-  entry_list_.clear();
   sub_sections_.clear();
   sections_.clear();
 }
 
 MaoUnit::~MaoUnit() {
-  // Remove entries and free allocated memory
-  for (std::list<MaoEntry *>::iterator iter =
-           entry_list_.begin();
-       iter != entry_list_.end(); ++iter) {
-    delete *iter;
-  }
-
   // Remove subsections and free allocated memory
   for (std::vector<SubSection *>::iterator iter =
            sub_sections_.begin();
@@ -87,14 +79,16 @@ class EntryDumper : public MaoDebugAction {
 // Prints all entries in the MaoUnit
 void MaoUnit::PrintMaoUnit(FILE *out) const {
   EntryDumper entry_dumper;
-
-  for (std::list<MaoEntry *>::const_iterator iter =
-           entry_list_.begin();
-       iter != entry_list_.end(); ++iter) {
-    MaoEntry *e = *iter;
-
-    entry_dumper.set_entry(e);
-    e->PrintEntry(out);
+  for (std::vector<SubSection *>::const_iterator iter = sub_sections_.begin();
+       iter != sub_sections_.end(); ++iter) {
+    SubSection *ss = *iter;
+    for (SectionEntryIterator e_iter = ss->EntryBegin();
+         e_iter != ss->EntryEnd();
+         ++e_iter) {
+      MaoEntry *e = *e_iter;
+      entry_dumper.set_entry(e);
+      e->PrintEntry(out);
+    }
   }
 }
 
@@ -108,16 +102,20 @@ void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
                       bool print_subsections) const {
   if (print_entries) {
     // Print the entries
-    for (std::list<MaoEntry *>::const_iterator e_iter =
-             entry_list_.begin();
-         e_iter != entry_list_.end(); ++e_iter) {
-      MaoEntry *e = *e_iter;
-      fprintf(out, "[%5d][%c] ", e->id(), e->GetDescriptiveChar());
-      if (MaoEntry::INSTRUCTION == e->Type()) {
-        fprintf(out, "\t");
+    for (std::vector<SubSection *>::const_iterator iter = sub_sections_.begin();
+         iter != sub_sections_.end(); ++iter) {
+      SubSection *ss = *iter;
+      for (SectionEntryIterator e_iter = ss->EntryBegin();
+           e_iter != ss->EntryEnd();
+           ++e_iter) {
+        MaoEntry *e = *e_iter;
+        fprintf(out, "[%5d][%c] ", e->id(), e->GetDescriptiveChar());
+        if (MaoEntry::INSTRUCTION == e->Type()) {
+          fprintf(out, "\t");
+        }
+        e->PrintIR(out);
+        fprintf(out, "\n");
       }
-      e->PrintIR(out);
-      fprintf(out, "\n");
     }
   }
 
@@ -173,7 +171,7 @@ std::pair<bool, Section *> MaoUnit::FindOrCreateAndFind(
   std::map<const char *, Section *, ltstr>::const_iterator it =
       sections_.find(section_name);
   if (it == sections_.end()) {
-    // Create it!
+    // Create it.
     // TODO(martint): Use an ID factory for the ID
     section = new Section(section_name, sections_.size());
     sections_[section->name().c_str()] = section;
@@ -230,16 +228,10 @@ LabelEntry *MaoUnit::GetLabelEntry(const char *label_name) const {
   return iter->second;
 }
 
-bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
-                       bool create_default_section) {
-  return AddEntry(entry, build_sections, create_default_section,
-                  entry_list_.end());
-}
 
 // Add an entry to the MaoUnit list
-bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
-                       bool create_default_section,
-                       std::list<MaoEntry *>::iterator list_iter) {
+bool MaoUnit::AddEntry(MaoEntry *entry,
+                       bool  create_default_section) {
   // Variables that _might_ get used.
   LabelEntry *label_entry;
   DirectiveEntry *directive_entry;
@@ -251,8 +243,13 @@ bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
   MAO_ASSERT(entry);
   entry->set_id(entry_index);
 
+  if (!current_subsection_ && !create_default_section) {
+    SetSubSection("mao_start_section", 0,  entry);
+    current_subsection_->set_start_section(true);
+  }
   // Create a subsection if necessary
-  if (build_sections && create_default_section && !current_subsection_) {
+  if (create_default_section &&
+      (!current_subsection_ || current_subsection_->start_section())) {
     SetSubSection(DEFAULT_SECTION_NAME, 0, entry);
     MAO_ASSERT(current_subsection_);
   }
@@ -297,10 +294,9 @@ bool MaoUnit::AddEntry(MaoEntry *entry, bool build_sections,
 
   // Add the entry to the compilation unit
   entry_vector_.push_back(entry);
-  entry_list_.insert(list_iter, entry);
 
   // Update subsection information
-  if (build_sections && current_subsection_) {
+  if (current_subsection_) {
     current_subsection_->set_last_entry(entry);
   }
 
@@ -1429,6 +1425,21 @@ void SubSection::set_last_entry(MaoEntry *entry) {
   last_entry_ = entry;
 }
 
+
+SectionEntryIterator SubSection::EntryBegin() {
+  return SectionEntryIterator(first_entry());
+}
+
+SectionEntryIterator SubSection::EntryEnd() {
+  MaoEntry *entry = last_entry();
+  if (entry) {
+    entry = entry->next();
+  }
+  return SectionEntryIterator(entry);
+}
+
+
+
 //
 // Class: Section
 //
@@ -1481,8 +1492,6 @@ SectionEntryIterator &SectionEntryIterator::operator ++() {
   return *this;
 }
 
-// TODO(martint): What should happen if we iterate before the beginning?
-//                Currently it will create a NULL pointer.
 SectionEntryIterator &SectionEntryIterator::operator --() {
   current_entry_ = current_entry_->prev();
   return *this;

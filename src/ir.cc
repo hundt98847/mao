@@ -73,7 +73,7 @@ static void link_directive_tail(
   DirectiveEntry *directive =
       new DirectiveEntry(opcode, operands,
                          link_context.line_number, NULL, maounit_);
-  maounit_->AddEntry(directive, true, false);
+  maounit_->AddEntry(directive, false);
 }
 
 void link_insn(i386_insn *insn, size_t SizeOfInsn, const char *line_verbatim) {
@@ -84,7 +84,7 @@ void link_insn(i386_insn *insn, size_t SizeOfInsn, const char *line_verbatim) {
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new InstructionEntry(inst,
                                           link_context.line_number,
-                                          line_verbatim, maounit_), true, true);
+                                          line_verbatim, maounit_), true);
 }
 
 void link_label(const char *name, const char *line_verbatim) {
@@ -94,7 +94,7 @@ void link_label(const char *name, const char *line_verbatim) {
   struct link_context_s link_context = get_link_context();
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new LabelEntry(name, link_context.line_number,
-                                    line_verbatim, maounit_), true, true);
+                                    line_verbatim, maounit_), true);
 }
 
 void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,
@@ -140,7 +140,7 @@ void link_debug(const char *key, const char *value, const char *line_verbatim) {
   struct link_context_s link_context = get_link_context();
   MAO_ASSERT(maounit_);
   maounit_->AddEntry(new DebugEntry(key, value, link_context.line_number,
-                                    line_verbatim, maounit_), true, false);
+                                    line_verbatim, maounit_), false);
 }
 
 

@@ -187,13 +187,14 @@ class AssemblyPass : public MaoPass {
 //
 class ReadInputPass : public MaoPass {
  public:
-  ReadInputPass(int argc, char *argv[])
+  ReadInputPass(int argc, char *argv[], MaoUnit *mao_unit)
       : MaoPass("READ", NULL, NULL, true) {
+    // Use gas to parse input file.
     MAO_ASSERT(!as_main(argc, argv));
   }
 };
 
-void ReadInput(int argc, char *argv[]);
+void ReadInput(int argc, char *argv[], MaoUnit *mao_unit);
 
 
 // DumpIrPass
