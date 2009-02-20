@@ -58,15 +58,15 @@ int main(int argc, const char *argv[]) {
   MaoPassManager *mao_pass_man = InitPasses();
 
   // global init passes
-  ReadInput(new_argc, new_argv);
+  ReadInput(new_argc, new_argv, &mao_unit);
 
   // for (function iterator....)
-  //     TODO(rhundt): add loop over functinos
+  // TODO(rhundt): add loop over functinos
   CreateCFG(&mao_unit, &cfg);
   PerformLoopRecognition(&mao_unit, &cfg);
 
   // for (section iterator...)
-  //     TODO(nvachhar): add loop over sections
+  // TODO(nvachhar): add loop over sections
   MaoRelaxer::SizeMap sizes;
   Section *section = mao_unit.GetSection(".text");
   MAO_ASSERT(section);

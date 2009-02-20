@@ -86,11 +86,10 @@ class MaoUnit {
   //                  typically not when adding extra entries later on.
   // create_default_section - signals if an entry can trigger automatic creation
   //                          of a new section, if there is no "current" section
-  bool AddEntry(MaoEntry *entry, bool build_sections,
-                bool create_default_section);
-  bool AddEntry(MaoEntry *entry, bool build_sections,
-                bool create_default_section,
-                std::list<MaoEntry *>::iterator list_iter);
+  bool AddEntry(MaoEntry *entry, bool create_default_section);
+//   bool AddEntry(MaoEntry *entry, bool build_sections,
+//                 bool create_default_section,
+//                 std::list<MaoEntry *>::iterator list_iter);
   // Add a common symbol to the symbol table
   bool AddCommSymbol(const char *name, unsigned int common_size,
                      unsigned int common_align);
@@ -117,13 +116,6 @@ class MaoUnit {
   void PrintIR(FILE *out, bool print_entries, bool print_sections,
                bool print_subsections) const;
 
-  std::list<MaoEntry *>::iterator EntryBegin() {
-    return entry_list_.begin();
-  }
-
-  std::list<MaoEntry *>::iterator EntryEnd() {
-    return entry_list_.begin();
-  }
 
   // Returns the section matching the given name. Returns
   // NULL if no match is found.
@@ -154,10 +146,6 @@ class MaoUnit {
   // is also the index into this vector.
   // TODO(martint): fix the code that handles prev/next pointers.
   EntryVector entry_vector_;
-
-  // List of all the entries in the unit.
-  // TODO(martint): complete code that makes this redundant.
-  std::list<MaoEntry *> entry_list_;
 
   // A list of all subsections found in the unit.
   // Each subsection should have a pointer to the first and last
@@ -240,8 +228,8 @@ class MaoEntry {
   virtual char GetDescriptiveChar() const = 0;
   virtual EntryType Type() const = 0;
 
-  EntryID id() const { return id_; }
-  void set_id(EntryID id) {id_ = id;}
+  const EntryID id() const { return id_; }
+  void set_id(const EntryID id) {id_ = id;}
 
   // Property methods
   virtual bool HasFallThrough() const = 0;
@@ -538,44 +526,6 @@ class InstructionEntry : public MaoEntry {
   bool PrintSuffix() const;
 };
 
-// A Subsection is part of a section. The subsection concept allows the assembly
-// file to write the code more freely, but still keep the data organized in
-// sections. Each subsection has a pointer to the section it belongs, as well
-// as a number to allow the subsections to be ordered correctly.
-class SubSection {
- public:
-  // Constructor needs subsection number, a pointer to the actual section, and
-  // the assembly code needed to create the subsection.
-  explicit SubSection(const SubSectionID id, unsigned int subsection_number,
-                      const char *name)
-      : number_(subsection_number),
-        name_(name),
-        id_(id),
-        first_entry_(NULL),
-        last_entry_(NULL) { }
-
-  unsigned int number() const { return number_; }
-  const std::string &name() const { return name_; }
-
-  MaoEntry *first_entry() const { return first_entry_;}
-  MaoEntry *last_entry() const { return last_entry_;}
-  void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
-  void set_last_entry(MaoEntry *entry);
-  SubSectionID id() const { return id_;}
-
-  //  Section *section() const { return section_; }
-
- private:
-  // The subsection number
-  const unsigned int number_;
-  const std::string name_;
-
-  const SubSectionID id_;
-
-  // Points to the first and last entry for the subsection.
-  MaoEntry *first_entry_;
-  MaoEntry *last_entry_;
-};
 
 class SectionEntryIterator {
   // This class uses the prev/next of the Entries to move.
@@ -591,11 +541,61 @@ class SectionEntryIterator {
   MaoEntry *current_entry_;  // NULL is used for signalling the end.
 };
 
+
+
+// A Subsection is part of a section. The subsection concept allows the assembly
+// file to write the code more freely, but still keep the data organized in
+// sections.
+class SubSection {
+ public:
+  // Constructor needs subsection number, a pointer to the actual section, and
+  // the assembly code needed to create the subsection.
+  explicit SubSection(const SubSectionID id, unsigned int subsection_number,
+                      const char *name)
+      : number_(subsection_number),
+        name_(name),
+        id_(id),
+        first_entry_(NULL),
+        last_entry_(NULL),
+        start_section_(false) { }
+
+  unsigned int number() const { return number_; }
+  const std::string &name() const { return name_; }
+
+  MaoEntry *first_entry() const { return first_entry_;}
+  MaoEntry *last_entry() const { return last_entry_;}
+  void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
+  void set_last_entry(MaoEntry *entry);
+  SubSectionID id() const { return id_;}
+
+  void set_start_section(bool value) {start_section_ = value;}
+  bool start_section() const {return start_section_;}
+
+  SectionEntryIterator EntryBegin();
+  SectionEntryIterator EntryEnd();
+
+ private:
+  // The subsection number
+  const unsigned int number_;
+  const std::string name_;
+
+  const SubSectionID id_;
+
+  // Points to the first and last entry for the subsection.
+  MaoEntry *first_entry_;
+  MaoEntry *last_entry_;
+
+
+  // For special section that holds the inital directies that are not
+  // part of the first "real" section.
+  bool start_section_;
+};
+
 // Function class
 // TODO(martint): Complete this class
 class Function {
  public:
-  explicit Function(const std::string &name, FunctionID id) :
+  explicit Function(const std::string &name, const FunctionID id) :
       name_(name), id_(id) {}
  private:
   // Name of the function, as given by the function symbol.
@@ -606,7 +606,7 @@ class Function {
   MaoEntry *last_entry_;
 
   // The uniq id of this function.
-  FunctionID id_;
+  const FunctionID id_;
 
   // Pointer to subsection that this function starts in.
   SubSection *subsection_;
@@ -618,7 +618,7 @@ class Section {
  public:
   // Memory for the name is allocated in the constructor and freed
   // in the destructor.
-  explicit Section(const char *name, SectionID id) :
+  explicit Section(const char *name, const SectionID id) :
       name_(name), id_(id) {}
   ~Section() {}
   std::string name() const {return name_;}
@@ -637,7 +637,7 @@ class Section {
  private:
 
   const std::string name_;  // e.g. ".text", ".data", etc.
-  SectionID id_;
+  const SectionID id_;
 
   std::vector<SubSection *> subsections_;
 };

@@ -181,9 +181,9 @@ class SourceDebugAction : public MaoDebugAction {
 };
 
 
-void ReadInput(int argc, char *argv[]) {
+void ReadInput(int argc, char *argv[], MaoUnit *mao_unit) {
   SourceDebugAction spos;
-  ReadInputPass reader(argc, argv);
+  ReadInputPass reader(argc, argv, mao_unit);
 }
 
 
