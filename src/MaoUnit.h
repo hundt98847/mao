@@ -63,11 +63,7 @@ struct ltstr {
 
 class MaoUnit {
  public:
-//   struct ltstr {
-//     bool operator()(const char* s1, const char* s2) const {
-//       return strcmp(s1, s2) < 0;
-//     }
-//   };
+
   typedef std::vector<MaoEntry *>      EntryVector;
   typedef EntryVector::iterator        EntryIterator;
   typedef EntryVector::const_iterator  ConstEntryIterator;
@@ -146,8 +142,7 @@ class MaoUnit {
   ConstFunctionIterator ConstFunctionBegin() const;
   ConstFunctionIterator ConstFunctionEnd() const;
 
-
-  // Populate the function_ member
+  // Find all Functions in the MaoUnit and populate functions_
   void FindFunctions();
 
  private:
@@ -604,7 +599,9 @@ class SubSection {
 };
 
 // Function class
-// TODO(martint): Complete this class
+// A function is defined as a sequence of instructions from a
+// label matching a symbol with the type Function to the next function,
+// or to the end of the section.
 class Function {
  public:
   explicit Function(const std::string &name, const FunctionID id) :
@@ -617,6 +614,13 @@ class Function {
 
   const std::string name() const {return name_;}
   FunctionID id() const {return id_;}
+
+  // TODO(martint): Recondier iterator name.
+  SectionEntryIterator EntryBegin();
+  SectionEntryIterator EntryEnd();
+
+  void Print();
+  void Print(FILE *out);
 
  private:
   // Name of the function, as given by the function symbol.
@@ -632,7 +636,6 @@ class Function {
   // Pointer to subsection that this function starts in.
   SubSection *subsection_;
 };
-
 
 // A section
 class Section {

@@ -25,8 +25,6 @@
 
 extern "C" const char *S_GET_NAME(symbolS *s);
 
-
-
 //
 // Class: MaoUnit
 //
@@ -48,6 +46,15 @@ MaoUnit::~MaoUnit() {
        iter != sub_sections_.end(); ++iter) {
     delete *iter;
   }
+
+
+  // Remove functions and free allocated memory
+  for (MaoUnit::ConstFunctionIterator iter = ConstFunctionBegin();
+      iter != ConstFunctionEnd();
+      ++iter) {
+    delete *iter;
+  }
+
 
   // Remove sections and free allocated memory
   for (std::map<const char *, Section *, ltstr>::const_iterator iter =
@@ -159,9 +166,10 @@ void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
          iter != ConstFunctionEnd();
          ++iter) {
       Function *function = *iter;
-      fprintf(out, "[%3d] [%3d-]: %s\n",
+      fprintf(out, "[%3d] [%3d-%3d]: %s\n",
               function->id(),
               function->first_entry()->id(),
+              function->last_entry()->id(),
               function->name().c_str());
     }
   }
@@ -389,10 +397,7 @@ ConstSectionIterator MaoUnit::ConstSectionEnd() const {
   return ConstSectionIterator(sections_.end());
 }
 
-
 void MaoUnit::FindFunctions() {
-  // Iterate over the entries, and identify the functions.
-
   // Use the symbol-table to find out the names of
   // the functions in the code!
   for (SymbolIterator iter = symbol_table_.Begin();
@@ -402,12 +407,45 @@ void MaoUnit::FindFunctions() {
     if (symbol->IsFunction()) {
       // Find the entry given the label now
       MaoEntry *entry = GetLabelEntry(symbol->name());
-      // TODO(martint): make sure we free the functions
       // TODO(martint): create ID factory for functions
       Function *function = new Function(symbol->name(), functions_.size());
       function->set_first_entry(entry);
+
+      // Find the last entry in this function:
+      // Initial idea:
+      // Move forward until you each one of the following two:
+      //   1. Start of a new function
+      //      (Check for labels that are marked as functions
+      //       in the symbol table).
+      //   2. End of the section.
+      //      (The next pointer of the Entry is NULL)
+      MaoEntry *entry_tail;
+      // Assume that the function starts with a label
+      // and holds atleast one more entry!
+      MAO_ASSERT(entry->Type() == MaoEntry::LABEL);
+      entry_tail = entry->next();
+      MAO_ASSERT(entry_tail->prev() == entry);
+      MAO_ASSERT(entry_tail);
+      // Stops at the end of a section, or breaks when a new functions is found.
+      while (entry_tail->next()) {
+        // check if we found the next function?
+        if (entry_tail->next()->Type() == MaoEntry::LABEL) {
+          // is it a function?
+          LabelEntry *label_entry =
+              static_cast<LabelEntry *>(entry_tail->next());
+          Symbol *l_symbol = symbol_table_.Find(label_entry->name());
+          MAO_ASSERT(l_symbol);
+          if (l_symbol->IsFunction()) {
+            break;
+          }
+        }
+        entry_tail = entry_tail->next();
+      }
+
+      // Now entry_tail can not move more forward.
+      // TODO(martint): Should we move it back though?
+      function->set_last_entry(entry_tail);
       functions_.push_back(function);
-      // TODO(martint): identify the last entry!
     }
   }
   return;
@@ -1475,7 +1513,7 @@ void SubSection::set_last_entry(MaoEntry *entry) {
   // handled in AddEntry().
   if (entry != first_entry_) {
     last_entry_->set_next(entry);
-    entry->set_prev(entry);
+    entry->set_prev(last_entry_);
   }
   last_entry_ = entry;
 }
@@ -1560,4 +1598,36 @@ bool SectionEntryIterator::operator ==(const SectionEntryIterator &other)
 bool SectionEntryIterator::operator !=(const SectionEntryIterator &other)
     const {
   return !((*this) == other);
+}
+
+
+//
+// Class: Function
+//
+
+SectionEntryIterator Function::EntryBegin() {
+  return SectionEntryIterator(first_entry());
+}
+
+SectionEntryIterator Function::EntryEnd() {
+  MaoEntry *entry = last_entry();
+  if (entry) {
+    entry = entry->next();
+  }
+  return SectionEntryIterator(entry);
+}
+
+
+void Function::Print() {
+  Print(stdout);
+}
+
+void Function::Print(FILE *out) {
+  fprintf(out, "Function: %s\n", name().c_str());
+  for (SectionEntryIterator iter = EntryBegin();
+       iter != EntryEnd();
+       ++iter) {
+    MaoEntry *entry = *iter;
+    entry->PrintEntry(out);
+  }
 }
