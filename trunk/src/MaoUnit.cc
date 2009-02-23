@@ -217,7 +217,8 @@ bool MaoUnit::SetSubSection(const char *section_name,
   // Create a new subsection
   // TODO(martint): create ID factory
   SubSection *subsection = new SubSection(sub_sections_.size(),
-                                          subsection_number, section_name);
+                                          subsection_number, section_name,
+                                          section);
 
   // Makes it possible to link entries between subsections
   SubSection *last_subsection = section->GetLastSubSection();
@@ -286,7 +287,8 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
       label_entry = static_cast<LabelEntry *>(entry);
       MAO_ASSERT(labels_.insert(std::make_pair(label_entry->name(),
                                                label_entry)).second);
-      symbol = symbol_table_.FindOrCreateAndFind(label_entry->name());
+      symbol = symbol_table_.FindOrCreateAndFind(label_entry->name(),
+                                                current_subsection_->section());
       MAO_ASSERT(symbol);
       // TODO(martint): The codes does not currently set the correct
       //                section for all labels in the symboltable.
@@ -337,7 +339,12 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
   if ( !symbol_table_.Exists(name) ) {
     // If symbol does not exists,
     // insert it. with default properties
-    symbol = symbol_table_.Add(name, new Symbol(name));
+    // TODO(martint): Use a ID factory
+    Section *section = current_subsection_?
+        (current_subsection_->section()):
+        NULL;
+    symbol = symbol_table_.Add(name,
+                               new Symbol(name, symbol_table_.Size(), section));
     symbol->set_symbol_type(OBJECT_SYMBOL);
   } else {
     // Get the symbol
@@ -450,6 +457,25 @@ void MaoUnit::FindFunctions() {
   }
   return;
 }
+
+
+Symbol *MaoUnit::AddSymbol(const char *name) {
+  Section *section = current_subsection_?
+      (current_subsection_->section()):
+      NULL;
+  // TODO(martint): Use a ID factory
+  return symbol_table_.Add(name,
+                           new Symbol(name, symbol_table_.Size(), section));
+}
+
+
+Symbol *MaoUnit::FindOrCreateAndFindSymbol(const char *name) {
+  Section *section = current_subsection_?
+      (current_subsection_->section()):
+      NULL;
+  return symbol_table_.FindOrCreateAndFind(name, section);
+}
+
 
 
 //

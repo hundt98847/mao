@@ -149,6 +149,9 @@ class AssemblyPass : public MaoPass {
     mao_options_(mao_options) {
   }
 
+  void PrintAsmSymbolHeader(FILE *out);
+
+
   bool Go() {
     if (mao_options_->write_assembly()) {
       Trace(1, "Generate Assembly File: %s",
@@ -160,13 +163,12 @@ class AssemblyPass : public MaoPass {
         fopen(mao_options_->assembly_output_file_name(), "w");
       MAO_ASSERT(outfile);
 
+      // Print out the code that makes sure that the symbol
+      // table is in the original order
+      PrintAsmSymbolHeader(outfile);
+
       fprintf(outfile, "# MaoUnit:\n");
       mao_unit_->PrintMaoUnit(outfile);
-
-      fprintf(outfile, "# Symbol table:\n");
-      SymbolTable *symbol_table = mao_unit_->GetSymbolTable();
-      MAO_ASSERT(symbol_table);
-      symbol_table->Print(outfile);
 
       if (outfile != stdout)
         fclose(outfile);
@@ -210,6 +212,20 @@ class DumpIrPass : public MaoPass {
  private:
   MaoUnit    *mao_unit_;
 };
+
+// DumpSymbolTablePass
+
+//
+// Pass to to dump out the symboltable
+//
+class DumpSymbolTablePass : public MaoPass {
+ public:
+  explicit DumpSymbolTablePass(MaoUnit *mao_unit);
+  bool Go();
+ private:
+  MaoUnit    *mao_unit_;
+};
+
 
 //
 // External Entry Points

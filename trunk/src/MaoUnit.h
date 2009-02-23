@@ -30,6 +30,8 @@
 #include "./irlink.h"
 #include "./MaoOptions.h"
 #include "./MaoUtil.h"
+// TODO(martint): Find a better way make Section available int he Symbol table
+class Section;
 #include "./SymbolTable.h"
 
 #define DEFAULT_SECTION_NAME ".text"
@@ -144,6 +146,11 @@ class MaoUnit {
 
   // Find all Functions in the MaoUnit and populate functions_
   void FindFunctions();
+
+
+  // Symbol handling
+  Symbol *AddSymbol(const char *name);
+  Symbol *FindOrCreateAndFindSymbol(const char *name);
 
  private:
   // Create the section section_name if it does not already exists. Returns a
@@ -558,13 +565,14 @@ class SubSection {
   // Constructor needs subsection number, a pointer to the actual section, and
   // the assembly code needed to create the subsection.
   explicit SubSection(const SubSectionID id, unsigned int subsection_number,
-                      const char *name)
+                      const char *name, Section *section)
       : number_(subsection_number),
         name_(name),
         id_(id),
         first_entry_(NULL),
         last_entry_(NULL),
-        start_section_(false) { }
+        start_section_(false),
+        section_(section) { }
 
   unsigned int number() const { return number_; }
   const std::string &name() const { return name_; }
@@ -577,6 +585,8 @@ class SubSection {
 
   void set_start_section(bool value) {start_section_ = value;}
   bool start_section() const {return start_section_;}
+
+  Section *section() const {return section_;}
 
   SectionEntryIterator EntryBegin();
   SectionEntryIterator EntryEnd();
@@ -592,10 +602,12 @@ class SubSection {
   MaoEntry *first_entry_;
   MaoEntry *last_entry_;
 
-
   // For special section that holds the inital directies that are not
   // part of the first "real" section.
   bool start_section_;
+
+  // Points to the section
+  Section *section_;
 };
 
 // Function class
