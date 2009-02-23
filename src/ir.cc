@@ -110,7 +110,7 @@ void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,
   MAO_ASSERT(symbol_table);
   // Create symbol if needed
   if (!symbol_table->Exists(name)) {
-    symbol_table->Add(name, new Symbol(name));
+    maounit_->AddSymbol(name);
   }
   // Get symbol
   Symbol *symbol = symbol_table->Find(name);
@@ -193,7 +193,8 @@ void link_type(symbolS *symbol, SymbolType symbol_type,
   MAO_ASSERT(maounit_);
   SymbolTable *symbol_table = maounit_->GetSymbolTable();
   MAO_ASSERT(symbol_table);
-  Symbol *mao_symbol = symbol_table->FindOrCreateAndFind(symbol->bsym->name);
+  Symbol *mao_symbol = maounit_->FindOrCreateAndFindSymbol(symbol->bsym->name);
+
   MAO_ASSERT(mao_symbol);
   mao_symbol->set_symbol_type(symbol_type);
 
@@ -220,7 +221,7 @@ void link_size(const char *name, unsigned int size, const char *line_verbatim) {
   MAO_ASSERT(maounit_);
   SymbolTable *symbol_table = maounit_->GetSymbolTable();
   MAO_ASSERT(symbol_table);
-  Symbol *symbol = symbol_table->FindOrCreateAndFind(name);
+  Symbol *symbol = maounit_->FindOrCreateAndFindSymbol(name);
   MAO_ASSERT(symbol);
   symbol->set_size(size);
   return;

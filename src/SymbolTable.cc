@@ -26,8 +26,8 @@
 #include "MaoUnit.h"
 #include "SymbolTable.h"
 
-
 // Class SymbolTable
+
 
 SymbolTable::SymbolTable() {
   table_.clear();
@@ -62,25 +62,28 @@ void SymbolTable::Print(FILE *out) const {
   for (std::map<const char*, Symbol *, ltstr>::const_iterator iter =
            table_.begin();
       iter != table_.end(); ++iter) {
+    Symbol *symbol = iter->second;
     fprintf(out, "\t# ");
-    fprintf(out, " %10s", iter->first);
+    fprintf(out, " [%3d] ", symbol->id());
+    fprintf(out, " %-10s", symbol->name());
     fprintf(out, " type=%c",
-            iter->second->symbol_type() == OBJECT_SYMBOL?'O':(
-                iter->second->symbol_type() == FUNCTION_SYMBOL?'F':(
-                    iter->second->symbol_type() == NOTYPE_SYMBOL?'N':(
-                        iter->second->symbol_type() == FILE_SYMBOL?'I':(
-                            iter->second->symbol_type() ==
+            symbol->symbol_type() == OBJECT_SYMBOL?'O':(
+                symbol->symbol_type() == FUNCTION_SYMBOL?'F':(
+                    symbol->symbol_type() == NOTYPE_SYMBOL?'N':(
+                        symbol->symbol_type() == FILE_SYMBOL?'I':(
+                            symbol->symbol_type() ==
                             SECTION_SYMBOL?'S':'X')))));
     fprintf(out, " visible=%c",
-            iter->second->symbol_visibility() == GLOBAL?'G':(
-                iter->second->symbol_visibility() == LOCAL?'L':(
-                    iter->second->symbol_visibility() == WEAK?'W':'X')));
-    fprintf(out, " size=%d", iter->second->size() );
-    if (iter->second->common())
-      fprintf(out, " common=(%d,%d)", iter->second->common_size(),
-              iter->second->common_align());
-    if (iter->second->section_name())
-      fprintf(out, " %s", iter->second->section_name());
+            symbol->symbol_visibility() == GLOBAL?'G':(
+                symbol->symbol_visibility() == LOCAL?'L':(
+                    symbol->symbol_visibility() == WEAK?'W':'X')));
+    fprintf(out, " size=%d", symbol->size() );
+    if (symbol->common())
+      fprintf(out, " common=(%d,%d)", symbol->common_size(),
+              symbol->common_align());
+    if (symbol->section())
+      fprintf(out, " [%d: %s]", symbol->section()->id(),
+              symbol->section()->name().c_str());
     else
       fprintf(out, " *UND*");
     fprintf(out, "\n");
@@ -94,9 +97,11 @@ Symbol *SymbolTable::Find(const char *name) {
   return it->second;
 }
 
-Symbol *SymbolTable::FindOrCreateAndFind(const char *name) {
+Symbol *SymbolTable::FindOrCreateAndFind(const char *name,
+                                         const Section *section) {
   if (!Exists(name)) {
-    return Add(name, new Symbol(name));
+    // TODO(martint): use ID factory
+    return Add(name, new Symbol(name, Size(), section));
   } else {
     return Find(name);
   }
@@ -104,11 +109,11 @@ Symbol *SymbolTable::FindOrCreateAndFind(const char *name) {
 }
 
 SymbolIterator SymbolTable::Begin() {
-  return table_.begin();
+  return SymbolIterator(table_.begin());
 }
 
 SymbolIterator SymbolTable::End() {
-  return table_.end();
+  return SymbolIterator(table_.end());
 }
 
 SymbolTable::ConstSymbolIterator SymbolTable::ConstBegin() const {
@@ -153,17 +158,20 @@ bool SymbolIterator::operator !=(const SymbolIterator &other) const {
 // Class: Symbol
 //
 
-Symbol::Symbol(const char *name, const SymbolVisibility symbol_visibility,
-               const SymbolType symbol_type) {
+Symbol::Symbol(const char *name, SymbolID id, const Section *section,
+               const SymbolVisibility symbol_visibility,
+               const SymbolType symbol_type)
+    : id_(id),
+      symbol_type_(symbol_type),
+      size_(0),
+      symbol_visibility_(symbol_visibility),
+      absolute_(true),
+      common_(false),
+      common_size_(0),
+      common_align_(0),
+      section_(section) {
   MAO_ASSERT(strlen(name) < kMaxSymbolLength);
   name_ = strdup(name);
-  symbol_visibility_ = symbol_visibility;
-  symbol_type_ = symbol_type;
-  size_ = 0;
-  common_ = false;
-  common_size_ = 0;
-  common_align_ = 0;
-  section_name_ = 0;
 }
 
 Symbol::~Symbol() {
@@ -227,11 +235,11 @@ void Symbol::set_symbol_type(const SymbolType symbol_type) {
   symbol_type_ = symbol_type;
 }
 
-const char *Symbol::section_name() const {
-  return section_name_;
+const Section *Symbol::section() const {
+  return section_;
 }
 
-void Symbol::set_section_name(const char *section_name) {
-  MAO_ASSERT(section_name);
-  section_name_ = section_name;
+void Symbol::set_section(const Section *section) {
+  MAO_ASSERT(section);
+  section_ = section;
 }

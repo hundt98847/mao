@@ -160,6 +160,23 @@ MaoPassManager *InitPasses() {
 }
 
 
+
+// TODO(martint): Finish this function and remove the redundant
+// directives from the IR (.type, .comm, .globl, ..)
+void AssemblyPass::PrintAsmSymbolHeader(FILE *out) {
+  // List of sections:
+  //   List of symbols in sections
+
+  // List of global symbols
+  // List of comm symbols
+
+  // List of .type directives
+
+  return;
+}
+
+
+
 // Source Correlation
 extern "C" {
   void as_where(char **namep, unsigned int *linep);
@@ -210,6 +227,36 @@ bool DumpIrPass::Go() {
   MAO_ASSERT_MSG(outfile, "Unable to open %s for writing\n",
                  ir_output_filename);
   mao_unit_->PrintIR(outfile, true, true, true, true);
+  fclose(outfile);
+  return true;
+}
+
+
+// DumpSymbolTablePass
+
+MAO_OPTIONS_DEFINE(SYMBOLTABLE, 1) {
+  OPTION_STR("o", "/dev/stdout", "Filename to dump symboltable to."),
+};
+
+//
+// Pass to to dump out the symbol table in text format.
+//
+DumpSymbolTablePass::DumpSymbolTablePass(MaoUnit *mao_unit)
+    : MaoPass("SYMBOLTABLE", mao_unit->mao_options(),
+              MAO_OPTIONS(SYMBOLTABLE), false),
+      mao_unit_(mao_unit) {
+}
+
+bool DumpSymbolTablePass::Go() {
+  const char *symboltable_output_filename = GetOptionString("o");
+
+  Trace(1, "Generate Symboltable Dump File: %s", symboltable_output_filename);
+  FILE *outfile = fopen(symboltable_output_filename, "w");
+
+  MAO_ASSERT_MSG(outfile, "Unable to open %s for writing\n",
+                 symboltable_output_filename);
+  fprintf(outfile, "# Symbol table:\n");
+  mao_unit_->GetSymbolTable()->Print(outfile);
   fclose(outfile);
   return true;
 }
