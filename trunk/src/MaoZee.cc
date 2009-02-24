@@ -43,20 +43,17 @@ class ZeroExtentElimPass : public MaoPass {
     for (CFG::BBVector::const_iterator it = cfg_->Begin();
          it != cfg_->End(); ++it) {
       MaoUnit::EntryIterator entry = (*it)->BeginEntries();
-      MaoUnit::EntryIterator end = (*it)->EndEntries();
-      for (; entry != end; ++entry) {
-        MaoEntry *e = (*entry);
-        if (!e->Type() == MaoEntry::INSTRUCTION)
+      for (; entry != (*it)->EndEntries(); ++entry) {
+        if ((*entry)->Type() != MaoEntry::INSTRUCTION)
           continue;
-        InstructionEntry *insn = (InstructionEntry *) e;
+        InstructionEntry *insn = (InstructionEntry *) (*entry);
         if (insn->op() != OP_mov)
           continue;
-        if (insn->IsRegisterOperand(0) &&
-            insn->IsRegisterOperand(1) &&
-            insn->IsRegister32Operand(0) &&
+        if (insn->IsRegister32Operand(0) &&
+            insn->IsRegister32Operand(1) &&
             !strcmp(insn->GetRegisterOperand(0), insn->GetRegisterOperand(1))) {
           fprintf(stderr, "Working on:");
-          e->PrintEntry(stderr);
+          insn->PrintEntry(stderr);
         }
       }
     }
