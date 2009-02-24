@@ -89,11 +89,12 @@ void LoopAlignPass::DumpLoopAlignStatistics() {
 }
 
 void LoopAlignPass::DoLoopAlign() {
-  Trace(2, "%d loops.", loop_graph_->NumberOfLoops());
-  FindInner(loop_graph_->root());
-
-  if (collect_stat_) {
-    DumpLoopAlignStatistics();
+  Trace(2, "%d loop(s).", loop_graph_->NumberOfLoops()-1);
+  if (loop_graph_->NumberOfLoops() > 1) {
+    FindInner(loop_graph_->root());
+    if (collect_stat_) {
+      DumpLoopAlignStatistics();
+    }
   }
   return;
 }
@@ -114,7 +115,8 @@ int LoopAlignPass::GetBassicBlockSize(const BasicBlock *BB) const {
 }
 
 void LoopAlignPass::FindInner(SimpleLoop *loop) {
-  if (loop->nesting_level() == 0) {
+  if (loop->nesting_level() == 0 && // Leaf node = Inner loop
+      !loop->is_root()) {   // Make sure its not the root node
     // Found an inner loop
     Trace(2, "Process inner loop...");
     int size = 0;

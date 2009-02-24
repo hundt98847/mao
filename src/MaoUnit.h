@@ -34,7 +34,7 @@
 
 // TODO(martint): Find a better way make Section available in the Symbol table
 class Section;
-#include "./SymbolTable.h"
+#include "SymbolTable.h"
 
 #define DEFAULT_SECTION_NAME ".text"
 
