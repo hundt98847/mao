@@ -504,7 +504,22 @@ class InstructionEntry : public MaoEntry {
   virtual bool IsCall() const;
   virtual bool IsReturn() const;
 
+  bool IsMemOperand(const unsigned int op_index) {
+    return IsMemOperand(instruction(), op_index);
+  }
+  bool IsImmediateOperand(const unsigned int op_index) {
+    return IsImmediateOperand(instruction(), op_index);
+  }
+  bool IsRegisterOperand(const unsigned int op_index) {
+    return IsRegisterOperand(instruction(), op_index);
+  }
+
   i386_insn *instruction() { return instruction_; }
+
+  const char *GetRegisterOperand(const unsigned int op_index) {
+    return instruction_->op[op_index].regs->reg_name;
+  }
+
  private:
   i386_insn *instruction_;
   MaoOpcode  op_;
