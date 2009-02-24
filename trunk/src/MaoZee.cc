@@ -53,6 +53,7 @@ class ZeroExtentElimPass : public MaoPass {
           continue;
         if (insn->IsRegisterOperand(0) &&
             insn->IsRegisterOperand(1) &&
+            insn->IsRegister32Operand(0) &&
             !strcmp(insn->GetRegisterOperand(0), insn->GetRegisterOperand(1))) {
           fprintf(stderr, "Working on:");
           e->PrintEntry(stderr);
