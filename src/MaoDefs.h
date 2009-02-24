@@ -24,6 +24,8 @@
 #define  DEF_OP4      (1 << 4)
 #define  DEF_OP5      (1 << 5)
 
+#define  DEF_OP_ALL (DEF_OP0 | DEF_OP1 | DEF_OP2 | DEF_OP3 | DEF_OP4 | DEF_OP5)
+
 // Bitmasks for registers
 
 // 8-bit
