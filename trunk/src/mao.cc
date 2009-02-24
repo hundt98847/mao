@@ -25,6 +25,7 @@
 #include "MaoUnit.h"
 #include "MaoPasses.h"
 #include "MaoCFG.h"
+#include "MaoLoopAlign.h"
 #include "MaoLoops.h"
 #include "MaoRelax.h"
 
@@ -61,8 +62,10 @@ int main(int argc, const char *argv[]) {
 
   // for (function iterator....)
   // TODO(rhundt): add loop over functinos
+  // TODO(martint): store pass-generated in the correction section/function
   CreateCFG(&mao_unit, &cfg);
-  PerformLoopRecognition(&mao_unit, &cfg);
+  LoopStructureGraph *lsg = PerformLoopRecognition(&mao_unit, &cfg);
+  DoLoopAlign(&mao_unit, lsg);
 
   // for (section iterator...)
   // TODO(nvachhar): add loop over sections
