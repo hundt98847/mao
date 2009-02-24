@@ -43,7 +43,7 @@ class MaoPass {
           bool enabled);
   virtual ~MaoPass();
 
-  virtual void Trace(unsigned int level, const char *fmt, ...);
+  virtual void Trace(unsigned int level, const char *fmt, ...) const;
 
   // Main invocation (depends on enabled())
   virtual bool Go() { return true; }
@@ -55,9 +55,9 @@ class MaoPass {
   int          GetOptionInt(const char *name);
 
   // Setters/Getters
-  const char  *name() { return name_; }
-  bool         enabled() { return enabled_; }
-  unsigned int tracing_level() { return tracing_level_; }
+  const char  *name() const { return name_; }
+  bool         enabled() const { return enabled_; }
+  unsigned int tracing_level() const { return tracing_level_; }
   bool         tracing() { return tracing_level_ > 0; }
 
   void set_enabled(bool value) { enabled_ = value; }

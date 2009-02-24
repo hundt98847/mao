@@ -139,6 +139,11 @@ class SimpleLoop {
   void set_depth_level(unsigned int level) { depth_level_ = level; }
   void set_is_reducible(bool val) { is_reducible_ = val; }
 
+
+  // Iterators
+  BasicBlockSet::iterator BasicBlockBegin() {return basic_blocks_.begin();}
+  BasicBlockSet::iterator BasicBlockEnd() {return basic_blocks_.end();}
+
   private:
   BasicBlockSet          basic_blocks_;
   BasicBlock            *header_;

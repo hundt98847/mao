@@ -67,8 +67,8 @@ class BasicBlock {
 
   // Getters
   //
-  int id() { return id_; }
-  const char *label() { return label_; }
+  int id() const { return id_; }
+  const char *label() const { return label_; }
 
   // Edge methods
   //
