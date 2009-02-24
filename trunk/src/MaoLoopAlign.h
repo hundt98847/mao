@@ -35,6 +35,6 @@
 // External entry point
 // TODO(martint): add any paramters that needs to be included. section? CFG?
 void DoLoopAlign(MaoUnit *mao_unit, LoopStructureGraph *loop_graph,
-                 MaoRelaxer::SizeMap *sizes, int maximum_loop_size = 64);
+                 MaoRelaxer::SizeMap *sizes);
 
 #endif  // MAOLOOPALIGN_H_
