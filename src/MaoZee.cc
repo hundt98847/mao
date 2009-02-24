@@ -49,9 +49,10 @@ class ZeroExtentElimPass : public MaoPass {
         InstructionEntry *insn = (InstructionEntry *) (*entry);
         if (insn->op() != OP_mov)
           continue;
-        if (insn->IsRegister32Operand(0) &&
-            insn->IsRegister32Operand(1) &&
+        if (insn->IsRegister32Operand(0) && insn->IsRegister32Operand(1) &&
             !strcmp(insn->GetRegisterOperand(0), insn->GetRegisterOperand(1))) {
+          // found a movl reg32, same-reg32 instruction
+          //
           fprintf(stderr, "Working on:");
           insn->PrintEntry(stderr);
         }
