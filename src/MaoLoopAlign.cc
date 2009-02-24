@@ -25,19 +25,19 @@
 class LoopAlignPass : public MaoPass {
  public:
   explicit LoopAlignPass(MaoUnit *mao, LoopStructureGraph *loop_graph,
-                         MaoRelaxer::SizeMap *sizes, int maximum_loop_size);
+                         MaoRelaxer::SizeMap *sizes);
   void FindInner(SimpleLoop *loop);
   void DoLoopAlign();
   int GetBassicBlockSize(const BasicBlock *BB) const;
 
  private:
-
-  struct Profiling {
+  struct LoopStatistics {
     int number_of_inner_loops;
     std::map<int, int> inner_loop_size_distribution;
     int number_of_aligned_loops;
-  } profiling_results;
-  void DumpAlignProfile();
+  } loop_statistics;
+  void DumpLoopAlignStatistics();
+  bool collect_stat_;
 
   MaoUnit  *mao_unit_;
   LoopStructureGraph *loop_graph_;
@@ -49,32 +49,40 @@ class LoopAlignPass : public MaoPass {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(LOOPALIGN, 1) {
-  OPTION_BOOL("loop_size", false, "Maximum size for loops to be aligned."),
+MAO_OPTIONS_DEFINE(LOOPALIGN, 2) {
+  OPTION_INT("loop_size", 64, "Maximum size for loops to be "
+                              "considered for alignment."),
+  OPTION_BOOL("stat", false, "Collect and print(trace) "
+                             "statistics about loops."),
 };
 
 LoopAlignPass::LoopAlignPass(MaoUnit *mao, LoopStructureGraph *loop_graph,
-                             MaoRelaxer::SizeMap *sizes, int maximum_loop_size)
+                             MaoRelaxer::SizeMap *sizes)
     : MaoPass("LOOPALIGN", mao->mao_options(), MAO_OPTIONS(LOOPALIGN), true),
       mao_unit_(mao),
       loop_graph_(loop_graph),
-      sizes_(sizes),
-      maximum_loop_size_(maximum_loop_size) {
-  profiling_results.number_of_inner_loops = 0;
-  profiling_results.number_of_aligned_loops = 0;
-  profiling_results.inner_loop_size_distribution.clear();
+      sizes_(sizes) {
+
+  maximum_loop_size_ = GetOptionInt("loop_size");
+
+  collect_stat_ = GetOptionBool("stat");
+  if (collect_stat_) {
+    loop_statistics.number_of_inner_loops = 0;
+    loop_statistics.number_of_aligned_loops = 0;
+    loop_statistics.inner_loop_size_distribution.clear();
+  }
 }
 
-void LoopAlignPass::DumpAlignProfile() {
-  // Dump profiling information?
+void LoopAlignPass::DumpLoopAlignStatistics() {
+  // Dump statistics
   Trace(2, "Loop Alignment distribution");
-  Trace(2, "  # Inner   loops : %d", profiling_results.number_of_inner_loops);
-  Trace(2, "  # Aligned loops : %d", profiling_results.number_of_aligned_loops);
+  Trace(2, "  # Inner   loops : %d", loop_statistics.number_of_inner_loops);
+  Trace(2, "  # Aligned loops : %d", loop_statistics.number_of_aligned_loops);
   // iterate over distribution
   Trace(2, "   Size : # loops");
   for (std::map<int, int>::const_iterator iter =
-           profiling_results.inner_loop_size_distribution.begin();
-       iter != profiling_results.inner_loop_size_distribution.end();
+           loop_statistics.inner_loop_size_distribution.begin();
+       iter != loop_statistics.inner_loop_size_distribution.end();
        ++iter) {
     Trace(2, "   %4d : %4d", iter->first, iter->second);
   }
@@ -83,7 +91,10 @@ void LoopAlignPass::DumpAlignProfile() {
 void LoopAlignPass::DoLoopAlign() {
   Trace(2, "%d loops.", loop_graph_->NumberOfLoops());
   FindInner(loop_graph_->root());
-  DumpAlignProfile();
+
+  if (collect_stat_) {
+    DumpLoopAlignStatistics();
+  }
   return;
 }
 
@@ -105,8 +116,7 @@ int LoopAlignPass::GetBassicBlockSize(const BasicBlock *BB) const {
 void LoopAlignPass::FindInner(SimpleLoop *loop) {
   if (loop->nesting_level() == 0) {
     // Found an inner loop
-    ++profiling_results.number_of_inner_loops;
-    Trace(2, "Process inner loop.");
+    Trace(2, "Process inner loop...");
     int size = 0;
     // Loop over basic block to get their sizes!
     for (SimpleLoop::BasicBlockSet::iterator bbiter = loop->BasicBlockBegin();
@@ -114,12 +124,17 @@ void LoopAlignPass::FindInner(SimpleLoop *loop) {
       BasicBlock *BB = *bbiter;
       size += GetBassicBlockSize(BB);
     }
-    ++profiling_results.inner_loop_size_distribution[size];
     if (size <= maximum_loop_size_) {
       // We have found an inner loop that we should align
-      profiling_results.number_of_aligned_loops++;
     } else {
       // The inner loop is to large to be aligned
+    }
+    if (collect_stat_) {
+      ++loop_statistics.number_of_inner_loops;
+      ++loop_statistics.inner_loop_size_distribution[size];
+      if (size <= maximum_loop_size_) {
+        ++loop_statistics.number_of_aligned_loops;
+      }
     }
   }
   for (SimpleLoop::LoopSet::iterator liter = loop->GetChildren()->begin();
@@ -134,9 +149,8 @@ void LoopAlignPass::FindInner(SimpleLoop *loop) {
 //
 void DoLoopAlign(MaoUnit *mao,
                  LoopStructureGraph *loop_graph,
-                 MaoRelaxer::SizeMap *sizes,
-                 int maximum_loop_size) {
-  LoopAlignPass align(mao, loop_graph, sizes, maximum_loop_size);
+                 MaoRelaxer::SizeMap *sizes) {
+  LoopAlignPass align(mao, loop_graph, sizes);
   align.DoLoopAlign();
   return;
 }
