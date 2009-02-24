@@ -297,7 +297,9 @@ int main(int argc, const char*argv[]) {
 
       /* Emit def entry */
       MnemMap::iterator it = mnem_map.find(sanitized_name);
-      if (it != mnem_map.end()) {
+      if (it == mnem_map.end()) {
+        fprintf(def, "  { OP_%s, DEF_OP_ALL, REG_ALL },\n", sanitized_name);
+      } else {
         fprintf(def, "  { OP_%s, 0", sanitized_name);
         DefEntry *e = (*it).second;
         if (e->op_mask & DEF_OP0) fprintf(def, " | DEF_OP0");
