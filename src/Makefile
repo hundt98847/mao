@@ -82,6 +82,7 @@ CCSRCS=						\
 	mao.cc					\
 	MaoCFG.cc				\
 	MaoDebug.cc				\
+	MaoLoopAlign.cc				\
 	MaoLoops.cc				\
 	MaoOptions.cc				\
 	MaoPasses.cc				\
