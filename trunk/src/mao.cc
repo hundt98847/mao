@@ -65,7 +65,6 @@ int main(int argc, const char *argv[]) {
   // TODO(martint): store pass-generated in the correction section/function
   CreateCFG(&mao_unit, &cfg);
   LoopStructureGraph *lsg = PerformLoopRecognition(&mao_unit, &cfg);
-  DoLoopAlign(&mao_unit, lsg);
 
   // for (section iterator...)
   // TODO(nvachhar): add loop over sections
@@ -73,16 +72,19 @@ int main(int argc, const char *argv[]) {
   Section *section = mao_unit.GetSection(".text");
   MAO_ASSERT(section);
   Relax(&mao_unit, section, &sizes);
-  int section_size = 0;
-  for (SectionEntryIterator iter = section->EntryBegin();
-       iter != section->EntryEnd(); ++iter) {
-    MaoEntry *entry = *iter;
-    int size = sizes[entry];
-    printf("%04x %02d:\t", section_size, size);
-    section_size += size;
-    entry->PrintEntry(stdout);
-  }
-  printf("Size of .text section: %d\n", section_size);
+
+  DoLoopAlign(&mao_unit, lsg, &sizes);
+
+//   int section_size = 0;
+//   for (SectionEntryIterator iter = section->EntryBegin();
+//        iter != section->EntryEnd(); ++iter) {
+//     MaoEntry *entry = *iter;
+//     int size = sizes[entry];
+//     printf("%04x %02d:\t", section_size, size);
+//     section_size += size;
+//     entry->PrintEntry(stdout);
+//   }
+//   printf("Size of .text section: %d\n", section_size);
 
   // global finalization passes
   mao_pass_man->LinkPass(new AssemblyPass(&mao_options, &mao_unit));

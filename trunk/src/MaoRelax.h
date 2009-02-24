@@ -16,6 +16,9 @@
 //   Free Software Foundation Inc.,
 //   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#ifndef MAORELAX_H_
+#define MAORELAX_H_
+
 #include "MaoUnit.h"
 #include "MaoDebug.h"
 #include "tc-i386-helper.h"
@@ -82,3 +85,5 @@ class MaoRelaxer {
 
 // External entry point
 void Relax(MaoUnit *mao, Section *section, MaoRelaxer::SizeMap *size_map);
+
+#endif  // MAORELAX_H_
