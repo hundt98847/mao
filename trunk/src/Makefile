@@ -90,7 +90,8 @@ CCSRCS=						\
 	MaoPython.cc				\
 	MaoRelax.cc				\
 	SymbolTable.cc				\
-	Maoi386Size.cc
+	Maoi386Size.cc				\
+	MaoZee.cc
 
 
 
