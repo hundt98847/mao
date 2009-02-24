@@ -25,12 +25,14 @@
 #include <utility>
 #include <vector>
 
-#include "./gen-opcodes.h"
-#include "./ir-gas.h"
-#include "./irlink.h"
-#include "./MaoOptions.h"
-#include "./MaoUtil.h"
-// TODO(martint): Find a better way make Section available int he Symbol table
+#include "gen-opcodes.h"
+#include "ir-gas.h"
+#include "irlink.h"
+#include "MaoOptions.h"
+#include "MaoUtil.h"
+#include "MaoDebug.h"
+
+// TODO(martint): Find a better way make Section available in the Symbol table
 class Section;
 #include "./SymbolTable.h"
 
@@ -512,6 +514,30 @@ class InstructionEntry : public MaoEntry {
   }
   bool IsRegisterOperand(const unsigned int op_index) {
     return IsRegisterOperand(instruction(), op_index);
+  }
+  bool IsRegister8Operand(const unsigned int op_index) {
+    MAO_ASSERT(IsRegisterOperand(op_index));
+    return instruction_->types[op_index].bitfield.reg8;
+  }
+  bool IsRegister16Operand(const unsigned int op_index) {
+    MAO_ASSERT(IsRegisterOperand(op_index));
+    return instruction_->types[op_index].bitfield.reg16;
+  }
+  bool IsRegister32Operand(const unsigned int op_index) {
+    MAO_ASSERT(IsRegisterOperand(op_index));
+    return instruction_->types[op_index].bitfield.reg32;
+  }
+  bool IsRegister64Operand(const unsigned int op_index) {
+    MAO_ASSERT(IsRegisterOperand(op_index));
+    return instruction_->types[op_index].bitfield.reg64;
+  }
+  bool IsRegisterFloatOperand(const unsigned int op_index) {
+    MAO_ASSERT(IsRegisterOperand(op_index));
+    return instruction_->types[op_index].bitfield.floatreg;
+  }
+  bool IsRegisterXMMOperand(const unsigned int op_index) {
+    MAO_ASSERT(IsRegisterOperand(op_index));
+    return instruction_->types[op_index].bitfield.regxmm;
   }
 
   i386_insn *instruction() { return instruction_; }
