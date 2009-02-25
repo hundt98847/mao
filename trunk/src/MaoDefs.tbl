@@ -40,8 +40,6 @@ addpd dest
 addps dest
 addsd dest
 addss dest
-addsubpd dest
-addsubps dest
 and   dest
 andpd dest
 andps dest
@@ -106,23 +104,17 @@ cmp
 cmppd dest
 cmpps dest
 
-# these instructions can be refined. If one know the
-# instruction's addressing mode, smaller portions of
-# the register are being touched.
-cmps  esi edi
-cmpsb esi edi
-cmpsw esi edi
-cmpsd esi edi
-cmpsq rsi rdi
+cmps   addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+cmpsb  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+cmpsw  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+cmpsd  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+cmpsq  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 
 #todo: cmpsd
 #todo: cmpss
 
-# can be refined via addressing mode!
-cmpexchg dest al ax eax rax
-
-cmpxchg8B edx eax ecx ebx
-cmpxchg16B rdx rax rcx rbx
+cmpexchg dest addr8: al addr16: ax addr32: eax addr64: rax
+cmpxchg8B dest edx eax ecx ebx
 comisd
 comiss
 cpuid eax ebx ecx edx
@@ -161,10 +153,7 @@ cqo rdx rax
 daa al
 das al
 dec op0
-
-# can be refined by addressing mode
-div rdx rax
-
+div addr8: ax addr16: ax dx addr32: eax edx addr64: rax rdx
 divpd dest
 divps dest
 divsd dest
@@ -173,14 +162,201 @@ dppd dest
 dpps dest
 
 emms
-# can be refined by addressing mode
-enter rbp rsp
 
+# can be refined by compilation mode (16/32/64)
+enter rbp rsp
 extractps dest
 
 # floating point instructions
 # f*
-# ignore for now
+# ignore for now, escept:
+fist
+fistp
 
+hlt
+
+idiv addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
+imul dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
+in dest
+inc src
+
+# can be refined by mode
+ins  rdi 
+insb rdi
+insw rdi
+insd rdi
+insertps dest
+int
+into
+invd
+invlpg
+iret  
+iretd
+
+// jumpers - don't modify regs.
+jmp
+ljmp
+jo
+jno
+jb
+jc
+jnae
+jnb
+jnc
+jae
+je
+jz
+jne
+jnz
+jbe
+jna
+jnbe
+ja
+js
+jns
+jp
+jpe
+jnp
+jpo
+jl
+jnge
+jnl
+jge
+jle
+jng
+jnle
+jg
+
+jcxz
+jecxz
+jecxz
+jrcxz
+
+lahf ah
+lar  dest
+lddqu dest
+
+# the special regs are not yet supported.
+ldmxcsr mxcsr
+lds dest ds
+lss dest ss
+les dest es
+lfs dest fs
+lgs dest gs
+
+lea dest
+leave rsp rbp
+lfence 
+lgdt
+lidt
+lldt
+lmsw src
+lock
+lods  addr8: al addr16: ax addr32: eax addr64: rax
+lodsb al
+lodsw ax
+lodsd eax
+lodsq rax
+
+# loops can be refined by address size
+loop  rcx
+loope rcx
+loopne rcx
+loopz rcx
+loopnz rcx
+
+lsl dest
+ltr src
+maskmovdqu dest
+maskmovq dest
+maxpd dest
+maxps dest
+maxsd dest
+maxss dest
+mfence
+minpd dest
+minps dest
+minsd dest
+minss dest
+
+// movers and shakers
 mov  dest
+movapd dest
+movaps dest
+movabs dest
+movd dest
+movddup dest
+movdqa dest
+movdqu dest
+movdq2q dest
+movhlps dest
+movhpd dest
+movhps dest
+movlhps dest
+movlpd dest
+movlps dest
+movmskpd dest
+movmskps dest
+movntdqa dest
+movntdq dest
+movnti dest
+movntpd dest
+movntps dest
+movntq dest
+movq dest
+movq2dq dest
 
+movs   dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+movsb  dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+movsbl dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+movsbw dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+movsw  dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+movswl dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+movslq dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+movsd  dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+movsq  dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+
+# there is a floating point movsd as well?
+# movsd
+
+movupd dest
+movups dest
+
+# various zero and sign extent moves.
+movbe dest
+movsbl dest
+movsbw dest
+movswl dest
+movsbq dest
+movswq dest
+movslq dest
+movsx dest
+movsxd dest
+movzd dest
+movzbl dest
+movzbw dest
+movzbl dest
+movzbq dest
+movabq dest
+movzwq dest
+movzx dest
+
+mpsadbw dest
+
+
+// SSE3 instructions
+addsubpd dest
+addsubps dest
+cmpxchg16B dest rdx rax rcx rbx
+fistpp
+fistppll
+haddpd dest
+haddps dest
+hsubpd dest
+hubbps dest
+lddqu dest
+monitor 
+movddup dest
+movshdup dest
+movsldup dest
+mwait
