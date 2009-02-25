@@ -30,6 +30,12 @@
 
 #include "MaoDefs.h"
 
+struct ltstr {
+  bool operator()(const char* s1, const char* s2) const {
+    return strcmp(s1, s2) < 0;
+  }
+};
+
 // Note: The following few helper routines, as
 //       well as the main loop in main(), are directly
 //       copied from the i386-gen.c sources in

@@ -16,6 +16,7 @@
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
 #include "MaoDefs.h"
+#include "MaoUnit.h"
 #include "gen-defs.h"
 
 unsigned long long GetRegisterDefMask(InstructionEntry *insn) {

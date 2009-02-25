@@ -18,7 +18,7 @@
 #ifndef __MAODEFS_H_INCLUDED
 #define __MAODEFS_H_INCLUDED
 
-#include "MaoUnit.h"
+#include <stdio.h>
 
 // Bitmasks for operands
 
@@ -86,13 +86,14 @@
 // more are possible...
 
 typedef struct DefEntry {
-  MaoOpcode          opcode;    // matches table gen-opcodes.h
+  int                opcode;    // matches table gen-opcodes.h
   unsigned int       op_mask;   // if insn defs operand(s)
   unsigned long long reg_mask;  // if insn defs register(s)
 };
 extern DefEntry def_entries[];
 
 // external entry points
+class InstructionEntry;
 unsigned long long GetRegisterDefMask(InstructionEntry *insn);
 void PrintRegisterDefMask(unsigned long long mask, FILE *f);
 
