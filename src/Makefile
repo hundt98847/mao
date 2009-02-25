@@ -81,6 +81,7 @@ CCSRCS=						\
 	ir.cc					\
 	mao.cc					\
 	MaoCFG.cc				\
+	MaoDefs.cc				\
 	MaoDebug.cc				\
 	MaoLoopAlign.cc				\
 	MaoLoops.cc				\
@@ -143,7 +144,7 @@ $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 $(OBJDIR)/GenOpcodes: GenOpcodes.cc MaoDefs.h MaoDefs.tbl Makefile
 	$(CC) $(CFLAGS) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc -lstdc++
 
-gen-opcodes.h: $(OBJDIR)/GenOpcodes MaoDefs.h MaoDefs.tbl
+gen-opcodes.h: $(OBJDIR)/GenOpcodes
 	$(OBJDIR)/GenOpcodes $(BINUTILSRC)/opcodes/i386-opc.tbl ./MaoDefs.tbl
 
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
