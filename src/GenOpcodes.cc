@@ -173,7 +173,9 @@ void ReadSideEffects(const char *fname) {
       if (!strcmp(q, "r15"))  e->reg_mask |= REG_R15; else
 
       if (!strcmp(q, "op0"))  e->op_mask |= DEF_OP0; else
+      if (!strcmp(q, "src"))  e->op_mask |= DEF_OP0; else
       if (!strcmp(q, "op1"))  e->op_mask |= DEF_OP1; else
+      if (!strcmp(q, "dest")) e->op_mask |= DEF_OP1; else
       if (!strcmp(q, "op2"))  e->op_mask |= DEF_OP2; else
       if (!strcmp(q, "op3"))  e->op_mask |= DEF_OP3; else
       if (!strcmp(q, "op4"))  e->op_mask |= DEF_OP4; else

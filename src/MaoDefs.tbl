@@ -20,13 +20,167 @@
 // memnonic  defs
 //
 // with defs being on of:
-//    op0    defines operand 0
-//    op1    defines operand 1
+//    op0    defines operand 0  (also 'src')
+//    op1    defines operand 1  (also 'dest')
 //    ...
 //    al     defines register al
 //    ah     defines register ah
 //    ...
+//    cr0    control register cr0
+//    ...
 //    all    defines all registers
 //
-mov  op1 ah al ecx    
+aaa   ax
+aad   ax
+aam   ax
+aas   ax
+adc   dest
+add   dest
+addpd dest
+addps dest
+addsd dest
+addss dest
+addsubpd dest
+addsubps dest
+and   dest
+andpd dest
+andps dest
+andnpd dest
+andnps dest
+arpl dest
+
+blendpd dest
+blendps dest
+blendvpd dest
+blendvps dest
+bound 
+bsf dest
+bsr dest
+bswap src
+bt 
+btc 
+btr 
+bts
+
+call rax rcx rdx r8 r9 r10 r11
+cbw  ax
+cwde eax
+cdqe rax
+clc
+cld
+clflush
+cli
+clts cr0
+cmc
+
+cmovo   dest
+cmovno  dest
+cmovb   dest
+cmovc   dest
+cmovnae dest
+cmovae  dest
+cmovnc  dest
+cmovnb  dest
+cmove   dest
+cmovz   dest
+cmovne  dest
+cmovnz  dest
+cmovbe  dest
+cmovna  dest
+cmova   dest
+cmovnbe dest
+cmovs   dest
+cmovns  dest
+cmovp   dest
+cmovnp  dest
+cmovl   dest
+cmovnge dest
+cmovge  dest
+cmovnl  dest
+cmovle  dest
+cmovng  dest
+cmovg   dest
+cmovnle dest
+
+cmp
+cmppd dest
+cmpps dest
+
+# these instructions can be refined. If one know the
+# instruction's addressing mode, smaller portions of
+# the register are being touched.
+cmps  esi edi
+cmpsb esi edi
+cmpsw esi edi
+cmpsd esi edi
+cmpsq rsi rdi
+
+#todo: cmpsd
+#todo: cmpss
+
+# can be refined via addressing mode!
+cmpexchg dest al ax eax rax
+
+cmpxchg8B edx eax ecx ebx
+cmpxchg16B rdx rax rcx rbx
+comisd
+comiss
+cpuid eax ebx ecx edx
+crc32 dest
+cvtdq2pd dest
+cvtdq2pd dest
+cvtpd2dq dest
+cvtpd2dq dest
+cvtdq2ps dest
+cvtdq2ps dest
+cvtpd2pi dest
+cvtpd2ps dest
+cvtpd2ps dest
+cvtps2pd dest
+cvtps2pd dest
+cvtps2dq dest
+cvtps2dq dest
+cvtsd2si dest
+cvtsd2si dest
+cvtsd2ss dest
+cvtsd2ss dest
+cvtss2sd dest
+cvtss2sd dest
+cvttpd2pi dest
+cvttsd2si dest
+cvttsd2si dest
+cvttpd2dq dest
+cvttpd2dq dest
+cvttps2dq dest
+cvttps2dq dest
+
+cwd dx ax
+cdq edx eax 
+cqo rdx rax
+
+daa al
+das al
+dec op0
+
+# can be refined by addressing mode
+div rdx rax
+
+divpd dest
+divps dest
+divsd dest
+divss dest
+dppd dest
+dpps dest
+
+emms
+# can be refined by addressing mode
+enter rbp rsp
+
+extractps dest
+
+# floating point instructions
+# f*
+# ignore for now
+
+mov  dest
 
