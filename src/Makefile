@@ -9,8 +9,8 @@ ifeq ($(OS),Linux)
  PYTHONINCL=/usr/local/include/python2.5
  PYTHONLDOPTS=-Xlinker -export-dynamic 
 else
- PYTHONLIB=
- PYTHONINCL=
+ PYTHONLIB=$(PYTHON)/usr/local/lib/python2.5/libpython2.5.a
+ PYTHONINCL=/usr/local/include/python2.5
  PYTHONLDOPTS=
 endif
 LIBZ=-lz
@@ -82,7 +82,6 @@ CCSRCS=						\
 	mao.cc					\
 	MaoCFG.cc				\
 	MaoDebug.cc				\
-	MaoDefs.cc				\
 	MaoLoopAlign.cc				\
 	MaoLoops.cc				\
 	MaoOptions.cc				\
