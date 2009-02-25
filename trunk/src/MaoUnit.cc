@@ -973,7 +973,8 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
                                        const unsigned int op_index) {
   MAO_ASSERT(instruction->operands > op_index);
   i386_operand_type t = instruction->types[op_index];
-  return (t.bitfield.reg8
+  return (t.bitfield.acc
+          || t.bitfield.reg8
           || t.bitfield.reg16
           || t.bitfield.reg32
           || t.bitfield.reg64

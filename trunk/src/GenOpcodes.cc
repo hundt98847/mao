@@ -93,9 +93,15 @@ void usage(const char *argv[]) {
 
 class GenDefEntry {
  public:
-  GenDefEntry() : op_mask(0), reg_mask(0) {}
+  GenDefEntry() : op_mask(0), reg_mask(0),
+                  reg_mask8(0), reg_mask16(0),
+                  reg_mask32(0), reg_mask64(0) {}
   unsigned int       op_mask;
   unsigned long long reg_mask;
+  unsigned long long reg_mask8;
+  unsigned long long reg_mask16;
+  unsigned long long reg_mask32;
+  unsigned long long reg_mask64;
 };
 
 typedef std::map<char *, GenDefEntry *, ltstr> MnemMap;
@@ -121,56 +127,64 @@ void ReadSideEffects(const char *fname) {
     GenDefEntry *e = new GenDefEntry;
     mnem_map[strdup(mnem)] = e;
 
+    unsigned long long *mask = &e->reg_mask;
+
     while (p && *p) {
       char *q = next_field(p, ' ', &p);
-      if (!strcmp(q, "al"))  e->reg_mask |= REG_AL; else
-      if (!strcmp(q, "ah"))  e->reg_mask |= REG_AH; else
-      if (!strcmp(q, "ax"))  e->reg_mask |= (REG_AX  | REG_AH  | REG_AL); else
-      if (!strcmp(q, "eax")) e->reg_mask |= (REG_EAX | REG_AX  | REG_AH | REG_AL); else
-      if (!strcmp(q, "rax")) e->reg_mask |= (REG_RAX | REG_EAX | REG_AX | REG_AH | REG_AL); else
+      if (!strcmp(q, "all:"))    mask = &e->reg_mask; else
+      if (!strcmp(q, "addr8:"))  mask = &e->reg_mask8; else
+      if (!strcmp(q, "addr16:")) mask = &e->reg_mask16; else
+      if (!strcmp(q, "addr32:")) mask = &e->reg_mask32; else
+      if (!strcmp(q, "addr64:")) mask = &e->reg_mask64; else
 
-      if (!strcmp(q, "cl"))  e->reg_mask |= REG_CL; else
-      if (!strcmp(q, "ch"))  e->reg_mask |= REG_CH; else
-      if (!strcmp(q, "cx"))  e->reg_mask |= (REG_CX  | REG_CH  | REG_CL); else
-      if (!strcmp(q, "ecx")) e->reg_mask |= (REG_ECX | REG_CX  | REG_CH | REG_CL); else
-      if (!strcmp(q, "rcx")) e->reg_mask |= (REG_RCX | REG_ECX | REG_CX | REG_CH | REG_CL); else
+      if (!strcmp(q, "al"))  *mask |= REG_AL; else
+      if (!strcmp(q, "ah"))  *mask |= REG_AH; else
+      if (!strcmp(q, "ax"))  *mask |= (REG_AX  | REG_AH  | REG_AL); else
+      if (!strcmp(q, "eax")) *mask |= (REG_EAX | REG_AX  | REG_AH | REG_AL); else
+      if (!strcmp(q, "rax")) *mask |= (REG_RAX | REG_EAX | REG_AX | REG_AH | REG_AL); else
 
-      if (!strcmp(q, "dl"))  e->reg_mask |= REG_DL; else
-      if (!strcmp(q, "dh"))  e->reg_mask |= REG_DH; else
-      if (!strcmp(q, "dx"))  e->reg_mask |= (REG_DX  | REG_DH  | REG_DL); else
-      if (!strcmp(q, "edx")) e->reg_mask |= (REG_EDX | REG_DX  | REG_DH | REG_DL); else
-      if (!strcmp(q, "rdx")) e->reg_mask |= (REG_RDX | REG_EDX | REG_DX | REG_DH | REG_DL); else
+      if (!strcmp(q, "cl"))  *mask |= REG_CL; else
+      if (!strcmp(q, "ch"))  *mask |= REG_CH; else
+      if (!strcmp(q, "cx"))  *mask |= (REG_CX  | REG_CH  | REG_CL); else
+      if (!strcmp(q, "ecx")) *mask |= (REG_ECX | REG_CX  | REG_CH | REG_CL); else
+      if (!strcmp(q, "rcx")) *mask |= (REG_RCX | REG_ECX | REG_CX | REG_CH | REG_CL); else
 
-      if (!strcmp(q, "bl"))  e->reg_mask |= REG_BL; else
-      if (!strcmp(q, "bh"))  e->reg_mask |= REG_BH; else
-      if (!strcmp(q, "bx"))  e->reg_mask |= (REG_BX  | REG_BH  | REG_BL); else
-      if (!strcmp(q, "ebx")) e->reg_mask |= (REG_EBX | REG_BX  | REG_BH | REG_BL); else
-      if (!strcmp(q, "rbx")) e->reg_mask |= (REG_RBX | REG_EBX | REG_BX | REG_BH | REG_BL); else
+      if (!strcmp(q, "dl"))  *mask |= REG_DL; else
+      if (!strcmp(q, "dh"))  *mask |= REG_DH; else
+      if (!strcmp(q, "dx"))  *mask |= (REG_DX  | REG_DH  | REG_DL); else
+      if (!strcmp(q, "edx")) *mask |= (REG_EDX | REG_DX  | REG_DH | REG_DL); else
+      if (!strcmp(q, "rdx")) *mask |= (REG_RDX | REG_EDX | REG_DX | REG_DH | REG_DL); else
 
-      if (!strcmp(q, "sp"))  e->reg_mask |= REG_SP; else
-      if (!strcmp(q, "esp"))  e->reg_mask |= REG_ESP; else
-      if (!strcmp(q, "rsp"))  e->reg_mask |= REG_RSP; else
+      if (!strcmp(q, "bl"))  *mask |= REG_BL; else
+      if (!strcmp(q, "bh"))  *mask |= REG_BH; else
+      if (!strcmp(q, "bx"))  *mask |= (REG_BX  | REG_BH  | REG_BL); else
+      if (!strcmp(q, "ebx")) *mask |= (REG_EBX | REG_BX  | REG_BH | REG_BL); else
+      if (!strcmp(q, "rbx")) *mask |= (REG_RBX | REG_EBX | REG_BX | REG_BH | REG_BL); else
 
-      if (!strcmp(q, "bp"))  e->reg_mask |= REG_BP; else
-      if (!strcmp(q, "ebp"))  e->reg_mask |= REG_EBP; else
-      if (!strcmp(q, "rbp"))  e->reg_mask |= REG_RBP; else
+      if (!strcmp(q, "sp"))  *mask |= REG_SP; else
+      if (!strcmp(q, "esp"))  *mask |= REG_ESP; else
+      if (!strcmp(q, "rsp"))  *mask |= REG_RSP; else
 
-      if (!strcmp(q, "si"))  e->reg_mask |= REG_SI; else
-      if (!strcmp(q, "esi"))  e->reg_mask |= REG_ESI; else
-      if (!strcmp(q, "rsi"))  e->reg_mask |= REG_RSI; else
+      if (!strcmp(q, "bp"))  *mask |= REG_BP; else
+      if (!strcmp(q, "ebp"))  *mask |= REG_EBP; else
+      if (!strcmp(q, "rbp"))  *mask |= REG_RBP; else
 
-      if (!strcmp(q, "di"))  e->reg_mask |= REG_DI; else
-      if (!strcmp(q, "edi"))  e->reg_mask |= REG_EDI; else
-      if (!strcmp(q, "rdi"))  e->reg_mask |= REG_RDI; else
+      if (!strcmp(q, "si"))  *mask |= REG_SI; else
+      if (!strcmp(q, "esi"))  *mask |= REG_ESI; else
+      if (!strcmp(q, "rsi"))  *mask |= REG_RSI; else
 
-      if (!strcmp(q, "r8"))  e->reg_mask |= REG_R8; else
-      if (!strcmp(q, "r9"))  e->reg_mask |= REG_R9; else
-      if (!strcmp(q, "r10"))  e->reg_mask |= REG_R10; else
-      if (!strcmp(q, "r11"))  e->reg_mask |= REG_R11; else
-      if (!strcmp(q, "r12"))  e->reg_mask |= REG_R12; else
-      if (!strcmp(q, "r13"))  e->reg_mask |= REG_R13; else
-      if (!strcmp(q, "r14"))  e->reg_mask |= REG_R14; else
-      if (!strcmp(q, "r15"))  e->reg_mask |= REG_R15; else
+      if (!strcmp(q, "di"))  *mask |= REG_DI; else
+      if (!strcmp(q, "edi"))  *mask |= REG_EDI; else
+      if (!strcmp(q, "rdi"))  *mask |= REG_RDI; else
+
+      if (!strcmp(q, "r8"))  *mask |= REG_R8; else
+      if (!strcmp(q, "r9"))  *mask |= REG_R9; else
+      if (!strcmp(q, "r10"))  *mask |= REG_R10; else
+      if (!strcmp(q, "r11"))  *mask |= REG_R11; else
+      if (!strcmp(q, "r12"))  *mask |= REG_R12; else
+      if (!strcmp(q, "r13"))  *mask |= REG_R13; else
+      if (!strcmp(q, "r14"))  *mask |= REG_R14; else
+      if (!strcmp(q, "r15"))  *mask |= REG_R15; else
 
       if (!strcmp(q, "op0"))  e->op_mask |= DEF_OP0; else
       if (!strcmp(q, "src"))  e->op_mask |= DEF_OP0; else
@@ -188,6 +202,58 @@ void ReadSideEffects(const char *fname) {
   fclose(f);
 }
 
+static void PrintRegMask(FILE *def, unsigned long long mask) {
+  fprintf(def, ", 0");
+
+  if (mask & REG_AL)  fprintf(def, " | REG_AL");
+  if (mask & REG_AH)  fprintf(def, " | REG_AH");
+  if (mask & REG_AX)  fprintf(def, " | REG_AX");
+  if (mask & REG_EAX) fprintf(def, " | REG_EAX");
+  if (mask & REG_RAX) fprintf(def, " | REG_RAX");
+
+  if (mask & REG_CL)  fprintf(def, " | REG_CL");
+  if (mask & REG_CH)  fprintf(def, " | REG_CH");
+  if (mask & REG_CX)  fprintf(def, " | REG_CX");
+  if (mask & REG_ECX) fprintf(def, " | REG_ECX");
+  if (mask & REG_RCX) fprintf(def, " | REG_RCX");
+
+  if (mask & REG_DL)  fprintf(def, " | REG_DL");
+  if (mask & REG_DH)  fprintf(def, " | REG_DH");
+  if (mask & REG_DX)  fprintf(def, " | REG_DX");
+  if (mask & REG_EDX) fprintf(def, " | REG_EDX");
+  if (mask & REG_RDX) fprintf(def, " | REG_RDX");
+
+  if (mask & REG_BL)  fprintf(def, " | REG_BL");
+  if (mask & REG_BH)  fprintf(def, " | REG_BH");
+  if (mask & REG_BX)  fprintf(def, " | REG_BX");
+  if (mask & REG_EBX) fprintf(def, " | REG_EBX");
+  if (mask & REG_RBX) fprintf(def, " | REG_RBX");
+
+  if (mask & REG_SP)  fprintf(def, " | REG_SP");
+  if (mask & REG_ESP) fprintf(def, " | REG_ESP");
+  if (mask & REG_RSP) fprintf(def, " | REG_RSP");
+
+  if (mask & REG_BP)  fprintf(def, " | REG_BP");
+  if (mask & REG_EBP) fprintf(def, " | REG_EBP");
+  if (mask & REG_RBP) fprintf(def, " | REG_RBP");
+
+  if (mask & REG_SI)  fprintf(def, " | REG_SI");
+  if (mask & REG_ESI) fprintf(def, " | REG_ESI");
+  if (mask & REG_RSI) fprintf(def, " | REG_RSI");
+
+  if (mask & REG_DI)  fprintf(def, " | REG_DI");
+  if (mask & REG_EDI) fprintf(def, " | REG_EDI");
+  if (mask & REG_RDI) fprintf(def, " | REG_RDI");
+
+  if (mask & REG_R8)  fprintf(def, " | REG_R8");
+  if (mask & REG_R9)  fprintf(def, " | REG_R9");
+  if (mask & REG_R10)  fprintf(def, " | REG_R10");
+  if (mask & REG_R11)  fprintf(def, " | REG_R11");
+  if (mask & REG_R12)  fprintf(def, " | REG_R12");
+  if (mask & REG_R13)  fprintf(def, " | REG_R13");
+  if (mask & REG_R14)  fprintf(def, " | REG_R14");
+  if (mask & REG_R15)  fprintf(def, " | REG_R15");
+}
 
 int main(int argc, const char*argv[]) {
   char buf[2048];
@@ -307,57 +373,11 @@ int main(int argc, const char*argv[]) {
         if (e->op_mask & DEF_OP5) fprintf(def, " | DEF_OP5");
 
         // populate reg_mask
-        fprintf(def, ", 0");
-
-        if (e->reg_mask & REG_AL)  fprintf(def, " | REG_AL");
-        if (e->reg_mask & REG_AH)  fprintf(def, " | REG_AH");
-        if (e->reg_mask & REG_AX)  fprintf(def, " | REG_AX");
-        if (e->reg_mask & REG_EAX) fprintf(def, " | REG_EAX");
-        if (e->reg_mask & REG_RAX) fprintf(def, " | REG_RAX");
-
-        if (e->reg_mask & REG_CL)  fprintf(def, " | REG_CL");
-        if (e->reg_mask & REG_CH)  fprintf(def, " | REG_CH");
-        if (e->reg_mask & REG_CX)  fprintf(def, " | REG_CX");
-        if (e->reg_mask & REG_ECX) fprintf(def, " | REG_ECX");
-        if (e->reg_mask & REG_RCX) fprintf(def, " | REG_RCX");
-
-        if (e->reg_mask & REG_DL)  fprintf(def, " | REG_DL");
-        if (e->reg_mask & REG_DH)  fprintf(def, " | REG_DH");
-        if (e->reg_mask & REG_DX)  fprintf(def, " | REG_DX");
-        if (e->reg_mask & REG_EDX) fprintf(def, " | REG_EDX");
-        if (e->reg_mask & REG_RDX) fprintf(def, " | REG_RDX");
-
-        if (e->reg_mask & REG_BL)  fprintf(def, " | REG_BL");
-        if (e->reg_mask & REG_BH)  fprintf(def, " | REG_BH");
-        if (e->reg_mask & REG_BX)  fprintf(def, " | REG_BX");
-        if (e->reg_mask & REG_EBX) fprintf(def, " | REG_EBX");
-        if (e->reg_mask & REG_RBX) fprintf(def, " | REG_RBX");
-
-        if (e->reg_mask & REG_SP)  fprintf(def, " | REG_SP");
-        if (e->reg_mask & REG_ESP) fprintf(def, " | REG_ESP");
-        if (e->reg_mask & REG_RSP) fprintf(def, " | REG_RSP");
-
-        if (e->reg_mask & REG_BP)  fprintf(def, " | REG_BP");
-        if (e->reg_mask & REG_EBP) fprintf(def, " | REG_EBP");
-        if (e->reg_mask & REG_RBP) fprintf(def, " | REG_RBP");
-
-        if (e->reg_mask & REG_SI)  fprintf(def, " | REG_SI");
-        if (e->reg_mask & REG_ESI) fprintf(def, " | REG_ESI");
-        if (e->reg_mask & REG_RSI) fprintf(def, " | REG_RSI");
-
-        if (e->reg_mask & REG_DI)  fprintf(def, " | REG_DI");
-        if (e->reg_mask & REG_EDI) fprintf(def, " | REG_EDI");
-        if (e->reg_mask & REG_RDI) fprintf(def, " | REG_RDI");
-
-        if (e->reg_mask & REG_R8)  fprintf(def, " | REG_R8");
-        if (e->reg_mask & REG_R9)  fprintf(def, " | REG_R9");
-        if (e->reg_mask & REG_R10)  fprintf(def, " | REG_R10");
-        if (e->reg_mask & REG_R11)  fprintf(def, " | REG_R11");
-        if (e->reg_mask & REG_R12)  fprintf(def, " | REG_R12");
-        if (e->reg_mask & REG_R13)  fprintf(def, " | REG_R13");
-        if (e->reg_mask & REG_R14)  fprintf(def, " | REG_R14");
-        if (e->reg_mask & REG_R15)  fprintf(def, " | REG_R15");
-
+        PrintRegMask(def, e->reg_mask);
+        PrintRegMask(def, e->reg_mask8);
+        PrintRegMask(def, e->reg_mask16);
+        PrintRegMask(def, e->reg_mask32);
+        PrintRegMask(def, e->reg_mask64);
         fprintf(def, " },\n");
       }
     }

@@ -86,9 +86,13 @@
 // more are possible...
 
 typedef struct DefEntry {
-  int                opcode;    // matches table gen-opcodes.h
-  unsigned int       op_mask;   // if insn defs operand(s)
-  unsigned long long reg_mask;  // if insn defs register(s)
+  int                opcode;      // matches table gen-opcodes.h
+  unsigned int       op_mask;     // if insn defs operand(s)
+  unsigned long long reg_mask;    // if insn defs register(s)
+  unsigned long long reg_mask8;   //   for  8-bit addressing modes
+  unsigned long long reg_mask16;  //   for 16-bit addressing modes
+  unsigned long long reg_mask32;  //   for 32-bit addressing modes
+  unsigned long long reg_mask64;  //   for 64-bit addressing modes
 };
 extern DefEntry def_entries[];
 
