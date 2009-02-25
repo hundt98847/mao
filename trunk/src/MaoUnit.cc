@@ -1319,19 +1319,6 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     }
 
     // ACC register
-    if (instruction_->types[i].bitfield.acc) {
-      // need to find out size in order to print the correct ACC register!
-      if (instruction_->types[i].bitfield.byte )
-        fprintf(out, "%%al");
-      if (instruction_->types[i].bitfield.word )
-        fprintf(out, "%%ax");
-      if (instruction_->types[i].bitfield.dword )
-        fprintf(out, "%%eax");
-      if (instruction_->types[i].bitfield.qword )
-        fprintf(out, "%%rax");
-    }
-
-    // ACC register
     if (instruction_->types[i].bitfield.floatacc) {
         fprintf(out, "%%st");
     }

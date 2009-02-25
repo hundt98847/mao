@@ -460,8 +460,13 @@ class LoopFinderPass : public MaoPass {
 
     if (dump_cfg_)
       cfg_->Print();
-    if (dump_vcg_)
-      cfg_->DumpVCG("HavlakCfg.vcg");
+    if (dump_vcg_) {
+      // TODO(martint): Include function name in the filename
+      static int num = 0;
+      char filename[64];
+      sprintf(filename, "Function-%d.vcg", num++);
+      cfg_->DumpVCG(filename);
+    }
 
     Havlak.FindLoops();
 

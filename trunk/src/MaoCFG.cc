@@ -82,9 +82,10 @@ MAO_OPTIONS_DEFINE(CFG, 1) {
 
 // --------------------------------------------------------------------
 CFGBuilder::CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
-                       Section *section, CFG *CFG)
+                       Function *function, CFG *CFG)
   : MaoPass("CFG", mao_unit->mao_options(), MAO_OPTIONS(CFG), true),
-    mao_unit_(mao_unit), section_(section), CFG_(CFG), next_id_(0) {
+    mao_unit_(mao_unit), function_(function), CFG_(CFG),
+    next_id_(0) {
   split_basic_blocks_ = GetOptionBool("callsplit");
 }
 
@@ -103,9 +104,8 @@ void CFGBuilder::Build() {
   create_fall_through = true;
 
   // Main loop processing the IR entries
-  // TODO(nvachhar): This should iterate over a given function
-  for (SectionEntryIterator e_iter = section_->EntryBegin();
-       e_iter != section_->EntryEnd(); ++e_iter) {
+  for (SectionEntryIterator e_iter = function_->EntryBegin();
+       e_iter != function_->EntryEnd(); ++e_iter) {
     MaoEntry *entry = *e_iter;
 
     if (tracing_level() > 2) {
@@ -167,7 +167,8 @@ void CFGBuilder::Build() {
         } else {
           target = CFG_->FindBasicBlock(label);
           if (target == NULL) {
-            CFG::LabelToBBMap::iterator target_ptr = label_to_bb_map_.find(label);
+            CFG::LabelToBBMap::iterator target_ptr =
+                label_to_bb_map_.find(label);
             if (target_ptr == label_to_bb_map_.end()) {
               target = CreateBasicBlock(label);
               CFG_->MapBasicBlock(target);
@@ -183,7 +184,8 @@ void CFGBuilder::Build() {
                      entry_iter != target->EndEntries(); ++entry_iter) {
                   MaoEntry *temp_entry = *entry_iter;
                   if (temp_entry->Type() == MaoEntry::LABEL) {
-                    LabelEntry *temp_label = static_cast<LabelEntry *>(temp_entry);
+                    LabelEntry *temp_label =
+                        static_cast<LabelEntry *>(temp_entry);
                     label_to_bb_map_[temp_label->name()] = target;
                   }
                 }
@@ -219,9 +221,7 @@ void CFGBuilder::Build() {
 
 #include "MaoRelax.h"
 
-void CreateCFG(MaoUnit *mao_unit, CFG *cfg) {
-  Section *section = mao_unit->GetSection(".text");
-  if (!section) return;
-  CFGBuilder builder(mao_unit, mao_unit->mao_options(), section, cfg);
+void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg) {
+  CFGBuilder builder(mao_unit, mao_unit->mao_options(), function, cfg);
   builder.Build();
 }

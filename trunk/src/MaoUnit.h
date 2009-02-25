@@ -32,6 +32,9 @@
 #include "MaoUtil.h"
 #include "MaoDebug.h"
 
+class CFG;
+class LoopStructureGraph;
+
 // TODO(martint): Find a better way make Section available in the Symbol table
 class Section;
 #include "SymbolTable.h"
@@ -54,6 +57,7 @@ class LabelEntry;
 class MaoEntry;
 class Section;
 class SectionIterator;
+class Statistics;
 class SubSection;
 class Symbol;
 class SymbolTable;
@@ -64,6 +68,69 @@ struct ltstr {
     return strcmp(s1, s2) < 0;
   }
 };
+
+
+
+class Statistics {
+ public:
+  Statistics() : collect_loop_align_stat_(false) {}
+  ~Statistics() {}
+
+  void Print(FILE *out) {
+    if (collect_loop_align_stat_) {
+      LoopAlignPrint(out);
+    }
+  }
+
+  // Loop Alignment related functions
+
+  void LoopAlignRegister() {
+    if (!collect_loop_align_stat_) {
+      loop_statistics.number_of_inner_loops = 0;
+      loop_statistics.number_of_aligned_loops = 0;
+      loop_statistics.inner_loop_size_distribution.clear();
+      collect_loop_align_stat_ = true;
+    }
+  }
+
+  void LoopAlignAddInnerLoop(int size, bool aligned) {
+    ++loop_statistics.number_of_inner_loops;
+    if (aligned) {
+      ++loop_statistics.number_of_aligned_loops;
+    }
+    ++loop_statistics.inner_loop_size_distribution[size];
+  }
+
+  void LoopAlignPrint(FILE *out) {
+    // Dump statistics
+    fprintf(out, "Loop Alignment distribution\n");
+    fprintf(out, "  # Inner   loops : %d\n",
+            loop_statistics.number_of_inner_loops);
+    fprintf(out, "  # Aligned loops : %d\n",
+            loop_statistics.number_of_aligned_loops);
+    fprintf(out, "  # Alignment possibilities : %.2f%%\n",
+            100 * static_cast<double>(loop_statistics.number_of_aligned_loops) /
+            loop_statistics.number_of_inner_loops);
+    // iterate over distribution
+    fprintf(out, "   Size : # loops\n");
+    for (std::map<int, int>::const_iterator iter =
+             loop_statistics.inner_loop_size_distribution.begin();
+         iter != loop_statistics.inner_loop_size_distribution.end();
+         ++iter) {
+      fprintf(out, "   %4d : %4d\n", iter->first, iter->second);
+    }
+  }
+
+ private:
+  bool collect_loop_align_stat_;
+
+  struct LoopStatistics {
+    int number_of_inner_loops;
+    std::map<int, int> inner_loop_size_distribution;
+    int number_of_aligned_loops;
+  } loop_statistics;
+};
+
 
 class MaoUnit {
  public:
@@ -149,10 +216,11 @@ class MaoUnit {
   // Find all Functions in the MaoUnit and populate functions_
   void FindFunctions();
 
-
   // Symbol handling
   Symbol *AddSymbol(const char *name);
   Symbol *FindOrCreateAndFindSymbol(const char *name);
+
+  Statistics *stat() {return &stat_;}
 
  private:
   // Create the section section_name if it does not already exists. Returns a
@@ -190,7 +258,10 @@ class MaoUnit {
   std::map<MaoEntry *, SubSection *> entry_to_subsection_;
 
   MaoOptions *mao_options_;
-};
+
+  Statistics stat_;
+};  // MaoUnit
+
 
 // Iterator wrapper for iterating over all the Sections in a MaoUnit.
 class SectionIterator {
@@ -676,7 +747,8 @@ class SubSection {
 class Function {
  public:
   explicit Function(const std::string &name, const FunctionID id) :
-      name_(name), id_(id), first_entry_(0), last_entry_(0) {}
+      name_(name), id_(id), first_entry_(NULL), last_entry_(NULL), cfg_(NULL),
+      lsg_(NULL) {}
 
   void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
   void set_last_entry(MaoEntry *entry) { last_entry_ = entry;}
@@ -686,9 +758,18 @@ class Function {
   const std::string name() const {return name_;}
   FunctionID id() const {return id_;}
 
-  // TODO(martint): Recondier iterator name.
+  // TODO(martint): Reconsider iterator name.
   SectionEntryIterator EntryBegin();
   SectionEntryIterator EntryEnd();
+
+  CFG *cfg() const {return cfg_;}
+  void set_cfg(CFG *cfg) {cfg_ = cfg;}
+
+  LoopStructureGraph *lsg() const {return lsg_;}
+  void set_lsg(LoopStructureGraph *lsg) {lsg_ = lsg;}
+
+  std::map<MaoEntry *, int> *sizes() const {return sizes_;}
+  void set_sizes(std::map<MaoEntry *, int> *sizes) {sizes_ = sizes;}
 
   void Print();
   void Print(FILE *out);
@@ -706,6 +787,17 @@ class Function {
 
   // Pointer to subsection that this function starts in.
   SubSection *subsection_;
+
+  /////////////////////////////////////////
+  // members populated by analysis passes
+
+  // Pointer to CFG, if one is build for the function.
+  CFG *cfg_;
+  // Pointer to Loop Structure Graph, if one is build for the function
+  LoopStructureGraph *lsg_;
+  // Sizes as determined by the relaxer
+  // TODO(martint): fix types to use the named type in relax.h
+  std::map<MaoEntry *, int> *sizes_;
 };
 
 // A section
@@ -736,6 +828,5 @@ class Section {
 
   std::vector<SubSection *> subsections_;
 };
-
 
 #endif  // MAOUNIT_H_
