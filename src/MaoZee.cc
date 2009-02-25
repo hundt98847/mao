@@ -22,6 +22,7 @@
 #include "MaoUnit.h"
 #include "MaoPasses.h"
 #include "MaoCFG.h"
+#include "MaoDefs.h"
 
 
 // --------------------------------------------------------------------
@@ -47,13 +48,22 @@ class ZeroExtentElimPass : public MaoPass {
         if ((*entry)->Type() != MaoEntry::INSTRUCTION)
           continue;
         InstructionEntry *insn = (InstructionEntry *) (*entry);
+        insn->PrintEntry(stderr);
+        unsigned long long mask = GetRegisterDefMask(insn);
+        fprintf(stderr, "\t\t\t\treg-defs: ");
+        if (mask != (unsigned long long) REG_ALL) {
+          PrintRegisterDefMask(mask, stderr);
+          fprintf(stderr, "\n");
+        } else {
+          fprintf(stderr, "all\n");
+        }
         if (insn->op() != OP_mov)
           continue;
         if (insn->IsRegister32Operand(0) && insn->IsRegister32Operand(1) &&
             !strcmp(insn->GetRegisterOperand(0), insn->GetRegisterOperand(1))) {
           // found a movl reg32, same-reg32 instruction
           //
-          fprintf(stderr, "Working on:");
+          fprintf(stderr, "*** Found zero-extent:");
           insn->PrintEntry(stderr);
         }
       }

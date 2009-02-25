@@ -512,6 +512,19 @@ class InstructionEntry : public MaoEntry {
   bool IsMemOperand(const unsigned int op_index) {
     return IsMemOperand(instruction(), op_index);
   }
+  bool IsMem8Operand(const unsigned int op_index) {
+    return instruction_->types[op_index].bitfield.disp8;
+  }
+  bool IsMem16Operand(const unsigned int op_index) {
+    return instruction_->types[op_index].bitfield.disp16;
+  }
+  bool IsMem32Operand(const unsigned int op_index) {
+    return instruction_->types[op_index].bitfield.disp32 ||
+      instruction_->types[op_index].bitfield.disp32s;
+  }
+  bool IsMem64Operand(const unsigned int op_index) {
+    return instruction_->types[op_index].bitfield.disp64;
+  }
   bool IsImmediateOperand(const unsigned int op_index) {
     return IsImmediateOperand(instruction(), op_index);
   }
@@ -519,16 +532,24 @@ class InstructionEntry : public MaoEntry {
     return IsRegisterOperand(instruction(), op_index);
   }
   bool IsRegister8Operand(const unsigned int op_index) {
-    return instruction_->types[op_index].bitfield.reg8;
+    return instruction_->types[op_index].bitfield.reg8 ||
+      (instruction_->types[op_index].bitfield.acc &&
+       instruction_->types[op_index].bitfield.byte);
   }
   bool IsRegister16Operand(const unsigned int op_index) {
-    return instruction_->types[op_index].bitfield.reg16;
+    return instruction_->types[op_index].bitfield.reg16 ||
+      (instruction_->types[op_index].bitfield.acc &&
+       instruction_->types[op_index].bitfield.word);
   }
   bool IsRegister32Operand(const unsigned int op_index) {
-    return instruction_->types[op_index].bitfield.reg32;
+    return instruction_->types[op_index].bitfield.reg32 ||
+      (instruction_->types[op_index].bitfield.acc &&
+       instruction_->types[op_index].bitfield.dword);
   }
   bool IsRegister64Operand(const unsigned int op_index) {
-    return instruction_->types[op_index].bitfield.reg64;
+    return instruction_->types[op_index].bitfield.reg64 ||
+      (instruction_->types[op_index].bitfield.acc &&
+       instruction_->types[op_index].bitfield.qword);
   }
   bool IsRegisterFloatOperand(const unsigned int op_index) {
     return instruction_->types[op_index].bitfield.floatreg;

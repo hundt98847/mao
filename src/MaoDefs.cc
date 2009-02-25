@@ -24,6 +24,20 @@ unsigned long long GetRegisterDefMask(InstructionEntry *insn) {
   MAO_ASSERT(e->opcode = insn->op());
 
   unsigned long long mask = e->reg_mask;
+
+  // check 1st operand. If it is 8/16/32/64 bit operand, see whether
+  // there are special register masks stored for insn.
+  if (insn->NumOperands()) {
+    if (insn->IsRegister8Operand(0) || insn->IsMem8Operand(0))
+      mask |= e->reg_mask8;
+    if (insn->IsRegister16Operand(0) || insn->IsMem16Operand(0))
+      mask |= e->reg_mask16;
+    if (insn->IsRegister32Operand(0) || insn->IsMem32Operand(0))
+      mask |= e->reg_mask32;
+    if (insn->IsRegister64Operand(0) || insn->IsMem32Operand(0))
+      mask |= e->reg_mask64;
+  }
+
   for (int op = 0; op < 5 && op < insn->NumOperands(); ++op) {
     if (e->op_mask & (1 << op)) {
       if (insn->IsRegisterOperand(op)) {
