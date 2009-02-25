@@ -82,6 +82,7 @@ CCSRCS=						\
 	mao.cc					\
 	MaoCFG.cc				\
 	MaoDebug.cc				\
+	MaoDefs.cc				\
 	MaoLoopAlign.cc				\
 	MaoLoops.cc				\
 	MaoOptions.cc				\
@@ -166,6 +167,7 @@ clean :
 	rm -f $(BINDIR)/mao-$(TARGET)
 	rm -f gen-opcodes-table.h
 	rm -f gen-opcodes.h
+	rm -f gen-defs.h
 	rm -f stamp-bin
 
 -include $(DEPS)

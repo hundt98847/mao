@@ -506,6 +506,9 @@ class InstructionEntry : public MaoEntry {
   virtual bool IsCall() const;
   virtual bool IsReturn() const;
 
+  int NumOperands() {
+    return instruction()->operands;
+  }
   bool IsMemOperand(const unsigned int op_index) {
     return IsMemOperand(instruction(), op_index);
   }

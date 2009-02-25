@@ -15,6 +15,11 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
+#ifndef __MAODEFS_H_INCLUDED
+#define __MAODEFS_H_INCLUDED
+
+#include "MaoUnit.h"
+
 // Bitmasks for operands
 
 #define  DEF_OP0      (1 << 0)
@@ -79,3 +84,17 @@
 
 #define   REG_ALL     (-1LL)
 // more are possible...
+
+typedef struct DefEntry {
+  MaoOpcode          opcode;    // matches table gen-opcodes.h
+  unsigned int       op_mask;   // if insn defs operand(s)
+  unsigned long long reg_mask;  // if insn defs register(s)
+};
+extern DefEntry def_entries[];
+
+// external entry points
+unsigned long long GetRegisterDefMask(InstructionEntry *insn);
+void PrintRegisterDefMask(unsigned long long mask, FILE *f);
+
+
+#endif // __MAODEFS_H_INCLUDED
