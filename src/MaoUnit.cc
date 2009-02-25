@@ -1084,15 +1084,18 @@ void InstructionEntry::PrintMemoryOperand(FILE                  *out,
                 (long long)expr->X_add_number);
         break;
       case O_symbol:
-        fprintf(out, "(");
+        if (expr->X_add_number)
+          fprintf(out, "(");
         /* X_add_symbol + X_add_number.  */
         if (expr->X_add_symbol) {
-          fprintf(out, "%s%s+",
+          fprintf(out, "%s%s",
                   S_GET_NAME(expr->X_add_symbol),
                   GetRelocString(reloc));
         }
-        fprintf(out, "%lld", (long long)expr->X_add_number);
-        fprintf(out, ")");
+        if (expr->X_add_number) {
+          fprintf(out, "+%lld", (long long)expr->X_add_number);
+          fprintf(out, ")");
+        }
         break;
         /* (X_add_symbol - X_op_symbol) + X_add_number.  */
       case O_subtract:
