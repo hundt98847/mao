@@ -259,8 +259,14 @@ void MaoOptions::Parse(char *arg, bool collect) {
     if (!mao_options_) {
       mao_options_ = strdup(arg);
     } else {
-      mao_options_ = strcat(mao_options_, ",");
-      mao_options_ = strcat(mao_options_, arg);
+      // Append mao_options_ and arg
+      char *buf = (char *)malloc(sizeof(char) * (strlen(mao_options_) +
+                                                 strlen(arg) +
+                                                 1 +
+                                                 1));
+      sprintf(buf, "%s,%s", mao_options_, arg);
+      free(mao_options_);
+      mao_options_ = buf;
     }
   }
   while (arg && arg[0]) {
@@ -306,9 +312,17 @@ void MaoOptions::Parse(char *arg, bool collect) {
 
         char *option;
         while (1) {
+          char *old_arg = arg;
           option = NextToken(arg, &arg);
           if (!option || option[0] == '\0')
             break;
+
+          // if the option is a passname, the next character will be a '='
+          // Then we need to exit the option parsing and process the next PASS
+          if (arg[0] == '=') {
+            arg = old_arg;
+            break;
+          }
 
           if (SetPassSpecificOptions(option, arg, &arg, current_opts))
             continue;
