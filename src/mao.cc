@@ -60,20 +60,50 @@ int main(int argc, const char *argv[]) {
   // global init passes
   ReadInput(new_argc, new_argv, &mao_unit);
 
-  // for (function iterator....)
-  // TODO(rhundt): add loop over functinos
-  // TODO(martint): store pass-generated in the correction section/function
-  CreateCFG(&mao_unit, &cfg);
-  LoopStructureGraph *lsg = PerformLoopRecognition(&mao_unit, &cfg);
+  // Create a CFG for each function
+  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
+       iter != mao_unit.ConstFunctionEnd();
+       ++iter) {
+    Function *function = *iter;
+    MAO_ASSERT(function->cfg() == NULL);
+    function->set_cfg(new CFG(&mao_unit));
+    CreateCFG(&mao_unit, function, function->cfg());
+  }
 
-  // for (section iterator...)
-  // TODO(nvachhar): add loop over sections
+  // Find all the loops for each function
+  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
+       iter != mao_unit.ConstFunctionEnd();
+       ++iter) {
+    Function *function = *iter;
+    MAO_ASSERT(function->cfg() != NULL);
+    // Memory for loop structure is allocated in the function.
+    function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg()));
+  }
+
+
+  // Relax the .text sectino, and add a pointer in each
+  // function to the sizemap
   MaoRelaxer::SizeMap sizes;
   Section *section = mao_unit.GetSection(".text");
   MAO_ASSERT(section);
   Relax(&mao_unit, section, &sizes);
 
-  DoLoopAlign(&mao_unit, lsg, &sizes);
+  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
+       iter != mao_unit.ConstFunctionEnd();
+       ++iter) {
+    Function *function = *iter;
+    function->set_sizes(&sizes);
+  }
+
+
+  // Perform the loop alignment optimization on all functions
+  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
+       iter != mao_unit.ConstFunctionEnd();
+       ++iter) {
+    Function *function = *iter;
+    DoLoopAlign(&mao_unit, function);
+  }
+
 
 //   int section_size = 0;
 //   for (SectionEntryIterator iter = section->EntryBegin();
@@ -93,5 +123,7 @@ int main(int argc, const char *argv[]) {
 
   // run the passes
   mao_pass_man->Run();
+
+  mao_unit.stat()->Print(stdout);
   return 0;
 }

@@ -171,7 +171,7 @@ class CFG {
 class CFGBuilder : public MaoPass {
  public:
   CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
-             Section *section, CFG *CFG);
+             Function *function, CFG *CFG);
   void Build();
 
  private:
@@ -262,7 +262,7 @@ class CFGBuilder : public MaoPass {
   }
 
   MaoUnit  *mao_unit_;
-  Section  *section_;
+  Function *function_;
   CFG      *CFG_;
   int       next_id_;
   CFG::LabelToBBMap label_to_bb_map_;
@@ -270,6 +270,6 @@ class CFGBuilder : public MaoPass {
 };
 
 // External entry point
-void CreateCFG(MaoUnit *mao_unit, CFG *cfg);
+void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg);
 
 #endif  // MAOCFG_H_

@@ -31,18 +31,12 @@ class LoopAlignPass : public MaoPass {
   int GetBassicBlockSize(const BasicBlock *BB) const;
 
  private:
-  struct LoopStatistics {
-    int number_of_inner_loops;
-    std::map<int, int> inner_loop_size_distribution;
-    int number_of_aligned_loops;
-  } loop_statistics;
-  void DumpLoopAlignStatistics();
-  bool collect_stat_;
-
   MaoUnit  *mao_unit_;
   LoopStructureGraph *loop_graph_;
   MaoRelaxer::SizeMap *sizes_;
   int maximum_loop_size_;
+
+  bool collect_stat_;
 };
 
 
@@ -67,24 +61,7 @@ LoopAlignPass::LoopAlignPass(MaoUnit *mao, LoopStructureGraph *loop_graph,
 
   collect_stat_ = GetOptionBool("stat");
   if (collect_stat_) {
-    loop_statistics.number_of_inner_loops = 0;
-    loop_statistics.number_of_aligned_loops = 0;
-    loop_statistics.inner_loop_size_distribution.clear();
-  }
-}
-
-void LoopAlignPass::DumpLoopAlignStatistics() {
-  // Dump statistics
-  Trace(2, "Loop Alignment distribution");
-  Trace(2, "  # Inner   loops : %d", loop_statistics.number_of_inner_loops);
-  Trace(2, "  # Aligned loops : %d", loop_statistics.number_of_aligned_loops);
-  // iterate over distribution
-  Trace(2, "   Size : # loops");
-  for (std::map<int, int>::const_iterator iter =
-           loop_statistics.inner_loop_size_distribution.begin();
-       iter != loop_statistics.inner_loop_size_distribution.end();
-       ++iter) {
-    Trace(2, "   %4d : %4d", iter->first, iter->second);
+    mao->stat()->LoopAlignRegister();
   }
 }
 
@@ -92,9 +69,6 @@ void LoopAlignPass::DoLoopAlign() {
   Trace(2, "%d loop(s).", loop_graph_->NumberOfLoops()-1);
   if (loop_graph_->NumberOfLoops() > 1) {
     FindInner(loop_graph_->root());
-    if (collect_stat_) {
-      DumpLoopAlignStatistics();
-    }
   }
   return;
 }
@@ -115,8 +89,8 @@ int LoopAlignPass::GetBassicBlockSize(const BasicBlock *BB) const {
 }
 
 void LoopAlignPass::FindInner(SimpleLoop *loop) {
-  if (loop->nesting_level() == 0 && // Leaf node = Inner loop
-      !loop->is_root()) {   // Make sure its not the root node
+  if (loop->nesting_level() == 0 &&   // Leaf node = Inner loop
+      !loop->is_root()) {             // Make sure its not the root node
     // Found an inner loop
     Trace(2, "Process inner loop...");
     int size = 0;
@@ -132,11 +106,8 @@ void LoopAlignPass::FindInner(SimpleLoop *loop) {
       // The inner loop is to large to be aligned
     }
     if (collect_stat_) {
-      ++loop_statistics.number_of_inner_loops;
-      ++loop_statistics.inner_loop_size_distribution[size];
-      if (size <= maximum_loop_size_) {
-        ++loop_statistics.number_of_aligned_loops;
-      }
+      mao_unit_->stat()->LoopAlignAddInnerLoop(size,
+                                               size <= maximum_loop_size_);
     }
   }
   for (SimpleLoop::LoopSet::iterator liter = loop->GetChildren()->begin();
@@ -150,9 +121,12 @@ void LoopAlignPass::FindInner(SimpleLoop *loop) {
 // External Entry Point
 //
 void DoLoopAlign(MaoUnit *mao,
-                 LoopStructureGraph *loop_graph,
-                 MaoRelaxer::SizeMap *sizes) {
-  LoopAlignPass align(mao, loop_graph, sizes);
+                 Function *function) {
+  // Make sure the analysis have been run on this function
+  MAO_ASSERT(function->cfg()   != NULL);
+  MAO_ASSERT(function->lsg()   != NULL);
+  MAO_ASSERT(function->sizes() != NULL);
+  LoopAlignPass align(mao, function->lsg(), function->sizes());
   align.DoLoopAlign();
   return;
 }
