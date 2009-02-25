@@ -519,27 +519,21 @@ class InstructionEntry : public MaoEntry {
     return IsRegisterOperand(instruction(), op_index);
   }
   bool IsRegister8Operand(const unsigned int op_index) {
-    MAO_ASSERT(IsRegisterOperand(op_index));
     return instruction_->types[op_index].bitfield.reg8;
   }
   bool IsRegister16Operand(const unsigned int op_index) {
-    MAO_ASSERT(IsRegisterOperand(op_index));
     return instruction_->types[op_index].bitfield.reg16;
   }
   bool IsRegister32Operand(const unsigned int op_index) {
-    MAO_ASSERT(IsRegisterOperand(op_index));
     return instruction_->types[op_index].bitfield.reg32;
   }
   bool IsRegister64Operand(const unsigned int op_index) {
-    MAO_ASSERT(IsRegisterOperand(op_index));
     return instruction_->types[op_index].bitfield.reg64;
   }
   bool IsRegisterFloatOperand(const unsigned int op_index) {
-    MAO_ASSERT(IsRegisterOperand(op_index));
     return instruction_->types[op_index].bitfield.floatreg;
   }
   bool IsRegisterXMMOperand(const unsigned int op_index) {
-    MAO_ASSERT(IsRegisterOperand(op_index));
     return instruction_->types[op_index].bitfield.regxmm;
   }
 
