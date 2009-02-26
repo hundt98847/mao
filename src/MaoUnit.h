@@ -197,7 +197,7 @@ class MaoUnit {
    public:
     static const char *GetUniqueName();
    private:
-    static int i;
+    static long i;
   };
 
   MaoOptions *mao_options() { return mao_options_; }
