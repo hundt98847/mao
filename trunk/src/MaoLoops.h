@@ -260,7 +260,8 @@ class LoopStructureGraph {
 
 
 // External Entry Points
-LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, const CFG *CFG);
+LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, const CFG *CFG,
+                                           const char *cfg_name);
 
 
 #endif // MAO_LOOPS_H_INCLUDED_

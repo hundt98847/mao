@@ -446,9 +446,9 @@ MAO_OPTIONS_DEFINE(LFIND, 3) {
 
 class LoopFinderPass : public MaoPass {
  public:
-  LoopFinderPass(MaoUnit *mao, const CFG *cfg) :
+  LoopFinderPass(MaoUnit *mao, const CFG *cfg, const char *cfg_name) :
     MaoPass("LFIND", mao->mao_options(), MAO_OPTIONS(LFIND), true),
-    mao_(mao), cfg_(cfg) {
+    mao_(mao), cfg_(cfg), cfg_name_(cfg_name) {
     dump_vcg_ = GetOptionBool("vcg");
     dump_cfg_ = GetOptionBool("cfg");
     dump_lsg_ = GetOptionBool("lsg");
@@ -461,10 +461,9 @@ class LoopFinderPass : public MaoPass {
     if (dump_cfg_)
       cfg_->Print();
     if (dump_vcg_) {
-      // TODO(martint): Include function name in the filename
-      static int num = 0;
       char filename[64];
-      sprintf(filename, "Function-%d.vcg", num++);
+      MAO_ASSERT(cfg_name_);
+      sprintf(filename, "CFG-%s.vcg", cfg_name_);
       cfg_->DumpVCG(filename);
     }
 
@@ -479,11 +478,13 @@ class LoopFinderPass : public MaoPass {
   bool       dump_vcg_, dump_cfg_, dump_lsg_;
   MaoUnit   *mao_;
   const CFG *cfg_;
+  const char *cfg_name_;
 };
 
 // External Entry Point
 //
-LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, const CFG *cfg) {
-  LoopFinderPass finder(mao, cfg);
+LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, const CFG *cfg,
+                                           const char *cfg_name) {
+  LoopFinderPass finder(mao, cfg, cfg_name);
   return finder.DoTheHavlak();
 }
