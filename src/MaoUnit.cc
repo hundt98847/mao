@@ -363,11 +363,11 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
   return true;
 }
 
-int MaoUnit::BBNameGen::i = 0;
+long MaoUnit::BBNameGen::i = 0;
 const char *MaoUnit::BBNameGen::GetUniqueName() {
   char *buff = strdup(".mao_label_XXXX");
-  MAO_ASSERT(i <= 9999);
-  sprintf(buff, ".mao_label_%04d", i);
+  MAO_ASSERT(i <= LONG_MAX);
+  sprintf(buff, ".mao_label_%ld", i);
   i++;
   return buff;
 }
