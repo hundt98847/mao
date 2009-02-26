@@ -77,7 +77,8 @@ int main(int argc, const char *argv[]) {
     Function *function = *iter;
     MAO_ASSERT(function->cfg() != NULL);
     // Memory for loop structure is allocated in the function.
-    function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg()));
+    function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg(),
+                                             function->name().c_str()));
   }
 
 
