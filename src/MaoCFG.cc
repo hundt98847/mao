@@ -23,6 +23,32 @@
 #include "MaoCFG.h"
 #include "MaoOptions.h"
 
+
+
+// Class: BasicBlock
+
+SectionEntryIterator BasicBlock::EntryBegin() {
+  return SectionEntryIterator(first_entry());
+}
+
+SectionEntryIterator BasicBlock::EntryEnd() {
+  MaoEntry *entry = last_entry();
+  if (entry) {
+    entry = entry->next();
+  }
+  return SectionEntryIterator(entry);
+}
+
+void BasicBlock::AddEntry(MaoEntry *entry) {
+  if (NULL == first_entry_) {
+    first_entry_ = entry;
+  }
+  last_entry_ = entry;
+}
+
+
+
+
 void CFG::Print(FILE *out) const {
   // TODO(nvachhar): Emit a text representation of the CFG
 }
@@ -179,9 +205,8 @@ void CFGBuilder::Build() {
                 target = BreakUpBBAtLabel(target,
                                           mao_unit_->GetLabelEntry(label));
 
-                // Update label_to_bb_map_ to reflect the split.
-                for (MaoUnit::EntryIterator entry_iter = target->BeginEntries();
-                     entry_iter != target->EndEntries(); ++entry_iter) {
+                for (SectionEntryIterator entry_iter = target->EntryBegin();
+                     entry_iter != target->EntryEnd(); ++entry_iter) {
                   MaoEntry *temp_entry = *entry_iter;
                   if (temp_entry->Type() == MaoEntry::LABEL) {
                     LabelEntry *temp_label =
@@ -218,6 +243,32 @@ void CFGBuilder::Build() {
   if (create_fall_through)
     Link(previous, sink, true);
 }
+
+
+BasicBlock *CFGBuilder::BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label) {
+  BasicBlock *new_bb = CreateBasicBlock(label->name());
+  CFG_->MapBasicBlock(new_bb);
+
+  // Remap the pointers
+  new_bb->set_first_entry(label);
+  new_bb->set_last_entry(bb->last_entry());
+  bb->set_last_entry(label->prev());
+
+  // Move all the out edges
+  for (BasicBlock::EdgeIterator edge_iter = bb->BeginOutEdges();
+       edge_iter != bb->EndOutEdges();
+       edge_iter = bb->EraseOutEdge(edge_iter)) {
+    BasicBlockEdge *edge = *edge_iter;
+    edge->set_source(new_bb);
+    new_bb->AddOutEdge(edge);
+  }
+
+  // Link the two basic blocks with a fall through edge
+  Link(bb, new_bb, true);
+
+  return new_bb;
+}
+
 
 #include "MaoRelax.h"
 

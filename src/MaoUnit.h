@@ -352,6 +352,12 @@ class MaoEntry {
   const char *line_verbatim_;
 
   const MaoUnit *maounit_;
+
+  // This flag is true for entries that have been added
+  // by mao.
+  // For labels, this means that there is NO corresponding
+  // entry in the gas symbol table.s
+  bool mao_local_;
 };
 
 

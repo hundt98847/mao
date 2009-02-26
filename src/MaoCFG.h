@@ -30,6 +30,8 @@
 
 class BasicBlock;
 
+typedef int BasicBlockID;
+
 class BasicBlockEdge {
  public:
   BasicBlockEdge(BasicBlock *source, BasicBlock *dest, bool fall_through)
@@ -57,7 +59,9 @@ class BasicBlock {
   typedef EdgeList::iterator EdgeIterator;
   typedef EdgeList::const_iterator ConstEdgeIterator;
 
-  BasicBlock(int id, const char *label) : id_(id), label_(label) { }
+  BasicBlock(BasicBlockID id, const char *label) : id_(id), label_(label),
+                                                   first_entry_(NULL),
+                                                   last_entry_(NULL) { }
   ~BasicBlock() {
     for (EdgeIterator iter = out_edges_.begin();
          iter != out_edges_.end(); ++iter) {
@@ -67,7 +71,7 @@ class BasicBlock {
 
   // Getters
   //
-  int id() const { return id_; }
+  BasicBlockID id() const { return id_; }
   const char *label() const { return label_; }
 
   // Edge methods
@@ -100,27 +104,45 @@ class BasicBlock {
   }
 
   // Entry methods
-  //
-  MaoUnit::EntryIterator      BeginEntries()       { return entries_.begin(); }
-  MaoUnit::ConstEntryIterator BeginEntries() const { return entries_.begin(); }
-  MaoUnit::EntryIterator      EndEntries  ()       { return entries_.end(); }
-  MaoUnit::ConstEntryIterator EndEntries  () const { return entries_.end(); }
+  SectionEntryIterator EntryBegin();
+  SectionEntryIterator EntryEnd();
+  void AddEntry(MaoEntry *entry);
 
-  void AddEntry(MaoEntry *entry) { entries_.push_back(entry); }
-  void InsertEntry(MaoUnit::EntryVector::iterator pos,
-                   MaoEntry *entry) { entries_.insert(pos, entry); }
-  MaoUnit::EntryIterator EraseEntry(MaoUnit::EntryIterator pos) {
-    return entries_.erase(pos);
+  // Is this basic block located directly after basicblock in the section.
+  bool IsArgumentAfterInSection(const BasicBlock *basicblock) const {
+    // Make sure that if they are linked, both point correctly!
+    MAO_ASSERT(basicblock->last_entry()->next() == NULL ||
+               basicblock->last_entry()->next() != first_entry() ||
+               first_entry()->prev() == basicblock->last_entry());
+    return (basicblock->last_entry()->next() != NULL &&
+            basicblock->last_entry()->next() == first_entry());
   }
 
+  // Is this basic block located directly after basicblock in the section.
+  bool IsArgumentBeforeInSection(const BasicBlock *basicblock) const {
+    // Make sure that if they are linked, both point correctly!
+    MAO_ASSERT(basicblock->first_entry()->prev() == NULL ||
+               basicblock->first_entry()->prev() != last_entry() ||
+               last_entry()->next() == basicblock->first_entry());
+    return (basicblock->first_entry()->prev() != NULL &&
+            basicblock->first_entry()->prev() == last_entry());
+  }
+
+  MaoEntry *first_entry() const { return first_entry_;}
+  MaoEntry *last_entry() const { return last_entry_;}
+  void set_first_entry(MaoEntry *entry)  { first_entry_ = entry;}
+  void set_last_entry(MaoEntry *entry)  { last_entry_ = entry;}
+
  private:
-  const int id_;
+  const BasicBlockID id_;
   const char *label_;
 
   EdgeList in_edges_;
   EdgeList out_edges_;
 
-  MaoUnit::EntryVector entries_;
+  // Pointers to the first and last entry of the basic block.
+  MaoEntry *first_entry_;
+  MaoEntry *last_entry_;
 };
 
 
@@ -149,7 +171,7 @@ class CFG {
   }
 
   // Getter methods
-  BasicBlock *GetBasicBlock(int id) { return basic_blocks_[id]; }
+  BasicBlock *GetBasicBlock(BasicBlockID id) { return basic_blocks_[id]; }
   BasicBlock *FindBasicBlock(const char *label) {
     LabelToBBMap::iterator bb = basic_block_map_.find(label);
     if (bb == basic_block_map_.end())
@@ -212,44 +234,7 @@ class CFGBuilder : public MaoPass {
     return edge;
   }
 
-  BasicBlock *BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label) {
-    BasicBlock *new_bb = CreateBasicBlock(label->name());
-    CFG_->MapBasicBlock(new_bb);
-
-    MaoUnit::EntryIterator entry_iter = bb->BeginEntries();
-
-    // Advance entry_iter to label
-    for (; entry_iter != bb->EndEntries(); ++entry_iter) {
-      MaoEntry *entry = *entry_iter;
-      if (entry->Type() == MaoEntry::LABEL &&
-          static_cast<LabelEntry *>(entry) == label) {
-        break;
-      }
-    }
-
-    // Label should exist, so entry_iter should not be equal to end
-    MAO_ASSERT(entry_iter != bb->EndEntries());
-
-    // Copy the entries
-    for (; entry_iter != bb->EndEntries();
-         entry_iter = bb->EraseEntry(entry_iter)) {
-      new_bb->AddEntry(*entry_iter);
-    }
-
-    // Move all the out edges
-    for (BasicBlock::EdgeIterator edge_iter = bb->BeginOutEdges();
-         edge_iter != bb->EndOutEdges();
-         edge_iter = bb->EraseOutEdge(edge_iter)) {
-      BasicBlockEdge *edge = *edge_iter;
-      edge->set_source(new_bb);
-      new_bb->AddOutEdge(edge);
-    }
-
-    // Link the two basic blocks with a fall through edge
-    Link(bb, new_bb, true);
-
-    return new_bb;
-  }
+  BasicBlock *BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label);
 
   template <class OutputIterator>
   void GetTargets(MaoEntry *entry, OutputIterator iter) const {
@@ -264,7 +249,7 @@ class CFGBuilder : public MaoPass {
   MaoUnit  *mao_unit_;
   Function *function_;
   CFG      *CFG_;
-  int       next_id_;
+  BasicBlockID  next_id_;
   CFG::LabelToBBMap label_to_bb_map_;
   bool      split_basic_blocks_;
 };
