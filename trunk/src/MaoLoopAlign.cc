@@ -28,7 +28,7 @@ class LoopAlignPass : public MaoPass {
                          MaoRelaxer::SizeMap *sizes);
   void FindInner(SimpleLoop *loop);
   void DoLoopAlign();
-  int GetBassicBlockSize(const BasicBlock *BB) const;
+  int GetBassicBlockSize(BasicBlock *BB);
 
  private:
   MaoUnit  *mao_unit_;
@@ -73,13 +73,14 @@ void LoopAlignPass::DoLoopAlign() {
   return;
 }
 
-int LoopAlignPass::GetBassicBlockSize(const BasicBlock *BB) const {
+
+// TODO(martint): make this const
+int LoopAlignPass::GetBassicBlockSize(BasicBlock *BB) {
   int size = 0;
-  // Iterate over entry in BB
-  for (MaoUnit::ConstEntryIterator bbentry_iter = BB->BeginEntries();
-       bbentry_iter != BB->EndEntries();
-       ++bbentry_iter) {
-    MaoEntry *entry = *bbentry_iter;
+  for (SectionEntryIterator iter = BB->EntryBegin();
+       iter != BB->EntryEnd();
+       ++iter) {
+    MaoEntry *entry = *iter;
     size += (*sizes_)[entry];
   }
   Trace(3, "Size for bb[%3d] is %d.",
@@ -88,6 +89,10 @@ int LoopAlignPass::GetBassicBlockSize(const BasicBlock *BB) const {
   return size;
 }
 
+
+
+// Function called recurively to find the inner loops that are candidates
+// for alignment.
 void LoopAlignPass::FindInner(SimpleLoop *loop) {
   if (loop->nesting_level() == 0 &&   // Leaf node = Inner loop
       !loop->is_root()) {             // Make sure its not the root node
@@ -102,8 +107,29 @@ void LoopAlignPass::FindInner(SimpleLoop *loop) {
     }
     if (size <= maximum_loop_size_) {
       // We have found an inner loop that we should align
-    } else {
-      // The inner loop is to large to be aligned
+      // TODO(martint): add code here to add alignment
+      for (SimpleLoop::BasicBlockSet::iterator bb_iter_i =
+               loop->BasicBlockBegin();
+           bb_iter_i != loop->BasicBlockEnd(); ++bb_iter_i) {
+        BasicBlock *bb_i = *bb_iter_i;
+        SimpleLoop::BasicBlockSet::iterator bb_iter_j = bb_iter_i;
+        ++bb_iter_j;
+        for (;
+             bb_iter_j != loop->BasicBlockEnd(); ++bb_iter_j) {
+          BasicBlock *bb_j = *bb_iter_j;
+          // Check:
+          if (bb_i->IsArgumentBeforeInSection(bb_j)) {
+            Trace(3, "BB %d  is after BB %d",
+                  bb_i->id(),
+                  bb_j->id());
+          }
+          if (bb_i->IsArgumentAfterInSection(bb_j)) {
+            Trace(3, "BB %d  is before BB %d",
+                  bb_i->id(),
+                  bb_j->id());
+          }
+        }
+      }
     }
     if (collect_stat_) {
       mao_unit_->stat()->LoopAlignAddInnerLoop(size,

@@ -43,8 +43,8 @@ class ZeroExtentElimPass : public MaoPass {
   void DoElim() {
     for (CFG::BBVector::const_iterator it = cfg_->Begin();
          it != cfg_->End(); ++it) {
-      MaoUnit::EntryIterator entry = (*it)->BeginEntries();
-      for (; entry != (*it)->EndEntries(); ++entry) {
+      SectionEntryIterator entry = (*it)->EntryBegin();
+      for (; entry != (*it)->EntryEnd(); ++entry) {
         if ((*entry)->Type() != MaoEntry::INSTRUCTION)
           continue;
         InstructionEntry *insn = (InstructionEntry *) (*entry);
