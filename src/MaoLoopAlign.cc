@@ -337,7 +337,10 @@ int LoopAlignPass::NumLines(const Path *path,
        iter != path->end();
        ++iter) {
     if (chain_sizes->find(*iter) != chain_sizes->end()) {
-      MAO_ASSERT((*chain_sizes)[*iter] > 0);
+      // This assert would trigger if it found
+      // basic blocks without any size!
+      //MAO_ASSERT((*chain_sizes)[*iter] > 0);
+      MAO_ASSERT((*chain_sizes)[*iter] >= 0);
       int c_lines = ((*chain_sizes)[*iter]-1)/16+1;
       lines += c_lines;
     }
