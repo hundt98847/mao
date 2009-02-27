@@ -64,32 +64,34 @@ int main(int argc, const char *argv[]) {
   // function to the sizemap
   MaoRelaxer::SizeMap sizes;
   Section *section = mao_unit.GetSection(".text");
-  MAO_ASSERT(section);
-  Relax(&mao_unit, section, &sizes);
+  if (section) {
+    Relax(&mao_unit, section, &sizes);
 
-  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
-       iter != mao_unit.ConstFunctionEnd();
-       ++iter) {
-    Function *function = *iter;
-    function->set_sizes(&sizes);
-  }
+    for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
+         iter != mao_unit.ConstFunctionEnd();
+         ++iter) {
+      Function *function = *iter;
+      function->set_sizes(&sizes);
+    }
 
-  // Create a CFG for each function
-  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
-       iter != mao_unit.ConstFunctionEnd();
-       ++iter) {
-    Function *function = *iter;
-    MAO_ASSERT(function->cfg() == NULL);
-    function->set_cfg(new CFG(&mao_unit));
-    CreateCFG(&mao_unit, function, function->cfg());
+    // Create a CFG for each function
+    for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
+         iter != mao_unit.ConstFunctionEnd();
+         ++iter) {
+      Function *function = *iter;
+      MAO_ASSERT(function->cfg() == NULL);
+      function->set_cfg(new CFG(&mao_unit));
+      CreateCFG(&mao_unit, function, function->cfg());
 
-    MAO_ASSERT(function->cfg() != NULL);
-    // Memory for loop structure is allocated in the function.
-    function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg(),
-                                             function->name().c_str()));
-    DoLoopAlign(&mao_unit, function);
-  }
+      MAO_ASSERT(function->cfg() != NULL);
+      // Memory for loop structure is allocated in the function.
+      function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg(),
+                                               function->name().c_str()));
 
+      //PerformZeroExtensionElimination(&mao_unit, function->cfg());
+      DoLoopAlign(&mao_unit, function);
+    }
+  } // .text section
 
 //   int section_size = 0;
 //   for (SectionEntryIterator iter = section->EntryBegin();
