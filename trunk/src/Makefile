@@ -4,13 +4,11 @@ DLOCALEDIR="\"/usr/share/locale\""
 BINUTILSRC=../binutils-2.19
 BINUTILOBJ=$(BINUTILSRC)-obj-$(TARGET)
 PYTHON=../python-2.5.4
+PYTHONLIB=$(PYTHON)/usr/local/lib/python2.5/config/libpython2.5.a
+PYTHONINCL=/usr/local/include/python2.5
 ifeq ($(OS),Linux)
- PYTHONLIB=$(PYTHON)/usr/local/lib/python2.5/libpython2.5.a
- PYTHONINCL=/usr/local/include/python2.5
  PYTHONLDOPTS=-Xlinker -export-dynamic 
 else
- PYTHONLIB=$(PYTHON)/usr/local/lib/python2.5/libpython2.5.a
- PYTHONINCL=/usr/local/include/python2.5
  PYTHONLDOPTS=
 endif
 LIBZ=-lz
