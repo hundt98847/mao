@@ -153,6 +153,7 @@ void DoLoopAlign(MaoUnit *mao,
   MAO_ASSERT(function->lsg()   != NULL);
   MAO_ASSERT(function->sizes() != NULL);
   LoopAlignPass align(mao, function->lsg(), function->sizes());
+  align.set_timed();
   align.DoLoopAlign();
   return;
 }

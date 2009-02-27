@@ -58,7 +58,13 @@ MaoPass::MaoPass(const char *name, MaoOptions *mao_options,
                  MaoOption *options, bool enabled) :
   name_(name), options_(options), enabled_(enabled),
   tracing_level_(mao_options ? (mao_options->verbose() ? 3 : 0) : 0),
-  trace_file_(stderr), mao_options_(mao_options) {
+  trace_file_(stderr), mao_options_(mao_options), timed_(false) {
+  MAO_ASSERT_MSG(options,
+                 "Option array is required for pass constuction "
+                 "(pass: %s)", name);
+  MAO_ASSERT_MSG(mao_options,
+                 "Options Mgr required for each pass "
+                 "(pass: %s)", name);
   option_to_pass_map[options_] = this;
   if (mao_options_)
     mao_options_->Reparse();
@@ -72,10 +78,22 @@ MaoPass::MaoPass(const char *name, MaoOptions *mao_options,
 
 MaoPass::~MaoPass() {
   option_to_pass_map[options_] = NULL;
+  if (timed_)
+    TimerStop();
   if (enabled_)
     Trace(1, "end");
 }
 
+
+void MaoPass::TimerStart() {
+  if (mao_options_)
+    mao_options_->TimerStart(name_);
+}
+
+void MaoPass::TimerStop() {
+  if (mao_options_)
+    mao_options_->TimerStop(name_);
+}
 
 void MaoPass::Trace(unsigned int level, const char *fmt, ...) const {
   MAO_ASSERT(level>0);
@@ -123,10 +141,13 @@ int MaoPass::GetOptionInt(const char *name) {
   return opt->ival_;
 }
 
+MAO_OPTIONS_DEFINE(BEG, 0) {
+};
+
 // Dummy pass to mark begin of compilation
 class BeginPass : public MaoPass {
   public:
-  BeginPass() : MaoPass("BEG", NULL, NULL, true) {
+  BeginPass(MaoOptions *opts) : MaoPass("BEG", opts, MAO_OPTIONS(BEG), true) {
   }
 
   bool Go() {
@@ -135,10 +156,13 @@ class BeginPass : public MaoPass {
   }
 };
 
+MAO_OPTIONS_DEFINE(END, 0) {
+};
+
 // Dummy pass to mark end of compilation
 class EndPass : public MaoPass {
   public:
-  EndPass() : MaoPass("END", NULL, NULL, true) {
+  EndPass(MaoOptions *opts) : MaoPass("END", opts, MAO_OPTIONS(END), true) {
   }
 
   bool Go() {
@@ -148,13 +172,68 @@ class EndPass : public MaoPass {
 };
 
 
+MAO_OPTIONS_DEFINE(READ, 0) {
+};
+
+// ReadAsmPass
+//
+// Read/parse the input asm file and generate the IR
+//
+class ReadInputPass : public MaoPass {
+ public:
+  ReadInputPass(int argc, char *argv[], MaoUnit *mao_unit)
+      : MaoPass("READ", mao_unit->mao_options(), MAO_OPTIONS(READ), true) {
+    set_timed();
+    // Use gas to parse input file.
+    MAO_ASSERT(!as_main(argc, argv));
+    mao_unit->FindFunctions();
+  }
+};
+
+MAO_OPTIONS_DEFINE(ASM, 0) {
+};
+
+// AssemblyPass
+//
+// Pass to dump out the IR in assembly format
+//
+AssemblyPass::AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
+  MaoPass("ASM", mao_options, MAO_OPTIONS(ASM), true), mao_unit_(mao_unit),
+  mao_options_(mao_options) {}
+
+bool AssemblyPass::Go() {
+  if (mao_options_->write_assembly()) {
+    Trace(1, "Generate Assembly File: %s",
+          mao_options_->assembly_output_file_name());
+
+    FILE *outfile =
+      mao_options_->output_is_stdout() ? stdout :
+      mao_options_->output_is_stderr() ? stderr :
+      fopen(mao_options_->assembly_output_file_name(), "w");
+    MAO_ASSERT(outfile);
+
+    // Print out the code that makes sure that the symbol
+    // table is in the original order
+    PrintAsmSymbolHeader(outfile);
+
+    fprintf(outfile, "# MaoUnit:\n");
+    mao_unit_->PrintMaoUnit(outfile);
+
+    if (outfile != stdout)
+      fclose(outfile);
+  }
+  return true;
+}
+
+
+
 // Static single instance of pass manager
 static MaoPassManager  mao_pass_man;
 
 // Assemble base pass ordering
-MaoPassManager *InitPasses() {
-  mao_pass_man.AddNewPass(new BeginPass());
-  mao_pass_man.AddNewPass(new EndPass());
+MaoPassManager *InitPasses(MaoOptions *opts) {
+  mao_pass_man.AddNewPass(new BeginPass(opts));
+  mao_pass_man.AddNewPass(new EndPass(opts));
 
   return &mao_pass_man;
 }

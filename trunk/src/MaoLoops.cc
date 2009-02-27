@@ -486,5 +486,6 @@ class LoopFinderPass : public MaoPass {
 LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, const CFG *cfg,
                                            const char *cfg_name) {
   LoopFinderPass finder(mao, cfg, cfg_name);
+  finder.set_timed();
   return finder.DoTheHavlak();
 }
