@@ -274,5 +274,6 @@ BasicBlock *CFGBuilder::BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label) {
 
 void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg) {
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), function, cfg);
+  builder.set_timed();
   builder.Build();
 }

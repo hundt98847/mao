@@ -55,32 +55,10 @@ int main(int argc, const char *argv[]) {
   register_mao_unit(&mao_unit);
 
   // Make Passes...
-  MaoPassManager *mao_pass_man = InitPasses();
+  MaoPassManager *mao_pass_man = InitPasses(&mao_options);
 
   // global init passes
   ReadInput(new_argc, new_argv, &mao_unit);
-
-  // Create a CFG for each function
-  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
-       iter != mao_unit.ConstFunctionEnd();
-       ++iter) {
-    Function *function = *iter;
-    MAO_ASSERT(function->cfg() == NULL);
-    function->set_cfg(new CFG(&mao_unit));
-    CreateCFG(&mao_unit, function, function->cfg());
-  }
-
-  // Find all the loops for each function
-  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
-       iter != mao_unit.ConstFunctionEnd();
-       ++iter) {
-    Function *function = *iter;
-    MAO_ASSERT(function->cfg() != NULL);
-    // Memory for loop structure is allocated in the function.
-    function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg(),
-                                             function->name().c_str()));
-  }
-
 
   // Relax the .text sectino, and add a pointer in each
   // function to the sizemap
@@ -96,12 +74,19 @@ int main(int argc, const char *argv[]) {
     function->set_sizes(&sizes);
   }
 
-
-  // Perform the loop alignment optimization on all functions
+  // Create a CFG for each function
   for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
        iter != mao_unit.ConstFunctionEnd();
        ++iter) {
     Function *function = *iter;
+    MAO_ASSERT(function->cfg() == NULL);
+    function->set_cfg(new CFG(&mao_unit));
+    CreateCFG(&mao_unit, function, function->cfg());
+
+    MAO_ASSERT(function->cfg() != NULL);
+    // Memory for loop structure is allocated in the function.
+    function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg(),
+                                             function->name().c_str()));
     DoLoopAlign(&mao_unit, function);
   }
 
@@ -126,5 +111,7 @@ int main(int argc, const char *argv[]) {
   mao_pass_man->Run();
 
   mao_unit.stat()->Print(stdout);
+  if (mao_options.timer_print())
+    mao_options.TimerPrint();
   return 0;
 }

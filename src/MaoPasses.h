@@ -54,6 +54,10 @@ class MaoPass {
   const char  *GetOptionString(const char *name);
   int          GetOptionInt(const char *name);
 
+  // Timers
+  void         TimerStart();
+  void         TimerStop();
+
   // Setters/Getters
   const char  *name() const { return name_; }
   bool         enabled() const { return enabled_; }
@@ -62,6 +66,7 @@ class MaoPass {
 
   void set_enabled(bool value) { enabled_ = value; }
   void set_tracing_level(unsigned int value) { tracing_level_ = value; }
+  void set_timed(void) { timed_ = true; TimerStart(); }
 
  private:
   const char   *name_;
@@ -70,6 +75,7 @@ class MaoPass {
   unsigned int  tracing_level_;
   FILE         *trace_file_;
   MaoOptions   *mao_options_;
+  bool          timed_;
 };
 
 
@@ -122,9 +128,10 @@ class MaoPassManager {
     for (std::list<MaoPass *>::iterator piter = pass_list_.begin();
          piter != pass_list_.end(); ++piter) {
       MaoPass *pass = (*piter);
-      fflush(stderr);
       if (pass->enabled()) {
+        pass->TimerStart();
         MAO_ASSERT(pass->Go());
+        pass->TimerStop();
       }
     }
   }
@@ -144,58 +151,15 @@ class MaoPassManager {
 //
 class AssemblyPass : public MaoPass {
  public:
-  AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-    MaoPass("ASM", mao_options, NULL, true), mao_unit_(mao_unit),
-    mao_options_(mao_options) {
-  }
-
+  AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit);
   void PrintAsmSymbolHeader(FILE *out);
-
-
-  bool Go() {
-    if (mao_options_->write_assembly()) {
-      Trace(1, "Generate Assembly File: %s",
-            mao_options_->assembly_output_file_name());
-
-      FILE *outfile =
-        mao_options_->output_is_stdout() ? stdout :
-        mao_options_->output_is_stderr() ? stderr :
-        fopen(mao_options_->assembly_output_file_name(), "w");
-      MAO_ASSERT(outfile);
-
-      // Print out the code that makes sure that the symbol
-      // table is in the original order
-      PrintAsmSymbolHeader(outfile);
-
-      fprintf(outfile, "# MaoUnit:\n");
-      mao_unit_->PrintMaoUnit(outfile);
-
-      if (outfile != stdout)
-        fclose(outfile);
-    }
-
-    return true;
-  }
+  bool Go();
 
  private:
   MaoUnit    *mao_unit_;
   MaoOptions *mao_options_;
 };
 
-
-// ReadAsmPass
-//
-// Read/parse the input asm file and generate the IR
-//
-class ReadInputPass : public MaoPass {
- public:
-  ReadInputPass(int argc, char *argv[], MaoUnit *mao_unit)
-      : MaoPass("READ", NULL, NULL, true) {
-    // Use gas to parse input file.
-    MAO_ASSERT(!as_main(argc, argv));
-    mao_unit->FindFunctions();
-  }
-};
 
 void ReadInput(int argc, char *argv[], MaoUnit *mao_unit);
 
@@ -234,7 +198,7 @@ class DumpSymbolTablePass : public MaoPass {
 // This function links together a begin pass (BEG) and end pass (END)
 // and return a pointer to the static pass manager object.
 //
-MaoPassManager *InitPasses();
+MaoPassManager *InitPasses(MaoOptions *opts);
 
 
 // Find a pass for a given option set

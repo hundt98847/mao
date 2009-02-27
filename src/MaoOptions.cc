@@ -43,8 +43,10 @@ void MaoOptions::set_assembly_output_file_name(const char *file_name) {
 //
 class MaoOptionArray {
  public:
-  MaoOptionArray(const char *name, MaoOption *array, int num_entries)
-    : name_(name), array_(array), num_entries_(num_entries) {
+  MaoOptionArray(const char *name, MaoOption *array, int num_entries,
+                 MaoTimer *timer)
+    : name_(name), array_(array), num_entries_(num_entries),
+    timer_(timer){
   }
 
   MaoOption  *FindOption(const char *option_name) {
@@ -58,10 +60,12 @@ class MaoOptionArray {
   const char *name() const { return name_; }
   MaoOption  *array() { return array_; }
   int         num_entries() { return num_entries_; }
+  MaoTimer   *timer() { return timer_; }
  private:
   const char *name_;
   MaoOption  *array_;
   int         num_entries_;
+  MaoTimer   *timer_;
 };
 
 // Maintain static list of all option arrays.
@@ -84,6 +88,7 @@ void MaoOptions::ProvideHelp(bool always) {
           "-h          display this help text\n"
           "-v          verbose (set trace level to 3)\n"
           "-ofname     specify assembly output file (also -o,fname)\n"
+          "-T          output timing information for passes\n"
           "\n"
           "PASS=[phase-option][,phase-option]*\n"
           "\nwith PASS and 'phase-option' being:\n\n"
@@ -108,14 +113,25 @@ void MaoOptions::ProvideHelp(bool always) {
   exit(0);
 }
 
+void MaoOptions::TimerPrint() {
+  fprintf(stderr, "Timing information for passes\n");
+  for (OptionVector::iterator it = option_array_list->begin();
+       it != option_array_list->end(); ++it) {
+    fprintf(stderr, "  Pass: %-12s ", (*it)->name());
+    (*it)->timer()->Print(stderr);
+    fprintf(stderr, "\n");
+  }
+}
+
 
 // Simple (static) constructor to allow registration of
 // option arrays.
 //
 MaoOptionRegister::MaoOptionRegister(const char *name,
                                      MaoOption  *array,
-                                     int N) {
-  MaoOptionArray *tmp = new MaoOptionArray(name, array, N);
+                                     int N,
+                                     MaoTimer   *timer) {
+  MaoOptionArray *tmp = new MaoOptionArray(name, array, N, timer);
   if (!option_array_list) {
     option_array_list = new OptionVector;
   }
@@ -162,6 +178,15 @@ void MaoOptions::SetOption(const char *pass_name,
   option->cval_ = value;
 }
 
+void MaoOptions::TimerStart(const char *pass_name) {
+  MaoOptionArray *entry = FindOptionArray(pass_name);
+  entry->timer()->Start();
+}
+
+void MaoOptions::TimerStop(const char *pass_name) {
+  MaoOptionArray *entry = FindOptionArray(pass_name);
+  entry->timer()->Stop();
+}
 
 static char token_buff[128];
 
@@ -281,6 +306,9 @@ void MaoOptions::Parse(char *arg, bool collect) {
         ++arg;
       } else if (arg[0] == 'h') {
         set_help();
+        ++arg;
+      } else if (arg[0] == 'T') {
+        set_timer_print();
         ++arg;
       } else if (arg[0] == 'o') {
         ++arg;
