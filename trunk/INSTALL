@@ -5,8 +5,8 @@ below. Below are the instruction for builing mao for both i686 and x86_64.
 
 cd $DIR
 wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
-gzip -dc gunzip binutils-2.19.tar.gz | tar xvf -
-mkdir binutils-2.19-obj-i686 binutils-2.19-obj-x86_64
+gzip -dc binutils-2.19.tar.gz | tar xvf -
+mkdir binutils-2.19-obj-i686-linux binutils-2.19-obj-x86_64-linux
 cd binutils-2.19-obj-i686-linux
 ../binutils-2.19/configure --target=i686-linux
 make
@@ -14,6 +14,12 @@ cd ..
 cd binutils-2.19-obj-x86_64-linux
 ../binutils-2.19/configure --target=x86_64-linux
 make
+cd ..
+wget http://www.python.org/ftp/python/2.5.4/Python-2.5.4.tgz
+gzip -dc Python-2.5.4.tgz  | tar xvf -
+cd Python-2.5.4
+./configure PREFIX=$DIR/python-2.5.4 EXEC_PREFIX=$DI$/python-2.5.4
+make DESTDIR=$DIR/python-2.5.4 install
 cd ..
 cd src
 make TARGET=i686
