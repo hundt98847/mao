@@ -1188,7 +1188,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
   const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
   // Opcodes with REPE-bit prefix, but without any prefix in the assembly;
-  const MaoOpcode norep_ops[]= {OP_movdqu};
+  const MaoOpcode norep_ops[]= {OP_movdqu, OP_mulss, OP_divss, OP_subss,
+                                OP_movq, OP_cvttss2si, OP_addss};
   const MaoOpcode norepn_ops[]= {OP_movsd, OP_cvtsi2sd, OP_mulsd, OP_addsd,
                                  OP_divsd,  OP_subsd, OP_cvttsd2si};
 
