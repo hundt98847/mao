@@ -1187,15 +1187,6 @@ bool InstructionEntry::PrintSuffix() const {
 void InstructionEntry::PrintInstruction(FILE *out) const {
   const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
-  // Opcodes with REPE-bit prefix, but without any prefix in the assembly;
-  const MaoOpcode norep_ops[]= {OP_movdqu, OP_mulss, OP_divss, OP_subss,
-                                OP_movq, OP_cvttss2si, OP_addss};
-  const MaoOpcode norepn_ops[]= {OP_movsd, OP_cvtsi2sd, OP_mulsd, OP_addsd,
-                                 OP_divsd,  OP_subsd, OP_cvttsd2si};
-
-// 
-// OP_cvttsd2si
-// OP_cvttsd2siq
 
   // Prefixes
   fprintf(out, "\t");
@@ -1220,13 +1211,9 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                                 sizeof(repe_ops)/sizeof(MaoOpcode))) {
               MAO_ASSERT_MSG(false,
                              "Found prefix does not match the instruction.");
-            } else if (IsInList(op(), norepn_ops,
-                                sizeof(norepn_ops)/sizeof(MaoOpcode))) {
-	      ;
             } else {
-              MAO_ASSERT_MSG(false,
-                             "Unable to find instruction with repn* "
-                             "prefix for %d", op());
+              // TODO(martint): Identify what instruction have the prefix
+              //                but are not string instructino (SSE?)
             }
             break;
           case REPE_PREFIX_OPCODE:
@@ -1235,13 +1222,9 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             } else if (IsInList(op(), rep_ops,
                                 sizeof(rep_ops)/sizeof(MaoOpcode))) {
               fprintf(out, "rep ");
-            } else if (IsInList(op(), norep_ops,
-                                sizeof(norep_ops)/sizeof(MaoOpcode))) {
-	      ;
-	    } else {
-              MAO_ASSERT_MSG(false,
-                             "Unable to find instruction with rep* "
-                             "prefix for %d", op());
+            } else {
+              // TODO(martint): Identify what instruction have the prefix
+              //                but are not string instructino (SSE?)
             }
             break;
             // Rex prefixes are used for 64-bit extention
