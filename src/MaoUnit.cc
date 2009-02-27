@@ -1189,6 +1189,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
   // Opcodes with REPE-bit prefix, but without any prefix in the assembly;
   const MaoOpcode norep_ops[]= {OP_movdqu};
+  const MaoOpcode norepe_ops[]= {OP_movsd};
 
   // Prefixes
   fprintf(out, "\t");
@@ -1213,6 +1214,9 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                                 sizeof(repe_ops)/sizeof(MaoOpcode))) {
               MAO_ASSERT_MSG(false,
                              "Found prefix does not match the instruction.");
+            } else if (IsInList(op(), norepe_ops,
+                                sizeof(norepe_ops)/sizeof(MaoOpcode))) {
+	      ;
             } else {
               MAO_ASSERT_MSG(false,
                              "Unable to find instruction with rep* prefix");
