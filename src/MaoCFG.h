@@ -108,8 +108,8 @@ class BasicBlock {
   SectionEntryIterator EntryEnd();
   void AddEntry(MaoEntry *entry);
 
-  // Is this basic block located directly after basicblock in the section.
-  bool IsArgumentAfterInSection(const BasicBlock *basicblock) const {
+  // Is this basic block located directly before basicblock in the section.
+  bool DirectlyPreceeds(const BasicBlock *basicblock) const {
     // Make sure that if they are linked, both point correctly!
     MAO_ASSERT(basicblock->last_entry()->next() == NULL ||
                basicblock->last_entry()->next() != first_entry() ||
@@ -119,7 +119,7 @@ class BasicBlock {
   }
 
   // Is this basic block located directly after basicblock in the section.
-  bool IsArgumentBeforeInSection(const BasicBlock *basicblock) const {
+  bool DirectlyFollows(const BasicBlock *basicblock) const {
     // Make sure that if they are linked, both point correctly!
     MAO_ASSERT(basicblock->first_entry()->prev() == NULL ||
                basicblock->first_entry()->prev() != last_entry() ||

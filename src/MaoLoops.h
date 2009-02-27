@@ -48,8 +48,8 @@ class SimpleLoop {
   typedef std::set<SimpleLoop *> LoopSet;
 
 
-  SimpleLoop() : header_(NULL), parent_(NULL), is_root_(false), is_reducible_(true),
-                 depth_level_(0), nesting_level_(0) {
+  SimpleLoop() : header_(NULL), parent_(NULL), is_root_(false),
+                 is_reducible_(true), depth_level_(0), nesting_level_(0) {
   }
 
   void AddNode(BasicBlock *bb) {
@@ -62,14 +62,14 @@ class SimpleLoop {
     children_.insert(loop);
   }
 
-  void Dump() {
+  void Dump() const {
     if (is_root())
       fprintf(stderr, "<root>");
     else
       fprintf(stderr, "loop-%d", counter_);
   }
 
-  void DumpLong() {
+  void DumpLong() const {
     Dump();
     if (!is_reducible())
       fprintf(stderr, "*IRREDUCIBLE* ");
@@ -95,7 +95,7 @@ class SimpleLoop {
 
     if (children_.size()) {
       fprintf(stderr, "Children: ");
-      for(std::set<SimpleLoop *>::iterator citer =  children_.begin();
+      for (std::set<SimpleLoop *>::iterator citer =  children_.begin();
           citer != children_.end(); ++citer) {
         SimpleLoop *loop = *citer;
         loop->Dump();
@@ -108,14 +108,24 @@ class SimpleLoop {
     return &children_;
   }
 
+  int NumberOfChildren() const {
+    return children_.size();
+  }
+
+
+
+  bool Includes(BasicBlock *basicblock) const {
+    return (basic_blocks_.find(basicblock) != basic_blocks_.end());
+  }
+
   // Getters/Setters
-  SimpleLoop  *parent() { return parent_; }
-  unsigned int nesting_level() { return nesting_level_; }
-  unsigned int depth_level() { return depth_level_; }
-  unsigned int counter() { return counter_; }
-  bool         is_root() { return is_root_; }
-  bool         is_reducible() { return is_reducible_; }
-  BasicBlock  *header() { return header_; }
+  SimpleLoop  *parent() const { return parent_; }
+  unsigned int nesting_level() const { return nesting_level_; }
+  unsigned int depth_level() const { return depth_level_; }
+  unsigned int counter() const { return counter_; }
+  bool         is_root() const { return is_root_; }
+  bool         is_reducible() const { return is_reducible_; }
+  BasicBlock  *header() const { return header_; }
 
   void set_parent(SimpleLoop *parent) {
     MAO_ASSERT(parent);
@@ -133,7 +143,7 @@ class SimpleLoop {
   void set_counter(unsigned int value) { counter_ = value; }
   void set_nesting_level(unsigned int level) {
     nesting_level_ = level;
-    if (level==0)
+    if (level == 0)
       set_is_root();
   }
   void set_depth_level(unsigned int level) { depth_level_ = level; }
@@ -143,11 +153,28 @@ class SimpleLoop {
   // Iterators
   BasicBlockSet::iterator BasicBlockBegin() {return basic_blocks_.begin();}
   BasicBlockSet::iterator BasicBlockEnd() {return basic_blocks_.end();}
+  BasicBlockSet::const_iterator ConstBasicBlockBegin() const {
+    return basic_blocks_.begin();
+  }
+  BasicBlockSet::const_iterator ConstBasicBlockEnd() const {
+    return basic_blocks_.end();
+  }
+
+  LoopSet::iterator ChildrenBegin() {return children_.begin();}
+  LoopSet::iterator ChildrenEnd() {return children_.end();}
+  LoopSet::const_iterator ConstChildrenBegin() const {
+    return children_.begin();
+  }
+  LoopSet::const_iterator ConstChildrenEnd() const {
+    return children_.end();
+  }
+
+
 
   private:
   BasicBlockSet          basic_blocks_;
   BasicBlock            *header_;
-  std::set<SimpleLoop *> children_;
+  LoopSet                children_;
   SimpleLoop            *parent_;
 
   bool         is_root_: 1;
@@ -264,4 +291,4 @@ LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, const CFG *CFG,
                                            const char *cfg_name);
 
 
-#endif // MAO_LOOPS_H_INCLUDED_
+#endif  // MAO_LOOPS_H_INCLUDED_
