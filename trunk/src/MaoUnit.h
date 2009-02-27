@@ -262,7 +262,6 @@ class MaoUnit {
   Statistics stat_;
 };  // MaoUnit
 
-
 // Iterator wrapper for iterating over all the Sections in a MaoUnit.
 class SectionIterator {
  public:
@@ -292,7 +291,13 @@ class ConstSectionIterator {
   std::map<const char *, Section *, ltstr>::const_iterator section_iter_;
 };
 
-// Base class for all types of entries in the MaoUnit. Example of entries
+// Forward Decls
+class InstructionEntry;
+class DirectiveEntry;
+class LabelEntry;
+class DebugEntry;
+
+// base class for all types of entries in the MaoUnit. Example of entries
 // are Labels, Directives, and Instructions
 class MaoEntry {
  public:
@@ -324,11 +329,24 @@ class MaoEntry {
   virtual bool IsCall() const = 0;
   virtual bool IsReturn() const = 0;
 
+  bool IsInsn() { return Type() == INSTRUCTION; }
+  bool IsLabel() { return Type() == LABEL; }
+  bool IsDirective() { return Type() == DIRECTIVE; }
+  bool IsDebug() { return Type() == DEBUG; }
+
+  InstructionEntry *AsInsn();
+  LabelEntry *AsLabel();
+  DirectiveEntry *AsDirective();
+  DebugEntry *AsDebug();
+
   void set_next(MaoEntry *entry) {next_ = entry;}
   void set_prev(MaoEntry *entry) {prev_ = entry;}
 
   MaoEntry *next() {return next_;}
   MaoEntry *prev() {return prev_;}
+
+  InstructionEntry *nextInsn();
+  InstructionEntry *prevInsn();
 
   unsigned int line_number() const { return line_number_; }
   const char *const line_verbatim() const { return line_verbatim_; }
