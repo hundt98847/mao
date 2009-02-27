@@ -1,0 +1,107 @@
+#!/usr/bin/python2.4
+
+"""This script wraps the GNU assembler to run MAO.  It will first run
+mao on the input file to generate a new assembly file.  It will then
+run the original as on MAO's output.  Finally, it deletes any
+temporary files it creates.  Currently, the script only works if one
+input file is specified on the command line.  Additionally, the script
+assumes that in the directory containing the script there are binaries
+named mao and as-orig which are the MAO and original GAS binaries,
+respectively."""
+
+import os
+import subprocess
+import sys
+import tempfile
+
+def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
+  try:
+    child = subprocess.Popen(command,
+                             stdin=stdin, stdout=stdout, stderr=stderr,
+                             env=env)
+    (_, err) = child.communicate()
+    err = child.wait()
+    if err != 0:
+      sys.stderr.write("Error running command: %s\n" % " ".join(command))
+      sys.exit(err)
+  except OSError, e:
+    sys.stderr.write("Error running command: %s\n" % " ".join(command))
+    print e
+    sys.exit(1)
+
+
+def _Run(command, env=None):
+  err = subprocess.call(command, env=env)
+  return err
+
+
+def main(argv):
+  in_file = ""
+  in_file_index = None
+  out_file_index = None
+  count = 0
+  cmd = []
+  gas_args = []
+  flag = 0
+  for arg in argv:
+    count += 1
+    cmd.append(arg)
+
+    if not arg.startswith("-mao:"):
+      gas_args.append(count - 1);
+
+    if flag == 1:
+      flag = 0
+      if arg.endswith(".o"):
+        out_file_index = count - 1
+        continue
+    if arg.endswith(".s"):
+      in_file = arg
+      in_file_index = count - 1
+      continue
+    if arg == "-o":
+      flag = 1
+
+  if not in_file:
+    _RunCheck(cmd)
+    sys.exit(0)
+
+  #########################################################
+  # Create two temporary files with the appropriate suffix
+  #########################################################
+  (fd, s_tempfile) = tempfile.mkstemp(suffix=".s")
+  os.close(fd)
+
+  (fd, o_tempfile) = tempfile.mkstemp(suffix=".o")
+  os.close(fd)
+
+  #########################################################
+  # Preprocess the file (output in tempfile1)
+  #########################################################
+  mao_cmd = cmd[:]
+  mao_cmd[0] = os.path.join(os.path.dirname(argv[0]), "mao")
+  mao_cmd[out_file_index] = o_tempfile
+  mao_cmd.append("-mao:-o,%s" % s_tempfile)
+  _RunCheck(mao_cmd)
+
+  #########################################################
+  # Run the original assemble
+  #########################################################
+  compile_cmd = [cmd[i] for i in gas_args]
+  compile_cmd[0] = os.path.join(os.path.dirname(argv[0]), "as-orig")
+  compile_cmd[in_file_index] = s_tempfile
+  error = _Run(compile_cmd)
+
+  #########################################################
+  # Remove the temporary files
+  #########################################################
+  _RunCheck(["rm", "-f", s_tempfile, o_tempfile])
+
+  #########################################################
+  # Exit with the error code from the compilation
+  #########################################################
+  sys.exit(error)
+
+
+if __name__ == "__main__":
+  main(sys.argv)
