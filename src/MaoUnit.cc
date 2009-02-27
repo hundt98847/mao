@@ -1648,3 +1648,33 @@ void Function::Print(FILE *out) {
     entry->PrintEntry(out);
   }
 }
+
+
+// Casting functions.
+InstructionEntry *MaoEntry::AsInsn() {
+  return static_cast<InstructionEntry*>(this);
+}
+
+LabelEntry *MaoEntry::AsLabel(){
+  return static_cast<LabelEntry*>(this);
+}
+
+DirectiveEntry *MaoEntry::AsDirective(){
+  return static_cast<DirectiveEntry*>(this);
+}
+
+DebugEntry *MaoEntry::AsDebug(){
+  return static_cast<DebugEntry*>(this);
+}
+
+InstructionEntry *MaoEntry::nextInsn() {
+  if (next_ && next_->IsInsn())
+    return next_->AsInsn();
+  return NULL;
+}
+
+InstructionEntry *MaoEntry::prevInsn() {
+  if (prev_ && prev_->IsInsn())
+    return prev_->AsInsn();
+  return NULL;
+}
