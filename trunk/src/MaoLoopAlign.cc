@@ -104,7 +104,7 @@ MAO_OPTIONS_DEFINE(LOOPALIGN, 2) {
 
 LoopAlignPass::LoopAlignPass(MaoUnit *mao, LoopStructureGraph *loop_graph,
                              MaoRelaxer::SizeMap *sizes)
-    : MaoPass("LOOPALIGN", mao->mao_options(), MAO_OPTIONS(LOOPALIGN), true),
+    : MaoPass("LOOPALIGN", mao->mao_options(), MAO_OPTIONS(LOOPALIGN), false),
       mao_unit_(mao),
       loop_graph_(loop_graph),
       sizes_(sizes) {
@@ -408,7 +408,6 @@ void LoopAlignPass::FindInner(const SimpleLoop *loop) {
 //
 void DoLoopAlign(MaoUnit *mao,
                  Function *function) {
-  fprintf(stderr, "Inside\n");
   // Make sure the analysis have been run on this function
   MAO_ASSERT(function->cfg()   != NULL);
   MAO_ASSERT(function->lsg()   != NULL);
