@@ -137,6 +137,8 @@ void ReadSideEffects(const char *fname) {
       if (!strcmp(q, "addr32:")) mask = &e->reg_mask32; else
       if (!strcmp(q, "addr64:")) mask = &e->reg_mask64; else
 
+      if (!strcmp(q, "all")) *mask |= REG_ALL; else
+
       if (!strcmp(q, "al"))  *mask |= REG_AL; else
       if (!strcmp(q, "ah"))  *mask |= REG_AH; else
       if (!strcmp(q, "ax"))  *mask |= (REG_AX  | REG_AH  | REG_AL); else
