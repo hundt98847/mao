@@ -1385,6 +1385,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             break;
           case ADDR_PREFIX_OPCODE:
             // used in movl (%eax), %eax
+	    // 	addr32 lea symbol,%rax
+	    fprintf(out, "addr32  ");
             break;
           case LOCK_PREFIX_OPCODE:
             // used in 	lock xaddl        %eax, 16(%rdi)
