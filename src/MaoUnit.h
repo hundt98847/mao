@@ -329,12 +329,12 @@ class MaoEntry {
   virtual bool IsCall() const = 0;
   virtual bool IsReturn() const = 0;
 
-  bool IsInsn() { return Type() == INSTRUCTION; }
+  bool IsInstruction() { return Type() == INSTRUCTION; }
   bool IsLabel() { return Type() == LABEL; }
   bool IsDirective() { return Type() == DIRECTIVE; }
   bool IsDebug() { return Type() == DEBUG; }
 
-  InstructionEntry *AsInsn();
+  InstructionEntry *AsInstruction();
   LabelEntry *AsLabel();
   DirectiveEntry *AsDirective();
   DebugEntry *AsDebug();
@@ -345,8 +345,8 @@ class MaoEntry {
   MaoEntry *next() {return next_;}
   MaoEntry *prev() {return prev_;}
 
-  InstructionEntry *nextInsn();
-  InstructionEntry *prevInsn();
+  InstructionEntry *nextInstruction();
+  InstructionEntry *prevInstruction();
 
   unsigned int line_number() const { return line_number_; }
   const char *const line_verbatim() const { return line_verbatim_; }

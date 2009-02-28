@@ -1805,7 +1805,7 @@ void Function::Print(FILE *out) {
 
 
 // Casting functions.
-InstructionEntry *MaoEntry::AsInsn() {
+InstructionEntry *MaoEntry::AsInstruction() {
   return static_cast<InstructionEntry*>(this);
 }
 
@@ -1821,14 +1821,14 @@ DebugEntry *MaoEntry::AsDebug(){
   return static_cast<DebugEntry*>(this);
 }
 
-InstructionEntry *MaoEntry::nextInsn() {
-  if (next_ && next_->IsInsn())
-    return next_->AsInsn();
+InstructionEntry *MaoEntry::nextInstruction() {
+  if (next_ && next_->IsInstruction())
+    return next_->AsInstruction();
   return NULL;
 }
 
-InstructionEntry *MaoEntry::prevInsn() {
-  if (prev_ && prev_->IsInsn())
-    return prev_->AsInsn();
+InstructionEntry *MaoEntry::prevInstruction() {
+  if (prev_ && prev_->IsInstruction())
+    return prev_->AsInstruction();
   return NULL;
 }
