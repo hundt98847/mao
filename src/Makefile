@@ -81,17 +81,18 @@ CCSRCS=						\
 	MaoCFG.cc				\
 	MaoDefs.cc				\
 	MaoDebug.cc				\
+	Maoi386Size.cc				\
 	MaoLoopAlign.cc				\
 	MaoLoops.cc				\
+	MaoOpcodes.cc				\
 	MaoOptions.cc				\
 	MaoPasses.cc				\
-	MaoUnit.cc				\
-	MaoOpcodes.cc				\
 	MaoPython.cc				\
+	MaoRedundantTestElim.cc			\
 	MaoRelax.cc				\
-	SymbolTable.cc				\
-	Maoi386Size.cc				\
-	MaoZee.cc
+	MaoUnit.cc				\
+	MaoZee.cc				\
+	SymbolTable.cc
 
 
 
