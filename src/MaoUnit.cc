@@ -1268,6 +1268,12 @@ bool InstructionEntry::PrintSuffix() const {
                sizeof(keep_sse4_2_suffix)/sizeof(MaoOpcode))) {
     return false;
   }
+  
+  // sse2avx
+  if( instruction_->tm.cpu_flags.bitfield.cpusse2 &&
+      op() == OP_movd) {    
+    return false;
+  }
 
   return true;
 }
@@ -1278,12 +1284,36 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
   const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
   // Do all of these have drex and opcode_extentions in common? 65535?
+  // TODO: check what group of instrction these belong to.
   const MaoOpcode force_two_operands[]= {OP_cmpltps, OP_cmpltss, OP_cmpltpd,
                                          OP_cmpltsd, OP_cmpltsd, OP_cmpnless,
                                          OP_cmplesd, OP_cmpnlesd,OP_cmpneqpd,
                                          OP_cmpneqsd, OP_cmpnlepd,  OP_cmpnltpd,
                                          OP_cmpnltsd, OP_cmpordpd, OP_cmpordsd,
                                          OP_cmpneqss, OP_cmpnltss, OP_cmpeqsd};
+  
+  const MaoOpcode sse2avx_two_operands[]= {OP_pclmullqlqdq, 
+					   OP_pclmulhqlqdq,
+					   OP_pclmullqhqdq,
+					   OP_pclmulhqhqdq,
+					   OP_pcmpeqb, //?
+					   OP_aesenclast,
+					   OP_cmpeqpd,
+					   OP_cmpeqps,
+					   OP_cmplepd,
+					   OP_cmpleps,
+					   OP_cmpunordpd,
+					   OP_cmpunordps,
+					   OP_cmpneqps,
+					   OP_cmpnltps,
+					   OP_cmpnleps,
+					   OP_cmpordps,
+					   OP_cmpunordsd,
+					   OP_cmpeqss,
+					   OP_cmpless,
+					   OP_cmpunordss,
+					   OP_cmpordss};
+
   // Prefixes
   fprintf(out, "\t");
   if (instruction_->prefixes > 0) {
@@ -1382,6 +1412,15 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                  sizeof(force_two_operands)/sizeof(MaoOpcode))) {
       break;
     }
+    if ( (instruction_->tm.cpu_flags.bitfield.cpusse ||
+	  instruction_->tm.cpu_flags.bitfield.cpusse2 || 
+	  instruction_->tm.cpu_flags.bitfield.cpupclmul) &&
+	i == 2 &&
+        IsInList(op(), sse2avx_two_operands,
+                 sizeof(sse2avx_two_operands)/sizeof(MaoOpcode))) {
+      break;
+    }
+	
 
     // Handle case of instruction which have 4 operands
     // according to the instruction structure, but only
