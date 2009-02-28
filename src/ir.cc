@@ -376,3 +376,13 @@ void link_equiv_directive(symbolS *symbol, expressionS *expr) {
   operands.push_back(new DirectiveEntry::Operand(expr));
   link_directive_tail(DirectiveEntry::EQUIV, operands);
 }
+
+void link_weakref_directive(struct MaoStringPiece alias,
+                            struct MaoStringPiece target) {
+  // TODO(martint): handle weakref for symboltable
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(alias));
+  operands.push_back(new DirectiveEntry::Operand(target));
+  link_directive_tail(DirectiveEntry::WEAKREF, operands);
+  
+}
