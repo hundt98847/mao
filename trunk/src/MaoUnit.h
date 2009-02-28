@@ -447,6 +447,7 @@ class DirectiveEntry : public MaoEntry {
     IDENT,
     SET,         // Same as .equ
     EQUIV,
+    WEAKREF,
     NUM_OPCODES  // Used to get the size of the array
   };
 

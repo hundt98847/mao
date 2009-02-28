@@ -96,6 +96,9 @@ extern "C" {
   void link_set_directive(symbolS *symbol, expressionS *expr);
   /// Link .equiv directives from gas
   void link_equiv_directive(symbolS *symbol, expressionS *expr);
+  /// Link .weakref directives from gas
+  void link_weakref_directive(struct MaoStringPiece alias,
+                              struct MaoStringPiece target);
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 

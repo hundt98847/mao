@@ -619,7 +619,8 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".comm",
   ".ident",
   ".set",  // identical to .equ
-  ".equiv"
+  ".equiv",
+  ".weakref"
 };
 
 void DirectiveEntry::PrintEntry(::FILE *out) const {
@@ -1045,6 +1046,8 @@ const char *InstructionEntry::GetRelocString(
       return "";
     case BFD_RELOC_X86_64_GOTTPOFF:
       return "@GOTTPOFF";
+    case BFD_RELOC_X86_64_TPOFF32:
+      return "@TPOFF";
     default:
       MAO_ASSERT_MSG(false, "Unable to find info about reloc: %d", reloc);
       break;
@@ -1187,7 +1190,11 @@ bool InstructionEntry::PrintSuffix() const {
 void InstructionEntry::PrintInstruction(FILE *out) const {
   const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
-
+  const MaoOpcode force_two_operands[]= {OP_cmpltps, OP_cmpltss, OP_cmpltpd,
+                                         OP_cmpltsd, OP_cmpltsd, OP_cmpnless,
+                                         OP_cmplesd, OP_cmpnlesd,OP_cmpneqpd,
+                                         OP_cmpneqsd, OP_cmpnlepd,  OP_cmpnltpd,
+                                         OP_cmpnltsd, OP_cmpordpd, OP_cmpordsd};
   // Prefixes
   fprintf(out, "\t");
   if (instruction_->prefixes > 0) {
@@ -1195,6 +1202,9 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
          i < sizeof(instruction_->prefix)/sizeof(unsigned char);
          ++i) {
       if (instruction_->prefix[i] != 0) {
+
+        // The list of available prefixes can be found in the following file:
+        // ../binutils-2.19/include/opcode/i386.h
         switch (instruction_->prefix[i]) {
           // http://www.intel.com/software/products/documentation/vlin/mergedprojects/analyzer_ec/mergedprojects/reference_olh/mergedProjects/instructions/instruct32_hh/vc276.htm
           // Repeats a string instruction the number of times specified in the
@@ -1257,6 +1267,10 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           case ADDR_PREFIX_OPCODE:
             // used in movl (%eax), %eax
             break;
+          case LOCK_PREFIX_OPCODE:
+            // used in 	lock xaddl        %eax, 16(%rdi)
+              fprintf(out, "lock ");
+              break;
           default:
             MAO_ASSERT_MSG(false, "Unknown prefix found 0x%x\n",
                            instruction_->prefix[i]);
@@ -1274,6 +1288,14 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 
   // Loop over operands
   for (unsigned int i = 0; i < instruction_->operands; ++i) {
+    if (i == 2 &&
+        IsInList(op(), force_two_operands,
+                 sizeof(force_two_operands)/sizeof(MaoOpcode))) {
+      break;
+    }
+    if (i > 0)
+      fprintf(out, ", ");
+
     // IMMEDIATE
     // Immext means that an opcode modifier is encoded
     // in the instruction structure as an extra operand,
@@ -1393,9 +1415,6 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       // its a register name!
       fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
     }
-
-    if (i < instruction_->operands-1)
-      fprintf(out, ", ");
   }
 }
 

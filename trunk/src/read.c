@@ -3470,6 +3470,9 @@ s_weakref (int ignore ATTRIBUTE_UNUSED)
 
   symbolP = symbol_find_or_make (name);
 
+  struct MaoStringPiece alias =
+      { name, strlen(name) };
+
   if (S_IS_DEFINED (symbolP) || symbol_equated_p (symbolP))
     {
       if (!S_IS_VOLATILE (symbolP))
@@ -3510,6 +3513,9 @@ s_weakref (int ignore ATTRIBUTE_UNUSED)
       ignore_rest_of_line ();
       return;
     }
+
+  struct MaoStringPiece target =
+      { name, strlen(name) };
 
   if ((symbolP2 = symbol_find_noref (name, 1)) == NULL
       && (symbolP2 = md_undefined_symbol (name)) == NULL)
@@ -3574,6 +3580,8 @@ s_weakref (int ignore ATTRIBUTE_UNUSED)
   S_SET_WEAKREFR (symbolP);
 
   demand_empty_rest_of_line ();
+
+  link_weakref_directive(alias, target);
 }
 
 
