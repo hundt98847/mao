@@ -123,7 +123,7 @@ void MaoOptions::TimerPrint() {
   fprintf(stderr, "Timing information for passes\n");
   for (OptionVector::iterator it = option_array_list->begin();
        it != option_array_list->end(); ++it) {
-    fprintf(stderr, "  Pass: %-12s %5.1lf [sec] %4\.1lf%%\n",
+    fprintf(stderr, "  Pass: %-12s %5.1lf [sec] %4.1lf%%\n",
             (*it)->name(), (*it)->timer()->GetSecs(),
             100.0 * (*it)->timer()->GetSecs() / total_secs);
   }
