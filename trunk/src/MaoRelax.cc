@@ -222,6 +222,7 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           case DirectiveEntry::SET:
           case DirectiveEntry::EQUIV:
           case DirectiveEntry::WEAKREF:
+          case DirectiveEntry::ARCH:
           case DirectiveEntry::NUM_OPCODES:
             (*size_map)[entry] = 0;
             // Nothing to do
