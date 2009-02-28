@@ -184,7 +184,7 @@ void CFGBuilder::Build() {
       for (LabelVector::iterator iter = targets.begin(); iter != targets.end();
            ++iter) {
         Label label = *iter;
-        BasicBlock *target;
+        BasicBlock *target = NULL;
 
         // A NULL label means unknown target
         if (label == NULL) {
