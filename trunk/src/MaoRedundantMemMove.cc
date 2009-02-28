@@ -50,11 +50,19 @@ class RedMemMovElimPass : public MaoPass {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
+//        insn->PrintEntry(stderr);
 
         if (insn->IsOpMov() &&
             insn->IsRegisterOperand(1) &&
             insn->IsMemOperand(0)) {
           int checked = 0;
+          unsigned long long mask = GetRegisterDefMask(insn);
+          mask |= GetMaskForRegister(insn->GetBaseRegister());
+          mask |= GetMaskForRegister(insn->GetIndexRegister());
+
+//          fprintf(stderr, "\t\t");
+//          PrintRegisterDefMask(mask, stderr);
+//          fprintf(stderr, "\n");
 
           InstructionEntry *next = insn->nextInstruction();
           while (checked < 5 && next) {
@@ -63,8 +71,14 @@ class RedMemMovElimPass : public MaoPass {
                 next->IsReturn())
               break;
             unsigned long long defs = GetRegisterDefMask(next);
+//            next->PrintEntry(stderr);
+//            fprintf(stderr, "\t\t");
+//            PrintRegisterDefMask(defs, stderr);
+//            fprintf(stderr, "\n");
+
             if (defs == 0LL || defs == REG_ALL)
               break;  // defines something other than registers
+
             if (next->IsOpMov() &&
                 next->IsRegisterOperand(1) &&
                 next->IsMemOperand(0)) {
@@ -73,9 +87,17 @@ class RedMemMovElimPass : public MaoPass {
               if (insn->CompareMemOperand(0, next, 0)) {
                 fprintf(stderr, "*** Found two insns with same mem op\n");
                 insn->PrintEntry(stderr);
+                insn = insn->nextInstruction();
+                while (insn != next) {
+                  insn->PrintEntry(stderr);
+                  insn = insn->nextInstruction();
+                }
                 next->PrintEntry(stderr);
               }
             }
+            if (defs & mask)
+              break;  // target register gets redefined.
+
             ++checked;
             next = next->nextInstruction();
           }

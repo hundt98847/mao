@@ -660,11 +660,14 @@ class InstructionEntry : public MaoEntry {
 
   bool CompareMemOperand(int op1, InstructionEntry *i2, int op2);
 
-  i386_insn *instruction() { return instruction_; }
+  i386_insn   *instruction() { return instruction_; }
 
-  const char *GetRegisterOperand(const unsigned int op_index) {
+  const char  *GetRegisterOperand(const unsigned int op_index) {
     return instruction_->op[op_index].regs->reg_name;
   }
+  const char  *GetBaseRegister();
+  const char  *GetIndexRegister();
+  unsigned int GetLog2ScaleFactor();
 
  private:
   i386_insn *instruction_;

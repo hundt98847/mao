@@ -98,8 +98,9 @@ extern DefEntry def_entries[];
 
 // external entry points
 class InstructionEntry;
-unsigned long long GetRegisterDefMask(InstructionEntry *insn);
-void PrintRegisterDefMask(unsigned long long mask, FILE *f);
 
+unsigned long long GetRegisterDefMask(InstructionEntry *insn);
+void               PrintRegisterDefMask(unsigned long long mask, FILE *f);
+unsigned long long GetMaskForRegister(const char *reg);
 
 #endif // __MAODEFS_H_INCLUDED

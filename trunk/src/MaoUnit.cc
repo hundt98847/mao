@@ -932,8 +932,11 @@ void InstructionEntry::FreeInstruction() {
 
 // Given a register, create a copy to be used in our instruction
 reg_entry *InstructionEntry::CopyRegEntry(const reg_entry *in_reg) {
+  return const_cast<reg_entry*>(in_reg);
+#if 0
   if (!in_reg)
     return 0;
+
   reg_entry *tmp_r;
   tmp_r = new reg_entry;
   MAO_ASSERT(tmp_r);
@@ -943,6 +946,7 @@ reg_entry *InstructionEntry::CopyRegEntry(const reg_entry *in_reg) {
   tmp_r->reg_flags = in_reg->reg_flags;
   tmp_r->reg_num = in_reg->reg_num;
   return tmp_r;
+#endif
 }
 
 
@@ -1216,7 +1220,17 @@ void InstructionEntry::PrintMemoryOperand(FILE                  *out,
   return;
 }
 
+const char *InstructionEntry::GetBaseRegister() {
+  return instruction_->base_reg ? instruction_->base_reg->reg_name : NULL;
+}
 
+const char *InstructionEntry::GetIndexRegister() {
+  return instruction_->base_reg ? instruction_->base_reg->reg_name : NULL;
+}
+
+unsigned int InstructionEntry::GetLog2ScaleFactor() {
+  return instruction_->log2_scale_factor;
+}
 
 bool InstructionEntry::PrintSuffix() const {
   if (instruction_->suffix == 0) {
