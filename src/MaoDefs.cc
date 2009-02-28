@@ -19,6 +19,63 @@
 #include "MaoUnit.h"
 #include "gen-defs.h"
 
+unsigned long long GetMaskForRegister(const char *reg) {
+  unsigned long long mask = 0ULL;
+
+  if (!reg) return mask;
+
+  if (!strcmp(reg, "al"))  mask |= REG_AL; else
+  if (!strcmp(reg, "ah"))  mask |= REG_AH; else
+  if (!strcmp(reg, "ax"))  mask |= REG_AX | REG_AH | REG_AL; else
+  if (!strcmp(reg, "eax")) mask |= REG_EAX | REG_AX | REG_AH | REG_AL; else
+  if (!strcmp(reg, "rax")) mask |= REG_RAX | REG_EAX | REG_AX | REG_AH | REG_AL; else
+
+  if (!strcmp(reg, "cl"))  mask |= REG_CL; else
+  if (!strcmp(reg, "ch"))  mask |= REG_CH; else
+  if (!strcmp(reg, "cx"))  mask |= REG_CX | REG_CH | REG_CL; else
+  if (!strcmp(reg, "ecx")) mask |= REG_ECX | REG_CX | REG_CH | REG_CL; else
+  if (!strcmp(reg, "rcx")) mask |= REG_RCX | REG_ECX | REG_CX | REG_CH | REG_CL; else
+
+  if (!strcmp(reg, "dl"))  mask |= REG_DL; else
+  if (!strcmp(reg, "dh"))  mask |= REG_DH; else
+  if (!strcmp(reg, "dx"))  mask |= REG_DX  | REG_DH | REG_DL; else
+  if (!strcmp(reg, "edx")) mask |= REG_EDX  | REG_DX | REG_DH | REG_DL; else
+  if (!strcmp(reg, "rdx")) mask |= REG_RDX  | REG_EDX | REG_DX | REG_DH | REG_DL; else
+
+  if (!strcmp(reg, "bl"))  mask |= REG_BL; else
+  if (!strcmp(reg, "bh"))  mask |= REG_BH; else
+  if (!strcmp(reg, "bx"))  mask |= REG_BX  | REG_BH | REG_BL; else
+  if (!strcmp(reg, "ebx")) mask |= REG_EBX  | REG_BX | REG_BH | REG_BL; else
+  if (!strcmp(reg, "rbx")) mask |= REG_RBX  | REG_EBX | REG_BX | REG_BH | REG_BL; else
+
+  if (!strcmp(reg, "sp"))   mask |= REG_SP; else
+  if (!strcmp(reg, "esp"))  mask |= REG_ESP | REG_SP; else
+  if (!strcmp(reg, "rsp"))  mask |= REG_RSP | REG_ESP | REG_SP; else
+
+  if (!strcmp(reg, "bp"))   mask |= REG_BP; else
+  if (!strcmp(reg, "ebp"))  mask |= REG_EBP | REG_BP; else
+  if (!strcmp(reg, "rbp"))  mask |= REG_RBP | REG_EBP | REG_BP; else
+
+  if (!strcmp(reg, "si"))   mask |= REG_SI; else
+  if (!strcmp(reg, "esi"))  mask |= REG_ESI | REG_SI; else
+  if (!strcmp(reg, "rsi"))  mask |= REG_RSI | REG_ESI | REG_SI; else
+
+  if (!strcmp(reg, "di"))   mask |= REG_DI; else
+  if (!strcmp(reg, "edi"))  mask |= REG_EDI | REG_DI; else
+  if (!strcmp(reg, "rdi"))  mask |= REG_RDI | REG_EDI | REG_DI; else
+
+  if (!strcmp(reg, "r8"))   mask |= REG_R8; else
+  if (!strcmp(reg, "r9"))   mask |= REG_R9; else
+  if (!strcmp(reg, "r10"))  mask |= REG_R10; else
+  if (!strcmp(reg, "r11"))  mask |= REG_R11; else
+  if (!strcmp(reg, "r12"))  mask |= REG_R12; else
+  if (!strcmp(reg, "r13"))  mask |= REG_R13; else
+  if (!strcmp(reg, "r14"))  mask |= REG_R14; else
+  if (!strcmp(reg, "r15"))  mask |= REG_R15;
+
+  return mask;
+}
+
 unsigned long long GetRegisterDefMask(InstructionEntry *insn) {
   DefEntry *e = &def_entries[insn->op()];
   MAO_ASSERT(e->opcode = insn->op());
@@ -42,54 +99,7 @@ unsigned long long GetRegisterDefMask(InstructionEntry *insn) {
     if (e->op_mask & (1 << op)) {
       if (insn->IsRegisterOperand(op)) {
         const char *reg = insn->GetRegisterOperand(op);
-        if (!strcmp(reg, "al")) mask |= REG_AL; else
-        if (!strcmp(reg, "ah")) mask |= REG_AH; else
-        if (!strcmp(reg, "ax")) mask |= REG_AX; else
-        if (!strcmp(reg, "eax")) mask |= REG_EAX; else
-        if (!strcmp(reg, "rax")) mask |= REG_RAX; else
-
-        if (!strcmp(reg, "cl")) mask |= REG_CL; else
-        if (!strcmp(reg, "ch")) mask |= REG_CH; else
-        if (!strcmp(reg, "cx")) mask |= REG_CX; else
-        if (!strcmp(reg, "ecx")) mask |= REG_ECX; else
-        if (!strcmp(reg, "rcx")) mask |= REG_RCX; else
-
-        if (!strcmp(reg, "dl")) mask |= REG_DL; else
-        if (!strcmp(reg, "dh")) mask |= REG_DH; else
-        if (!strcmp(reg, "dx")) mask |= REG_DX; else
-        if (!strcmp(reg, "edx")) mask |= REG_EDX; else
-        if (!strcmp(reg, "rdx")) mask |= REG_RDX; else
-
-        if (!strcmp(reg, "bl")) mask |= REG_BL; else
-        if (!strcmp(reg, "bh")) mask |= REG_BH; else
-        if (!strcmp(reg, "bx")) mask |= REG_BX; else
-        if (!strcmp(reg, "ebx")) mask |= REG_EBX; else
-        if (!strcmp(reg, "rbx")) mask |= REG_RBX; else
-
-        if (!strcmp(reg, "sp"))  mask |= REG_SP; else
-        if (!strcmp(reg, "esp"))  mask |= REG_ESP; else
-        if (!strcmp(reg, "rsp"))  mask |= REG_RSP; else
-
-        if (!strcmp(reg, "bp"))  mask |= REG_BP; else
-        if (!strcmp(reg, "ebp"))  mask |= REG_EBP; else
-        if (!strcmp(reg, "rbp"))  mask |= REG_RBP; else
-
-        if (!strcmp(reg, "si"))  mask |= REG_SI; else
-        if (!strcmp(reg, "esi"))  mask |= REG_ESI; else
-        if (!strcmp(reg, "rsi"))  mask |= REG_RSI; else
-
-        if (!strcmp(reg, "di"))  mask |= REG_DI; else
-        if (!strcmp(reg, "edi"))  mask |= REG_EDI; else
-        if (!strcmp(reg, "rdi"))  mask |= REG_RDI; else
-
-        if (!strcmp(reg, "r8"))  mask |= REG_R8; else
-        if (!strcmp(reg, "r9"))  mask |= REG_R9; else
-        if (!strcmp(reg, "r10"))  mask |= REG_R10; else
-        if (!strcmp(reg, "r11"))  mask |= REG_R11; else
-        if (!strcmp(reg, "r12"))  mask |= REG_R12; else
-        if (!strcmp(reg, "r13"))  mask |= REG_R13; else
-        if (!strcmp(reg, "r14"))  mask |= REG_R14; else
-        if (!strcmp(reg, "r15"))  mask |= REG_R15;
+        mask |= GetMaskForRegister(reg);
       }
     }
   }
