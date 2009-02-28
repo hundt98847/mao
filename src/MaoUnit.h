@@ -584,14 +584,17 @@ class InstructionEntry : public MaoEntry {
   virtual void PrintEntry(FILE *out) const;
   virtual void PrintIR(FILE *out) const;
   virtual MaoEntry::EntryType  Type() const;
-  const char *GetOp() const;
+
   const char *GetTarget() const;
   virtual char GetDescriptiveChar() const {return 'I';}
 
   void PrintInstruction(FILE *out) const;
   static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
 
+  const char *GetOp() const;
   MaoOpcode   op() const { return op_; }
+  bool        IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
+
   bool HasTarget() const;
 
   // Property methods.
