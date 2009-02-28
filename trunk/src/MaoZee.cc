@@ -48,6 +48,7 @@ class ZeroExtentElimPass : public MaoPass {
         if ((*entry)->Type() != MaoEntry::INSTRUCTION)
           continue;
         InstructionEntry *insn = (InstructionEntry *) (*entry);
+        insn->PrintEntry(stderr);
 
 
         // Find this pattern:
@@ -71,7 +72,7 @@ class ZeroExtentElimPass : public MaoPass {
         //  movq    24(%rsp), %rdx
         //  ... no def for that memory (check 5 instructions)
         //  movq    24(%rsp), %rcx
-        if (insn->op() == OP_mov &&
+        if (insn->IsOpMov() &&
             insn->IsRegisterOperand(1) &&
             insn->IsMemOperand(0)) {
           int checked = 0;
@@ -83,9 +84,9 @@ class ZeroExtentElimPass : public MaoPass {
                 next->IsReturn())
               break;
             unsigned long long defs = GetRegisterDefMask(next);
-            if (defs != 0LL)
+            if (defs == 0LL || defs == REG_ALL)
               break;  // defines something other than registers
-            if (next->op() == OP_mov &&
+            if (next->IsOpMov() &&
                 next->IsRegisterOperand(1) &&
                 next->IsMemOperand(0)) {
               // now we have a second movl mem, reg

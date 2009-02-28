@@ -73,16 +73,16 @@
 #define   REG_RSI     (1 << 30)
 #define   REG_RDI     (1 << 31)
 
-#define   REG_R8      (1LL << 32)
-#define   REG_R9      (1LL << 33)
-#define   REG_R10     (1LL << 34)
-#define   REG_R11     (1LL << 35)
-#define   REG_R12     (1LL << 36)
-#define   REG_R13     (1LL << 37)
-#define   REG_R14     (1LL << 38)
-#define   REG_R15     (1LL << 39)
+#define   REG_R8      (1ULL << 32)
+#define   REG_R9      (1ULL << 33)
+#define   REG_R10     (1ULL << 34)
+#define   REG_R11     (1ULL << 35)
+#define   REG_R12     (1ULL << 36)
+#define   REG_R13     (1ULL << 37)
+#define   REG_R14     (1ULL << 38)
+#define   REG_R15     (1ULL << 39)
 
-#define   REG_ALL     (-1LL)
+#define   REG_ALL     (-1ULL)
 // more are possible...
 
 typedef struct DefEntry {
