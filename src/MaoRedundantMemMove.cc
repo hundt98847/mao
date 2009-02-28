@@ -29,26 +29,21 @@
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(REDTEST, 0) {
+MAO_OPTIONS_DEFINE(REDMEMMOV, 0) {
 };
 
-class RedTestElimPass : public MaoPass {
+class RedMemMovElimPass : public MaoPass {
  public:
-  RedTestElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("REDTEST", mao->mao_options(), MAO_OPTIONS(REDTEST), true),
+  RedMemMovElimPass(MaoUnit *mao, const CFG *cfg) :
+    MaoPass("REDMEMMOV", mao->mao_options(), MAO_OPTIONS(REDMEMMOV), true),
     mao_(mao), cfg_(cfg) {
   }
 
   // Find these patterns in a single basic block:
   //
-  //   subl     xxx, %r15d
-  //   testl    %r15d, %r15d
-  //
-  //   addl     xxx, %r15d
-  //   testl    %r15d, %r15d
-  //
-  // subl/addl set all the flags that test is testing for.
-  // The test instruction is therefore redundant
+  //  movq    24(%rsp), %rdx
+  //  ... no def for that memory (check 5 instructions)
+  //  movq    24(%rsp), %rcx
   //
   void DoElim() {
     FORALL_CFG_BB(cfg_,it) {
@@ -56,17 +51,34 @@ class RedTestElimPass : public MaoPass {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
 
-        if ((insn->op() == OP_sub || insn->op() == OP_add) &&
+        if (insn->IsOpMov() &&
             insn->IsRegisterOperand(1) &&
-            insn->nextInstruction()) {
+            insn->IsMemOperand(0)) {
+          int checked = 0;
+
           InstructionEntry *next = insn->nextInstruction();
-          if (next->op() == OP_test &&
-              next->IsRegisterOperand(0) &&
-              next->IsRegisterOperand(1) &&
-              !strcmp(next->GetRegisterOperand(0), next->GetRegisterOperand(1)) &&
-              !strcmp(next->GetRegisterOperand(0), insn->GetRegisterOperand(1)))
-            fprintf(stderr, "*** Found %s/test seq\n",
-                    insn->GetOp());
+          while (checked < 5 && next) {
+            if (next->IsControlTransfer() ||
+                next->IsCall() ||
+                next->IsReturn())
+              break;
+            unsigned long long defs = GetRegisterDefMask(next);
+            if (defs == 0LL || defs == REG_ALL)
+              break;  // defines something other than registers
+            if (next->IsOpMov() &&
+                next->IsRegisterOperand(1) &&
+                next->IsMemOperand(0)) {
+              // now we have a second movl mem, reg
+              // need to check whether two mem operands are the same.
+              if (insn->CompareMemOperand(0, next, 0)) {
+                fprintf(stderr, "*** Found two insns with same mem op\n");
+                insn->PrintEntry(stderr);
+                next->PrintEntry(stderr);
+              }
+            }
+            ++checked;
+            next = next->nextInstruction();
+          }
         }
       }
     }
@@ -80,8 +92,8 @@ class RedTestElimPass : public MaoPass {
 
 // External Entry Point
 //
-void PerformRedundantTestElimination(MaoUnit *mao, const CFG *cfg) {
-  RedTestElimPass redtest(mao, cfg);
-  redtest.set_timed();
-  redtest.DoElim();
+void PerformRedundantMemMoveElimination(MaoUnit *mao, const CFG *cfg) {
+  RedMemMovElimPass redmemmov(mao, cfg);
+  redmemmov.set_timed();
+  redmemmov.DoElim();
 }
