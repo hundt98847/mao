@@ -985,7 +985,8 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.reg32
           || t.bitfield.reg64
           || t.bitfield.floatreg
-          || t.bitfield.regxmm);
+          || t.bitfield.regxmm
+	  || t.bitfield.regymm);
 }
 
 void InstructionEntry::PrintImmediateOperand(FILE *out,
@@ -1238,7 +1239,7 @@ bool InstructionEntry::PrintSuffix() const {
   }
   const MaoOpcode opcode_has_l_suffix[] =  {
     OP_movsbl, OP_movswl, OP_movzbl, OP_movzwl, OP_movswl, OP_cmovl, OP_cmovnl,
-    OP_cwtl, OP_cltd
+    OP_cwtl, OP_cltd, OP_movbe
   };
   const MaoOpcode opcode_has_w_suffix[] =  {
     OP_cbtw, OP_fnstsw, OP_movsbw
@@ -1248,6 +1249,10 @@ bool InstructionEntry::PrintSuffix() const {
   };
   const MaoOpcode keep_sse4_2_suffix[] =  {
     OP_crc32
+  };
+
+  const MaoOpcode supress_suffix[] =  {
+    OP_invept, OP_movd
   };
 
 
@@ -1284,9 +1289,8 @@ bool InstructionEntry::PrintSuffix() const {
     return false;
   }
   
-  // sse2avx
-  if( instruction_->tm.cpu_flags.bitfield.cpusse2 &&
-      op() == OP_movd) {    
+  if (IsInList(op(), supress_suffix,
+               sizeof(supress_suffix)/sizeof(MaoOpcode))) {    
     return false;
   }
 
@@ -1305,7 +1309,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                                          OP_cmplesd, OP_cmpnlesd,OP_cmpneqpd,
                                          OP_cmpneqsd, OP_cmpnlepd,  OP_cmpnltpd,
                                          OP_cmpnltsd, OP_cmpordpd, OP_cmpordsd,
-                                         OP_cmpneqss, OP_cmpnltss, OP_cmpeqsd};
+                                         OP_cmpneqss, OP_cmpnltss, OP_cmpeqsd,
+					 OP_pmulhrw, OP_pswapd};
   
   const MaoOpcode sse2avx_two_operands[]= {OP_pclmullqlqdq, 
 					   OP_pclmulhqlqdq,
@@ -1328,6 +1333,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 					   OP_cmpless,
 					   OP_cmpunordss,
 					   OP_cmpordss};
+
+  const MaoOpcode ymm_four_operands[]= {OP_vfmaddpd};
 
   // Prefixes
   fprintf(out, "\t");
@@ -1435,6 +1442,11 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 	i == 2 &&
         IsInList(op(), sse2avx_two_operands,
                  sizeof(sse2avx_two_operands)/sizeof(MaoOpcode))) {
+      break;
+    }
+    if (i == 4 &&
+        IsInList(op(), ymm_four_operands,
+                 sizeof(ymm_four_operands)/sizeof(MaoOpcode))) {
       break;
     }
 	
@@ -1553,7 +1565,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 	  fprintf(out, "%%mm%d", instruction_->rm.reg);
 	}
       } else if (instruction_->tm.operand_types[i].bitfield.regxmm) {
-	// TODO(martint): is this dead code?
+	// TODO(martint): is this dead code?k
         fprintf(out, "%%xmm%d", instruction_->rm.reg);
       }
     }
