@@ -48,15 +48,82 @@ class ZeroExtentElimPass : public MaoPass {
         if ((*entry)->Type() != MaoEntry::INSTRUCTION)
           continue;
         InstructionEntry *insn = (InstructionEntry *) (*entry);
-        insn->PrintEntry(stderr);
-        unsigned long long mask = GetRegisterDefMask(insn);
-        fprintf(stderr, "\t\t\t\treg-defs: ");
-        if (mask != (unsigned long long) REG_ALL) {
-          PrintRegisterDefMask(mask, stderr);
-          fprintf(stderr, "\n");
-        } else {
-          fprintf(stderr, "all\n");
+
+
+        // Find this pattern:
+        //   subl     xxx, %r15d
+        //   testl    %r15d, %r15d
+        if ((insn->op() == OP_sub || insn->op() == OP_add ||
+             insn->op() == OP_adc) &&
+            insn->IsRegisterOperand(1) &&
+            insn->next() &&
+            (insn->next()->Type() == MaoEntry::INSTRUCTION)) {
+              InstructionEntry *next = (InstructionEntry*) insn->next();
+              if (next->op() == OP_test &&
+                  next->IsRegisterOperand(0) && next->IsRegisterOperand(1) &&
+                  !strcmp(next->GetRegisterOperand(0), next->GetRegisterOperand(1)) &&
+                  !strcmp(next->GetRegisterOperand(0), insn->GetRegisterOperand(1)))
+              fprintf(stderr, "*** Found %s/test seq\n",
+                      insn->GetOp());
         }
+
+        // Find this pattern:
+        //  movq    24(%rsp), %rdx
+        //  ... no def for that memory (check 5 instructions)
+        //  movq    24(%rsp), %rcx
+        if (insn->op() == OP_mov &&
+            insn->IsRegisterOperand(1) &&
+            insn->IsMemOperand(0)) {
+          int checked = 0;
+
+          InstructionEntry *next = insn->nextInsn();
+          while (checked < 5 && next) {
+            if (next->IsControlTransfer() ||
+                next->IsCall() ||
+                next->IsReturn())
+              break;
+            unsigned long long defs = GetRegisterDefMask(next);
+            if (defs != 0LL)
+              break;  // defines something other than registers
+            if (next->op() == OP_mov &&
+                next->IsRegisterOperand(1) &&
+                next->IsMemOperand(0)) {
+              // now we have a second movl mem, reg
+              // need to check whether two mem operands are the same.
+              if (insn->CompareMemOperand(0, next, 0)) {
+                fprintf(stderr, "*** Found two insns with same mem op\n");
+                insn->PrintEntry(stderr);
+                next->PrintEntry(stderr);
+              }
+            }
+            ++checked;
+            next = next->nextInsn();
+          }
+        }
+
+        // Find this pattern:
+        //   testl    %r15d, %r15d
+        //   je    .L251
+#if 0
+        if (insn->op() == OP_test &&
+            insn->IsRegisterOperand(0) && insn->IsRegisterOperand(1) &&
+            !strcmp(insn->GetRegisterOperand(0), insn->GetRegisterOperand(1)) &&
+            insn->next() &&
+            (insn->next()->Type() == MaoEntry::INSTRUCTION) &&
+            ((InstructionEntry*)insn->next())->op() == OP_je) {
+          fprintf(stderr, "*** Found test/je seq\n");
+        }
+#endif
+
+        //insn->PrintEntry(stderr);
+        //unsigned long long mask = GetRegisterDefMask(insn);
+        //fprintf(stderr, "\t\t\t\treg-defs: ");
+        //if (mask != (unsigned long long) REG_ALL) {
+        //  PrintRegisterDefMask(mask, stderr);
+        //  fprintf(stderr, "\n");
+        //} else {
+        //  fprintf(stderr, "all\n");
+        // }
         if (insn->op() != OP_mov)
           continue;
         if (insn->IsRegister32Operand(0) && insn->IsRegister32Operand(1) &&
