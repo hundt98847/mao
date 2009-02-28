@@ -1260,6 +1260,7 @@ bool InstructionEntry::PrintSuffix() const {
 void InstructionEntry::PrintInstruction(FILE *out) const {
   const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
+  // Do all of these have drex and opcode_extentions in common? 65535?
   const MaoOpcode force_two_operands[]= {OP_cmpltps, OP_cmpltss, OP_cmpltpd,
                                          OP_cmpltsd, OP_cmpltsd, OP_cmpnless,
                                          OP_cmplesd, OP_cmpnlesd,OP_cmpneqpd,
@@ -1364,6 +1365,16 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                  sizeof(force_two_operands)/sizeof(MaoOpcode))) {
       break;
     }
+
+    // Handle case of instruction which have 4 operands
+    // according to the instruction structure, but only
+    // three in the assembly (e.g. comeqss %xmm3, %xmm2, %xmm1)
+    if (i == 3 &&
+	instruction_->tm.opcode_modifier.drexc && 
+	instruction_->tm.extension_opcode == 65535) {
+      break;
+    }
+
     if (i > 0)
       fprintf(out, ", ");
 
@@ -1459,7 +1470,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       }
     }
 
-    // XMM registers
+    // XMM/MMX registers
     if (instruction_->types[i].bitfield.regmmx) {
       if (instruction_->tm.operand_types[i].bitfield.regmmx) {
         fprintf(out, "%%mm%d", instruction_->rm.reg);
@@ -1468,6 +1479,42 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       }
     }
 
+    // The various SSE5 formats. Tested on
+    // x86-64-sse5.s in gas test-suite.
+    if (instruction_->tm.opcode_modifier.drex && 
+	instruction_->tm.opcode_modifier.drexv) {
+      if ((instruction_->tm.extension_opcode == 0 &&
+	   (i == 2 || i == 3)) ||
+	  (instruction_->tm.extension_opcode == 1 &&
+	   (i == 2 || i == 3)) ||
+	  (instruction_->tm.extension_opcode == 2 &&
+	   (i == 0 || i == 3)) ||
+	  (instruction_->tm.extension_opcode == 3 &&
+	   (i == 0 || i == 3))) {
+        fprintf(out, "%%xmm%d", instruction_->drex.reg);
+      }
+    }
+    if (instruction_->tm.opcode_modifier.drex && 
+	!instruction_->tm.opcode_modifier.drexv) {
+      if ((instruction_->tm.extension_opcode == 0 &&
+	   (i == 0 || i == 3)) ||
+	  (instruction_->tm.extension_opcode == 1 &&
+	   (i == 2 || i == 3)) ||
+	  (instruction_->tm.extension_opcode == 2 &&
+	   (i == 0 || i == 3)) ||
+	  (instruction_->tm.extension_opcode == 3 &&
+	   (i == 0 || i == 3))) {
+        fprintf(out, "%%xmm%d", instruction_->drex.reg);
+      }
+    }
+    if (instruction_->tm.opcode_modifier.drexc) {
+      if ((instruction_->tm.extension_opcode == 0 &&
+	   (i == 3)) ||
+	  (instruction_->tm.extension_opcode == 65535 &&
+	   (i == 2))) {
+        fprintf(out, "%%xmm%d", instruction_->drex.reg);
+      }
+    }
 
     if (IsRegisterOperand(instruction_, i)) {
       if (instruction_->types[i].bitfield.jumpabsolute) {
