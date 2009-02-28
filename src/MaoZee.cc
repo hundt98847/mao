@@ -49,7 +49,6 @@ class ZeroExtentElimPass : public MaoPass {
   void DoElim() {
     FORALL_CFG_BB(cfg_,it) {
       FORALL_BB_ENTRY(it,entry) {
-        (*entry)->PrintEntry(stderr);
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
 
