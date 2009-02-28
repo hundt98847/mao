@@ -654,6 +654,8 @@ class InstructionEntry : public MaoEntry {
     return instruction_->types[op_index].bitfield.regxmm;
   }
 
+  bool CompareMemOperand(int op1, InstructionEntry *i2, int op2);
+
   i386_insn *instruction() { return instruction_; }
 
   const char *GetRegisterOperand(const unsigned int op_index) {

@@ -1055,6 +1055,76 @@ const char *InstructionEntry::GetRelocString(
   return "";
 }
 
+bool InstructionEntry::CompareMemOperand(int op1,
+                                         InstructionEntry *insn2,
+                                         int op2) {
+  i386_insn *i1 = instruction();
+  i386_insn *i2 = insn2->instruction();
+
+  if (memcmp(&i1->types[op1], &i2->types[op2], sizeof(i386_operand_type)))
+    return false;
+  if (i1->flags[op1] != i2->flags[op2])
+    return false;
+
+  if (i1->types[op1].bitfield.disp8 ||
+      i1->types[op1].bitfield.disp16 ||
+      i1->types[op1].bitfield.disp32 ||
+      i1->types[op1].bitfield.disp32s ||
+      i1->types[op1].bitfield.disp64) {
+    const expressionS *disp1 = i1->op[op1].disps;
+    const expressionS *disp2 = i2->op[op2].disps;
+    if (disp1 && !disp2) return false;
+    if (!disp1 && disp2) return false;
+    if (disp1 && disp2) {
+      if (disp1->X_op != disp2->X_op) return false;
+      if (disp1->X_op == O_constant &&
+          disp1->X_add_number != disp2->X_add_number)
+        return false;
+      if (disp1->X_op == O_symbol &&
+          strcmp(S_GET_NAME(disp1->X_add_symbol),
+                 S_GET_NAME(disp2->X_add_symbol)))
+        return false;
+      // TODO: Check RelocString
+      if (disp1->X_op == O_symbol &&
+          disp1->X_add_number &&
+          disp1->X_add_number != disp2->X_add_number)
+        return false;
+      if (disp1->X_op == O_subtract) {
+        if (disp1->X_add_symbol &&
+            disp1->X_add_symbol != disp2->X_add_symbol)
+          return false;
+        if (disp1->X_op_symbol &&
+            strcmp(S_GET_NAME(disp1->X_op_symbol), S_GET_NAME(disp2->X_op_symbol)))
+          return false;
+        if (disp1->X_add_number &&
+            disp1->X_add_number != disp2->X_add_number)
+          return false;
+      }
+    }
+  }
+
+  if (i1->base_reg && !i2->base_reg)
+    return false;
+  if (!i1->base_reg && i2->base_reg)
+    return false;
+  if (i1->base_reg &&
+      strcmp(i1->base_reg->reg_name, i2->base_reg->reg_name))
+    return false;
+
+  if (i1->index_reg && !i2->index_reg)
+    return false;
+  if (!i1->index_reg && i2->index_reg)
+    return false;
+  if (i1->index_reg &&
+      strcmp(i1->index_reg->reg_name, i2->index_reg->reg_name))
+    return false;
+
+  if (i1->log2_scale_factor != i2->log2_scale_factor)
+    return false;
+
+  return true;
+}
+
 // segment-override:signed-offset(base,index,scale)
 void InstructionEntry::PrintMemoryOperand(FILE                  *out,
                                         const i386_operand_type &operand_type,
