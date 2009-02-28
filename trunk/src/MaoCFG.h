@@ -145,6 +145,11 @@ class BasicBlock {
   MaoEntry *last_entry_;
 };
 
+// Convenience Macros for Entry iteration
+#define FORALL_BB_ENTRY(it,entry) \
+      for (SectionEntryIterator entry = (*it)->EntryBegin(); \
+           entry != (*it)->EntryEnd(); ++entry)
+
 
 class CFG {
  public:
@@ -189,6 +194,11 @@ class CFG {
   LabelToBBMap basic_block_map_;
   BBVector basic_blocks_;
 };
+
+// Convenience Macros for BB iteration
+#define FORALL_CFG_BB(cfg,it) \
+    for (CFG::BBVector::const_iterator it = cfg->Begin(); \
+           it != cfg->End(); ++it)
 
 class CFGBuilder : public MaoPass {
  public:
