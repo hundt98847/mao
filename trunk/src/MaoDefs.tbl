@@ -30,8 +30,20 @@
 //    ...
 //    all    defines all registers
 //
-aaa   ax
-aad   ax
+//    addr8: all following registers are def'ed in case
+//           op0 of the instruction denotes an 8-bit reg
+//           or mem.
+//
+//    addr16:
+//    addr32:
+//    addr64: correspondingly.
+//
+//    all:  switches back to default mask.
+//
+aaa   use: al def: ax flags: AF CF undef: OF SF ZF PF
+
+aad   use: ax def: ax flags: SZ ZF PF undef: OF AF CF
+ 
 aam   ax
 aas   ax
 adc   dest
@@ -342,7 +354,11 @@ movzwq dest
 movzx dest
 
 mpsadbw dest
-
+mul dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
+mulpd dest
+mulps dest
+mulsd dest
+mulss dest
 
 // SSE3 instructions
 addsubpd dest
