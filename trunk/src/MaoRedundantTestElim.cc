@@ -63,8 +63,8 @@ class RedTestElimPass : public MaoPass {
           if (next->op() == OP_test &&
               next->IsRegisterOperand(0) &&
               next->IsRegisterOperand(1) &&
-              !strcmp(next->GetRegisterOperand(0), next->GetRegisterOperand(1)) &&
-              !strcmp(next->GetRegisterOperand(0), insn->GetRegisterOperand(1)))
+              next->GetRegisterOperand(0) == next->GetRegisterOperand(1) &&
+              next->GetRegisterOperand(0) == insn->GetRegisterOperand(1))
             fprintf(stderr, "*** Found %s/test seq\n",
                     insn->GetOp());
         }

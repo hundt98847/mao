@@ -55,7 +55,7 @@ class ZeroExtentElimPass : public MaoPass {
         if (insn->IsOpMov() &&
             insn->IsRegister32Operand(0) &&
             insn->IsRegister32Operand(1) &&
-            !strcmp(insn->GetRegisterOperand(0), insn->GetRegisterOperand(1))) {
+            insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1)) {
           fprintf(stderr, "*** Found zero-extent:");
           insn->PrintEntry(stderr);
         }
@@ -74,5 +74,6 @@ class ZeroExtentElimPass : public MaoPass {
 //
 void PerformZeroExtensionElimination(MaoUnit *mao, const CFG *cfg) {
   ZeroExtentElimPass zee(mao, cfg);
+  zee.set_timed();
   zee.DoElim();
 }
