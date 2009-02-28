@@ -63,6 +63,13 @@ class MaoTimer {
     fprintf(f, "%5.1lf [sec]", 1.0 * total_ / ticks);
   }
 
+  double GetSecs() {
+    static long ticks = 0;
+    if (!ticks)
+      ticks = sysconf(_SC_CLK_TCK);
+    return 1.0 * total_ / ticks;
+  }
+
  private:
   clock_t total_;
   clock_t start_;
