@@ -1264,7 +1264,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                                          OP_cmpltsd, OP_cmpltsd, OP_cmpnless,
                                          OP_cmplesd, OP_cmpnlesd,OP_cmpneqpd,
                                          OP_cmpneqsd, OP_cmpnlepd,  OP_cmpnltpd,
-                                         OP_cmpnltsd, OP_cmpordpd, OP_cmpordsd};
+                                         OP_cmpnltsd, OP_cmpordpd, OP_cmpordsd,
+                                         OP_cmpneqss, OP_cmpnltss, OP_cmpeqsd};
   // Prefixes
   fprintf(out, "\t");
   if (instruction_->prefixes > 0) {
