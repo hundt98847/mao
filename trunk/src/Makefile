@@ -89,6 +89,7 @@ CCSRCS=						\
 	MaoPasses.cc				\
 	MaoPython.cc				\
 	MaoRedundantTestElim.cc			\
+	MaoRedundantMemMove.cc			\
 	MaoRelax.cc				\
 	MaoUnit.cc				\
 	MaoZee.cc				\
