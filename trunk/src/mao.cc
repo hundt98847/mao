@@ -84,25 +84,15 @@ int main(int argc, const char *argv[]) {
       CreateCFG(&mao_unit, function, function->cfg());
 
       MAO_ASSERT(function->cfg() != NULL);
-      // Memory for loop structure is allocated in the function.
       function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg(),
                                                function->name().c_str()));
 
-      //PerformZeroExtensionElimination(&mao_unit, function->cfg());
+      // Optimization passes.
+      PerformZeroExtensionElimination(&mao_unit, function->cfg());
+      PerformRedundantTestElimination(&mao_unit, function->cfg());
       DoLoopAlign(&mao_unit, function);
     }
   } // .text section
-
-//   int section_size = 0;
-//   for (SectionEntryIterator iter = section->EntryBegin();
-//        iter != section->EntryEnd(); ++iter) {
-//     MaoEntry *entry = *iter;
-//     int size = sizes[entry];
-//     printf("%04x %02d:\t", section_size, size);
-//     section_size += size;
-//     entry->PrintEntry(stdout);
-//   }
-//   printf("Size of .text section: %d\n", section_size);
 
   // global finalization passes
   mao_pass_man->LinkPass(new AssemblyPass(&mao_options, &mao_unit));
