@@ -29,20 +29,22 @@
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(REDMEMMOV, 0) {
+MAO_OPTIONS_DEFINE(REDMOV, 1) {
+  OPTION_INT("lookahead", 6, "Look ahead limit for pattern matcher")
 };
 
 class RedMemMovElimPass : public MaoPass {
  public:
   RedMemMovElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("REDMEMMOV", mao->mao_options(), MAO_OPTIONS(REDMEMMOV), true),
+    MaoPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV), true),
     mao_(mao), cfg_(cfg) {
+    look_ahead_ = GetOptionInt("lookahead");
   }
 
   // Find these patterns in a single basic block:
   //
   //  movq    24(%rsp), %rdx
-  //  ... no def for that memory (check 5 instructions)
+  //  ... no def for that memory (check 'lookahead' instructions)
   //  movq    24(%rsp), %rcx
   //
   void DoElim() {
@@ -50,31 +52,29 @@ class RedMemMovElimPass : public MaoPass {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
-//        insn->PrintEntry(stderr);
 
         if (insn->IsOpMov() &&
             insn->IsRegisterOperand(1) &&
             insn->IsMemOperand(0)) {
           int checked = 0;
           unsigned long long mask = GetRegisterDefMask(insn);
-          mask |= GetMaskForRegister(insn->GetBaseRegister());
-          mask |= GetMaskForRegister(insn->GetIndexRegister());
 
-//          fprintf(stderr, "\t\t");
-//          PrintRegisterDefMask(mask, stderr);
-//          fprintf(stderr, "\n");
+          // eliminate this pattern:
+          //     movq    (%rax), %rax
+          unsigned long long base_index_mask =
+            GetMaskForRegister(insn->GetBaseRegister()) |
+            GetMaskForRegister(insn->GetIndexRegister());
+
+          if (mask & base_index_mask) continue;
+          mask |= base_index_mask;
 
           InstructionEntry *next = insn->nextInstruction();
-          while (checked < 5 && next) {
+          while (checked < look_ahead_ && next) {
             if (next->IsControlTransfer() ||
                 next->IsCall() ||
                 next->IsReturn())
               break;
             unsigned long long defs = GetRegisterDefMask(next);
-//            next->PrintEntry(stderr);
-//            fprintf(stderr, "\t\t");
-//            PrintRegisterDefMask(defs, stderr);
-//            fprintf(stderr, "\n");
 
             if (defs == 0LL || defs == REG_ALL)
               break;  // defines something other than registers
@@ -109,6 +109,7 @@ class RedMemMovElimPass : public MaoPass {
  private:
   MaoUnit   *mao_;
   const CFG *cfg_;
+  int        look_ahead_;
 };
 
 
