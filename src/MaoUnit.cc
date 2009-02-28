@@ -1532,8 +1532,14 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     // XMM/MMX registers
     if (instruction_->types[i].bitfield.regmmx) {
       if (instruction_->tm.operand_types[i].bitfield.regmmx) {
-        fprintf(out, "%%mm%d", instruction_->rm.reg);
+	// the first is regmem, the other is reg
+	if (instruction_->tm.operand_types[i].bitfield.baseindex) {
+	  fprintf(out, "%%mm%d", instruction_->rm.regmem);
+	} else {
+	  fprintf(out, "%%mm%d", instruction_->rm.reg);
+	}
       } else if (instruction_->tm.operand_types[i].bitfield.regxmm) {
+	// TODO(martint): is this dead code?
         fprintf(out, "%%xmm%d", instruction_->rm.reg);
       }
     }
