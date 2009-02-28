@@ -1231,6 +1231,11 @@ bool InstructionEntry::PrintSuffix() const {
   const MaoOpcode opcode_has_b_suffix[] =  {
     OP_setb
   };
+  const MaoOpcode keep_sse4_2_suffix[] =  {
+    OP_crc32
+  };
+
+
   if ((instruction_->suffix == 'l') &&
       IsInList(op(), opcode_has_l_suffix,
                sizeof(opcode_has_l_suffix)/sizeof(MaoOpcode))) {
@@ -1248,9 +1253,21 @@ bool InstructionEntry::PrintSuffix() const {
   }
   if (instruction_->suffix == 'q' &&
       instruction_->tm.name[strlen(instruction_->tm.name)-1] == 'q') {
-    return false;
+	return false;
   }
 
+  // Do not print suffix for cpusse4_1 instructions
+  //  e.g.: OP_extractps, OP_pextrb, OP_pextrd, OP_pinsrb, OP_pinsrd
+  if( instruction_->tm.cpu_flags.bitfield.cpusse4_1) {
+    return false;
+  }
+  // Do not print suffix for cpusse4_2 instructions
+  // except for OP_crc32
+  if( instruction_->tm.cpu_flags.bitfield.cpusse4_2 &&
+      !IsInList(op(), keep_sse4_2_suffix,
+               sizeof(keep_sse4_2_suffix)/sizeof(MaoOpcode))) {
+    return false;
+  }
 
   return true;
 }
