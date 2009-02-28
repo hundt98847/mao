@@ -1114,7 +1114,7 @@ bool InstructionEntry::CompareMemOperand(int op1,
   if (!i1->base_reg && i2->base_reg)
     return false;
   if (i1->base_reg &&
-      strcmp(i1->base_reg->reg_name, i2->base_reg->reg_name))
+      i1->base_reg != i2->base_reg)
     return false;
 
   if (i1->index_reg && !i2->index_reg)
@@ -1122,7 +1122,7 @@ bool InstructionEntry::CompareMemOperand(int op1,
   if (!i1->index_reg && i2->index_reg)
     return false;
   if (i1->index_reg &&
-      strcmp(i1->index_reg->reg_name, i2->index_reg->reg_name))
+      i1->index_reg != i2->index_reg)
     return false;
 
   if (i1->log2_scale_factor != i2->log2_scale_factor)
