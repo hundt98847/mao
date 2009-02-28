@@ -207,5 +207,6 @@ MaoPass *FindPass(MaoOption *arr);
 
 // Some Pass Entry Points.
 void PerformZeroExtensionElimination(MaoUnit *mao, const CFG *cfg);
+void PerformRedundantTestElimination(MaoUnit *mao, const CFG *cfg);
 
 #endif   // MAP_PASSES_H_INCLUDED_
