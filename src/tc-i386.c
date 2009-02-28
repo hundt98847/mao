@@ -1910,6 +1910,9 @@ set_cpu_arch (int dummy ATTRIBUTE_UNUSED)
       unsigned int i;
       i386_cpu_flags flags;
 
+      struct MaoStringPiece description = { string, e };
+      link_arch_directive(description);
+
       for (i = 0; i < ARRAY_SIZE (cpu_arch); i++)
 	{
 	  if (strcmp (string, cpu_arch[i].name) == 0)

@@ -620,7 +620,8 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".ident",
   ".set",  // identical to .equ
   ".equiv",
-  ".weakref"
+  ".weakref",
+  ".arch"
 };
 
 void DirectiveEntry::PrintEntry(::FILE *out) const {

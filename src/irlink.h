@@ -99,6 +99,8 @@ extern "C" {
   /// Link .weakref directives from gas
   void link_weakref_directive(struct MaoStringPiece alias,
                               struct MaoStringPiece target);
+  /// Link .arch directives from gas
+  void link_arch_directive(struct MaoStringPiece description);
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 

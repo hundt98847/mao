@@ -384,5 +384,11 @@ void link_weakref_directive(struct MaoStringPiece alias,
   operands.push_back(new DirectiveEntry::Operand(alias));
   operands.push_back(new DirectiveEntry::Operand(target));
   link_directive_tail(DirectiveEntry::WEAKREF, operands);
+}
+
+void link_arch_directive(struct MaoStringPiece description) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(description));
+  link_directive_tail(DirectiveEntry::ARCH, operands);
   
 }
