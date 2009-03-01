@@ -110,7 +110,7 @@ void MaoUnit::PrintIR(bool print_entries, bool print_sections,
 
 const char *MaoUnit::FunctionName(MaoEntry *entry) const {
   const char *function = "";
-  if (entry_to_function_.find(entry) != entry_to_function_.end()) {
+  if (InFunction(entry)) {
     function = (*(entry_to_function_.find(entry))).second->name().c_str();
   }
   return function;
@@ -118,7 +118,7 @@ const char *MaoUnit::FunctionName(MaoEntry *entry) const {
 
 const char *MaoUnit::SectionName(MaoEntry *entry) const {
   const char *section = "";
-  if (entry_to_subsection_.find(entry) != entry_to_subsection_.end()) {
+  if (InSubSection(entry)) {
     SubSection *ss = (*(entry_to_subsection_.find(entry))).second;
     section = ss->section()->name().c_str();
   }
@@ -489,11 +489,11 @@ void MaoUnit::FindFunctions() {
     // or the end of the text section
     MaoEntry *entry = *(text_section->EntryBegin());
     if (entry &&
-        entry_to_function_.find(entry) == entry_to_function_.end()) {
+        !InFunction(entry)) {
       Function *function = new Function("__mao_unnamed", functions_.size());
       function->set_first_entry(entry);
       while (entry &&
-             entry_to_function_.find(entry) == entry_to_function_.end()) {
+             !InFunction(entry)) {
         function->set_last_entry(entry);
         entry_to_function_[entry] = function;
         entry = entry->next();
@@ -523,6 +523,99 @@ Symbol *MaoUnit::FindOrCreateAndFindSymbol(const char *name) {
 }
 
 
+Function *MaoUnit::GetFunction(MaoEntry *entry) {
+  if(entry_to_function_.find(entry) == entry_to_function_.end()) {
+    return NULL;
+  } else {
+    return entry_to_function_[entry];
+  }
+}
+
+bool MaoUnit::InFunction(MaoEntry *entry) const {
+  return entry_to_function_.find(entry) != entry_to_function_.end();
+}
+
+
+SubSection *MaoUnit::GetSubSection(MaoEntry *entry) {
+  if(entry_to_subsection_.find(entry) == entry_to_subsection_.end()) {
+    return NULL;
+  } else {
+    return entry_to_subsection_[entry];
+  }
+}
+
+bool MaoUnit::InSubSection(MaoEntry *entry) const {
+  return entry_to_subsection_.find(entry) != entry_to_subsection_.end();
+}
+
+void MaoUnit::DeleteEntry(MaoEntry *entry) {
+  // 1. Prev/next pointers around the tnry
+  MaoEntry *prev_entry = entry->prev();  // Possibly null
+  MaoEntry *next_entry = entry->next();  // Possibly null
+  prev_entry->set_next(next_entry);
+  next_entry->set_prev(prev_entry);
+
+  // 2. Remove it from entry_vector_
+  entry_vector_[entry->id()] = NULL;
+
+  // 3. Update function if needed
+  if (InFunction(entry)) {
+    Function *function = GetFunction(entry);
+    MAO_ASSERT(function);
+    // check if this function should be deleted altogether?
+    if (function->first_entry() == function->last_entry()) {
+      // TODO(martint): remove function!
+      MAO_ASSERT_MSG(false, "Not implemented. Remove function here.");
+    }
+    // check if its the start or end pointers
+    if (function->first_entry() == entry) {
+      MAO_ASSERT(GetFunction(next_entry) == function);
+      function->set_first_entry(next_entry);
+    }
+    if (function->last_entry() == entry) {
+      MAO_ASSERT(GetFunction(prev_entry) == function);
+      function->set_last_entry(prev_entry);
+    }
+
+    // For now, we reset the cfg
+    // TODO(martint): Deallocate memory!
+    function->set_cfg(NULL);
+
+    // For now, we reset the size
+    if (std::map<MaoEntry *, int> *sizes = function->sizes()) {
+      MAO_ASSERT(sizes->find(entry) != sizes->end());
+      sizes->erase(sizes->find(entry));
+    }
+  }
+
+  // 4. Update subsection if needed
+  if (InSubSection(entry)) {
+    SubSection *subsection = GetSubSection(entry);
+    if (subsection->first_entry() == subsection->last_entry()) {
+      // TODO(martint): remove function!
+      MAO_ASSERT_MSG(false, "Not implemented. Remove subsection here.");
+    }
+    // check if its the start or end pointers
+    if (subsection->first_entry() == entry) {
+      MAO_ASSERT(GetSubSection(next_entry) == subsection);
+      subsection->set_first_entry(next_entry);
+    }
+    if (subsection->last_entry() == entry) {
+      MAO_ASSERT(GetSubSection(prev_entry) == subsection);
+      subsection->set_last_entry(prev_entry);
+    }
+  }
+
+  // 5. Update entry_to_*_ maps
+  if (InFunction(entry)) {
+    entry_to_function_.erase(entry_to_function_.find(entry));
+    MAO_ASSERT(!InFunction(entry));
+  }
+  if (InSubSection(entry)) {
+    entry_to_subsection_.erase(entry_to_subsection_.find(entry));
+    MAO_ASSERT(!InSubSection(entry));
+  }
+}
 
 //
 // Class: SectionIterator

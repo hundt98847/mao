@@ -216,12 +216,19 @@ class MaoUnit {
   // Find all Functions in the MaoUnit and populate functions_
   void FindFunctions();
 
+  Function *GetFunction(MaoEntry *entry);
+  bool InFunction(MaoEntry *entry) const;
+  SubSection *GetSubSection(MaoEntry *entry);
+  bool InSubSection(MaoEntry *entry) const;
+
   // Symbol handling
   Symbol *AddSymbol(const char *name);
   Symbol *FindOrCreateAndFindSymbol(const char *name);
 
   Statistics *stat() {return &stat_;}
 
+  // Delete the entry from the IR.
+  void DeleteEntry(MaoEntry *entry);
  private:
   // Create the section section_name if it does not already exists. Returns a
   // pointer the section.
@@ -254,7 +261,6 @@ class MaoUnit {
 
   // Maps an entry to the corresponding Function and SubSection.
   std::map<MaoEntry *, Function *>   entry_to_function_;
- // TODO(martint): populate this map
   std::map<MaoEntry *, SubSection *> entry_to_subsection_;
 
   // Given an entry, return the name of the function it belongs to,
