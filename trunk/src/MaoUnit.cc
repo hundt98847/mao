@@ -37,6 +37,7 @@ MaoUnit::MaoUnit(MaoOptions *mao_options)
   sub_sections_.clear();
   sections_.clear();
   functions_.clear();
+  entry_to_function_.clear();
 }
 
 MaoUnit::~MaoUnit() {
@@ -106,6 +107,14 @@ void MaoUnit::PrintIR(bool print_entries, bool print_sections,
 }
 
 
+const char *MaoUnit::FunctionName(MaoEntry *entry) const {
+  const char *function = "";
+  if (entry_to_function_.find(entry) != entry_to_function_.end()) {
+    function = (*(entry_to_function_.find(entry))).second->name().c_str();
+  }
+  return function;
+}
+
 void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
                       bool print_subsections, bool print_functions) const {
   if (print_entries) {
@@ -117,7 +126,8 @@ void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
            e_iter != ss->EntryEnd();
            ++e_iter) {
         MaoEntry *e = *e_iter;
-        fprintf(out, "[%5d][%c] ", e->id(), e->GetDescriptiveChar());
+        fprintf(out, "[%5d][%c][%10s] ", e->id(), e->GetDescriptiveChar(),
+                FunctionName(e));
         if (MaoEntry::INSTRUCTION == e->Type()) {
           fprintf(out, "\t");
         }
@@ -417,6 +427,7 @@ void MaoUnit::FindFunctions() {
       // TODO(martint): create ID factory for functions
       Function *function = new Function(symbol->name(), functions_.size());
       function->set_first_entry(entry);
+      entry_to_function_[entry] = function;
 
       // Find the last entry in this function:
       // Initial idea:
@@ -446,12 +457,36 @@ void MaoUnit::FindFunctions() {
             break;
           }
         }
+        entry_to_function_[entry_tail] = function;
         entry_tail = entry_tail->next();
       }
 
       // Now entry_tail can not move more forward.
       // TODO(martint): Should we move it back though?
+      entry_to_function_[entry_tail] = function;
       function->set_last_entry(entry_tail);
+      functions_.push_back(function);
+    }
+  }
+
+
+  // Now, create an unnamed function for any instructions at the start of the
+  // .text section
+  Section *text_section = GetSection(".text");
+  if (text_section) {
+    // Iterate over entries, until we find an entry belonging to a function,
+    // or the end of the text section
+    MaoEntry *entry = *(text_section->EntryBegin());
+    if (entry &&
+        entry_to_function_.find(entry) == entry_to_function_.end()) {
+      Function *function = new Function("__mao_unnamed", functions_.size());
+      function->set_first_entry(entry);
+      while (entry &&
+             entry_to_function_.find(entry) == entry_to_function_.end()) {
+        function->set_last_entry(entry);
+        entry_to_function_[entry] = function;
+        entry = entry->next();
+      }
       functions_.push_back(function);
     }
   }
@@ -986,7 +1021,7 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.reg64
           || t.bitfield.floatreg
           || t.bitfield.regxmm
-	  || t.bitfield.regymm);
+          || t.bitfield.regymm);
 }
 
 void InstructionEntry::PrintImmediateOperand(FILE *out,
@@ -1100,7 +1135,8 @@ bool InstructionEntry::CompareMemOperand(int op1,
             disp1->X_add_symbol != disp2->X_add_symbol)
           return false;
         if (disp1->X_op_symbol &&
-            strcmp(S_GET_NAME(disp1->X_op_symbol), S_GET_NAME(disp2->X_op_symbol)))
+            strcmp(S_GET_NAME(disp1->X_op_symbol),
+                   S_GET_NAME(disp2->X_op_symbol)))
           return false;
         if (disp1->X_add_number &&
             disp1->X_add_number != disp2->X_add_number)
@@ -1273,24 +1309,24 @@ bool InstructionEntry::PrintSuffix() const {
   }
   if (instruction_->suffix == 'q' &&
       instruction_->tm.name[strlen(instruction_->tm.name)-1] == 'q') {
-	return false;
+    return false;
   }
 
   // Do not print suffix for cpusse4_1 instructions
   //  e.g.: OP_extractps, OP_pextrb, OP_pextrd, OP_pinsrb, OP_pinsrd
-  if( instruction_->tm.cpu_flags.bitfield.cpusse4_1) {
+  if (instruction_->tm.cpu_flags.bitfield.cpusse4_1) {
     return false;
   }
   // Do not print suffix for cpusse4_2 instructions
   // except for OP_crc32
-  if( instruction_->tm.cpu_flags.bitfield.cpusse4_2 &&
+  if (instruction_->tm.cpu_flags.bitfield.cpusse4_2 &&
       !IsInList(op(), keep_sse4_2_suffix,
                sizeof(keep_sse4_2_suffix)/sizeof(MaoOpcode))) {
     return false;
   }
-  
+
   if (IsInList(op(), supress_suffix,
-               sizeof(supress_suffix)/sizeof(MaoOpcode))) {    
+               sizeof(supress_suffix)/sizeof(MaoOpcode))) {
     return false;
   }
 
@@ -1303,20 +1339,20 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
   const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
   // Do all of these have drex and opcode_extentions in common? 65535?
-  // TODO: check what group of instrction these belong to.
+  // TODO(martint): check what group of instrction these belong to.
   const MaoOpcode force_two_operands[]= {OP_cmpltps, OP_cmpltss, OP_cmpltpd,
                                          OP_cmpltsd, OP_cmpltsd, OP_cmpnless,
-                                         OP_cmplesd, OP_cmpnlesd,OP_cmpneqpd,
+                                         OP_cmplesd, OP_cmpnlesd, OP_cmpneqpd,
                                          OP_cmpneqsd, OP_cmpnlepd,  OP_cmpnltpd,
                                          OP_cmpnltsd, OP_cmpordpd, OP_cmpordsd,
                                          OP_cmpneqss, OP_cmpnltss, OP_cmpeqsd,
 					 OP_pmulhrw, OP_pswapd};
-  
-  const MaoOpcode sse2avx_two_operands[]= {OP_pclmullqlqdq, 
+
+  const MaoOpcode sse2avx_two_operands[]= {OP_pclmullqlqdq,
 					   OP_pclmulhqlqdq,
 					   OP_pclmullqhqdq,
 					   OP_pclmulhqhqdq,
-					   OP_pcmpeqb, //?
+					   OP_pcmpeqb,
 					   OP_aesenclast,
 					   OP_cmpeqpd,
 					   OP_cmpeqps,
@@ -1343,7 +1379,6 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
          i < sizeof(instruction_->prefix)/sizeof(unsigned char);
          ++i) {
       if (instruction_->prefix[i] != 0) {
-
         // The list of available prefixes can be found in the following file:
         // ../binutils-2.19/include/opcode/i386.h
         switch (instruction_->prefix[i]) {
@@ -1437,7 +1472,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       break;
     }
     if ( (instruction_->tm.cpu_flags.bitfield.cpusse ||
-	  instruction_->tm.cpu_flags.bitfield.cpusse2 || 
+	  instruction_->tm.cpu_flags.bitfield.cpusse2 ||
 	  instruction_->tm.cpu_flags.bitfield.cpupclmul) &&
 	i == 2 &&
         IsInList(op(), sse2avx_two_operands,
@@ -1449,13 +1484,13 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                  sizeof(ymm_four_operands)/sizeof(MaoOpcode))) {
       break;
     }
-	
+
 
     // Handle case of instruction which have 4 operands
     // according to the instruction structure, but only
     // three in the assembly (e.g. comeqss %xmm3, %xmm2, %xmm1)
     if (i == 3 &&
-	instruction_->tm.opcode_modifier.drexc && 
+	instruction_->tm.opcode_modifier.drexc &&
 	instruction_->tm.extension_opcode == 65535) {
       break;
     }
@@ -1572,7 +1607,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 
     // The various SSE5 formats. Tested on
     // x86-64-sse5.s in gas test-suite.
-    if (instruction_->tm.opcode_modifier.drex && 
+    if (instruction_->tm.opcode_modifier.drex &&
 	instruction_->tm.opcode_modifier.drexv) {
       if ((instruction_->tm.extension_opcode == 0 &&
 	   (i == 2 || i == 3)) ||
@@ -1585,7 +1620,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
         fprintf(out, "%%xmm%d", instruction_->drex.reg);
       }
     }
-    if (instruction_->tm.opcode_modifier.drex && 
+    if (instruction_->tm.opcode_modifier.drex &&
 	!instruction_->tm.opcode_modifier.drexv) {
       if ((instruction_->tm.extension_opcode == 0 &&
 	   (i == 0 || i == 3)) ||
@@ -1883,15 +1918,15 @@ InstructionEntry *MaoEntry::AsInstruction() {
   return static_cast<InstructionEntry*>(this);
 }
 
-LabelEntry *MaoEntry::AsLabel(){
+LabelEntry *MaoEntry::AsLabel() {
   return static_cast<LabelEntry*>(this);
 }
 
-DirectiveEntry *MaoEntry::AsDirective(){
+DirectiveEntry *MaoEntry::AsDirective() {
   return static_cast<DirectiveEntry*>(this);
 }
 
-DebugEntry *MaoEntry::AsDebug(){
+DebugEntry *MaoEntry::AsDebug() {
   return static_cast<DebugEntry*>(this);
 }
 
