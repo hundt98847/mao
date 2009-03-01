@@ -38,6 +38,7 @@ MaoUnit::MaoUnit(MaoOptions *mao_options)
   sections_.clear();
   functions_.clear();
   entry_to_function_.clear();
+  entry_to_subsection_.clear();
 }
 
 MaoUnit::~MaoUnit() {
@@ -115,6 +116,15 @@ const char *MaoUnit::FunctionName(MaoEntry *entry) const {
   return function;
 }
 
+const char *MaoUnit::SectionName(MaoEntry *entry) const {
+  const char *section = "";
+  if (entry_to_subsection_.find(entry) != entry_to_subsection_.end()) {
+    SubSection *ss = (*(entry_to_subsection_.find(entry))).second;
+    section = ss->section()->name().c_str();
+  }
+  return section;
+}
+
 void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
                       bool print_subsections, bool print_functions) const {
   if (print_entries) {
@@ -126,8 +136,8 @@ void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
            e_iter != ss->EntryEnd();
            ++e_iter) {
         MaoEntry *e = *e_iter;
-        fprintf(out, "[%5d][%c][%10s] ", e->id(), e->GetDescriptiveChar(),
-                FunctionName(e));
+        fprintf(out, "[%5d][%c][%14s][%10s] ", e->id(), e->GetDescriptiveChar(),
+                FunctionName(e), SectionName(e));
         if (MaoEntry::INSTRUCTION == e->Type()) {
           fprintf(out, "\t");
         }
@@ -333,6 +343,7 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
   // Update subsection information
   if (current_subsection_) {
     current_subsection_->set_last_entry(entry);
+    entry_to_subsection_[entry] = current_subsection_;
   }
 
   return true;
