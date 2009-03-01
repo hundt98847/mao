@@ -260,6 +260,7 @@ class MaoUnit {
   // Given an entry, return the name of the function it belongs to,
   // or "" if it is not in any function.
   const char *FunctionName(MaoEntry *entry) const;
+  const char *SectionName(MaoEntry *entry) const;
 
   MaoOptions *mao_options_;
 
