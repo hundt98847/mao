@@ -79,6 +79,7 @@ CCSRCS=						\
 	ir.cc					\
 	mao.cc					\
 	MaoCFG.cc				\
+	MaoDCE.cc				\
 	MaoDefs.cc				\
 	MaoDebug.cc				\
 	Maoi386Size.cc				\
