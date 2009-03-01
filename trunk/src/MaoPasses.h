@@ -209,5 +209,6 @@ MaoPass *FindPass(MaoOption *arr);
 void PerformZeroExtensionElimination(MaoUnit *mao, const CFG *cfg);
 void PerformRedundantTestElimination(MaoUnit *mao, const CFG *cfg);
 void PerformRedundantMemMoveElimination(MaoUnit *mao, const CFG *cfg);
+void PerformDeadCodeElimination(MaoUnit *mao, const CFG *cfg);
 
 #endif   // MAP_PASSES_H_INCLUDED_

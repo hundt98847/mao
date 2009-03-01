@@ -88,6 +88,7 @@ int main(int argc, const char *argv[]) {
                                                function->name().c_str()));
 
       // Optimization passes.
+      PerformDeadCodeElimination(&mao_unit, function->cfg());
       PerformZeroExtensionElimination(&mao_unit, function->cfg());
       PerformRedundantTestElimination(&mao_unit, function->cfg());
       PerformRedundantMemMoveElimination(&mao_unit, function->cfg());
