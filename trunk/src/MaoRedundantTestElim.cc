@@ -56,17 +56,26 @@ class RedTestElimPass : public MaoPass {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
 
-        if ((insn->op() == OP_sub || insn->op() == OP_add) &&
+        // TODO: Revert: Check for test instructions first!
+        if (insn->op() == OP_test &&
+            insn->IsRegisterOperand(0) &&
             insn->IsRegisterOperand(1) &&
-            insn->nextInstruction()) {
-          InstructionEntry *next = insn->nextInstruction();
-          if (next->op() == OP_test &&
-              next->IsRegisterOperand(0) &&
-              next->IsRegisterOperand(1) &&
-              next->GetRegisterOperand(0) == next->GetRegisterOperand(1) &&
-              next->GetRegisterOperand(0) == insn->GetRegisterOperand(1))
+            insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1) &&
+            insn->prevInstruction()) {
+          InstructionEntry *prev = insn->prevInstruction();
+          if ((prev->op() == OP_sub || prev->op() == OP_add ||
+               prev->op() == OP_and || prev->op() == OP_or ||
+               prev->op() == OP_xor ||
+               prev->op() == OP_sal || prev->op() == OP_sar ||
+               prev->op() == OP_shl || prev->op() == OP_shr ||
+               prev->op() == OP_sbb) &&
+              prev->IsRegisterOperand(1) &&
+              prev->GetRegisterOperand(1) == insn->GetRegisterOperand(0)) {
             fprintf(stderr, "*** Found %s/test seq\n",
-                    insn->GetOp());
+                    prev->GetOp());
+            prev->PrintEntry(stderr);
+            insn->PrintEntry(stderr);
+          }
         }
       }
     }
