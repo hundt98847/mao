@@ -210,8 +210,10 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
             // Nothing to do
             break;
           case DirectiveEntry::IDENT:
-             MAO_ASSERT_MSG(false,
-                            "Relaxation does not yet support the IDENT symbol.");
+            // TODO(martint): Update relaxer to handle the comment section
+            // properly for the ident directive
+            (*size_map)[entry] = 0;
+            break;
           case DirectiveEntry::FILE:
           case DirectiveEntry::SECTION:
           case DirectiveEntry::GLOBAL:
