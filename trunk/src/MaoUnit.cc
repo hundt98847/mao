@@ -615,6 +615,11 @@ void MaoUnit::DeleteEntry(MaoEntry *entry) {
     entry_to_subsection_.erase(entry_to_subsection_.find(entry));
     MAO_ASSERT(!InSubSection(entry));
   }
+
+  // 6. Update labels map
+  if (LabelEntry *le = entry->AsLabel()) {
+    labels_.erase(labels_.find(le->name()));
+  }
 }
 
 //
