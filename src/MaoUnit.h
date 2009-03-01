@@ -253,9 +253,13 @@ class MaoUnit {
   std::map<const char *, LabelEntry *, ltstr> labels_;
 
   // Maps an entry to the corresponding Function and SubSection.
-  // TODO(martint): populate these maps
   std::map<MaoEntry *, Function *>   entry_to_function_;
+ // TODO(martint): populate this map
   std::map<MaoEntry *, SubSection *> entry_to_subsection_;
+
+  // Given an entry, return the name of the function it belongs to,
+  // or "" if it is not in any function.
+  const char *FunctionName(MaoEntry *entry) const;
 
   MaoOptions *mao_options_;
 
