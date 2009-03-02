@@ -38,14 +38,14 @@ int main(int argc, const char *argv[]) {
   CFG        cfg(&mao_unit);
 
   // Parse any mao-specific command line flags (start with -mao:)
-  char **new_argv = new char*[argc];
+  const char **new_argv = new const char*[argc];
   int    new_argc = 0;
 
   for (int i = 0; i < argc; i++) {
     if (strncmp(argv[i], "-mao:", 5) == 0)
-      mao_options.Parse(const_cast<char*>(&argv[i][5]));
+      mao_options.Parse(&argv[i][5]);
     else
-      new_argv[new_argc++] = const_cast<char*>(argv[i]);
+      new_argv[new_argc++] = argv[i];
   }
 
   // Static Initialization

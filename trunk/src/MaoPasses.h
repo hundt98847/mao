@@ -161,7 +161,7 @@ class AssemblyPass : public MaoPass {
 };
 
 
-void ReadInput(int argc, char *argv[], MaoUnit *mao_unit);
+void ReadInput(int argc, const char *argv[], MaoUnit *mao_unit);
 
 
 // DumpIrPass
