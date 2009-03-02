@@ -41,6 +41,7 @@ int main(int argc, const char *argv[]) {
   const char **new_argv = new const char*[argc];
   int    new_argc = 0;
 
+  mao_options.Parse(getenv("MAOOPTS"));
   for (int i = 0; i < argc; i++) {
     if (strncmp(argv[i], "-mao:", 5) == 0)
       mao_options.Parse(&argv[i][5]);
