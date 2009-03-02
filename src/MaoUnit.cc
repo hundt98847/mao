@@ -1718,8 +1718,17 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       }
     }
 
+    // If a jmp register instruction is given using 
+    // intel syntax, the jumpabsolute bit is not set using
+    // gas 2.19. The if-below is a workaround for this.
     if (IsRegisterOperand(instruction_, i)) {
-      if (instruction_->types[i].bitfield.jumpabsolute) {
+      if (instruction_->types[i].bitfield.jumpabsolute ||
+	  ((IsCall() || IsJump()) &&
+	   (instruction_->types[i].bitfield.reg8 ||
+	    instruction_->types[i].bitfield.reg16 ||
+	    instruction_->types[i].bitfield.reg32 ||
+	    instruction_->types[i].bitfield.reg64)
+	   )) {
         fprintf(out, "*");
       }
       fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
@@ -1790,19 +1799,6 @@ bool InstructionEntry::IsInList(MaoOpcode opcode, const MaoOpcode list[],
   return false;
 }
 
-const MaoOpcode cond_jumps[] = {
-  // Conditional jumps.
-  OP_jo,  OP_jno, OP_jb,   OP_jc,  OP_jnae, OP_jnb,  OP_jnc, OP_jae, OP_je,
-  OP_jz,  OP_jne, OP_jnz,  OP_jbe, OP_jna,  OP_jnbe, OP_ja,  OP_js,  OP_jns,
-  OP_jp,  OP_jpe, OP_jnp,  OP_jpo, OP_jl,   OP_jnge, OP_jnl, OP_jge, OP_jle,
-  OP_jng,  OP_jnle, OP_jg,
-
-  // jcxz vs. jecxz is chosen on the basis of the address size prefix.
-  OP_jcxz, OP_jecxz, OP_jecxz, OP_jrcxz,
-
-  // loop variants
-  OP_loop, OP_loopz, OP_loope, OP_loopnz, OP_loopne
-};
 
 bool InstructionEntry::HasFallThrough() const {
   // TODO(martint): Get this info from the i386_insn structure
@@ -1810,10 +1806,7 @@ bool InstructionEntry::HasFallThrough() const {
   if (IsReturn()) return false;
   if (!HasTarget()) return true;
   if (IsCall()) return true;
-  if (IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode))) {
-    return true;
-  }
-
+  if (IsCondJump()) return true;
   return false;
 }
 
@@ -1823,7 +1816,7 @@ bool InstructionEntry::HasTarget() const {
   const MaoOpcode insn[] = {OP_jmp, OP_ljmp};
   if (IsInList(op(), insn, sizeof(insn)/sizeof(MaoOpcode)))
     return true;
-  if (IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode)))
+  if (IsCondJump())
     return true;
 
   return false;
@@ -1847,6 +1840,34 @@ const char *InstructionEntry::GetTarget() const {
   }
   return "<UKNOWN>";
 }
+
+
+bool InstructionEntry::IsJump() const {
+  const MaoOpcode jumps[] = {
+    OP_jmp, OP_ljmp
+  };
+  return IsInList(op(), jumps, sizeof(jumps)/sizeof(MaoOpcode));
+}
+
+bool InstructionEntry::IsCondJump() const {
+  static const MaoOpcode cond_jumps[] = {
+    // Conditional jumps.
+    OP_jo,  OP_jno, OP_jb,   OP_jc,  OP_jnae, OP_jnb,  OP_jnc, OP_jae, OP_je,
+    OP_jz,  OP_jne, OP_jnz,  OP_jbe, OP_jna,  OP_jnbe, OP_ja,  OP_js,  OP_jns,
+    OP_jp,  OP_jpe, OP_jnp,  OP_jpo, OP_jl,   OP_jnge, OP_jnl, OP_jge, OP_jle,
+    OP_jng,  OP_jnle, OP_jg,
+    
+    // jcxz vs. jecxz is chosen on the basis of the address size prefix.
+    OP_jcxz, OP_jecxz, OP_jecxz, OP_jrcxz,
+    
+    // loop variants
+    OP_loop, OP_loopz, OP_loope, OP_loopnz, OP_loopne
+  };
+  return IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode));
+}
+
+
+
 
 bool InstructionEntry::IsCall() const {
   const MaoOpcode calls[] = {
