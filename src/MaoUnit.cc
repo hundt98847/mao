@@ -1074,26 +1074,6 @@ void InstructionEntry::FreeInstruction() {
 }
 
 
-// Given a register, create a copy to be used in our instruction
-reg_entry *InstructionEntry::CopyRegEntry(const reg_entry *in_reg) {
-  return const_cast<reg_entry*>(in_reg);
-#if 0
-  if (!in_reg)
-    return 0;
-
-  reg_entry *tmp_r;
-  tmp_r = new reg_entry;
-  MAO_ASSERT(tmp_r);
-  MAO_ASSERT(strlen(in_reg->reg_name) < kMaxRegisterNameLength);
-  tmp_r->reg_name = strdup(in_reg->reg_name);
-  tmp_r->reg_type = in_reg->reg_type;
-  tmp_r->reg_flags = in_reg->reg_flags;
-  tmp_r->reg_num = in_reg->reg_num;
-  return tmp_r;
-#endif
-}
-
-
 bool InstructionEntry::IsMemOperand(const i386_insn *instruction,
                                   const unsigned int op_index) {
   MAO_ASSERT(instruction->operands > op_index);
@@ -1779,11 +1759,11 @@ i386_insn *InstructionEntry::CreateInstructionCopy(i386_insn *in_inst) {
       *new_inst->op[i].disps = *in_inst->op[i].disps;
     } else if (IsRegisterOperand(in_inst, i) ||
               in_inst->types[i].bitfield.shiftcount ) {
-      new_inst->op[i].regs = CopyRegEntry(in_inst->op[i].regs);
+      new_inst->op[i].regs = in_inst->op[i].regs;
     }
   }
-  new_inst->base_reg = CopyRegEntry(in_inst->base_reg);
-  new_inst->index_reg = CopyRegEntry(in_inst->index_reg);
+  new_inst->base_reg = in_inst->base_reg;
+  new_inst->index_reg = in_inst->index_reg;
 
   // Segment overrides
   for (unsigned int i = 0; i < 2; i++) {

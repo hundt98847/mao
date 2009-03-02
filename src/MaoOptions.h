@@ -121,7 +121,7 @@ class MaoOptions {
 
   ~MaoOptions() {}
 
-  void        Parse(char *arg, bool collect = true);
+  void        Parse(const char *arg, bool collect = true);
   void        Reparse();
   void        ProvideHelp(bool always = false);
   static void SetOption(const char *pass_name,

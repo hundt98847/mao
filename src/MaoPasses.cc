@@ -181,11 +181,11 @@ MAO_OPTIONS_DEFINE(READ, 0) {
 //
 class ReadInputPass : public MaoPass {
  public:
-  ReadInputPass(int argc, char *argv[], MaoUnit *mao_unit)
+  ReadInputPass(int argc, const char *argv[], MaoUnit *mao_unit)
       : MaoPass("READ", mao_unit->mao_options(), MAO_OPTIONS(READ), true) {
     set_timed();
     // Use gas to parse input file.
-    MAO_ASSERT(!as_main(argc, argv));
+    MAO_ASSERT(!as_main(argc, const_cast<char**>(argv)));
     mao_unit->FindFunctions();
   }
 };
@@ -277,7 +277,7 @@ class SourceDebugAction : public MaoDebugAction {
 };
 
 
-void ReadInput(int argc, char *argv[], MaoUnit *mao_unit) {
+void ReadInput(int argc, const char *argv[], MaoUnit *mao_unit) {
   SourceDebugAction spos;
   ReadInputPass reader(argc, argv, mao_unit);
 }

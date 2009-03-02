@@ -197,9 +197,9 @@ void MaoOptions::TimerStop(const char *pass_name) {
 
 static char token_buff[128];
 
-static char *NextToken(char *arg, char **next) {
+static char *NextToken(const char *arg, const char **next) {
   int i = 0;
-  char *p = arg;
+  const char *p = arg;
   if (*p == ',' || *p == ':' || *p == '=' || *p == '+')
     ++p;
   while (isalnum(*p) || (*p == '_') ||
@@ -212,8 +212,8 @@ static char *NextToken(char *arg, char **next) {
   return token_buff;
 }
 
-static char *GobbleGarbage(char *arg, char **next) {
-  char *p = arg;
+static const char *GobbleGarbage(const char *arg, const char **next) {
+  const char *p = arg;
   if (*p == ',' || *p == ':' || *p == '=')
     ++p;
   *next = p;
@@ -226,7 +226,7 @@ static char *GobbleGarbage(char *arg, char **next) {
 //    option(val)
 //    option[val]
 //
-static bool GetParam(char *arg, char **next, char **param) {
+static bool GetParam(const char *arg, const char **next, const char **param) {
   if (arg[0] == '(' || arg[0] == '[' || arg[0] == ':') {
     char  delim = arg[0];
 
@@ -251,7 +251,8 @@ static bool GetParam(char *arg, char **next, char **param) {
 // that applies to passes, but is not specified in the pass' option
 // array.
 //
-bool SetPassSpecificOptions(char *option, char *arg, char **next,
+bool SetPassSpecificOptions(const char *option, const char *arg,
+                            const char **next,
                             MaoOptionArray *current_opts) {
   if (!strcasecmp(option, "enable") || !strcasecmp(option, "on")) {
     MaoPass *mao_pass = FindPass(current_opts->array());
@@ -260,7 +261,7 @@ bool SetPassSpecificOptions(char *option, char *arg, char **next,
     return true;
   }
   if (!strcasecmp(option, "trace")) {
-    char *param;
+    const char *param;
     int   level = 3;
     if (GetParam(arg, next, &param))
       level = atoi(param);
@@ -286,7 +287,7 @@ void MaoOptions::Reparse() {
   Parse(mao_options_, false);
 }
 
-void MaoOptions::Parse(char *arg, bool collect) {
+void MaoOptions::Parse(const char *arg, bool collect) {
   if (collect) {
     if (!mao_options_) {
       mao_options_ = strdup(arg);
@@ -319,8 +320,7 @@ void MaoOptions::Parse(char *arg, bool collect) {
         ++arg;
       } else if (arg[0] == 'o') {
         ++arg;
-        char *filename;
-        filename = NextToken(arg, &arg);
+        const char *filename = NextToken(arg, &arg);
         if (!strcmp(filename, "stderr")) {
           set_output_is_stderr();
           set_assembly_output_file_name("<stderr>");
@@ -347,7 +347,7 @@ void MaoOptions::Parse(char *arg, bool collect) {
 
         char *option;
         while (1) {
-          char *old_arg = arg;
+          const char *old_arg = arg;
           option = NextToken(arg, &arg);
           if (!option || option[0] == '\0')
             break;
@@ -365,7 +365,7 @@ void MaoOptions::Parse(char *arg, bool collect) {
           MaoOption *opt = current_opts->FindOption(option);
           MAO_ASSERT_MSG(opt, "Could not find option: %s", option);
 
-          char *param;
+          const char *param;
           if (GetParam(arg, &arg, &param)) {
             if (opt->type() == OPT_INT)
               opt->ival_ = atoi(param);
