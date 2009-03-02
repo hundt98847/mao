@@ -96,7 +96,6 @@ void MaoPass::TimerStop() {
 }
 
 void MaoPass::Trace(unsigned int level, const char *fmt, ...) const {
-  MAO_ASSERT(level>0);
   if (level > tracing_level()) return;
 
   fprintf(stderr, "[%s]\t", name());
