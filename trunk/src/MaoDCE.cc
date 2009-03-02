@@ -72,12 +72,18 @@ class DeadCodeElimPass : public MaoPass {
     BasicBlock *root = (*cfg_->Begin());
     Visit(root, &bbmap);
 
-    FORALL_CFG_BB(cfg_,it) 
+    FORALL_CFG_BB(cfg_,it)
       if (!bbmap[(*it)]) {
 	Trace(1, "Found Dead Basic Block: BB#%d",
 	      (*it)->id());
 	if (tracing_level() > 0) {
-	  (*it)->first_entry()->PrintEntry(stderr);
+          if ((*it)->first_entry())
+            (*it)->first_entry()->PrintEntry(stderr);
+          else
+            if ((*it) != cfg_->Start() &&
+                (*it) != cfg_->Sink())
+              Trace(0, "WARNING: Empty Basic Block: BB#%d",
+                    (*it)->id());
 	}
       }
   }
