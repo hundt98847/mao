@@ -74,8 +74,11 @@ class DeadCodeElimPass : public MaoPass {
 
     FORALL_CFG_BB(cfg_,it) 
       if (!bbmap[(*it)]) {
-	fprintf(stderr, "*** Found Dead Basic Block: BB#%d\n",
-		(*it)->id());
+	Trace(1, "Found Dead Basic Block: BB#%d",
+	      (*it)->id());
+	if (tracing_level() > 0) {
+	  (*it)->first_entry()->PrintEntry(stderr);
+	}
       }
   }
 
@@ -91,6 +94,6 @@ class DeadCodeElimPass : public MaoPass {
 void PerformDeadCodeElimination(MaoUnit *mao, const CFG *cfg) {
   DeadCodeElimPass dce(mao, cfg);
   dce.set_timed();
-  // disable for now - finding too many things
-  // dce.DoElim();
+  //disable for now - finding too many things
+  dce.DoElim();
 }
