@@ -55,7 +55,7 @@ class LoopAlignPass : public MaoPass {
   int PathSize(const Path *path) const;
 
   // Used to find inner loops
-  void FindInner(const SimpleLoop *loop);
+  void FindInner(const SimpleLoop *loop, MaoRelaxer::SizeMap *offsets);
 
   // Get all the possible paths found in a loop. Return the paths in the
   // paths variable.
@@ -85,7 +85,9 @@ class LoopAlignPass : public MaoPass {
   int ChainSize(BasicBlock *basicblock,
                 std::map<BasicBlock *, BasicBlock *> *connections);
   // Try to align the paths in a given inner loop.
-  void ProcessInnerLoop(const SimpleLoop *loop);
+  void ProcessInnerLoop(const SimpleLoop *loop,
+                        MaoRelaxer::SizeMap *offsets);
+  void ProcessInnerLoopOld(const SimpleLoop *loop);
 
   // Add the align directive to the given basic block.
   void AlignBlock(BasicBlock *basicblock);
@@ -120,7 +122,19 @@ LoopAlignPass::LoopAlignPass(MaoUnit *mao, LoopStructureGraph *loop_graph,
 void LoopAlignPass::DoLoopAlign() {
   Trace(2, "%d loop(s).", loop_graph_->NumberOfLoops()-1);
   if (loop_graph_->NumberOfLoops() > 1) {
-    FindInner(loop_graph_->root());
+    MaoRelaxer::SizeMap offsets;
+    // iterate over the entries in the section to solve this..
+    Section *text_section = mao_unit_->GetSection(".text");
+    MAO_ASSERT(text_section);
+    int offset = 0;
+    for (SectionEntryIterator iter = text_section->EntryBegin();
+         iter != text_section->EntryEnd();
+         ++iter) {
+      offsets[*iter] = offset;
+      offset += (*sizes_)[*iter];
+    }
+    // TODO(martint): send in the offsetmap
+    FindInner(loop_graph_->root(),  &offsets);
   }
   return;
 }
@@ -278,7 +292,7 @@ void LoopAlignPass::AlignBlock(BasicBlock *basicblock) {
   MaoEntry *entry = basicblock->first_entry();
 
   DirectiveEntry::OperandVector operands;
-  operands.push_back(new DirectiveEntry::Operand(4));
+  operands.push_back(new DirectiveEntry::Operand(6));
   DirectiveEntry *alignment_directive =
       new DirectiveEntry(DirectiveEntry::P2ALIGN, operands,
                          0, NULL, mao_unit_);
@@ -294,6 +308,8 @@ void LoopAlignPass::AlignBlock(BasicBlock *basicblock) {
 
   // 2. the basic block
   basicblock->set_first_entry(alignment_directive);
+
+  // TODO: update sections/functions?
 }
 
 
@@ -310,10 +326,45 @@ int LoopAlignPass::ChainSize(BasicBlock *basicblock,
 }
 
 
+void LoopAlignPass::ProcessInnerLoop(const SimpleLoop *loop,
+                                     MaoRelaxer::SizeMap *offsets) {
+  // Find out if all the blocks are aligned after each other!
+
+  // Keeps track of what blocks we have already processed
+  // Could be solved by using the sizemap and create offsets
+  // into the section!
+  // TODO(martint)
+  // now we can find the largest and smallest value!
+
+  BasicBlock *first = *(loop->ConstBasicBlockBegin());
+  BasicBlock *last = *(loop->ConstBasicBlockBegin());
+  for (SimpleLoop::BasicBlockSet::iterator iter = loop->ConstBasicBlockBegin();
+       iter != loop->ConstBasicBlockEnd();
+       ++iter) {
+    if ((*offsets)[(*iter)->first_entry()] >
+        (*offsets)[last->first_entry()]) {
+      last = *iter;
+    }
+    if ((*offsets)[(*iter)->first_entry()] <
+        (*offsets)[first->first_entry()]) {
+      first = *iter;
+    }
+  }
+  int loop_size = (*offsets)[last->last_entry()] + (*sizes_)[last->last_entry()] -
+      (*offsets)[first->first_entry()];
+  if (loop_size <= 64) {
+    // Add align directive
+    AlignBlock(first);
+  }
+  Trace(3, "Loop size is: %d", loop_size);
+}
+
+
+
 // Given an inner loop, get all the paths that go from the
 // header, back to the header. If any paths fit in the
 // loop buffer, consider it for alignment
-void LoopAlignPass::ProcessInnerLoop(const SimpleLoop *loop) {
+void LoopAlignPass::ProcessInnerLoopOld(const SimpleLoop *loop) {
   // Hold all the paths found in the loop
   Paths paths;
   // Get all the possible paths in this loop
@@ -375,7 +426,7 @@ int LoopAlignPass::PathSize(const Path *path) const {
 
 // Function called recurively to find the inner loops that are candidates
 // for alignment.
-void LoopAlignPass::FindInner(const SimpleLoop *loop) {
+void LoopAlignPass::FindInner(const SimpleLoop *loop, MaoRelaxer::SizeMap *offsets) {
   if (loop->nesting_level() == 0 &&   // Leaf node = Inner loop
       !loop->is_root()) {             // Make sure its not the root node
     // Found an inner loop
@@ -385,12 +436,9 @@ void LoopAlignPass::FindInner(const SimpleLoop *loop) {
     // Currently we see if there any paths in the inner loops that are
     // candiates for alignment!
     int size = LoopSize(loop);
-    // This limit is set to a "reasonable" size so that the number
-    // of possible paths doesnt explode and takes forever to iterate
-    // (see expr.s compiled crom expr.s in mao for an example or a huge
-    //  inner loop).
-    if (size < 512) {
-      ProcessInnerLoop(loop);
+
+    if (size <= 64) {
+      ProcessInnerLoop(loop, offsets);
     }
 
     // Statistics gathering
@@ -403,7 +451,7 @@ void LoopAlignPass::FindInner(const SimpleLoop *loop) {
   // Recursive call in order to find all
   for (SimpleLoop::LoopSet::const_iterator liter = loop->ConstChildrenBegin();
        liter != loop->ConstChildrenEnd(); ++liter) {
-    FindInner(*liter);
+    FindInner(*liter, offsets);
   }
 }
 
