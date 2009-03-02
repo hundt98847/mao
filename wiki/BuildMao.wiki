@@ -27,6 +27,16 @@ cd binutils-2.19-obj-x86_64-linux
 make
 
 cd ..
+
+# Python
+wget http://www.python.org/ftp/python/2.5.4/Python-2.5.4.tgz
+gzip -dc Python-2.5.4.tgz  | tar xvf -
+cd Python-2.5.4
+./configure PREFIX=$DIR/python-2.5.4 EXEC_PREFIX=$DIR/python-2.5.4
+make DESTDIR=$DIR/python-2.5.4 install
+cd ..
+
+
 cd src
 
 # Note that the Makefile in this directory specifies
@@ -41,4 +51,5 @@ make TARGET=x86_64-linux
 When builing on MacOS X, the following flags might be necessary.
 {{{
 ./binutils-2.19/configure --target=x86_64-linux --disable-nls
+make OS=MacOS
 }}}
