@@ -92,6 +92,7 @@ int main(int argc, const char *argv[]) {
       PerformZeroExtensionElimination(&mao_unit, function->cfg());
       PerformRedundantTestElimination(&mao_unit, function->cfg());
       PerformRedundantMemMoveElimination(&mao_unit, function->cfg());
+      PerformMissDispElimination(&mao_unit, function->cfg());
       DoLoopAlign(&mao_unit, function);
     }
   } // .text section

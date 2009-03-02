@@ -85,6 +85,7 @@ CCSRCS=						\
 	Maoi386Size.cc				\
 	MaoLoopAlign.cc				\
 	MaoLoops.cc				\
+	MaoMissDisp.cc				\
 	MaoOpcodes.cc				\
 	MaoOptions.cc				\
 	MaoPasses.cc				\
