@@ -19,34 +19,152 @@
 #include "MaoUnit.h"
 #include "gen-defs.h"
 
+#include <string.h>
+#include <map>
+
+class RegProps {
+ public:
+  RegProps(const char *name,
+	   unsigned long long mask) : name_(name), mask_(mask) {}
+
+  unsigned long long mask() { return mask_; }
+  const char * name() { return name_; }
+
+ private:
+  const char *       name_;
+  unsigned long long mask_;
+};
+
+typedef std::map<const char *, RegProps *, ltstr> RegMap;
+static RegMap *reg_map = NULL;
+
+static RegProps *RegReg(const char *name, 
+			const char *alias, 
+			unsigned long long mask) {
+  RegProps *r = new RegProps(name, mask);
+  (*reg_map)[name] = r;
+  if (alias)
+    (*reg_map)[alias] = r;
+  return r;
+}
+
+static void InitRegProps() {
+  reg_map = new RegMap;
+
+  RegReg("al",  "r0b", REG_AL);
+  RegReg("ah",  NULL,  REG_AH);
+  RegReg("ax",  "r0w", REG_AX  | REG_AH  | REG_AL);
+  RegReg("eax", "r0d", REG_EAX | REG_AX  | REG_AH | REG_AL);
+  RegReg("rax", "r0",  REG_RAX | REG_EAX | REG_AX | REG_AH | REG_AL);
+
+  RegReg("cl",  "r1b", REG_CL);
+  RegReg("ch",  NULL,  REG_CH);
+  RegReg("cx",  "r1w", REG_CX  | REG_CH  | REG_CL);
+  RegReg("ecx", "r1d", REG_ECX | REG_CX  | REG_CH | REG_CL);
+  RegReg("rcx", "r1",  REG_RCX | REG_ECX | REG_CX | REG_CH | REG_CL);
+
+  RegReg("dl",  "r2b", REG_DL);
+  RegReg("dh",  NULL,  REG_DH);
+  RegReg("dx",  "r2w", REG_DX  | REG_DH  | REG_DL);
+  RegReg("edx", "r2d", REG_EDX | REG_DX  | REG_DH | REG_DL);
+  RegReg("rdx", "r2",  REG_RDX | REG_EDX | REG_DX | REG_DH | REG_DL);
+
+  RegReg("bl",  "r3b", REG_BL);
+  RegReg("bh",  NULL,  REG_BH);
+  RegReg("bx",  "r3w", REG_BX  | REG_BH  | REG_BL);
+  RegReg("ebx", "r3d", REG_EBX | REG_BX  | REG_BH | REG_BL);
+  RegReg("rbx", "r3",  REG_RBX | REG_EBX | REG_BX | REG_BH | REG_BL);
+
+  // TODO(rhundt): Model SPL
+  RegReg("sp",  "r4w", REG_SP);
+  RegReg("esp", "r4d", REG_ESP | REG_SP);
+  RegReg("rsp", "r4",  REG_RSP | REG_ESP | REG_SP);
+
+  RegReg("bp",  "r5w", REG_BP);
+  RegReg("ebp", "r5d", REG_EBP | REG_BP);
+  RegReg("rbp", "r5",  REG_RBP | REG_EBP | REG_BP);
+
+  RegReg("si",  "r6w", REG_SI);
+  RegReg("esi", "r6d", REG_ESI | REG_SI);
+  RegReg("rsi", "r6",  REG_RSI | REG_ESI | REG_SI);
+
+  RegReg("di",  "r7w", REG_DI);
+  RegReg("edi", "r7d", REG_EDI | REG_DI);
+  RegReg("rdi", "r7",  REG_RDI | REG_EDI | REG_DI);
+
+  RegReg("r8b", NULL, REG_R8B);
+  RegReg("r8w", NULL, REG_R8W | REG_R8B);
+  RegReg("r8d", NULL, REG_R8D | REG_R8W | REG_R8B);
+  RegReg("r8",  NULL, REG_R8  | REG_R8D | REG_R8W | REG_R8B);
+
+  RegReg("r9b", NULL, REG_R9B);
+  RegReg("r9w", NULL, REG_R9W | REG_R9B);
+  RegReg("r9d", NULL, REG_R9D | REG_R9W | REG_R9B);
+  RegReg("r9",  NULL, REG_R9  | REG_R9D | REG_R9W | REG_R9B);
+
+  RegReg("r10b", NULL, REG_R10B);
+  RegReg("r10w", NULL, REG_R10W | REG_R10B);
+  RegReg("r10d", NULL, REG_R10D | REG_R10W | REG_R10B);
+  RegReg("r10",  NULL, REG_R10  | REG_R10D | REG_R10W | REG_R10B);
+
+  RegReg("r11b", NULL, REG_R11B);
+  RegReg("r11w", NULL, REG_R11W | REG_R11B);
+  RegReg("r11d", NULL, REG_R11D | REG_R11W | REG_R11B);
+  RegReg("r11",  NULL, REG_R11  | REG_R11D | REG_R11W | REG_R11B);
+
+  RegReg("r12b", NULL, REG_R12B);
+  RegReg("r12w", NULL, REG_R12W | REG_R12B);
+  RegReg("r12d", NULL, REG_R12D | REG_R12W | REG_R12B);
+  RegReg("r12",  NULL, REG_R12  | REG_R12D | REG_R12W | REG_R12B);
+
+  RegReg("r13b", NULL, REG_R13B);
+  RegReg("r13w", NULL, REG_R13W | REG_R13B);
+  RegReg("r13d", NULL, REG_R13D | REG_R13W | REG_R13B);
+  RegReg("r13",  NULL, REG_R13  | REG_R13D | REG_R13W | REG_R13B);
+
+  RegReg("r14b", NULL, REG_R14B);
+  RegReg("r14w", NULL, REG_R14W | REG_R14B);
+  RegReg("r14d", NULL, REG_R14D | REG_R14W | REG_R14B);
+  RegReg("r14",  NULL, REG_R14  | REG_R14D | REG_R14W | REG_R14B);
+
+  RegReg("r15b", NULL, REG_R15B);
+  RegReg("r15w", NULL, REG_R15W | REG_R15B);
+  RegReg("r15d", NULL, REG_R15D | REG_R15W | REG_R15B);
+  RegReg("r15",  NULL, REG_R15  | REG_R15D | REG_R15W | REG_R15B);
+}
+
 unsigned long long GetMaskForRegister(const char *reg) {
+  static bool regs_initialized = false;
+  if (!regs_initialized) 
+    InitRegProps();
+
   unsigned long long mask = 0ULL;
 
   if (!reg) return mask;
 
-  if (!strcmp(reg, "al"))  mask |= REG_AL; else
+  if (!strcmp(reg, "al")  || !strcmp(reg, "r0b")) mask |= REG_AL; else
   if (!strcmp(reg, "ah"))  mask |= REG_AH; else
-  if (!strcmp(reg, "ax"))  mask |= REG_AX | REG_AH | REG_AL; else
-  if (!strcmp(reg, "eax")) mask |= REG_EAX | REG_AX | REG_AH | REG_AL; else
-  if (!strcmp(reg, "rax")) mask |= REG_RAX | REG_EAX | REG_AX | REG_AH | REG_AL; else
+  if (!strcmp(reg, "ax")  || !strcmp(reg, "r0w")) mask |= REG_AX  | REG_AH  | REG_AL; else
+  if (!strcmp(reg, "eax") || !strcmp(reg, "r0d")) mask |= REG_EAX | REG_AX  | REG_AH | REG_AL; else
+  if (!strcmp(reg, "rax") || !strcmp(reg, "r0"))  mask |= REG_RAX | REG_EAX | REG_AX | REG_AH | REG_AL; else
 
-  if (!strcmp(reg, "cl"))  mask |= REG_CL; else
+  if (!strcmp(reg, "cl")  || !strcmp(reg, "r1b")) mask |= REG_CL; else
   if (!strcmp(reg, "ch"))  mask |= REG_CH; else
-  if (!strcmp(reg, "cx"))  mask |= REG_CX | REG_CH | REG_CL; else
-  if (!strcmp(reg, "ecx")) mask |= REG_ECX | REG_CX | REG_CH | REG_CL; else
-  if (!strcmp(reg, "rcx")) mask |= REG_RCX | REG_ECX | REG_CX | REG_CH | REG_CL; else
+  if (!strcmp(reg, "cx")  || !strcmp(reg, "r1w")) mask |= REG_CX  | REG_CH  | REG_CL; else
+  if (!strcmp(reg, "ecx") || !strcmp(reg, "r1d")) mask |= REG_ECX | REG_CX  | REG_CH | REG_CL; else
+  if (!strcmp(reg, "rcx") || !strcmp(reg, "r1"))  mask |= REG_RCX | REG_ECX | REG_CX | REG_CH | REG_CL; else
 
-  if (!strcmp(reg, "dl"))  mask |= REG_DL; else
+  if (!strcmp(reg, "dl")  || !strcmp(reg, "r2b")) mask |= REG_DL; else
   if (!strcmp(reg, "dh"))  mask |= REG_DH; else
-  if (!strcmp(reg, "dx"))  mask |= REG_DX  | REG_DH | REG_DL; else
-  if (!strcmp(reg, "edx")) mask |= REG_EDX  | REG_DX | REG_DH | REG_DL; else
-  if (!strcmp(reg, "rdx")) mask |= REG_RDX  | REG_EDX | REG_DX | REG_DH | REG_DL; else
+  if (!strcmp(reg, "dx")  || !strcmp(reg, "r2w")) mask |= REG_DX  | REG_DH  | REG_DL; else
+  if (!strcmp(reg, "edx") || !strcmp(reg, "r2d")) mask |= REG_EDX | REG_DX  | REG_DH | REG_DL; else
+  if (!strcmp(reg, "rdx") || !strcmp(reg, "r2"))  mask |= REG_RDX | REG_EDX | REG_DX | REG_DH | REG_DL; else
 
-  if (!strcmp(reg, "bl"))  mask |= REG_BL; else
+  if (!strcmp(reg, "bl")  || !strcmp(reg, "r3b")) mask |= REG_BL; else
   if (!strcmp(reg, "bh"))  mask |= REG_BH; else
-  if (!strcmp(reg, "bx"))  mask |= REG_BX  | REG_BH | REG_BL; else
-  if (!strcmp(reg, "ebx")) mask |= REG_EBX  | REG_BX | REG_BH | REG_BL; else
-  if (!strcmp(reg, "rbx")) mask |= REG_RBX  | REG_EBX | REG_BX | REG_BH | REG_BL; else
+  if (!strcmp(reg, "bx")  || !strcmp(reg, "r3w")) mask |= REG_BX  | REG_BH  | REG_BL; else
+  if (!strcmp(reg, "ebx") || !strcmp(reg, "r3d")) mask |= REG_EBX | REG_BX  | REG_BH | REG_BL; else
+  if (!strcmp(reg, "rbx") || !strcmp(reg, "r3"))  mask |= REG_RBX | REG_EBX | REG_BX | REG_BH | REG_BL; else
 
   if (!strcmp(reg, "sp"))   mask |= REG_SP; else
   if (!strcmp(reg, "esp"))  mask |= REG_ESP | REG_SP; else
