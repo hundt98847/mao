@@ -337,6 +337,8 @@ class MaoEntry {
   // Property methods
   virtual bool HasFallThrough() const = 0;
   virtual bool IsControlTransfer() const = 0;
+  virtual bool IsCondJump() const = 0;
+  virtual bool IsJump() const = 0;
   virtual bool IsCall() const = 0;
   virtual bool IsReturn() const = 0;
 
@@ -410,6 +412,8 @@ class LabelEntry : public MaoEntry {
   // Property methods
   virtual bool HasFallThrough() const { return true; }
   virtual bool IsControlTransfer() const { return false; }
+  virtual bool IsCondJump() const { return false; }
+  virtual bool IsJump() const { return false; }
   virtual bool IsCall() const { return false; }
   virtual bool IsReturn() const { return false; }
 
@@ -540,6 +544,8 @@ class DirectiveEntry : public MaoEntry {
   // Property methods
   virtual bool HasFallThrough() const { return false; }
   virtual bool IsControlTransfer() const { return false; }
+  virtual bool IsCondJump() const { return false; }
+  virtual bool IsJump() const { return false; }
   virtual bool IsCall() const { return false; }
   virtual bool IsReturn() const { return false; }
 
@@ -577,6 +583,8 @@ class DebugEntry : public MaoEntry {
   // Property methods
   virtual bool HasFallThrough() const { return false; }
   virtual bool IsControlTransfer() const { return false; }
+  virtual bool IsCondJump() const { return false; }
+  virtual bool IsJump() const { return false; }
   virtual bool IsCall() const { return false; }
   virtual bool IsReturn() const { return false; }
 
@@ -614,6 +622,8 @@ class InstructionEntry : public MaoEntry {
   virtual bool IsControlTransfer() const {
     return HasTarget() || IsCall() || IsReturn();
   }
+  virtual bool IsCondJump() const;
+  virtual bool IsJump() const;
   virtual bool IsCall() const;
   virtual bool IsReturn() const;
 
