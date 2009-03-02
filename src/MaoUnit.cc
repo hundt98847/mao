@@ -1130,6 +1130,7 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.reg64
           || t.bitfield.floatreg
           || t.bitfield.regxmm
+	  || t.bitfield.regmmx
           || t.bitfield.regymm);
 }
 
@@ -1699,21 +1700,6 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       }
     }
 
-    // XMM/MMX registers
-    if (instruction_->types[i].bitfield.regmmx) {
-      if (instruction_->tm.operand_types[i].bitfield.regmmx) {
-	// the first is regmem, the other is reg
-	if (instruction_->tm.operand_types[i].bitfield.baseindex) {
-	  fprintf(out, "%%mm%d", instruction_->rm.regmem);
-	} else {
-	  fprintf(out, "%%mm%d", instruction_->rm.reg);
-	}
-      } else if (instruction_->tm.operand_types[i].bitfield.regxmm) {
-	// TODO(martint): is this dead code?k
-        fprintf(out, "%%xmm%d", instruction_->rm.reg);
-      }
-    }
-
     // The various SSE5 formats. Tested on
     // x86-64-sse5.s in gas test-suite.
     if (instruction_->tm.opcode_modifier.drex &&
@@ -1726,7 +1712,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 	   (i == 0 || i == 3)) ||
 	  (instruction_->tm.extension_opcode == 3 &&
 	   (i == 0 || i == 3))) {
-        fprintf(out, "%%xmm%d", instruction_->drex.reg);
+	fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
       }
     }
     if (instruction_->tm.opcode_modifier.drex &&
@@ -1739,7 +1725,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 	   (i == 0 || i == 3)) ||
 	  (instruction_->tm.extension_opcode == 3 &&
 	   (i == 0 || i == 3))) {
-        fprintf(out, "%%xmm%d", instruction_->drex.reg);
+	fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
       }
     }
     if (instruction_->tm.opcode_modifier.drexc) {
@@ -1747,7 +1733,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 	   (i == 3)) ||
 	  (instruction_->tm.extension_opcode == 65535 &&
 	   (i == 2))) {
-        fprintf(out, "%%xmm%d", instruction_->drex.reg);
+	fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
       }
     }
 
