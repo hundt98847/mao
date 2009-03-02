@@ -85,14 +85,16 @@ class RedMemMovElimPass : public MaoPass {
               // now we have a second movl mem, reg
               // need to check whether two mem operands are the same.
               if (insn->CompareMemOperand(0, next, 0)) {
-                fprintf(stderr, "*** Found two insns with same mem op\n");
-                insn->PrintEntry(stderr);
-                insn = insn->nextInstruction();
-                while (insn != next) {
+                Trace(1, "Found two insns with same mem op");
+                if (tracing_level() > 0) {
                   insn->PrintEntry(stderr);
                   insn = insn->nextInstruction();
+                  while (insn != next) {
+                    insn->PrintEntry(stderr);
+                    insn = insn->nextInstruction();
+                  }
+                  next->PrintEntry(stderr);
                 }
-                next->PrintEntry(stderr);
               }
             }
             if (defs & mask)
