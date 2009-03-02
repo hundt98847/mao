@@ -290,7 +290,17 @@ void MaoOptions::Reparse() {
 void MaoOptions::Parse(const char *arg, bool collect) {
   if (collect) {
     if (!mao_options_) {
-      mao_options_ = strdup(arg);
+      char *env = getenv("MAO_OPTS");
+      if (!env) env = getenv("MAOOPTS");
+
+      int len = strlen(arg)+1+(env?strlen(env)+1:0);
+      char *buf = (char *)malloc(sizeof(char) * len);
+      if (env) {
+        strcpy(buf, env);
+        strcat(buf, ",");
+      }
+      strcat(buf, arg);
+      mao_options_ = buf;
     } else {
       // Append mao_options_ and arg
       char *buf = (char *)malloc(sizeof(char) * (strlen(mao_options_) +
