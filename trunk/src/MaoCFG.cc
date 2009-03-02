@@ -124,6 +124,7 @@ void CFGBuilder::Build() {
   BasicBlock *source = CreateBasicBlock("<SOURCE>");
   BasicBlock *sink = CreateBasicBlock("<SINK>");
   BasicBlock *current, *previous;
+  MaoEntry *last_entry;
   bool create_fall_through;
 
   // Induction variables for the loop
@@ -142,6 +143,9 @@ void CFGBuilder::Build() {
     }
     if (!BelongsInBasicBlock(entry))
       continue;
+
+    // Update the last entry in the basic block
+    last_entry = entry;
 
     // If the current entry starts a new basic block, end the previous one
     if (current && entry->Type() == MaoEntry::LABEL &&
@@ -244,6 +248,11 @@ void CFGBuilder::Build() {
 
   if (create_fall_through)
     Link(previous, sink, true);
+
+  // Handle the case where a function ends with a basic block that
+  // does not end in a jump instruction.
+  if (current != NULL && last_entry->HasFallThrough())
+    Link(current, sink, true);
 
   if (dump_vcg_)
     CFG_->DumpVCG("cfg.vcg");
