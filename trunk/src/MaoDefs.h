@@ -73,14 +73,45 @@
 #define   REG_RSI     (1 << 30)
 #define   REG_RDI     (1 << 31)
 
-#define   REG_R8      (1ULL << 32)
-#define   REG_R9      (1ULL << 33)
-#define   REG_R10     (1ULL << 34)
-#define   REG_R11     (1ULL << 35)
-#define   REG_R12     (1ULL << 36)
-#define   REG_R13     (1ULL << 37)
-#define   REG_R14     (1ULL << 38)
-#define   REG_R15     (1ULL << 39)
+#define   REG_R8B     (1ULL << 32)
+#define   REG_R8W     (1ULL << 33)
+#define   REG_R8D     (1ULL << 34)
+#define   REG_R8      (1ULL << 35)
+
+#define   REG_R9B     (1ULL << 36)
+#define   REG_R9W     (1ULL << 37)
+#define   REG_R9D     (1ULL << 38)
+#define   REG_R9      (1ULL << 39)
+
+#define   REG_R10B     (1ULL << 40)
+#define   REG_R10W     (1ULL << 41)
+#define   REG_R10D     (1ULL << 42)
+#define   REG_R10      (1ULL << 43)
+
+#define   REG_R11B     (1ULL << 44)
+#define   REG_R11W     (1ULL << 45)
+#define   REG_R11D     (1ULL << 46)
+#define   REG_R11      (1ULL << 47)
+
+#define   REG_R12B     (1ULL << 48)
+#define   REG_R12W     (1ULL << 49)
+#define   REG_R12D     (1ULL << 50)
+#define   REG_R12      (1ULL << 51)
+
+#define   REG_R13B     (1ULL << 52)
+#define   REG_R13W     (1ULL << 53)
+#define   REG_R13D     (1ULL << 54)
+#define   REG_R13      (1ULL << 55)
+
+#define   REG_R14B     (1ULL << 56)
+#define   REG_R14W     (1ULL << 57)
+#define   REG_R14D     (1ULL << 58)
+#define   REG_R14      (1ULL << 59)
+
+#define   REG_R15B     (1ULL << 60)
+#define   REG_R15W     (1ULL << 61)
+#define   REG_R15D     (1ULL << 62)
+#define   REG_R15      (1ULL << 63)
 
 #define   REG_ALL     (-1ULL)
 // more are possible...
