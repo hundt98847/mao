@@ -123,7 +123,7 @@ void MaoOptions::TimerPrint() {
   fprintf(stderr, "Timing information for passes\n");
   for (OptionVector::iterator it = option_array_list->begin();
        it != option_array_list->end(); ++it) {
-    fprintf(stderr, "  Pass: %-12s %5.1lf [sec] %4.1lf%%\n",
+    fprintf(stderr, "  Pass: %-12s %5.1lf [sec] %5.1lf%%\n",
             (*it)->name(), (*it)->timer()->GetSecs(),
             100.0 * (*it)->timer()->GetSecs() / total_secs);
   }
@@ -227,7 +227,7 @@ static const char *GobbleGarbage(const char *arg, const char **next) {
 //    option[val]
 //
 static bool GetParam(const char *arg, const char **next, const char **param) {
-  if (arg[0] == '(' || arg[0] == '[' || arg[0] == ':') {
+  if (arg[0] == '(' || arg[0] == '[') {
     char  delim = arg[0];
 
     ++arg;
@@ -288,26 +288,18 @@ void MaoOptions::Reparse() {
 }
 
 void MaoOptions::Parse(const char *arg, bool collect) {
+  if (!arg) return;
+
   if (collect) {
     if (!mao_options_) {
-      char *env = getenv("MAO_OPTS");
-      if (!env) env = getenv("MAOOPTS");
-
-      int len = strlen(arg)+1+(env?strlen(env)+1:0);
-      char *buf = (char *)malloc(sizeof(char) * len);
-      if (env) {
-        strcpy(buf, env);
-        strcat(buf, ",");
-      }
-      strcat(buf, arg);
-      mao_options_ = buf;
+      mao_options_ = strdup(arg);
     } else {
       // Append mao_options_ and arg
       char *buf = (char *)malloc(sizeof(char) * (strlen(mao_options_) +
                                                  strlen(arg) +
                                                  1 +
                                                  1));
-      sprintf(buf, "%s,%s", mao_options_, arg);
+      sprintf(buf, "%s:%s", mao_options_, arg);
       free(mao_options_);
       mao_options_ = buf;
     }
@@ -358,17 +350,21 @@ void MaoOptions::Parse(const char *arg, bool collect) {
         char *option;
         while (1) {
           const char *old_arg = arg;
+          // should we start a new parse group?
+          if (arg[0] == ':')
+            break;
+
           option = NextToken(arg, &arg);
           if (!option || option[0] == '\0')
             break;
 
           // if the option is a passname, the next character will be a '='
           // Then we need to exit the option parsing and process the next PASS
+          //
           if (arg[0] == '=') {
             arg = old_arg;
             break;
           }
-
           if (SetPassSpecificOptions(option, arg, &arg, current_opts))
             continue;
 
