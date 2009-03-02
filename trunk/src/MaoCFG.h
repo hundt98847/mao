@@ -189,6 +189,9 @@ class CFG {
   BBVector::iterator End() { return basic_blocks_.end(); }
   BBVector::const_iterator End() const { return basic_blocks_.end(); }
 
+  BasicBlock *Start() const { return basic_blocks_[0]; }
+  BasicBlock *Sink() const { return basic_blocks_[1]; }
+
  private:
   MaoUnit  *mao_unit_;
   LabelToBBMap basic_block_map_;
@@ -261,7 +264,8 @@ class CFGBuilder : public MaoPass {
   CFG      *CFG_;
   BasicBlockID  next_id_;
   CFG::LabelToBBMap label_to_bb_map_;
-  bool      split_basic_blocks_;
+  bool      split_basic_blocks_ : 1;
+  bool      dump_vcg_ : 1;
 };
 
 // External entry point
