@@ -63,21 +63,23 @@ class RedTestElimPass : public MaoPass {
             insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1) &&
             insn->prevInstruction()) {
           InstructionEntry *prev = insn->prevInstruction();
-          if ((prev->op() == OP_sub || prev->op() == OP_add ||
-               prev->op() == OP_and || prev->op() == OP_or ||
-               prev->op() == OP_xor ||
-               prev->op() == OP_sal || prev->op() == OP_sar ||
-               prev->op() == OP_shl || prev->op() == OP_shr ||
-               prev->op() == OP_sbb) &&
-              prev->NumOperands() > 1 &&
-              prev->IsRegisterOperand(1) &&
-              prev->GetRegisterOperand(1) == insn->GetRegisterOperand(0)) {
-            fprintf(stderr, "*** Found %s/test seq\n",
-                    prev->GetOp());
-            prev->PrintEntry(stderr);
-            insn->PrintEntry(stderr);
+          if (prev->op() == OP_sub || prev->op() == OP_add ||
+	      prev->op() == OP_and || prev->op() == OP_or ||
+	      prev->op() == OP_xor ||
+	      prev->op() == OP_sal || prev->op() == OP_sar ||
+	      prev->op() == OP_shl || prev->op() == OP_shr ||
+	      prev->op() == OP_sbb) {
+	    int op_index = prev->NumOperands() > 1 ? 1 : 0;
+	    if (prev->IsRegisterOperand(op_index) &&
+		prev->GetRegisterOperand(op_index) == insn->GetRegisterOperand(0)) {
+	      Trace(1, "Found %s/test seq", prev->GetOp());
+	      if (tracing_level() > 0) {
+		prev->PrintEntry(stderr);
+		insn->PrintEntry(stderr);
+	      }
+	    }
           }
-        }
+	}   
       }
     }
   }
