@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 
 """This script runs MAO on the set of files listed in the input argument file(s).
 Lines starting with # are comments. If the verification script finds an error

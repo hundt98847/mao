@@ -34,7 +34,7 @@
 ../binutils-2.19/gas/testsuite/gas/i386/x86-64-rip.s
 ../binutils-2.19/gas/testsuite/gas/i386/x86-64-segment.s
 #../binutils-2.19/gas/testsuite/gas/i386/x86-64-sib.s
-#../binutils-2.19/gas/testsuite/gas/i386/x86-64-simd.s
+../binutils-2.19/gas/testsuite/gas/i386/x86-64-simd.s
 #../binutils-2.19/gas/testsuite/gas/i386/x86-64-sse-check-error.s
 ../binutils-2.19/gas/testsuite/gas/i386/x86-64-sse-noavx.s
 ../binutils-2.19/gas/testsuite/gas/i386/x86-64-sse2avx.s

@@ -1378,7 +1378,13 @@ bool InstructionEntry::PrintSuffix() const {
 
   const MaoOpcode supress_suffix[] =  {
     OP_invept, OP_movd, OP_cmpxchg16b, OP_vmptrld, OP_vmclear, OP_vmxon, 
-    OP_vmptrst, OP_ldmxcsr, OP_stmxcsr, OP_clflush
+    OP_vmptrst, OP_ldmxcsr, OP_stmxcsr, OP_clflush, OP_addsubps, OP_cvtpd2dq,
+    OP_comiss, OP_cvttps2dq, OP_haddps, OP_movdqu, OP_movshdup, OP_pshufhw, 
+    OP_movsldup, OP_pshuflw, OP_punpcklbw, OP_unpckhpd, OP_paddq, OP_psubq,
+    OP_pmuludq, OP_punpckldq, OP_punpcklqdq, OP_unpckhps, OP_punpcklwd, 
+    OP_cmpeqss, OP_ucomiss, OP_cvtss2sd, OP_divss, OP_minss, OP_maxss, 
+    OP_movntss, OP_movss, OP_rcpss, OP_rsqrtss, OP_sqrtss, OP_subss,
+    OP_unpcklpd, OP_mulss, OP_unpcklps, OP_cmpss
   };
 
 
