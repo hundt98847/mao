@@ -9,12 +9,9 @@
 #  
 #    MAO_ROOT      = Environment variable must be set before running this script
 #    BIN_DIR       = Directory for mao-related binaries
-#    CC            = Compiler to use for source files.
 #    WORKDIR       = Directory used for holding all files used in the verification
 #    IN_FILE       = Input file
-#    INPUT_TYPE    = "SOURCE" or "ASSEMBLY"
 #    S_FILE        = name of assembly file inside the WORKDIR
-#    SRC_FILE      = If INPUT_TYPE is SOURCE, this holds the src file inside the WORKDIR
 #    LINES         = Number of lines to verify in the assembly file (0 means all lines)
 #                    0 is the default, but can be overridden from the command line
 
@@ -88,21 +85,14 @@ if [ ! -f "${OBJDUMP}" ]; then
   exit 1;
 fi
 
-
 if [ ! -f "${READELF}" ]; then
   echo "Unable to find readelf: ${READELF}"
   exit 1;
 fi
 
-
 # Create a workdir. 
-WORKDIR=Verify.${RANDOM}
-if [ -d "${WORKDIR}" ]; then
-  echo "Directory ${WORKDIR} already exists. Try again:"
-  exit;
-else
-  mkdir "${WORKDIR}"
-fi
+#WORKDIR=Verify.${RANDOM}
+WORKDIR=`mktemp -d Verify.XXXXXX` || (echo "Unable to create directiry" && exit 1)
 
 # Static variables
 BIN_DIR=${MAO_ROOT}/bin/
@@ -115,38 +105,21 @@ TMP_O_FILE="${WORKDIR}/tmp.o"
 
 # Check the type of file
 case "${EXTENSION}" in
-  "S"|"s"                    ) INPUT_TYPE="ASSEMBLY";;
-  "c"|"C"|"cc"|"cpp"|"cxx"   ) INPUT_TYPE="SOURCE";;
+  "S"|"s"                    ) ;;
   *                          ) echo "Not a valid file type" && exit;;
 esac 
-
 
 if [ ! -f "${IN_FILE}" ]; then
   echo "File does not exist: ${IN_FILE}";
   exit;
 fi
-
-if [ ${INPUT_TYPE} == "SOURCE" ]; then
-  SRC_FILE="${WORKDIR}/${BENCHMARK}.${EXTENSION}"
-  cp "${IN_FILE}" "${SRC_FILE}"
-  # Compile the file!
-  ${CC} -S "${SRC_FILE}" -o "${S_FILE}"
-  
-  if [ ${LINES} -gt 0 ]; then
-    mv "${S_FILE}" "${S_FILE}.tmp"
-    head -n ${LINES} "${S_FILE}.tmp" > "${S_FILE}"
-    rm "${S_FILE}.tmp"
-  fi;
-fi
-if [ ${INPUT_TYPE} == "ASSEMBLY" ]; then
 # Now create the S_FILE
-  if [ ${LINES} -eq 0 ]; then
-    cp "${IN_FILE}" "${S_FILE}"
-  fi;
-  if [ ${LINES} -gt 0 ]; then
-    head -n ${LINES} "${IN_FILE}" > "${S_FILE}"
-  fi;
-fi
+if [ ${LINES} -eq 0 ]; then
+  cp "${IN_FILE}" "${S_FILE}"
+fi;
+if [ ${LINES} -gt 0 ]; then
+  head -n ${LINES} "${IN_FILE}" > "${S_FILE}"
+fi;
 
 echo "Processing: ${IN_FILE}"
 
@@ -159,7 +132,6 @@ if [ $? -ne 0 ]; then
   echo "Error creating assembly";
   exit;
 fi
-
 
 # # Generate object files from both
 ${AS} -o "${S_FILE}.o"   "${S_FILE}" 
@@ -185,9 +157,6 @@ else
   fi
   echo  
   rm "${S_FILE}" "${MAO_FILE}" "${S_FILE}.o" "${MAO_FILE}.o"
-  if [ ${INPUT_TYPE} == "SOURCE" ]; then
-    rm "${SRC_FILE}"
-  fi
   rmdir "${WORKDIR}"
 fi
 exit 0
