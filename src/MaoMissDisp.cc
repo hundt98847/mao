@@ -61,6 +61,7 @@ class MissDispElimPass : public MaoPass {
           if (next->IsOpMov() &&
               next->IsRegisterOperand(1) &&
               next->IsMemOperand(0) &&
+              next->GetBaseRegister() &&
               !strcmp(next->GetBaseRegister(), next->GetRegisterOperand(1)) &&
               next->GetRegisterOperand(1) == insn->GetRegisterOperand(1)) {
             Trace(1, "Found missing disp");
