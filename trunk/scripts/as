@@ -1,4 +1,5 @@
 #!/usr/bin/python2.4
+# -*- mode: python -*-
 
 """This script wraps the GNU assembler to run MAO.  It will first run
 mao on the input file to generate a new assembly file.  It will then
