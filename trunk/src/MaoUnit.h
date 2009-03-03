@@ -367,6 +367,9 @@ class MaoEntry {
  protected:
   // Helper function to indent
   void Spaces(unsigned int n, FILE *outfile) const;
+  // Gets symbolname. Understands the temporary symbolname
+  // that should be translated to a dot.
+  const char *GetDotOrSymbol(symbolS *symbol) const;
 
  private:
   EntryID id_;
@@ -556,9 +559,6 @@ class DirectiveEntry : public MaoEntry {
 
   const std::string &OperandExpressionToString(const expressionS *expr,
                                                std::string *out) const;
-
-  const char *GetDotOrSymbol(symbolS *symbol) const;
-
 
   // op_ holds the type of directive
   const Opcode op_;
