@@ -698,6 +698,15 @@ MaoEntry::MaoEntry(unsigned int line_number, const char *line_verbatim,
 MaoEntry::~MaoEntry() {
 }
 
+const char *MaoEntry::GetDotOrSymbol(symbolS *symbol) const {
+  const char *s = S_GET_NAME(symbol);
+  MAO_ASSERT(s);
+  if (strcmp(s, "L0\001") == 0) {
+    return ".";
+  } else {
+    return s;
+  }
+}
 
 void MaoEntry::Spaces(unsigned int n, FILE *outfile) const {
   for (unsigned int i = 0; i < n; i++) {
@@ -789,16 +798,6 @@ const std::string &DirectiveEntry::OperandsToString(std::string *out) const {
   }
 
   return *out;
-}
-
-const char *DirectiveEntry::GetDotOrSymbol(symbolS *symbol) const {
-  const char *s = S_GET_NAME(symbol);
-  MAO_ASSERT(s);
-  if (strcmp(s, "L0\001") == 0) {
-    return ".";
-  } else {
-    return s;
-  }
 }
 
 const std::string &DirectiveEntry::OperandExpressionToString(
@@ -1127,7 +1126,7 @@ void InstructionEntry::PrintImmediateOperand(FILE *out,
       /* X_add_symbol + X_add_number.  */
       if (expr->X_add_symbol) {
         fprintf(out, "$%s%s+",
-                S_GET_NAME(expr->X_add_symbol),
+                GetDotOrSymbol(expr->X_add_symbol),
                 GetRelocString(reloc));
       }
       fprintf(out, "%lld",
@@ -1141,12 +1140,12 @@ void InstructionEntry::PrintImmediateOperand(FILE *out,
       }
       if (expr->X_add_symbol) {
         fprintf(out, "%s%s",
-                S_GET_NAME(expr->X_add_symbol),
+                GetDotOrSymbol(expr->X_add_symbol),
                 GetRelocString(reloc));
       }
       if (expr->X_op_symbol) {
         fprintf(out, "-%s",
-                S_GET_NAME(expr->X_op_symbol));
+                GetDotOrSymbol(expr->X_op_symbol));
       }
       if (expr->X_add_symbol || expr->X_op_symbol) {
         fprintf(out, ")+");
