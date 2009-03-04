@@ -73,7 +73,7 @@ MaoPass::MaoPass(const char *name, MaoOptions *mao_options,
   else
     pass_debug_action->set_pass_name(name);
   if (enabled_)
-    Trace(1, "begin");
+    Trace(3, "begin");
 }
 
 MaoPass::~MaoPass() {
@@ -81,7 +81,7 @@ MaoPass::~MaoPass() {
   if (timed_)
     TimerStop();
   if (enabled_)
-    Trace(1, "end");
+    Trace(3, "end");
 }
 
 
