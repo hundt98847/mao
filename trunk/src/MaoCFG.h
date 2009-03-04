@@ -128,6 +128,9 @@ class BasicBlock {
             basicblock->first_entry()->prev() == last_entry());
   }
 
+  // Caution: This routine iterates through a bb to count entries
+  int       NumEntries();
+
   MaoEntry *first_entry() const { return first_entry_;}
   MaoEntry *last_entry() const { return last_entry_;}
   void set_first_entry(MaoEntry *entry)  { first_entry_ = entry;}
