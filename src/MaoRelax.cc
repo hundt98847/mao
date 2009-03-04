@@ -41,7 +41,7 @@ extern "C" {
 }
 
 
-void MaoRelaxer::Relax(MaoUnit *mao, Section *section, SizeMap *size_map) {
+void MaoRelaxer::RelaxSection(MaoUnit *mao, Section *section, SizeMap *size_map) {
   // Build the fragments (and initial sizes)
   FragToEntryMap relax_map;
   struct frag *fragments =
@@ -69,6 +69,23 @@ void MaoRelaxer::Relax(MaoUnit *mao, Section *section, SizeMap *size_map) {
   FreeFragments(fragments);
 }
 
+
+MaoRelaxer::SizeMap *MaoRelaxer::GetSizeMap(MaoUnit *mao, Function *function) {
+  if (function->sizes() == NULL) {
+    // Run relaxer!
+    // TODO(martint): set the sizemap per section instead
+    MaoRelaxer::SizeMap *sizes = new MaoRelaxer::SizeMap();
+    Section *section = function->GetSection();
+    MAO_ASSERT(section);
+    Relax(mao, section, sizes);
+    function->set_sizes(sizes);
+  }
+  return function->sizes();
+}
+
+bool MaoRelaxer::HasSizeMap(Function *function) {
+  return (function->sizes() != NULL);
+}
 
 struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
                                         SizeMap *size_map,
@@ -445,5 +462,5 @@ void MaoRelaxer::FragInitOther(struct frag *frag) {
 // --------------------------------------------------------------------
 void Relax(MaoUnit *mao, Section *section, MaoRelaxer::SizeMap *size_map) {
   MaoRelaxer relaxer;
-  relaxer.Relax(mao, section, size_map);
+  relaxer.RelaxSection(mao, section, size_map);
 }

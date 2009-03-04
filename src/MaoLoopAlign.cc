@@ -462,8 +462,10 @@ void DoLoopAlign(MaoUnit *mao,
   // Make sure the analysis have been run on this function
   MAO_ASSERT(function->cfg()   != NULL);
   MAO_ASSERT(function->lsg()   != NULL);
-  MAO_ASSERT(function->sizes() != NULL);
-  LoopAlignPass align(mao, function->lsg(), function->sizes());
+  LoopAlignPass align(mao,
+                      function->lsg(),
+                      MaoRelaxer::GetSizeMap(mao, function));
+                      //                      function->sizes());
   if (align.enabled()) {
     align.set_timed();
     align.DoLoopAlign();

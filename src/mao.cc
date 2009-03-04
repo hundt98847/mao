@@ -61,42 +61,27 @@ int main(int argc, const char *argv[]) {
   // global init passes
   ReadInput(new_argc, new_argv, &mao_unit);
 
-  // Relax the .text sectino, and add a pointer in each
-  // function to the sizemap
-  MaoRelaxer::SizeMap sizes;
-  Section *section = mao_unit.GetSection(".text");
-  if (section) {
-    Relax(&mao_unit, section, &sizes);
+  // Create a CFG for each function
+  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
+       iter != mao_unit.ConstFunctionEnd();
+       ++iter) {
+    Function *function = *iter;
+    MAO_ASSERT(function->cfg() == NULL);
+    function->set_cfg(new CFG(&mao_unit));
+    CreateCFG(&mao_unit, function, function->cfg());
 
-    for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
-         iter != mao_unit.ConstFunctionEnd();
-         ++iter) {
-      Function *function = *iter;
-      function->set_sizes(&sizes);
-    }
+    MAO_ASSERT(function->cfg() != NULL);
+    function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg(),
+                                             function->name().c_str()));
 
-    // Create a CFG for each function
-    for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
-         iter != mao_unit.ConstFunctionEnd();
-         ++iter) {
-      Function *function = *iter;
-      MAO_ASSERT(function->cfg() == NULL);
-      function->set_cfg(new CFG(&mao_unit));
-      CreateCFG(&mao_unit, function, function->cfg());
-
-      MAO_ASSERT(function->cfg() != NULL);
-      function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg(),
-                                               function->name().c_str()));
-
-      // Optimization passes.
-      PerformDeadCodeElimination(&mao_unit, function->cfg());
-      PerformZeroExtensionElimination(&mao_unit, function->cfg());
-      PerformRedundantTestElimination(&mao_unit, function->cfg());
-      PerformRedundantMemMoveElimination(&mao_unit, function->cfg());
-      PerformMissDispElimination(&mao_unit, function->cfg());
-      DoLoopAlign(&mao_unit, function);
-    }
-  } // .text section
+    // Optimization passes.
+    PerformDeadCodeElimination(&mao_unit, function->cfg());
+    PerformZeroExtensionElimination(&mao_unit, function->cfg());
+    PerformRedundantTestElimination(&mao_unit, function->cfg());
+    PerformRedundantMemMoveElimination(&mao_unit, function->cfg());
+    PerformMissDispElimination(&mao_unit, function->cfg());
+    DoLoopAlign(&mao_unit, function);
+  }
 
   // global finalization passes
   mao_pass_man->LinkPass(new AssemblyPass(&mao_options, &mao_unit));
