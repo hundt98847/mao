@@ -72,7 +72,7 @@ btc
 btr 
 bts
 
-call rax rcx rdx r8 r9 r10 r11
+call rax rcx rdx rsi rdi r8 r9 r10 r11
 cbw  ax
 cwde eax
 cdqe rax
