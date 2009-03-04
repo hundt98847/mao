@@ -1383,14 +1383,15 @@ bool InstructionEntry::PrintSuffix() const {
   };
 
   const MaoOpcode supress_suffix[] =  {
-    OP_invept, OP_movd, OP_cmpxchg16b, OP_vmptrld, OP_vmclear, OP_vmxon, 
+    OP_invept, OP_movd, OP_cmpxchg16b, OP_vmptrld, OP_vmclear, OP_vmxon,
     OP_vmptrst, OP_ldmxcsr, OP_stmxcsr, OP_clflush, OP_addsubps, OP_cvtpd2dq,
-    OP_comiss, OP_cvttps2dq, OP_haddps, OP_movdqu, OP_movshdup, OP_pshufhw, 
+    OP_comiss, OP_cvttps2dq, OP_haddps, OP_movdqu, OP_movshdup, OP_pshufhw,
     OP_movsldup, OP_pshuflw, OP_punpcklbw, OP_unpckhpd, OP_paddq, OP_psubq,
-    OP_pmuludq, OP_punpckldq, OP_punpcklqdq, OP_unpckhps, OP_punpcklwd, 
-    OP_cmpeqss, OP_ucomiss, OP_cvtss2sd, OP_divss, OP_minss, OP_maxss, 
+    OP_pmuludq, OP_punpckldq, OP_punpcklqdq, OP_unpckhps, OP_punpcklwd,
+    OP_cmpeqss, OP_ucomiss, OP_cvtss2sd, OP_divss, OP_minss, OP_maxss,
     OP_movntss, OP_movss, OP_rcpss, OP_rsqrtss, OP_sqrtss, OP_subss,
-    OP_unpcklpd, OP_mulss, OP_unpcklps, OP_cmpss
+    OP_unpcklpd, OP_mulss, OP_unpcklps, OP_cmpss, OP_vmovd, OP_vextractps,
+    OP_vpextrb, OP_vpinsrb, OP_vpextrd
   };
 
 
@@ -1440,39 +1441,6 @@ bool InstructionEntry::PrintSuffix() const {
 void InstructionEntry::PrintInstruction(FILE *out) const {
   const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
-  // Do all of these have drex and opcode_extentions in common? 65535?
-  // TODO(martint): check what group of instrction these belong to.
-  const MaoOpcode force_two_operands[]= {OP_cmpltps, OP_cmpltss, OP_cmpltpd,
-                                         OP_cmpltsd, OP_cmpltsd, OP_cmpnless,
-                                         OP_cmplesd, OP_cmpnlesd, OP_cmpneqpd,
-                                         OP_cmpneqsd, OP_cmpnlepd,  OP_cmpnltpd,
-                                         OP_cmpnltsd, OP_cmpordpd, OP_cmpordsd,
-                                         OP_cmpneqss, OP_cmpnltss, OP_cmpeqsd,
-					 OP_pmulhrw, OP_pswapd};
-
-  const MaoOpcode sse2avx_two_operands[]= {OP_pclmullqlqdq,
-					   OP_pclmulhqlqdq,
-					   OP_pclmullqhqdq,
-					   OP_pclmulhqhqdq,
-					   OP_pcmpeqb,
-					   OP_aesenclast,
-					   OP_cmpeqpd,
-					   OP_cmpeqps,
-					   OP_cmplepd,
-					   OP_cmpleps,
-					   OP_cmpunordpd,
-					   OP_cmpunordps,
-					   OP_cmpneqps,
-					   OP_cmpnltps,
-					   OP_cmpnleps,
-					   OP_cmpordps,
-					   OP_cmpunordsd,
-					   OP_cmpeqss,
-					   OP_cmpless,
-					   OP_cmpunordss,
-					   OP_cmpordss};
-
-  const MaoOpcode ymm_four_operands[]= {OP_vfmaddpd};
 
   // Prefixes
   fprintf(out, "\t");
@@ -1499,9 +1467,6 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                                 sizeof(repe_ops)/sizeof(MaoOpcode))) {
               MAO_ASSERT_MSG(false,
                              "Found prefix does not match the instruction.");
-            } else {
-              // TODO(martint): Identify what instruction have the prefix
-              //                but are not string instructino (SSE?)
             }
             break;
           case REPE_PREFIX_OPCODE:
@@ -1510,9 +1475,6 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             } else if (IsInList(op(), rep_ops,
                                 sizeof(rep_ops)/sizeof(MaoOpcode))) {
               fprintf(out, "rep ");
-            } else {
-              // TODO(martint): Identify what instruction have the prefix
-              //                but are not string instructino (SSE?)
             }
             break;
             // Rex prefixes are used for 64-bit extention
@@ -1567,27 +1529,21 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
   }
 
   // Loop over operands
-  for (unsigned int i = 0; i < instruction_->operands; ++i) {
-    if (i == 2 &&
-        IsInList(op(), force_two_operands,
-                 sizeof(force_two_operands)/sizeof(MaoOpcode))) {
-      break;
+  int num_operands = instruction_->operands;
+  if (instruction_->tm.opcode_modifier.vex3sources){
+    if(!instruction_->types[0].bitfield.imm8)
+      num_operands = instruction_->operands - 1;
+  }
+  if (!instruction_->tm.opcode_modifier.vex3sources) {
+    // This takes care of instructions
+    // that have opcode modifiers stored where the immeage
+    // normaly is stored (SSE, SSE2, AMD 3D Now).
+    if (instruction_->tm.opcode_modifier.immext){
+      num_operands = instruction_->operands - 1;
     }
-    if ( (instruction_->tm.cpu_flags.bitfield.cpusse ||
-	  instruction_->tm.cpu_flags.bitfield.cpusse2 ||
-	  instruction_->tm.cpu_flags.bitfield.cpupclmul) &&
-	i == 2 &&
-        IsInList(op(), sse2avx_two_operands,
-                 sizeof(sse2avx_two_operands)/sizeof(MaoOpcode))) {
-      break;
-    }
-    if (i == 4 &&
-        IsInList(op(), ymm_four_operands,
-                 sizeof(ymm_four_operands)/sizeof(MaoOpcode))) {
-      break;
-    }
+  }
 
-
+  for (int i = 0; i < num_operands; ++i) {
     // Handle case of instruction which have 4 operands
     // according to the instruction structure, but only
     // three in the assembly (e.g. comeqss %xmm3, %xmm2, %xmm1)
@@ -1601,24 +1557,21 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       fprintf(out, ", ");
 
     // IMMEDIATE
-    // Immext means that an opcode modifier is encoded
-    // in the instruction structure as an extra operand,
-    // even though its not one!
-    if (!instruction_->tm.opcode_modifier.immext &&
-        IsImmediateOperand(instruction_, i)) {
-      PrintImmediateOperand(out, instruction_->reloc[i],
+    if (IsImmediateOperand(instruction_, i)) {
+      // This code makes sure that instructions like this
+      // gets the correct immediate. They seem to encode data into the
+      // immediates higher bits.
+      // vpermil2ps $10,(%rcx),%ymm6,%ymm2 ,%ymm7
+      if (instruction_->tm.opcode_modifier.vex3sources &&
+          instruction_->imm_operands != 0) {
+        int mask = 0xF;
+        instruction_->op[i].imms->X_add_number  &= mask;
+      }
+
+      PrintImmediateOperand(out,
+                            instruction_->reloc[i],
                             instruction_->op[i].imms);
     }
-    // This case is now handles in the displacement
-    //     if (instruction_->tm.opcode_modifier.jump ||
-    //         instruction_->tm.opcode_modifier.jumpdword ||
-    //         instruction_->tm.opcode_modifier.jumpbyte) {
-    //       if (instruction_->op[i].disps->X_op == O_symbol)
-    //         fprintf(out, "%s",
-    //                 S_GET_NAME(instruction_->op[i].disps->X_add_symbol) );
-    //       else
-    //         fprintf(out, "*unk*");
-    //     }
 
     // MEMORY OPERANDS
 
@@ -1729,7 +1682,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       }
     }
 
-    // If a jmp register instruction is given using 
+    // If a jmp register instruction is given using
     // intel syntax, the jumpabsolute bit is not set using
     // gas 2.19. The if-below is a workaround for this.
     if (IsRegisterOperand(instruction_, i)) {
@@ -2020,7 +1973,6 @@ void Function::Print(FILE *out) {
   }
 }
 
-
 MaoRelaxer::SizeMap *Function::sizes() {
   return GetSection()->sizes();
 }
@@ -2028,7 +1980,6 @@ MaoRelaxer::SizeMap *Function::sizes() {
 void Function::set_sizes(MaoRelaxer::SizeMap *sizes) {
   return GetSection()->set_sizes(sizes);
 }
-
 
 
 // Casting functions.
