@@ -35,7 +35,7 @@ MAO_OPTIONS_DEFINE(REDTEST, 0) {
 class RedTestElimPass : public MaoPass {
  public:
   RedTestElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("REDTEST", mao->mao_options(), MAO_OPTIONS(REDTEST), true),
+    MaoPass("REDTEST", mao->mao_options(), MAO_OPTIONS(REDTEST), false),
     mao_(mao), cfg_(cfg) {
   }
 
@@ -51,6 +51,9 @@ class RedTestElimPass : public MaoPass {
   // The test instruction is therefore redundant
   //
   void DoElim() {
+    if (!enabled()) return;
+    std::list<InstructionEntry *> redundants;
+
     FORALL_CFG_BB(cfg_,it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
@@ -72,6 +75,8 @@ class RedTestElimPass : public MaoPass {
 	    int op_index = prev->NumOperands() > 1 ? 1 : 0;
 	    if (prev->IsRegisterOperand(op_index) &&
 		prev->GetRegisterOperand(op_index) == insn->GetRegisterOperand(0)) {
+              redundants.push_back(insn);
+
 	      Trace(1, "Found %s/test seq", prev->GetOp());
 	      if (tracing_level() > 0) {
 		prev->PrintEntry(stderr);
@@ -81,6 +86,12 @@ class RedTestElimPass : public MaoPass {
           }
 	}
       }
+    }
+
+    // Now delete all the redundant ones.
+    for (std::list<InstructionEntry *>::iterator it = redundants.begin();
+         it != redundants.end(); ++it) {
+      mao_->DeleteEntry(*it);
     }
   }
 
