@@ -20,6 +20,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "MaoCFG.h"
 #include "MaoDebug.h"
 #include "MaoRelax.h"
 #include "MaoUnit.h"
@@ -1981,6 +1982,13 @@ void Function::set_sizes(MaoRelaxer::SizeMap *sizes) {
   return GetSection()->set_sizes(sizes);
 }
 
+
+void Function::set_cfg(CFG *cfg) {
+  if (cfg_ != NULL) {
+    delete cfg_;
+  }
+  cfg_ = cfg;
+}
 
 // Casting functions.
 InstructionEntry *MaoEntry::AsInstruction() {

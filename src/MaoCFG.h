@@ -167,6 +167,10 @@ class CFG {
     }
   }
 
+  // Get the CFG for the given function, build
+  // if it necessary.
+  static CFG *GetCFG(MaoUnit *mao, Function *function);
+
   int  GetNumOfNodes() const { return basic_blocks_.size(); }
   void DumpVCG(const char *fname) const;
   void Print() const { Print(stdout); }

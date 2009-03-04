@@ -483,9 +483,11 @@ class LoopFinderPass : public MaoPass {
 
 // External Entry Point
 //
-LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, const CFG *cfg,
-                                           const char *cfg_name) {
-  LoopFinderPass finder(mao, cfg, cfg_name);
+LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, Function *function) {
+  MAO_ASSERT(function != NULL);
+  CFG *cfg = CFG::GetCFG(mao, function);
+  MAO_ASSERT(cfg != NULL);
+  LoopFinderPass finder(mao, cfg, function->name().c_str());
   finder.set_timed();
   return finder.DoTheHavlak();
 }

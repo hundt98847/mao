@@ -66,21 +66,19 @@ int main(int argc, const char *argv[]) {
        iter != mao_unit.ConstFunctionEnd();
        ++iter) {
     Function *function = *iter;
-    MAO_ASSERT(function->cfg() == NULL);
-    function->set_cfg(new CFG(&mao_unit));
-    CreateCFG(&mao_unit, function, function->cfg());
-
-    MAO_ASSERT(function->cfg() != NULL);
-    function->set_lsg(PerformLoopRecognition(&mao_unit, function->cfg(),
-                                             function->name().c_str()));
+    function->set_lsg(PerformLoopRecognition(&mao_unit, function));
 
     // Optimization passes.
-    PerformDeadCodeElimination(&mao_unit, function->cfg());
-    PerformNopKiller(&mao_unit, function->cfg());
-    PerformZeroExtensionElimination(&mao_unit, function->cfg());
-    PerformRedundantTestElimination(&mao_unit, function->cfg());
-    PerformRedundantMemMoveElimination(&mao_unit, function->cfg());
-    PerformMissDispElimination(&mao_unit, function->cfg());
+    PerformDeadCodeElimination(&mao_unit, CFG::GetCFG(&mao_unit, function));
+    PerformNopKiller(&mao_unit, CFG::GetCFG(&mao_unit, function));
+    PerformZeroExtensionElimination(&mao_unit,
+                                    CFG::GetCFG(&mao_unit, function));
+    PerformRedundantTestElimination(&mao_unit,
+                                    CFG::GetCFG(&mao_unit, function));
+    PerformRedundantMemMoveElimination(&mao_unit,
+                                       CFG::GetCFG(&mao_unit, function));
+    PerformMissDispElimination(&mao_unit,
+                               CFG::GetCFG(&mao_unit, function));
     DoLoopAlign(&mao_unit, function);
   }
 
