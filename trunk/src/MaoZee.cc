@@ -64,16 +64,20 @@ class ZeroExtentElimPass : public MaoPass {
             if (pmask && pmask != REG_ALL) {
               unsigned long long imask = GetRegisterDefMask(insn);
               if (imask == pmask) {
-                fprintf(stderr, "*** Found redundant zero-extend:\n");
-                prev->PrintEntry(stderr);
-                insn->PrintEntry(stderr);
+                Trace(1, "Found redundant zero-extend:");
+                if (tracing_level() > 0) {
+                  prev->PrintEntry(stderr);
+                  insn->PrintEntry(stderr);
+                }
                 foundTrivalCase = true;
               }
             }
           }
           if (!foundTrivalCase) {
-            fprintf(stderr, "*** Found non-trivial zero-extent:");
-            insn->PrintEntry(stderr);
+            Trace(1, "Found non-trivial zero-extent:");
+            if (tracing_level() > 0) {
+              insn->PrintEntry(stderr);
+            }
           }
         }
       }
