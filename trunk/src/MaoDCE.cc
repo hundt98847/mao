@@ -35,7 +35,7 @@ MAO_OPTIONS_DEFINE(DCE, 1) {
 
 typedef std::map<BasicBlock *, bool> BasicBlockMap;
 
-// recursively reach all basic blocks via the outedges, 
+// recursively reach all basic blocks via the outedges,
 // starting from the root.
 //
 static void Visit(BasicBlock *bb, BasicBlockMap *bbmap) {
@@ -66,7 +66,7 @@ class DeadCodeElimPass : public MaoPass {
 
   void DoElim() {
     BasicBlockMap bbmap;
-    FORALL_CFG_BB(cfg_,it) 
+    FORALL_CFG_BB(cfg_,it)
       bbmap[(*it)] = false;
 
     BasicBlock *root = (*cfg_->Begin());
@@ -74,17 +74,24 @@ class DeadCodeElimPass : public MaoPass {
 
     FORALL_CFG_BB(cfg_,it)
       if (!bbmap[(*it)]) {
-	Trace(1, "Found Dead Basic Block: BB#%d",
-	      (*it)->id());
-	if (tracing_level() > 0) {
-          if ((*it)->first_entry())
-            (*it)->first_entry()->PrintEntry(stderr);
-          else
-            if ((*it) != cfg_->Start() &&
-                (*it) != cfg_->Sink())
-              Trace(0, "WARNING: Empty Basic Block: BB#%d",
-                    (*it)->id());
-	}
+        BasicBlock *bb = *it;
+        int num = bb->NumEntries();
+        if (!num) {
+          Trace(1, "Found dead, empty basic block");
+        } else {
+          if (num == 1) {
+            if (bb->first_entry()->IsLabel())
+              Trace(1, "Found dead, single label basic block");
+            else
+              Trace(1, "Found dead, single insn basic block");
+          } else {
+            Trace(1, "Found Dead Basic Block: BB#%d, %d insn",
+                  (*it)->id(), num);
+            if (tracing_level() > 0) {
+              (*it)->first_entry()->PrintEntry(stderr);
+            }
+          }
+        }
       }
   }
 
