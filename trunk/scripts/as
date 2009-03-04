@@ -11,9 +11,27 @@ named mao and as-orig which are the MAO and original GAS binaries,
 respectively."""
 
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
+
+
+class RunError(Exception):
+  def __init__(self, returncode, command, root):
+    Exception.__init__(self)
+    self.returncode = returncode
+    self.command = command
+    self.root = root
+
+  def __str__(self):
+    line1 = "Error running command: %s\n" % " ".join(self.command)
+    if self.root:
+      line2 = str(self.root)
+      return "%s%s\n" % (line1, line2)
+    else:
+      return line1
+
 
 def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
   try:
@@ -23,12 +41,9 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
     (_, err) = child.communicate()
     err = child.wait()
     if err != 0:
-      sys.stderr.write("Error running command: %s\n" % " ".join(command))
-      sys.exit(err)
+      raise RunError(err, command, None)
   except OSError, e:
-    sys.stderr.write("Error running command: %s\n" % " ".join(command))
-    print e
-    sys.exit(1)
+    raise RunError(1, command, e)
 
 
 def _Run(command, env=None):
@@ -63,45 +78,60 @@ def main(argv):
     if arg == "-o":
       flag = 1
 
-  if not in_file:
-    _RunCheck(cmd)
-    sys.exit(0)
+  try:
+    if not in_file:
+      _RunCheck(cmd)
+      sys.exit(0)
 
-  #########################################################
-  # Create two temporary files with the appropriate suffix
-  #########################################################
-  (fd, s_tempfile) = tempfile.mkstemp(suffix=".s")
-  os.close(fd)
+    #########################################################
+    # Create two temporary files with the appropriate suffix
+    #########################################################
+    (fd, s_tempfile) = tempfile.mkstemp(suffix=".s")
+    os.close(fd)
 
-  (fd, o_tempfile) = tempfile.mkstemp(suffix=".o")
-  os.close(fd)
+    (fd, o_tempfile) = tempfile.mkstemp(suffix=".o")
+    os.close(fd)
 
-  #########################################################
-  # Preprocess the file (output in tempfile1)
-  #########################################################
-  mao_cmd = cmd[:]
-  mao_cmd[0] = os.path.join(os.path.dirname(argv[0]), "mao")
-  mao_cmd[out_file_index] = o_tempfile
-  mao_cmd.append("-mao:-o,%s" % s_tempfile)
-  _RunCheck(mao_cmd)
+    #########################################################
+    # Preprocess the file (output in tempfile1)
+    #########################################################
+    try:
+      mao_cmd = cmd[:]
+      mao_cmd[0] = os.path.join(os.path.dirname(argv[0]), "mao")
+      mao_cmd[out_file_index] = o_tempfile
+      mao_cmd.append("-mao:-o,%s" % s_tempfile)
+      _RunCheck(mao_cmd)
+    except RunError, e:
+      if "MAO_DEBUG_DIR" in os.environ:
+        try:
+          shutil.copy(in_file, os.environ['MAO_DEBUG_DIR'])
+          sys.stderr.write("Copied failing input file to %s\n" %
+                           os.path.join(os.environ['MAO_DEBUG_DIR'],
+                                        os.path.basename(in_file)))
+        except Exception:
+          pass
+      raise e
 
-  #########################################################
-  # Run the original assemble
-  #########################################################
-  compile_cmd = [cmd[i] for i in gas_args]
-  compile_cmd[0] = os.path.join(os.path.dirname(argv[0]), "as-orig")
-  compile_cmd[in_file_index] = s_tempfile
-  error = _Run(compile_cmd)
+    #########################################################
+    # Run the original assemble
+    #########################################################
+    compile_cmd = [cmd[i] for i in gas_args]
+    compile_cmd[0] = os.path.join(os.path.dirname(argv[0]), "as-orig")
+    compile_cmd[in_file_index] = s_tempfile
+    error = _Run(compile_cmd)
 
-  #########################################################
-  # Remove the temporary files
-  #########################################################
-  _RunCheck(["rm", "-f", s_tempfile, o_tempfile])
+    #########################################################
+    # Remove the temporary files
+    #########################################################
+    _RunCheck(["rm", "-f", s_tempfile, o_tempfile])
 
-  #########################################################
-  # Exit with the error code from the compilation
-  #########################################################
-  sys.exit(error)
+    #########################################################
+    # Exit with the error code from the compilation
+    #########################################################
+    sys.exit(error)
+  except RunError, e:
+    sys.stderr.write(str(e))
+    sys.exit(e.returncode)
 
 
 if __name__ == "__main__":
