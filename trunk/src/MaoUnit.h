@@ -712,7 +712,8 @@ class InstructionEntry : public MaoEntry {
   void FreeInstruction();
   bool IsInList(const MaoOpcode opcode, const MaoOpcode list[],
                 const unsigned int number_of_elements) const;
-  void PrintImmediateOperand(FILE *out, const enum bfd_reloc_code_real reloc,
+  void PrintImmediateOperand(FILE *out,
+                             const enum bfd_reloc_code_real reloc,
                              const expressionS *expr) const;
   void PrintMemoryOperand(FILE *out, const i386_operand_type &operand_type,
                           const enum bfd_reloc_code_real reloc,
@@ -819,7 +820,7 @@ class Function {
   SectionEntryIterator EntryEnd();
 
   CFG *cfg() const {return cfg_;}
-  void set_cfg(CFG *cfg) {cfg_ = cfg;}
+  void set_cfg(CFG *cfg);
 
   LoopStructureGraph *lsg() const {return lsg_;}
   void set_lsg(LoopStructureGraph *lsg) {lsg_ = lsg;}

@@ -47,6 +47,16 @@ void BasicBlock::AddEntry(MaoEntry *entry) {
 }
 
 
+CFG *CFG::GetCFG(MaoUnit *mao, Function *function) {
+  if (function->cfg() == NULL) {
+    // Build it!
+    CFG *cfg = new CFG(mao);
+    CreateCFG(mao, function, cfg);
+    function->set_cfg(cfg);
+  }
+  MAO_ASSERT(function->cfg());
+  return function->cfg();
+}
 
 
 void CFG::Print(FILE *out) const {

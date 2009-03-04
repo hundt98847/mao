@@ -460,12 +460,9 @@ void LoopAlignPass::FindInner(const SimpleLoop *loop, MaoRelaxer::SizeMap *offse
 void DoLoopAlign(MaoUnit *mao,
                  Function *function) {
   // Make sure the analysis have been run on this function
-  MAO_ASSERT(function->cfg()   != NULL);
-  MAO_ASSERT(function->lsg()   != NULL);
   LoopAlignPass align(mao,
                       function->lsg(),
                       MaoRelaxer::GetSizeMap(mao, function));
-                      //                      function->sizes());
   if (align.enabled()) {
     align.set_timed();
     align.DoLoopAlign();
