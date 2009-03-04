@@ -579,7 +579,7 @@ void MaoUnit::DeleteEntry(MaoEntry *entry) {
 
     // For now, we reset the cfg
     // TODO(martint): Deallocate memory!
-    function->set_cfg(NULL);
+    // function->set_cfg(NULL);
 
     // For now, we reset the size
     if (std::map<MaoEntry *, int> *sizes = function->sizes()) {
@@ -617,7 +617,8 @@ void MaoUnit::DeleteEntry(MaoEntry *entry) {
   }
 
   // 6. Update labels map
-  if (LabelEntry *le = entry->AsLabel()) {
+  if (entry->IsLabel()) {
+    LabelEntry *le = entry->AsLabel();
     labels_.erase(labels_.find(le->name()));
   }
 }
@@ -2017,18 +2018,22 @@ void Function::Print(FILE *out) {
 
 // Casting functions.
 InstructionEntry *MaoEntry::AsInstruction() {
+  MAO_ASSERT(IsInstruction());
   return static_cast<InstructionEntry*>(this);
 }
 
 LabelEntry *MaoEntry::AsLabel() {
+  MAO_ASSERT(IsLabel());
   return static_cast<LabelEntry*>(this);
 }
 
 DirectiveEntry *MaoEntry::AsDirective() {
+  MAO_ASSERT(IsDirective());
   return static_cast<DirectiveEntry*>(this);
 }
 
 DebugEntry *MaoEntry::AsDebug() {
+  MAO_ASSERT(IsDebug());
   return static_cast<DebugEntry*>(this);
 }
 
