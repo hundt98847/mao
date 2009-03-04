@@ -21,6 +21,7 @@
 #include <sstream>
 
 #include "MaoDebug.h"
+#include "MaoRelax.h"
 #include "MaoUnit.h"
 
 extern "C" const char *S_GET_NAME(symbolS *s);
@@ -436,7 +437,9 @@ void MaoUnit::FindFunctions() {
       // Find the entry given the label now
       MaoEntry *entry = GetLabelEntry(symbol->name());
       // TODO(martint): create ID factory for functions
-      Function *function = new Function(symbol->name(), functions_.size());
+      MAO_ASSERT(GetSubSection(entry));
+      Function *function = new Function(symbol->name(), functions_.size(),
+                                        GetSubSection(entry));
       function->set_first_entry(entry);
       entry_to_function_[entry] = function;
 
@@ -490,7 +493,9 @@ void MaoUnit::FindFunctions() {
     MaoEntry *entry = *(text_section->EntryBegin());
     if (entry &&
         !InFunction(entry)) {
-      Function *function = new Function("__mao_unnamed", functions_.size());
+      MAO_ASSERT(text_section->GetLastSubSection());
+      Function *function = new Function("__mao_unnamed", functions_.size(),
+                                        text_section->GetLastSubSection());
       function->set_first_entry(entry);
       while (entry &&
              !InFunction(entry)) {
@@ -576,15 +581,15 @@ void MaoUnit::DeleteEntry(MaoEntry *entry) {
       MAO_ASSERT(GetFunction(prev_entry) == function);
       function->set_last_entry(prev_entry);
     }
-
     // For now, we reset the cfg
     // TODO(martint): Deallocate memory!
     // function->set_cfg(NULL);
 
-    // For now, we reset the size
-    if (std::map<MaoEntry *, int> *sizes = function->sizes()) {
-      MAO_ASSERT(sizes->find(entry) != sizes->end());
-      sizes->erase(sizes->find(entry));
+    if (MaoRelaxer::HasSizeMap(function)) {
+        std::map<MaoEntry *, int> *sizes =
+            MaoRelaxer::GetSizeMap(this, function);
+        MAO_ASSERT(sizes->find(entry) != sizes->end());
+        sizes->erase(sizes->find(entry));
     }
   }
 
@@ -2014,6 +2019,16 @@ void Function::Print(FILE *out) {
     entry->PrintEntry(out);
   }
 }
+
+
+MaoRelaxer::SizeMap *Function::sizes() {
+  return GetSection()->sizes();
+}
+
+void Function::set_sizes(MaoRelaxer::SizeMap *sizes) {
+  return GetSection()->set_sizes(sizes);
+}
+
 
 
 // Casting functions.

@@ -801,9 +801,10 @@ class SubSection {
 // or to the end of the section.
 class Function {
  public:
-  explicit Function(const std::string &name, const FunctionID id) :
-      name_(name), id_(id), first_entry_(NULL), last_entry_(NULL), cfg_(NULL),
-      lsg_(NULL) {}
+  explicit Function(const std::string &name, const FunctionID id,
+                    SubSection *subsection) :
+      name_(name), id_(id), first_entry_(NULL), last_entry_(NULL),
+      subsection_(subsection), cfg_(NULL), lsg_(NULL) {}
 
   void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
   void set_last_entry(MaoEntry *entry) { last_entry_ = entry;}
@@ -823,11 +824,19 @@ class Function {
   LoopStructureGraph *lsg() const {return lsg_;}
   void set_lsg(LoopStructureGraph *lsg) {lsg_ = lsg;}
 
-  std::map<MaoEntry *, int> *sizes() const {return sizes_;}
-  void set_sizes(std::map<MaoEntry *, int> *sizes) {sizes_ = sizes;}
 
   void Print();
   void Print(FILE *out);
+
+  Section *GetSection() {
+    MAO_ASSERT(subsection_);
+    return subsection_->section();
+  }
+
+  // Accesses the size_map associated for the section
+  // this function is in.
+  std::map<MaoEntry *, int> *sizes();
+  void set_sizes(std::map<MaoEntry *, int> *sizes);
 
  private:
   // Name of the function, as given by the function symbol.
@@ -850,9 +859,6 @@ class Function {
   CFG *cfg_;
   // Pointer to Loop Structure Graph, if one is build for the function
   LoopStructureGraph *lsg_;
-  // Sizes as determined by the relaxer
-  // TODO(martint): fix types to use the named type in relax.h
-  std::map<MaoEntry *, int> *sizes_;
 };
 
 // A section
@@ -861,7 +867,7 @@ class Section {
   // Memory for the name is allocated in the constructor and freed
   // in the destructor.
   explicit Section(const char *name, const SectionID id) :
-      name_(name), id_(id) {}
+      name_(name), id_(id), sizes_(NULL) {}
   ~Section() {}
   std::string name() const {return name_;}
   SectionID id() const {return id_;}
@@ -876,12 +882,27 @@ class Section {
   // Return the last subsection in the section or NULL if section is empty.
   SubSection *GetLastSubSection() const;
 
+  std::map<MaoEntry *, int> *sizes() {return sizes_;}
+  void set_sizes(std::map<MaoEntry *, int> *sizes) {
+    // Deallocate memory if needed
+    if (sizes_ != NULL) {
+      delete sizes_;
+    }
+    sizes_ = sizes;
+  }
+
  private:
 
   const std::string name_;  // e.g. ".text", ".data", etc.
   const SectionID id_;
 
   std::vector<SubSection *> subsections_;
+
+  // Sizes as determined by the relaxer
+  // TODO(martint): fix types to use the named type in relax.h
+  // NULL if not set.
+  std::map<MaoEntry *, int> *sizes_;
+
 };
 
 #endif  // MAOUNIT_H_

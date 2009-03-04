@@ -30,7 +30,13 @@ class MaoRelaxer {
   typedef std::map<MaoEntry *, int> SizeMap;
 
   MaoRelaxer() {}
-  void Relax(MaoUnit *mao, Section *section, SizeMap *size_map);
+  void RelaxSection(MaoUnit *mao, Section *section, SizeMap *size_map);
+
+  // Used when a pass needs the sizes for a given function.
+  // Returns the sizemap, which holds entries for the whole section.
+  static SizeMap *GetSizeMap(MaoUnit *mao, Function *function);
+  // Checks if function have a sizemap computed
+  static bool HasSizeMap(Function *function);
 
  private:
   typedef std::map<struct frag *, MaoEntry *> FragToEntryMap;
