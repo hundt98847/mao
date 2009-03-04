@@ -283,6 +283,17 @@ BasicBlock *CFGBuilder::BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label) {
   return new_bb;
 }
 
+int BasicBlock::NumEntries() {
+  int num = 0;
+  MaoEntry *first = first_entry();
+  MaoEntry *last  = last_entry();
+  while (first) {
+    ++num;
+    if (first == last) break;
+    first = first->next();
+  }
+  return num;
+}
 
 #include "MaoRelax.h"
 
