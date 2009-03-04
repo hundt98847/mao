@@ -211,5 +211,6 @@ void PerformRedundantTestElimination(MaoUnit *mao, const CFG *cfg);
 void PerformRedundantMemMoveElimination(MaoUnit *mao, const CFG *cfg);
 void PerformDeadCodeElimination(MaoUnit *mao, const CFG *cfg);
 void PerformMissDispElimination(MaoUnit *mao, const CFG *cfg);
+void PerformNopKiller(MaoUnit *mao, const CFG *cfg);
 
 #endif   // MAP_PASSES_H_INCLUDED_

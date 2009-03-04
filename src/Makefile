@@ -86,6 +86,7 @@ CCSRCS=						\
 	MaoLoopAlign.cc				\
 	MaoLoops.cc				\
 	MaoMissDisp.cc				\
+	MaoNopKiller.cc				\
 	MaoOpcodes.cc				\
 	MaoOptions.cc				\
 	MaoPasses.cc				\
