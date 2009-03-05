@@ -23,6 +23,7 @@
 #include "MaoOptions.h"
 #include "mao.h"
 
+class CFG;
 
 // MaoPass
 //
@@ -40,7 +41,7 @@
 class MaoPass {
  public:
   MaoPass(const char *name, MaoOptions* mao_options, MaoOption *options,
-          bool enabled);
+          bool enabled, const CFG *cfg = NULL);
   virtual ~MaoPass();
 
   // regular Trace, adds newline to output
@@ -67,11 +68,13 @@ class MaoPass {
   bool         enabled() const { return enabled_; }
   unsigned int tracing_level() const { return tracing_level_; }
   bool         tracing() { return tracing_level_ > 0; }
+  const CFG   *cfg() { return cfg_; }
 
   void set_enabled(bool value) { enabled_ = value; }
   void set_tracing_level(unsigned int value) { tracing_level_ = value; }
   void set_timed(void) { timed_ = true; TimerStart(); }
-
+  void set_db(const char *str);
+  void set_da(const char *str);
  private:
   const char   *name_;
   MaoOption    *options_;
@@ -80,6 +83,11 @@ class MaoPass {
   FILE         *trace_file_;
   MaoOptions   *mao_options_;
   bool          timed_;
+  const CFG    *cfg_;
+  bool          db_vcg_;
+  bool          db_cfg_;
+  bool          da_vcg_;
+  bool          da_cfg_;
 };
 
 
@@ -216,5 +224,5 @@ void PerformRedundantMemMoveElimination(MaoUnit *mao, const CFG *cfg);
 void PerformDeadCodeElimination(MaoUnit *mao, const CFG *cfg);
 void PerformMissDispElimination(MaoUnit *mao, const CFG *cfg);
 void PerformNopKiller(MaoUnit *mao, const Function *func);
-
+void PerformNopinizer(MaoUnit *mao, const Function *func);
 #endif   // MAP_PASSES_H_INCLUDED_
