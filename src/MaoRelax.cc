@@ -87,7 +87,7 @@ bool MaoRelaxer::HasSizeMap(Function *function) {
   return (function->sizes() != NULL);
 }
 
-bool MaoRelaxer::InvalidateSizeMap(Function *function) {
+void MaoRelaxer::InvalidateSizeMap(Function *function) {
   function->set_sizes(NULL);
 }
 
