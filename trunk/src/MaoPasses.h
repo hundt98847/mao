@@ -43,7 +43,11 @@ class MaoPass {
           bool enabled);
   virtual ~MaoPass();
 
-  virtual void Trace(unsigned int level, const char *fmt, ...) const;
+  // regular Trace, adds newline to output
+  virtual void Trace (unsigned int level, const char *fmt, ...) const;
+
+  // Trace with Continuation, doesn't add newline
+  virtual void TraceC(unsigned int level, const char *fmt, ...) const;
 
   // Main invocation (depends on enabled())
   virtual bool Go() { return true; }
@@ -211,6 +215,6 @@ void PerformRedundantTestElimination(MaoUnit *mao, const CFG *cfg);
 void PerformRedundantMemMoveElimination(MaoUnit *mao, const CFG *cfg);
 void PerformDeadCodeElimination(MaoUnit *mao, const CFG *cfg);
 void PerformMissDispElimination(MaoUnit *mao, const CFG *cfg);
-void PerformNopKiller(MaoUnit *mao, const CFG *cfg);
+void PerformNopKiller(MaoUnit *mao, const Function *func);
 
 #endif   // MAP_PASSES_H_INCLUDED_

@@ -109,6 +109,18 @@ void MaoPass::Trace(unsigned int level, const char *fmt, ...) const {
   fflush(stderr);
 }
 
+void MaoPass::TraceC(unsigned int level, const char *fmt, ...) const {
+  if (level > tracing_level()) return;
+
+  fprintf(stderr, "[%s]\t", name());
+
+  va_list argList;
+  va_start(argList, fmt);
+  vfprintf(stderr, fmt, argList);
+  va_end(argList);
+  fflush(stderr);
+}
+
 
 MaoOption *MaoPass::FindOptionEntry(const char *name) {
   MAO_ASSERT(options_);

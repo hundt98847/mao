@@ -34,12 +34,12 @@ MAO_OPTIONS_DEFINE(NOPKILL, 0) {
 
 class NopKillerElimPass : public MaoPass {
  public:
-  NopKillerElimPass(MaoUnit *mao, const CFG *cfg) :
+  NopKillerElimPass(MaoUnit *mao, const Function *func) :
     MaoPass("NOPKILL", mao->mao_options(), MAO_OPTIONS(NOPKILL), false),
-    mao_(mao), cfg_(cfg) {
+    mao_(mao), func_(func) {
   }
 
-  // Find these patterns in a single basic block:
+  // Find these patterns in a function:
   //
   //   nop
   //   nopl
@@ -54,31 +54,29 @@ class NopKillerElimPass : public MaoPass {
     if (!enabled()) return;
     std::list<MaoEntry *> redundants;
 
-    FORALL_CFG_BB(cfg_,it) {
-      FORALL_BB_ENTRY(it,entry) {
-        if ((*entry)->IsInstruction()) {
-          InstructionEntry *insn = (*entry)->AsInstruction();
+   FORALL_FUNC_ENTRY(func_,entry) {
+      if (entry->IsInstruction()) {
+        InstructionEntry *insn = entry->AsInstruction();
 
-          if (insn->op() == OP_nop) {
-            redundants.push_back(insn);
-            continue;
-          }
-
-          if (insn->op() == OP_xchg &&
-              insn->IsRegisterOperand(0) &&
-              insn->IsRegisterOperand(1) &&
-              insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1)) {
-            redundants.push_back(insn);
-            continue;
-          }
+        if (insn->op() == OP_nop) {
+          redundants.push_back(insn);
+          continue;
         }
 
-        if ((*entry)->IsDirective()) {
-          DirectiveEntry *insn = (*entry)->AsDirective();
-          if (insn->op() == DirectiveEntry::P2ALIGN) {
-            redundants.push_back(insn);
-            continue;
-          }
+        if (insn->op() == OP_xchg &&
+            insn->IsRegisterOperand(0) &&
+            insn->IsRegisterOperand(1) &&
+            insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1)) {
+          redundants.push_back(insn);
+          continue;
+        }
+      }
+
+      if (entry->IsDirective()) {
+        DirectiveEntry *insn = entry->AsDirective();
+        if (insn->op() == DirectiveEntry::P2ALIGN) {
+          redundants.push_back(insn);
+          continue;
         }
       }
     }
@@ -86,7 +84,7 @@ class NopKillerElimPass : public MaoPass {
     // Now delete all the redundant ones.
     for (std::list<MaoEntry *>::iterator it = redundants.begin();
          it != redundants.end(); ++it) {
-      Trace(1, "Removing nop");
+      TraceC(1, "Remove: ");
       if (tracing_level() > 0)
         (*it)->PrintEntry(stderr);
       mao_->DeleteEntry(*it);
@@ -94,16 +92,16 @@ class NopKillerElimPass : public MaoPass {
   }
 
  private:
-  MaoUnit   *mao_;
-  const CFG *cfg_;
+  MaoUnit        *mao_;
+  const Function *func_;
 };
 
 
 // External Entry Point
 //
 
-void PerformNopKiller(MaoUnit *mao, const CFG *cfg) {
-  NopKillerElimPass nopkill(mao, cfg);
+void PerformNopKiller(MaoUnit *mao, const Function *func) {
+  NopKillerElimPass nopkill(mao, func);
   nopkill.set_timed();
   nopkill.DoElim();
 }

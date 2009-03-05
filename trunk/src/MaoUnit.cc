@@ -722,8 +722,12 @@ void MaoEntry::Spaces(unsigned int n, FILE *outfile) const {
 }
 
 void MaoEntry::PrintSourceInfo(FILE *out) const {
-  fprintf(out, "\t # [%d], line: %d\t%s\n", id(), line_number(),
-          line_verbatim() ? line_verbatim() : "");
+  fprintf(out, "\t# id: %d, l: %d\t", id(), line_number());
+
+  if (0 && line_verbatim()) // TODO(rhundt): Invent option for this
+    fprintf(out, "%s\n", line_verbatim());
+  else
+    fprintf(out, "\n");
 }
 
 
