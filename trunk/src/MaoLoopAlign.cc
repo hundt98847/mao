@@ -277,7 +277,7 @@ void LoopAlignPass::ProcessPath(Path *path) {
       if (b_connections.find(*iter) == b_connections.end()) {
         // This is the start of a chain which should be aligned!
         Trace(3, "Aligned block :%d", (*iter)->id());
-        //AlignBlock(*iter);
+        //  AlignBlock(*iter);
       }
     }
   }
@@ -350,8 +350,8 @@ void LoopAlignPass::ProcessInnerLoop(const SimpleLoop *loop,
       first = *iter;
     }
   }
-  int loop_size = (*offsets)[last->last_entry()] + (*sizes_)[last->last_entry()] -
-      (*offsets)[first->first_entry()];
+  int loop_size = (*offsets)[last->last_entry()] + (*sizes_)[last->last_entry()]
+      - (*offsets)[first->first_entry()];
   if (loop_size <= 64) {
     // Add align directive
     AlignBlock(first);
@@ -390,7 +390,6 @@ int LoopAlignPass::NumLines(const Path *path,
     if (chain_sizes->find(*iter) != chain_sizes->end()) {
       // This assert would trigger if it found
       // basic blocks without any size!
-      //MAO_ASSERT((*chain_sizes)[*iter] > 0);
       MAO_ASSERT((*chain_sizes)[*iter] >= 0);
       int c_lines = ((*chain_sizes)[*iter]-1)/16+1;
       lines += c_lines;
@@ -426,7 +425,8 @@ int LoopAlignPass::PathSize(const Path *path) const {
 
 // Function called recurively to find the inner loops that are candidates
 // for alignment.
-void LoopAlignPass::FindInner(const SimpleLoop *loop, MaoRelaxer::SizeMap *offsets) {
+void LoopAlignPass::FindInner(const SimpleLoop *loop,
+                              MaoRelaxer::SizeMap *offsets) {
   if (loop->nesting_level() == 0 &&   // Leaf node = Inner loop
       !loop->is_root()) {             // Make sure its not the root node
     // Found an inner loop

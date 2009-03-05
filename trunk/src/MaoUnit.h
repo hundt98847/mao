@@ -903,7 +903,6 @@ class Section {
   // TODO(martint): fix types to use the named type in relax.h
   // NULL if not set.
   std::map<MaoEntry *, int> *sizes_;
-
 };
 
 #endif  // MAOUNIT_H_

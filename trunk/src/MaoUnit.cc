@@ -530,7 +530,7 @@ Symbol *MaoUnit::FindOrCreateAndFindSymbol(const char *name) {
 
 
 Function *MaoUnit::GetFunction(MaoEntry *entry) {
-  if(entry_to_function_.find(entry) == entry_to_function_.end()) {
+  if (entry_to_function_.find(entry) == entry_to_function_.end()) {
     return NULL;
   } else {
     return entry_to_function_[entry];
@@ -543,7 +543,7 @@ bool MaoUnit::InFunction(MaoEntry *entry) const {
 
 
 SubSection *MaoUnit::GetSubSection(MaoEntry *entry) {
-  if(entry_to_subsection_.find(entry) == entry_to_subsection_.end()) {
+  if (entry_to_subsection_.find(entry) == entry_to_subsection_.end()) {
     return NULL;
   } else {
     return entry_to_subsection_[entry];
@@ -1116,7 +1116,7 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.reg64
           || t.bitfield.floatreg
           || t.bitfield.regxmm
-	  || t.bitfield.regmmx
+          || t.bitfield.regmmx
           || t.bitfield.regymm);
 }
 
@@ -1329,8 +1329,7 @@ void InstructionEntry::PrintMemoryOperand(FILE                  *out,
         if (expr->X_add_symbol || expr->X_op_symbol) {
           fprintf(out, ")+");
         }
-        fprintf(out, "%lld",
-                (long long)expr->X_add_number);
+        fprintf(out, "%lld", (long long)expr->X_add_number);
         break;
       default:
         MAO_ASSERT_MSG(0, "Unable to print unsupported expression: %d",
@@ -1507,11 +1506,11 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             break;
           case ADDR_PREFIX_OPCODE:
             // used in movl (%eax), %eax
-	    // 	addr32 lea symbol,%rax
-	    fprintf(out, "addr32  ");
+            //  addr32 lea symbol,%rax
+            fprintf(out, "addr32  ");
             break;
           case LOCK_PREFIX_OPCODE:
-            // used in 	lock xaddl        %eax, 16(%rdi)
+            // used in  lock xaddl        %eax, 16(%rdi)
               fprintf(out, "lock ");
               break;
           default:
@@ -1531,15 +1530,15 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 
   // Loop over operands
   int num_operands = instruction_->operands;
-  if (instruction_->tm.opcode_modifier.vex3sources){
-    if(!instruction_->types[0].bitfield.imm8)
+  if (instruction_->tm.opcode_modifier.vex3sources) {
+    if (!instruction_->types[0].bitfield.imm8)
       num_operands = instruction_->operands - 1;
   }
   if (!instruction_->tm.opcode_modifier.vex3sources) {
     // This takes care of instructions
     // that have opcode modifiers stored where the immeage
     // normaly is stored (SSE, SSE2, AMD 3D Now).
-    if (instruction_->tm.opcode_modifier.immext){
+    if (instruction_->tm.opcode_modifier.immext) {
       num_operands = instruction_->operands - 1;
     }
   }
@@ -1549,8 +1548,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     // according to the instruction structure, but only
     // three in the assembly (e.g. comeqss %xmm3, %xmm2, %xmm1)
     if (i == 3 &&
-	instruction_->tm.opcode_modifier.drexc &&
-	instruction_->tm.extension_opcode == 65535) {
+        instruction_->tm.opcode_modifier.drexc &&
+        instruction_->tm.extension_opcode == 65535) {
       break;
     }
 
@@ -1649,37 +1648,37 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     // The various SSE5 formats. Tested on
     // x86-64-sse5.s in gas test-suite.
     if (instruction_->tm.opcode_modifier.drex &&
-	instruction_->tm.opcode_modifier.drexv) {
+        instruction_->tm.opcode_modifier.drexv) {
       if ((instruction_->tm.extension_opcode == 0 &&
-	   (i == 2 || i == 3)) ||
-	  (instruction_->tm.extension_opcode == 1 &&
-	   (i == 2 || i == 3)) ||
-	  (instruction_->tm.extension_opcode == 2 &&
-	   (i == 0 || i == 3)) ||
-	  (instruction_->tm.extension_opcode == 3 &&
-	   (i == 0 || i == 3))) {
-	fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+           (i == 2 || i == 3)) ||
+          (instruction_->tm.extension_opcode == 1 &&
+           (i == 2 || i == 3)) ||
+          (instruction_->tm.extension_opcode == 2 &&
+           (i == 0 || i == 3)) ||
+          (instruction_->tm.extension_opcode == 3 &&
+           (i == 0 || i == 3))) {
+        fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
       }
     }
     if (instruction_->tm.opcode_modifier.drex &&
-	!instruction_->tm.opcode_modifier.drexv) {
+        !instruction_->tm.opcode_modifier.drexv) {
       if ((instruction_->tm.extension_opcode == 0 &&
-	   (i == 0 || i == 3)) ||
-	  (instruction_->tm.extension_opcode == 1 &&
-	   (i == 2 || i == 3)) ||
-	  (instruction_->tm.extension_opcode == 2 &&
-	   (i == 0 || i == 3)) ||
-	  (instruction_->tm.extension_opcode == 3 &&
-	   (i == 0 || i == 3))) {
-	fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+           (i == 0 || i == 3)) ||
+          (instruction_->tm.extension_opcode == 1 &&
+           (i == 2 || i == 3)) ||
+          (instruction_->tm.extension_opcode == 2 &&
+           (i == 0 || i == 3)) ||
+          (instruction_->tm.extension_opcode == 3 &&
+           (i == 0 || i == 3))) {
+        fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
       }
     }
     if (instruction_->tm.opcode_modifier.drexc) {
       if ((instruction_->tm.extension_opcode == 0 &&
-	   (i == 3)) ||
-	  (instruction_->tm.extension_opcode == 65535 &&
-	   (i == 2))) {
-	fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+           (i == 3)) ||
+          (instruction_->tm.extension_opcode == 65535 &&
+           (i == 2))) {
+        fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
       }
     }
 
@@ -1688,12 +1687,11 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     // gas 2.19. The if-below is a workaround for this.
     if (IsRegisterOperand(instruction_, i)) {
       if (instruction_->types[i].bitfield.jumpabsolute ||
-	  ((IsCall() || IsJump()) &&
-	   (instruction_->types[i].bitfield.reg8 ||
-	    instruction_->types[i].bitfield.reg16 ||
-	    instruction_->types[i].bitfield.reg32 ||
-	    instruction_->types[i].bitfield.reg64)
-	   )) {
+          ((IsCall() || IsJump()) &&
+           (instruction_->types[i].bitfield.reg8 ||
+            instruction_->types[i].bitfield.reg16 ||
+            instruction_->types[i].bitfield.reg32 ||
+            instruction_->types[i].bitfield.reg64))) {
         fprintf(out, "*");
       }
       fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
@@ -1821,10 +1819,10 @@ bool InstructionEntry::IsCondJump() const {
     OP_jz,  OP_jne, OP_jnz,  OP_jbe, OP_jna,  OP_jnbe, OP_ja,  OP_js,  OP_jns,
     OP_jp,  OP_jpe, OP_jnp,  OP_jpo, OP_jl,   OP_jnge, OP_jnl, OP_jge, OP_jle,
     OP_jng,  OP_jnle, OP_jg,
-    
+
     // jcxz vs. jecxz is chosen on the basis of the address size prefix.
     OP_jcxz, OP_jecxz, OP_jecxz, OP_jrcxz,
-    
+
     // loop variants
     OP_loop, OP_loopz, OP_loope, OP_loopnz, OP_loopne
   };
