@@ -152,13 +152,10 @@ gen-opcodes.h: $(OBJDIR)/GenOpcodes
 
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
-$(BINDIR)/mao-$(TARGET): stamp-bin gen-opcodes.h $(OBJDIR) $(OBJS)
+$(BINDIR)/mao-$(TARGET): stamp-bin gen-opcodes.h $(OBJS)
 	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil
 
 .PHONY : clean all mao-$(TARGET)
-
-$(OBJDIR) :
-	mkdir -p $(OBJDIR)
 
 stamp-bin:
 	test -d $(BINDIR) || mkdir -p $(BINDIR)
