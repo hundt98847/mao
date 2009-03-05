@@ -59,6 +59,12 @@ CFG *CFG::GetCFG(MaoUnit *mao, Function *function) {
 }
 
 
+void CFG::InvalidateCFG(Function *function) {
+  // Memory is deallocated in the set_cfg routine.
+  function->set_cfg(NULL);
+}
+
+
 void CFG::Print(FILE *out) const {
   // TODO(nvachhar): Emit a text representation of the CFG
 }
