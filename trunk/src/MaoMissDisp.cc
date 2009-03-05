@@ -35,8 +35,8 @@ MAO_OPTIONS_DEFINE(MISSDISP, 0) {
 class MissDispElimPass : public MaoPass {
  public:
   MissDispElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("MISSDISP", mao->mao_options(), MAO_OPTIONS(MISSDISP), true),
-    mao_(mao), cfg_(cfg) {
+    MaoPass("MISSDISP", mao->mao_options(), MAO_OPTIONS(MISSDISP), true, cfg),
+    mao_(mao) {
   }
 
   // Find these patterns in a single basic block:
@@ -48,7 +48,7 @@ class MissDispElimPass : public MaoPass {
   //   mov    0x8(%rax),%rax
   //
   void DoElim() {
-    FORALL_CFG_BB(cfg_,it) {
+    FORALL_CFG_BB(cfg(),it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
@@ -77,7 +77,6 @@ class MissDispElimPass : public MaoPass {
 
  private:
   MaoUnit   *mao_;
-  const CFG *cfg_;
 };
 
 

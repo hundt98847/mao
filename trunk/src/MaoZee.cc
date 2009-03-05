@@ -28,16 +28,14 @@
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(ZEE, 1) {
-  OPTION_BOOL("vcg", false, "Dump VCG file"),
+MAO_OPTIONS_DEFINE(ZEE, 0) {
 };
 
 class ZeroExtentElimPass : public MaoPass {
  public:
   ZeroExtentElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("ZEE", mao->mao_options(), MAO_OPTIONS(ZEE), true),
-    mao_(mao), cfg_(cfg) {
-    dump_vcg_ = GetOptionBool("vcg");
+    MaoPass("ZEE", mao->mao_options(), MAO_OPTIONS(ZEE), true, cfg),
+    mao_(mao) {
   }
 
   // Redundant zero extend elimination. Find pattern:
@@ -47,7 +45,7 @@ class ZeroExtentElimPass : public MaoPass {
   // extending def reg32
   //
   void DoElim() {
-    FORALL_CFG_BB(cfg_,it) {
+    FORALL_CFG_BB(cfg(),it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
@@ -86,8 +84,6 @@ class ZeroExtentElimPass : public MaoPass {
 
  private:
   MaoUnit   *mao_;
-  const CFG *cfg_;
-  bool       dump_vcg_ :1 ;
 };
 
 

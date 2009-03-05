@@ -93,8 +93,15 @@ void MaoOptions::ProvideHelp(bool always) {
           "PASS=[phase-option][,phase-option]*\n"
           "\nwith PASS and 'phase-option' being:\n\n"
           "Pass: ALL\n"
-          "  enable    : (bool)   En/Disable a pass\n"
-          "  trace     : (int)    Set trace level to 'val' (0..3)\n");
+          "  enable    : (bool)   Enable a pass  (also: on)\n"
+          "  disable   : (bool)   Disable a pass (also: off)\n"
+          "  trace     : (int)    Set trace level to 'val' (0..3)\n"
+          "  db[parm]  : (bool)   Dump before a pass\n"
+          "  da[parm]  : (bool)   Dump after  a pass\n"
+          "     with parm being one of:\n"
+          "        cfg : dump CFG, if available\n"
+          "        vcg : dump VCG file, if CFG is available\n"
+          );
 
   for (OptionVector::iterator it = option_array_list->begin();
        it != option_array_list->end(); ++it) {

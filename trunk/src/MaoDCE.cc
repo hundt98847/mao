@@ -29,8 +29,7 @@
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(DCE, 1) {
-  OPTION_BOOL("vcg", false, "Dump VCG file"),
+MAO_OPTIONS_DEFINE(DCE, 0) {
 };
 
 typedef std::map<BasicBlock *, bool> BasicBlockMap;
@@ -59,20 +58,19 @@ static void Visit(BasicBlock *bb, BasicBlockMap *bbmap) {
 class DeadCodeElimPass : public MaoPass {
  public:
   DeadCodeElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("DCE", mao->mao_options(), MAO_OPTIONS(DCE), true),
-    mao_(mao), cfg_(cfg) {
-    dump_vcg_ = GetOptionBool("vcg");
+    MaoPass("DCE", mao->mao_options(), MAO_OPTIONS(DCE), true, cfg),
+    mao_(mao) {
   }
 
   void DoElim() {
     BasicBlockMap bbmap;
-    FORALL_CFG_BB(cfg_,it)
+    FORALL_CFG_BB(cfg(),it)
       bbmap[(*it)] = false;
 
-    BasicBlock *root = (*cfg_->Begin());
+    BasicBlock *root = (*cfg()->Begin());
     Visit(root, &bbmap);
 
-    FORALL_CFG_BB(cfg_,it)
+    FORALL_CFG_BB(cfg(),it)
       if (!bbmap[(*it)]) {
         BasicBlock *bb = *it;
         int num = bb->NumEntries();
@@ -97,8 +95,6 @@ class DeadCodeElimPass : public MaoPass {
 
  private:
   MaoUnit   *mao_;
-  const CFG *cfg_;
-  bool       dump_vcg_ :1 ;
 };
 
 
