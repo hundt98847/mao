@@ -268,7 +268,7 @@ bool SetPassSpecificOptions(const char *option, const char *arg,
   }
   if (!strcasecmp(option, "trace")) {
     const char *param;
-    int   level = 3;
+    int   level = 1;
     if (GetParam(arg, next, &param))
       level = atoi(param);
     MaoPass *mao_pass = FindPass(current_opts->array());
