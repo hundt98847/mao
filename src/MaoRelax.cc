@@ -87,6 +87,11 @@ bool MaoRelaxer::HasSizeMap(Function *function) {
   return (function->sizes() != NULL);
 }
 
+bool MaoRelaxer::InvalidateSizeMap(Function *function) {
+  function->set_sizes(NULL);
+}
+
+
 struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
                                         SizeMap *size_map,
                                         FragToEntryMap *relax_map) {
