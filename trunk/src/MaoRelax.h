@@ -39,7 +39,7 @@ class MaoRelaxer {
   static bool HasSizeMap(Function *function);
 
   // Invalidates the sizemap for the section the function is member of.
-  static bool InvalidateSizeMap(Function *function);
+  static void InvalidateSizeMap(Function *function);
 
  private:
   typedef std::map<struct frag *, MaoEntry *> FragToEntryMap;
