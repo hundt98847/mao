@@ -67,10 +67,12 @@ class NopInizerPass : public MaoPass {
         for (int i = 0; i < num; i++) {
           InstructionEntry *nop = mao_->CreateNop();
           entry->LinkBefore(nop);
+          TraceC(1, "Inserted nop, before:");
+          if (tracing_level() > 0)
+            entry->PrintEntry(stderr);
         }
         count_down = (int) (1.0 * density_ * (rand() / (RAND_MAX + 1.0)));
       }
-      entry->PrintEntry(stderr);
     }
     // TODO(rhundt): Invalidate CFG
     return true;
