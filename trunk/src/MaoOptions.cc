@@ -260,6 +260,12 @@ bool SetPassSpecificOptions(const char *option, const char *arg,
       mao_pass->set_enabled(true);
     return true;
   }
+  if (!strcasecmp(option, "disable") || !strcasecmp(option, "off")) {
+    MaoPass *mao_pass = FindPass(current_opts->array());
+    if (mao_pass)
+      mao_pass->set_enabled(false);
+    return true;
+  }
   if (!strcasecmp(option, "trace")) {
     const char *param;
     int   level = 3;
@@ -270,10 +276,20 @@ bool SetPassSpecificOptions(const char *option, const char *arg,
       mao_pass->set_tracing_level(level);
     return true;
   }
-  if (!strcasecmp(option, "disable") || !strcasecmp(option, "off")) {
+  if (!strcasecmp(option, "db")) {
+    const char *param;
     MaoPass *mao_pass = FindPass(current_opts->array());
-    if (mao_pass)
-      mao_pass->set_enabled(false);
+    GetParam(arg, next, &param);
+    if (mao_pass && param)
+      mao_pass->set_db(param);
+    return true;
+  }
+  if (!strcasecmp(option, "da")) {
+    const char *param;
+    MaoPass *mao_pass = FindPass(current_opts->array());
+    GetParam(arg, next, &param);
+    if (mao_pass && param)
+      mao_pass->set_da(param);
     return true;
   }
   return false;

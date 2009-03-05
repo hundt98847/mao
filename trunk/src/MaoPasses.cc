@@ -24,6 +24,7 @@
 
 #include "MaoDebug.h"
 #include "MaoPasses.h"
+#include "MaoCFG.h"
 
 class PassDebugAction : public MaoDebugAction {
  public:
@@ -55,10 +56,12 @@ MaoPass *FindPass(MaoOption *arr) {
 
 
 MaoPass::MaoPass(const char *name, MaoOptions *mao_options,
-                 MaoOption *options, bool enabled) :
+                 MaoOption *options, bool enabled, const CFG *cfg) :
   name_(name), options_(options), enabled_(enabled),
   tracing_level_(mao_options ? (mao_options->verbose() ? 3 : 0) : 0),
-  trace_file_(stderr), mao_options_(mao_options), timed_(false) {
+  trace_file_(stderr), mao_options_(mao_options), timed_(false),
+  cfg_(cfg),
+  db_vcg_(false), db_cfg_(false), da_vcg_(false), da_cfg_(false) {
   MAO_ASSERT_MSG(options,
                  "Option array is required for pass constuction "
                  "(pass: %s)", name);
@@ -72,6 +75,15 @@ MaoPass::MaoPass(const char *name, MaoOptions *mao_options,
     pass_debug_action = new PassDebugAction(name);
   else
     pass_debug_action->set_pass_name(name);
+
+  if (db_cfg_ && cfg_)
+    cfg_->Print(stderr);
+  if (db_vcg_ && cfg_) {
+    char buff[1024];
+    sprintf(buff, "dump.db.%s.vcg", name_);
+    cfg_->DumpVCG(buff);
+  }
+
   if (enabled_)
     Trace(3, "begin");
 }
@@ -80,6 +92,13 @@ MaoPass::~MaoPass() {
   option_to_pass_map[options_] = NULL;
   if (timed_)
     TimerStop();
+  if (da_cfg_ && cfg_)
+    cfg()->Print(stderr);
+  if (da_vcg_ && cfg_) {
+    char buff[1024];
+    sprintf(buff, "dump.da.%s.vcg", name_);
+    cfg_->DumpVCG(buff);
+  }
   if (enabled_)
     Trace(3, "end");
 }
@@ -150,6 +169,22 @@ const char *MaoPass::GetOptionString(const char *name) {
 int MaoPass::GetOptionInt(const char *name) {
   MaoOption *opt = FindOptionEntry(name);
   return opt->ival_;
+}
+
+void MaoPass::set_db(const char *str) {
+  if (!strcasecmp(str, "cfg"))
+    db_cfg_ = true;
+  else
+  if (!strcasecmp(str, "vcg"))
+    db_vcg_ = true;
+}
+
+void MaoPass::set_da(const char *str) {
+  if (!strcasecmp(str, "cfg"))
+    da_cfg_ = true;
+  else
+  if (!strcasecmp(str, "vcg"))
+    da_vcg_ = true;
 }
 
 MAO_OPTIONS_DEFINE(BEG, 0) {
