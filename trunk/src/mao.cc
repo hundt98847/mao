@@ -71,6 +71,7 @@ int main(int argc, const char *argv[]) {
     // Optimization passes.
     PerformDeadCodeElimination(&mao_unit, CFG::GetCFG(&mao_unit, function));
     PerformNopKiller(&mao_unit, function);
+    PerformNopinizer(&mao_unit, function);
     PerformZeroExtensionElimination(&mao_unit,
                                     CFG::GetCFG(&mao_unit, function));
     PerformRedundantTestElimination(&mao_unit,
