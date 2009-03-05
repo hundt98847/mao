@@ -275,6 +275,44 @@ LabelEntry *MaoUnit::GetLabelEntry(const char *label_name) const {
 }
 
 
+static struct i386InsnTemplate FindTemplate(const char *opcode,
+                                            unsigned int base_opcode) {
+  extern i386InsnTemplate i386_optab[];
+  for (int i = 0;; ++i) {
+    if (!i386_optab[i].name)
+      break;
+    if (base_opcode == i386_optab[i].base_opcode)
+      if (!strcasecmp(opcode, i386_optab[i].name))
+        return i386_optab[i];
+  }
+  MAO_ASSERT_MSG(false, "Couldn't find instruction template for: %s", opcode);
+  return i386InsnTemplate();
+}
+
+InstructionEntry *MaoUnit::CreateInstruction(const char *opcode) {
+  i386_insn insn;
+  memset(&insn, 0, sizeof(i386_insn));
+  insn.tm = FindTemplate("nop", 0x90);
+  InstructionEntry *e = new InstructionEntry(
+    &insn, 0, NULL, this);
+  return e;
+}
+
+InstructionEntry *MaoUnit::CreateNop() {
+  InstructionEntry *e = CreateInstruction("nop");
+
+  // next free ID for the entry
+  EntryID entry_index = entry_vector_.size();
+  e->set_id(entry_index);
+
+  e->set_op(OP_nop);
+
+  // Add the entry to the compilation unit
+  entry_vector_.push_back(e);
+  return e;
+}
+
+
 // Add an entry to the MaoUnit list
 bool MaoUnit::AddEntry(MaoEntry *entry,
                        bool  create_default_section) {
@@ -728,6 +766,22 @@ void MaoEntry::PrintSourceInfo(FILE *out) const {
     fprintf(out, "%s\n", line_verbatim());
   else
     fprintf(out, "\n");
+}
+
+void MaoEntry::LinkBefore(MaoEntry *entry) {
+  entry->set_next(this);
+  entry->set_prev(prev());
+  if (prev())
+    prev()->set_next(entry);
+  else
+    // TODO(rhundt): Set "first" pointer of everything to entry
+    ;
+}
+
+void MaoEntry::LinkAfter(MaoEntry *entry) {
+  entry->set_next(next());
+  entry->set_prev(this);
+  set_next(entry);
 }
 
 

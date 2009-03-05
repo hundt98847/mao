@@ -65,13 +65,14 @@ class NopInizerPass : public MaoPass {
       } else {
         int num = (int) (1.0 * thick_ * (rand() / (RAND_MAX + 1.0)));
         for (int i = 0; i < num; i++) {
-//          InstructionEntry *nop = mao_->CreateNop();
-//          entry->LinkBefore(nop);
+          InstructionEntry *nop = mao_->CreateNop();
+          entry->LinkBefore(nop);
         }
         count_down = (int) (1.0 * density_ * (rand() / (RAND_MAX + 1.0)));
       }
       entry->PrintEntry(stderr);
     }
+    // TODO(rhundt): Invalidate CFG
     return true;
   }
 
