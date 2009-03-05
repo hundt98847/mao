@@ -808,9 +808,17 @@ class Function {
       subsection_(subsection), cfg_(NULL), lsg_(NULL) {}
 
   void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
-  void set_last_entry(MaoEntry *entry) { last_entry_ = entry;}
+  void set_last_entry(MaoEntry *entry) {
+    last_entry_ = entry;
+    if (last_entry_->next())
+      end_entry_ = last_entry_->next();
+    else
+      // TODO(rhundt): insert dummy node, but for now:
+      end_entry_ = last_entry_;
+  }
   MaoEntry *first_entry() const { return first_entry_;}
   MaoEntry *last_entry() const { return last_entry_;}
+  MaoEntry *end_entry() const { return end_entry_;}
 
   const std::string name() const {return name_;}
   FunctionID id() const {return id_;}
@@ -849,6 +857,7 @@ class Function {
   // Pointers to the first and last entry of the function.
   MaoEntry *first_entry_;
   MaoEntry *last_entry_;
+  MaoEntry *end_entry_;
 
   // Pointer to subsection that this function starts in.
   SubSection *subsection_;
@@ -861,6 +870,12 @@ class Function {
   // Pointer to Loop Structure Graph, if one is build for the function
   LoopStructureGraph *lsg_;
 };
+
+// Convenience macros
+#define FORALL_FUNC_ENTRY(func,entry) \
+   for (MaoEntry *entry = func->first_entry(); \
+        entry != func->end_entry(); \
+        entry = entry->next())
 
 // A section
 class Section {
