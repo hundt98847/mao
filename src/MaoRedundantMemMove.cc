@@ -36,8 +36,8 @@ MAO_OPTIONS_DEFINE(REDMOV, 1) {
 class RedMemMovElimPass : public MaoPass {
  public:
   RedMemMovElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV), true),
-    mao_(mao), cfg_(cfg) {
+    MaoPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV), true, cfg),
+    mao_(mao) {
     look_ahead_ = GetOptionInt("lookahead");
   }
 
@@ -48,7 +48,7 @@ class RedMemMovElimPass : public MaoPass {
   //  movq    24(%rsp), %rcx
   //
   void DoElim() {
-    FORALL_CFG_BB(cfg_,it) {
+    FORALL_CFG_BB(cfg(),it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
@@ -110,7 +110,6 @@ class RedMemMovElimPass : public MaoPass {
 
  private:
   MaoUnit   *mao_;
-  const CFG *cfg_;
   int        look_ahead_;
 };
 
