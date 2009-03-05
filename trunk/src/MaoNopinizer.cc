@@ -44,9 +44,11 @@ class NopInizerPass : public MaoPass {
     density_ = GetOptionInt("density");
     thick_ = GetOptionInt("thick");
 
-    srand(seed_);
-    Trace(1, "Nopinizer! Seed: %d, dense: %d, thick: %d",
-          seed_, density_, thick_);
+    if (enabled()) {
+      srand(seed_);
+      Trace(1, "Nopinizer! Seed: %d, dense: %d, thick: %d",
+            seed_, density_, thick_);
+    }
   }
 
   // Randomly insert nops into the code stream, based
@@ -67,11 +69,11 @@ class NopInizerPass : public MaoPass {
         for (int i = 0; i < num; i++) {
           InstructionEntry *nop = mao_->CreateNop();
           entry->LinkBefore(nop);
-          TraceC(1, "Inserted nop, before:");
-          if (tracing_level() > 0)
-            entry->PrintEntry(stderr);
         }
         count_down = (int) (1.0 * density_ * (rand() / (RAND_MAX + 1.0)));
+        TraceC(1, "Inserted %d nops, before:", num);
+        if (tracing_level() > 0)
+          entry->PrintEntry(stderr);
       }
     }
     // TODO(rhundt): Invalidate CFG
