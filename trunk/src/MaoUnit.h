@@ -180,6 +180,11 @@ class MaoUnit {
 
   LabelEntry *GetLabelEntry(const char *label_name) const;
 
+  // Instruction Creators
+  InstructionEntry *CreateInstruction(const char *opcode);
+  InstructionEntry *CreateNop();
+
+  // Dumpers
   void PrintMaoUnit() const;
   void PrintMaoUnit(FILE *out) const;
   void PrintIR(bool print_entries, bool print_sections,
@@ -360,6 +365,10 @@ class MaoEntry {
 
   InstructionEntry *nextInstruction();
   InstructionEntry *prevInstruction();
+
+  // Take 'entry' and link it in before/after current instruction
+  void LinkBefore(MaoEntry *entry);
+  void LinkAfter(MaoEntry *entry);
 
   unsigned int line_number() const { return line_number_; }
   const char *const line_verbatim() const { return line_verbatim_; }
@@ -614,6 +623,7 @@ class InstructionEntry : public MaoEntry {
   const char *GetOp() const;
   MaoOpcode   op() const { return op_; }
   bool        IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
+  void        set_op(MaoOpcode op) { op_ = op; }
 
   bool HasTarget() const;
 
