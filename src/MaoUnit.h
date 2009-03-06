@@ -690,6 +690,7 @@ class InstructionEntry : public MaoEntry {
   }
 
   bool CompareMemOperand(int op1, InstructionEntry *i2, int op2);
+  void SetOperand(int op1, InstructionEntry *i2, int op2);
 
   i386_insn   *instruction() { return instruction_; }
 
