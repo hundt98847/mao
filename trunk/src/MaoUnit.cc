@@ -1250,6 +1250,28 @@ const char *InstructionEntry::GetRelocString(
   return "";
 }
 
+void InstructionEntry::SetOperand(int op1,
+                                  InstructionEntry *insn2,
+                                  int op2) {
+  i386_insn *i1 = instruction();
+  i386_insn *i2 = insn2->instruction();
+
+  memcpy(&i1->types[op1], &i2->types[op2], sizeof(i386_operand_type));
+  i1->flags[op1] = i2->flags[op2];
+  if (insn2->IsImmediateOperand(op2))
+    i1->op[op1].imms = i2->op[op2].imms;
+  if (insn2->IsRegisterOperand(op2))
+    i1->op[op1].regs = i2->op[op2].regs;
+  if (insn2->IsMemOperand(op2))
+    i1->op[op1].disps = i2->op[op2].disps;
+
+  if (insn2->IsMemOperand(op2)) {
+    i1->base_reg = i2->base_reg;
+    i1->index_reg = i2->index_reg;
+    i1->log2_scale_factor = i2->log2_scale_factor;
+  }
+}
+
 bool InstructionEntry::CompareMemOperand(int op1,
                                          InstructionEntry *insn2,
                                          int op2) {
@@ -1299,20 +1321,10 @@ bool InstructionEntry::CompareMemOperand(int op1,
     }
   }
 
-  if (i1->base_reg && !i2->base_reg)
-    return false;
-  if (!i1->base_reg && i2->base_reg)
-    return false;
-  if (i1->base_reg &&
-      i1->base_reg != i2->base_reg)
+  if (i1->base_reg != i2->base_reg)
     return false;
 
-  if (i1->index_reg && !i2->index_reg)
-    return false;
-  if (!i1->index_reg && i2->index_reg)
-    return false;
-  if (i1->index_reg &&
-      i1->index_reg != i2->index_reg)
+  if (i1->index_reg != i2->index_reg)
     return false;
 
   if (i1->log2_scale_factor != i2->log2_scale_factor)
