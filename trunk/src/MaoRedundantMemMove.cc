@@ -17,14 +17,13 @@
 //   51 Franklin Street, Fifth Floor,
 //   Boston, MA  02110-1301, USA.
 
-// Redundant Test Elimination
+// Redundant Load Elimination
 //
 #include "MaoDebug.h"
 #include "MaoUnit.h"
 #include "MaoPasses.h"
 #include "MaoCFG.h"
 #include "MaoDefs.h"
-
 
 // --------------------------------------------------------------------
 // Options
@@ -36,7 +35,7 @@ MAO_OPTIONS_DEFINE(REDMOV, 1) {
 class RedMemMovElimPass : public MaoPass {
  public:
   RedMemMovElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV), true, cfg),
+    MaoPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV), false, cfg),
     mao_(mao) {
     look_ahead_ = GetOptionInt("lookahead");
   }
@@ -88,11 +87,20 @@ class RedMemMovElimPass : public MaoPass {
                 Trace(1, "Found two insns with same mem op");
                 if (tracing_level() > 0) {
                   insn->PrintEntry(stderr);
-                  insn = insn->nextInstruction();
-                  while (insn != next) {
-                    insn->PrintEntry(stderr);
-                    insn = insn->nextInstruction();
+                  InstructionEntry *i2 = insn->nextInstruction();
+                  while (i2 != next) {
+                    i2->PrintEntry(stderr);
+                    i2 = i2->nextInstruction();
                   }
+                  next->PrintEntry(stderr);
+                }
+
+                // The memory load is redundant and
+                // can be replaced by a register.
+                // Now set next->op(0) to insn->op(1)
+                next->SetOperand(0, insn, 1);
+                if (tracing_level() > 0) {
+                  fprintf( stderr, " -->");
                   next->PrintEntry(stderr);
                 }
               }
