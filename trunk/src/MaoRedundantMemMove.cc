@@ -79,6 +79,7 @@ class RedMemMovElimPass : public MaoPass {
               break;  // defines something other than registers
 
             if (next->IsOpMov() &&
+                next->op() == insn->op() &&
                 next->IsRegisterOperand(1) &&
                 next->IsMemOperand(0)) {
               // now we have a second movl mem, reg
