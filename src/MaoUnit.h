@@ -339,14 +339,6 @@ class MaoEntry {
   const EntryID id() const { return id_; }
   void set_id(const EntryID id) {id_ = id;}
 
-  // Property methods
-  virtual bool HasFallThrough() const = 0;
-  virtual bool IsControlTransfer() const = 0;
-  virtual bool IsCondJump() const = 0;
-  virtual bool IsJump() const = 0;
-  virtual bool IsCall() const = 0;
-  virtual bool IsReturn() const = 0;
-
   bool IsInstruction() { return Type() == INSTRUCTION; }
   bool IsLabel() { return Type() == LABEL; }
   bool IsDirective() { return Type() == DIRECTIVE; }
@@ -420,14 +412,6 @@ class LabelEntry : public MaoEntry {
   virtual EntryType Type() const { return LABEL; }
   const char *name() { return name_; }
   virtual char GetDescriptiveChar() const { return 'L'; }
-
-  // Property methods
-  virtual bool HasFallThrough() const { return true; }
-  virtual bool IsControlTransfer() const { return false; }
-  virtual bool IsCondJump() const { return false; }
-  virtual bool IsJump() const { return false; }
-  virtual bool IsCall() const { return false; }
-  virtual bool IsReturn() const { return false; }
 
  private:
   const char *const name_;
@@ -553,14 +537,6 @@ class DirectiveEntry : public MaoEntry {
   virtual MaoEntry::EntryType  Type() const;
   virtual char GetDescriptiveChar() const {return 'D';}
 
-  // Property methods
-  virtual bool HasFallThrough() const { return false; }
-  virtual bool IsControlTransfer() const { return false; }
-  virtual bool IsCondJump() const { return false; }
-  virtual bool IsJump() const { return false; }
-  virtual bool IsCall() const { return false; }
-  virtual bool IsReturn() const { return false; }
-
  private:
   const std::string &OperandsToString(std::string *out) const;
   const std::string &OperandToString(const Operand &operand,
@@ -588,14 +564,6 @@ class DebugEntry : public MaoEntry {
   virtual void PrintIR(FILE *out) const;
   virtual MaoEntry::EntryType  Type() const;
   virtual char GetDescriptiveChar() const {return 'g';}
-
-  // Property methods
-  virtual bool HasFallThrough() const { return false; }
-  virtual bool IsControlTransfer() const { return false; }
-  virtual bool IsCondJump() const { return false; }
-  virtual bool IsJump() const { return false; }
-  virtual bool IsCall() const { return false; }
-  virtual bool IsReturn() const { return false; }
 
  private:
   // key_ holds the name of the directive.
@@ -628,14 +596,14 @@ class InstructionEntry : public MaoEntry {
   bool HasTarget() const;
 
   // Property methods.
-  virtual bool HasFallThrough() const;
-  virtual bool IsControlTransfer() const {
+  bool HasFallThrough() const;
+  bool IsControlTransfer() const {
     return HasTarget() || IsCall() || IsReturn();
   }
-  virtual bool IsCondJump() const;
-  virtual bool IsJump() const;
-  virtual bool IsCall() const;
-  virtual bool IsReturn() const;
+  bool IsCondJump() const;
+  bool IsJump() const;
+  bool IsCall() const;
+  bool IsReturn() const;
 
   int NumOperands() {
     return instruction()->operands;
