@@ -198,7 +198,9 @@ void CFGBuilder::Build() {
 
     // Check to see if this operation creates out edges
     int inserted_edges = 0;
-    if (entry->IsControlTransfer() && !entry->IsCall()) {
+    if (entry->IsInstruction() &&
+        entry->AsInstruction()->IsControlTransfer() &&
+        !entry->AsInstruction()->IsCall()) {
       typedef const char *Label;
       typedef std::vector<Label> LabelVector;
       LabelVector targets;
@@ -253,7 +255,8 @@ void CFGBuilder::Build() {
 
     // Check to see if this entry ends the current basic block
     if (EndsBasicBlock(entry)) {
-      create_fall_through = entry->HasFallThrough();
+      create_fall_through = (entry->IsInstruction() &&
+                             entry->AsInstruction()->HasFallThrough());
       previous = current;
       current = NULL;
 
@@ -267,7 +270,8 @@ void CFGBuilder::Build() {
 
   // Handle the case where a function ends with a basic block that
   // does not end in a jump instruction.
-  if (current != NULL && last_entry->HasFallThrough())
+  if (current != NULL && last_entry->IsInstruction() &&
+      last_entry->AsInstruction()->HasFallThrough())
     Link(current, sink, true);
 
   if (dump_vcg_)

@@ -238,13 +238,17 @@ class CFGBuilder : public MaoPass {
     }
   }
 
-  bool EndsBasicBlock(const MaoEntry *entry) {
-    bool has_fall_through = entry->HasFallThrough();
-    bool is_control_transfer = entry->IsControlTransfer();
-    bool is_call = entry->IsCall();
+  bool EndsBasicBlock(MaoEntry *entry) {
+    if (entry->IsInstruction()) {
+      InstructionEntry *insn = entry->AsInstruction();
+      bool has_fall_through = insn->HasFallThrough();
+      bool is_control_transfer = insn->IsControlTransfer();
+      bool is_call = insn->IsCall();
 
-    // TODO(nvachhar): Parameterize this to decide whether calls end BBs
-    return (is_control_transfer && !is_call) || !has_fall_through;
+      // TODO(nvachhar): Parameterize this to decide whether calls end BBs
+      return (is_control_transfer && !is_call) || !has_fall_through;
+    }
+    return false;
   }
 
   static BasicBlockEdge *Link(BasicBlock *source, BasicBlock *dest,
