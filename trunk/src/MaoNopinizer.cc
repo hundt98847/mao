@@ -37,8 +37,9 @@ MAO_OPTIONS_DEFINE(NOPIN, 3) {
 
 class NopInizerPass : public MaoPass {
  public:
-  NopInizerPass(MaoUnit *mao, const Function *func) :
-    MaoPass("NOPIN", mao->mao_options(), MAO_OPTIONS(NOPIN), false),
+  NopInizerPass(MaoUnit *mao, Function *func) :
+    MaoPass("NOPIN", mao->mao_options(), MAO_OPTIONS(NOPIN), false,
+            func->cfg()),
     mao_(mao), func_(func) {
     seed_ = GetOptionInt("seed");
     density_ = GetOptionInt("density");
@@ -57,7 +58,7 @@ class NopInizerPass : public MaoPass {
   bool Go() {
     if (!enabled()) return true;
 
-    int count_down =  (int) (1.0 * density_ * (rand() / (RAND_MAX + 1.0)));
+    int count_down = (int) (1.0 * density_ * (rand() / (RAND_MAX + 1.0)));
     FORALL_FUNC_ENTRY(func_,entry) {
       if (!entry->IsInstruction())
         continue;
@@ -76,13 +77,14 @@ class NopInizerPass : public MaoPass {
           entry->PrintEntry(stderr);
       }
     }
-    // TODO(rhundt): Invalidate CFG
+    if (cfg())
+      cfg()->InvalidateCFG(func_);
     return true;
   }
 
  private:
   MaoUnit        *mao_;
-  const Function *func_;
+  Function       *func_;
   int             seed_;
   int             density_;
   int             thick_;
@@ -92,7 +94,7 @@ class NopInizerPass : public MaoPass {
 // External Entry Point
 //
 
-void PerformNopinizer(MaoUnit *mao, const Function *func) {
+void PerformNopinizer(MaoUnit *mao, Function *func) {
   NopInizerPass nopin(mao, func);
   nopin.set_timed();
   nopin.Go();

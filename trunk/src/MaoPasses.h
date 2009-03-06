@@ -224,5 +224,5 @@ void PerformRedundantMemMoveElimination(MaoUnit *mao, const CFG *cfg);
 void PerformDeadCodeElimination(MaoUnit *mao, const CFG *cfg);
 void PerformMissDispElimination(MaoUnit *mao, const CFG *cfg);
 void PerformNopKiller(MaoUnit *mao, const Function *func);
-void PerformNopinizer(MaoUnit *mao, const Function *func);
+void PerformNopinizer(MaoUnit *mao,       Function *func);
 #endif   // MAP_PASSES_H_INCLUDED_
