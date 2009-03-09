@@ -34,7 +34,7 @@ MAO_OPTIONS_DEFINE(ZEE, 0) {
 class ZeroExtentElimPass : public MaoPass {
  public:
   ZeroExtentElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("ZEE", mao->mao_options(), MAO_OPTIONS(ZEE), true, cfg),
+    MaoPass("ZEE", mao->mao_options(), MAO_OPTIONS(ZEE), false, cfg),
     mao_(mao) {
   }
 
@@ -45,40 +45,60 @@ class ZeroExtentElimPass : public MaoPass {
   // extending def reg32
   //
   void DoElim() {
+    if (!enabled()) return;
+    std::list<InstructionEntry *> redundants;
+
     FORALL_CFG_BB(cfg(),it) {
+      MaoEntry *first = NULL;
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
+        if (!first) {
+          first = (*entry);
+          continue;
+        }
 
         if (insn->IsOpMov() &&
             insn->IsRegister32Operand(0) &&
             insn->IsRegister32Operand(1) &&
             insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1)) {
-          bool foundTrivalCase = false;
-
+          unsigned long long imask = GetRegisterDefMask(insn);
           InstructionEntry *prev = insn->prevInstruction();
-          if (prev) {
+          while (prev) {
             unsigned long long pmask = GetRegisterDefMask(prev);
-            if (pmask && pmask != REG_ALL) {
-              unsigned long long imask = GetRegisterDefMask(insn);
+            if (pmask == REG_ALL)  // insn with unknown side effects, stop
+              break;
+
+            if (pmask) {
               if (imask == pmask) {
                 Trace(1, "Found redundant zero-extend:");
                 if (tracing_level() > 0) {
-                  prev->PrintEntry(stderr);
+                  MaoEntry *curr = prev;
+                  while (curr != insn) {
+                    curr->PrintEntry(stderr);
+                    curr = curr->next();
+                  }
+                  fprintf(stderr, "  -->");
                   insn->PrintEntry(stderr);
-                }
-                foundTrivalCase = true;
-              }
-            }
-          }
-          if (!foundTrivalCase) {
-            Trace(1, "Found non-trivial zero-extent:");
-            if (tracing_level() > 0) {
-              insn->PrintEntry(stderr);
-            }
-          }
-        }
-      }
+                }  // tracing
+                redundants.push_back(insn);
+                break;
+              }  // def and use match
+              if (imask & pmask)  // some matching register parts are define
+                break;
+            }  // found mask for current instruction, going upward
+            prev = prev->prevInstruction();
+            if (prev == first)  // reached top of basic block
+              break;
+          }  // while previous instructions
+        }  // Starting from a sign-extend move
+      }  // Entries
+    }  // BB
+
+    // Now delete all the redundant ones.
+    for (std::list<InstructionEntry *>::iterator it = redundants.begin();
+         it != redundants.end(); ++it) {
+      mao_->DeleteEntry(*it);
     }
   }
 
