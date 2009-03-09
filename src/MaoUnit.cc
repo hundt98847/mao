@@ -593,11 +593,13 @@ bool MaoUnit::InSubSection(MaoEntry *entry) const {
 }
 
 void MaoUnit::DeleteEntry(MaoEntry *entry) {
-  // 1. Prev/next pointers around the tnry
+  // 1. Prev/next pointers around the entry
   MaoEntry *prev_entry = entry->prev();  // Possibly null
   MaoEntry *next_entry = entry->next();  // Possibly null
-  prev_entry->set_next(next_entry);
-  next_entry->set_prev(prev_entry);
+  if (prev_entry)
+    prev_entry->set_next(next_entry);
+  if (next_entry)
+    next_entry->set_prev(prev_entry);
 
   // 2. Remove it from entry_vector_
   entry_vector_[entry->id()] = NULL;
