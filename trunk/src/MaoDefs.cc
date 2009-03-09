@@ -275,3 +275,25 @@ void PrintRegisterDefMask(unsigned long long mask, FILE *f) {
   if (mask & REG_R14) fprintf(f, "r14 ");
   if (mask & REG_R15) fprintf(f, "r15 ");
 }
+
+// See whether pmask defines subregs masked in imask
+bool DefinesSubReg64(unsigned long long pmask,
+                     unsigned long long imask) {
+  if ((pmask & REG_RAX) == REG_RAX) {
+    if ((imask & REG_EAX) == REG_EAX)
+      return true;
+  }
+  if ((pmask & REG_RCX) == REG_RCX) {
+    if ((imask & REG_ECX) == REG_ECX)
+      return true;
+  }
+  if ((pmask & REG_RDX) == REG_RDX) {
+    if ((imask & REG_EDX) == REG_EDX)
+      return true;
+  }
+  if ((pmask & REG_RBX) == REG_RBX) {
+    if ((imask & REG_EBX) == REG_EBX)
+      return true;
+  }
+  return false;
+}

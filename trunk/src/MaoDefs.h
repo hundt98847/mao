@@ -73,6 +73,21 @@
 #define   REG_RSI     (1 << 30)
 #define   REG_RDI     (1 << 31)
 
+#define   REG_RAX_ALL (REG_RAX | REG_EAX | REG_AX | RAG_AH | REG_AL)
+#define   REG_RCX_ALL (REG_RCX | REG_ECX | REG_CX | RAG_CH | REG_CL)
+#define   REG_RDX_ALL (REG_RDX | REG_EDX | REG_DX | RAG_DH | REG_DL)
+#define   REG_RBX_ALL (REG_RBX | REG_EBX | REG_BX | RAG_BH | REG_BL)
+
+#define   REG_EAX_ALL (REG_EAX | REG_AX | RAG_AH | REG_AL)
+#define   REG_ECX_ALL (REG_ECX | REG_CX | RAG_CH | REG_CL)
+#define   REG_EDX_ALL (REG_EDX | REG_DX | RAG_DH | REG_DL)
+#define   REG_EBX_ALL (REG_EBX | REG_BX | RAG_BH | REG_BL)
+
+#define   REG_AX_ALL (REG_AX | RAG_AH | REG_AL)
+#define   REG_CX_ALL (REG_CX | RAG_CH | REG_CL)
+#define   REG_DX_ALL (REG_DX | RAG_DH | REG_DL)
+#define   REG_BX_ALL (REG_BX | RAG_BH | REG_BL)
+
 #define   REG_R8B     (1ULL << 32)
 #define   REG_R8W     (1ULL << 33)
 #define   REG_R8D     (1ULL << 34)
@@ -133,5 +148,7 @@ class InstructionEntry;
 unsigned long long GetRegisterDefMask(InstructionEntry *insn);
 void               PrintRegisterDefMask(unsigned long long mask, FILE *f);
 unsigned long long GetMaskForRegister(const char *reg);
+bool               DefinesSubReg64(unsigned long long pmask,
+                                   unsigned long long imask);
 
 #endif // __MAODEFS_H_INCLUDED
