@@ -606,10 +606,19 @@ struct _reg_entry
 {
   char *reg_name;
   i386_operand_type reg_type;
-  unsigned int reg_flags;
+  unsigned char reg_flags;
 #define RegRex	    0x1  /* Extended register.  */
 #define RegRex64    0x2  /* Extended 8 bit register.  */
-  unsigned int reg_num;
+  unsigned char reg_num;
+#define RegRip	((unsigned char ) ~0)
+#define RegEip	(RegRip - 1)
+/* EIZ and RIZ are fake index registers.  */
+#define RegEiz	(RegEip - 1)
+#define RegRiz	(RegEiz - 1)
+/* FLAT is a fake segment register (Intel mode).  */
+#define RegFlat     ((unsigned char) ~0)
+  signed char dw2_regnum[2];
+#define Dw2Inval (-1)
 };
 
 typedef struct i386InsnTemplate
