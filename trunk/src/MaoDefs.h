@@ -32,6 +32,58 @@
 #define  DEF_OP_ALL (DEF_OP0 | DEF_OP1 | DEF_OP2 | DEF_OP3 | DEF_OP4 | DEF_OP5)
 
 // Bitmasks for registers
+class BitString {
+ public:
+  BitString(int index) {
+    for (int i = 0; i < 4; i++) 
+      word[i] = 0;
+    Set(index);
+  }
+
+  void Set(int index) {
+    word[index / (sizeof(unsigned long long) * 8)] |= 
+      1ull << (index % (sizeof(unsigned long long) * 8));
+  }  
+
+  bool Get(int index) {
+    return word[index / (sizeof(unsigned long long) * 8)] &
+      (1ull << (index % (sizeof(unsigned long long) * 8)));
+  }
+
+  // Union
+  BitString &operator+(const BitString &b) {
+    for (int i = 0; i < 4; i++) 
+      word[i] |= b.word[i];
+    return *this;
+  }
+
+  // Intersect
+  BitString &operator-(const BitString &b) {
+    for (int i = 0; i < 4; i++) 
+      word[i] &= b.word[i];
+    return *this;
+  }
+
+  bool IsEmpty() {
+    return !word[0] && !word[1] && !word[2] && !word[3];
+  }
+
+  bool operator==(const BitString &b) {
+    return 
+      word[0] == b.word[0] &&
+      word[1] == b.word[1] &&
+      word[2] == b.word[2] &&
+      word[3] == b.word[3];
+  }
+
+  void Print() {
+    fprintf(stderr, "bits: %llx:%llx:%llx:%llx\n",
+	    word[3], word[2], word[1], word[0] );
+  }
+
+ private:
+  unsigned long long word[4]; // 256 bits
+};
 
 // 8-bit
 #define   REG_AL      (1 <<  0)
