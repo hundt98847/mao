@@ -71,6 +71,7 @@ class BitString {
     return bs;
   }
 
+  // Remove bits
   BitString operator - (const BitString &b) {
     BitString bs(word[0] & !b.word[0],
                  word[1] & !b.word[1],
