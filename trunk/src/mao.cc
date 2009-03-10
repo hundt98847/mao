@@ -80,6 +80,7 @@ int main(int argc, const char *argv[]) {
                                        CFG::GetCFG(&mao_unit, function));
     PerformMissDispElimination(&mao_unit,
                                CFG::GetCFG(&mao_unit, function));
+    PerformLongInstructionSplit(&mao_unit, function);
     DoLoopAlign(&mao_unit, function);
   }
 

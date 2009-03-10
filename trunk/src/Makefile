@@ -83,6 +83,7 @@ CCSRCS=						\
 	MaoDefs.cc				\
 	MaoDebug.cc				\
 	Maoi386Size.cc				\
+	MaoLongInstructionSplit.cc		\
 	MaoLoopAlign.cc				\
 	MaoLoops.cc				\
 	MaoMissDisp.cc				\
