@@ -277,7 +277,6 @@ LabelEntry *MaoUnit::GetLabelEntry(const char *label_name) const {
 
 static struct i386InsnTemplate FindTemplate(const char *opcode,
                                             unsigned int base_opcode) {
-  extern i386InsnTemplate i386_optab[];
   for (int i = 0;; ++i) {
     if (!i386_optab[i].name)
       break;
