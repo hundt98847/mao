@@ -54,6 +54,7 @@ class RegProps {
 // Maintain maps to allow fast register (property) lookup by
 //   name
 //   property entry
+//   register number
 //
 typedef std::map<const char *, RegProps *, ltstr> RegNameMap;
 static RegNameMap reg_name_map;
@@ -85,9 +86,6 @@ int reg_max = 0;
 void ReadRegisterTable() {
   int i;
   for (i = 0; ; ++i) {
-    // every register needs a bit, we therefore start numbering
-    // at i+1.
-    //
     RegProps *r = new RegProps(&i386_regtab[i], i);
 
     reg_name_map[i386_regtab[i].reg_name] = r;
@@ -228,6 +226,10 @@ BitString &GetMaskForRegister(const char *reg) {
   return rprops->sub_regs();
 }
 
+// For an instruction, check def masks, chec
+// operands and if they define a register, add
+// the masks to the results.
+//
 BitString GetRegisterDefMask(InstructionEntry *insn) {
   DefEntry *e = &def_entries[insn->op()];
   MAO_ASSERT(e->opcode = insn->op());
