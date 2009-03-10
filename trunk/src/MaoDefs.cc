@@ -24,119 +24,144 @@
 
 class RegProps {
  public:
-  RegProps(const char *name,
-	   unsigned long long mask) : name_(name), mask_(mask) {}
+  RegProps(reg_entry  *reg,
+	   int         num) : 
+    reg_(reg),
+    num_(num),
+    mask_(num),
+    sub_regs_(num) 
+  {}
 
-  unsigned long long mask() { return mask_; }
-  const char * name() { return name_; }
+  BitString  &mask() { return mask_; }
+  BitString  &subs() { return sub_regs_; }
+  const char *name() { return reg_->reg_name; }
+
+  void        AddSubReg(BitString &bstr) {
+    sub_regs_ = sub_regs_ + bstr;
+  }
 
  private:
-  const char *       name_;
-  unsigned long long mask_;
+  reg_entry *        reg_;
+  int                num_;
+  BitString          mask_;
+  BitString          sub_regs_;
 };
 
-typedef std::map<const char *, RegProps *, ltstr> RegMap;
-static RegMap *reg_map = NULL;
+typedef std::map<const char *, RegProps *, ltstr> RegNameMap;
+static RegNameMap reg_name_map;
 
-static RegProps *RegReg(const char *name, 
-			const char *alias, 
-			unsigned long long mask) {
-  RegProps *r = new RegProps(name, mask);
-  (*reg_map)[name] = r;
-  if (alias)
-    (*reg_map)[alias] = r;
-  return r;
+typedef std::map<reg_entry *, RegProps *> RegPtrMap;
+static RegPtrMap reg_ptr_map;
+
+// Create a register alias
+//
+static void AddAlias(const char *name, 
+		     const char *alias) {
+  RegNameMap::iterator it = reg_name_map.find(name);
+
+  MAO_ASSERT(it != reg_name_map.end());
+  MAO_ASSERT(reg_name_map.find(alias) == reg_name_map.end());
+
+  reg_name_map[alias] = (*it).second;
+}
+
+
+// Read Register Table, give every register a unique bit,
+// create RegProps object for each register.
+//
+void ReadRegisterTable() {
+  extern reg_entry i386_regtab[];
+
+  for (unsigned int i = 0; ; ++i) {
+    RegProps *r = new RegProps(&i386_regtab[i], i);
+    reg_name_map[i386_regtab[i].reg_name] = r;
+    reg_ptr_map[&i386_regtab[i]] = r;
+
+    if (!strcmp("mxcsr", i386_regtab[i].reg_name))
+      break;
+  }
+}
+
+// Create Subreg Relations
+//
+void AddSubRegs(const char *r64, const char *r32,
+		const char *r16, const char *r8) {
+  RegProps *p64 = reg_name_map.find(r64)->second;
+  RegProps *p32 = reg_name_map.find(r32)->second;
+  RegProps *p16 = reg_name_map.find(r16)->second;
+  RegProps *p8  = reg_name_map.find(r8)->second;
+  p16->AddSubReg(p8->mask());
+  p32->AddSubReg(p16->subs());
+  p64->AddSubReg(p32->subs());
 }
 
 static void InitRegProps() {
-  reg_map = new RegMap;
+  ReadRegisterTable();
 
-  RegReg("al",  "r0b", REG_AL);
-  RegReg("ah",  NULL,  REG_AH);
-  RegReg("ax",  "r0w", REG_AX  | REG_AH  | REG_AL);
-  RegReg("eax", "r0d", REG_EAX | REG_AX  | REG_AH | REG_AL);
-  RegReg("rax", "r0",  REG_RAX | REG_EAX | REG_AX | REG_AH | REG_AL);
+  AddAlias("al",  "r0b");
+  AddAlias("ax",  "r0w");
+  AddAlias("eax", "r0d");
+  AddAlias("rax", "r0");
 
-  RegReg("cl",  "r1b", REG_CL);
-  RegReg("ch",  NULL,  REG_CH);
-  RegReg("cx",  "r1w", REG_CX  | REG_CH  | REG_CL);
-  RegReg("ecx", "r1d", REG_ECX | REG_CX  | REG_CH | REG_CL);
-  RegReg("rcx", "r1",  REG_RCX | REG_ECX | REG_CX | REG_CH | REG_CL);
+  AddAlias("cl",  "r1b");
+  AddAlias("cx",  "r1w");
+  AddAlias("ecx", "r1d");
+  AddAlias("rcx", "r1");
 
-  RegReg("dl",  "r2b", REG_DL);
-  RegReg("dh",  NULL,  REG_DH);
-  RegReg("dx",  "r2w", REG_DX  | REG_DH  | REG_DL);
-  RegReg("edx", "r2d", REG_EDX | REG_DX  | REG_DH | REG_DL);
-  RegReg("rdx", "r2",  REG_RDX | REG_EDX | REG_DX | REG_DH | REG_DL);
+  AddAlias("dl",  "r2b");
+  AddAlias("dx",  "r2w");
+  AddAlias("edx", "r2d");
+  AddAlias("rdx", "r2");
 
-  RegReg("bl",  "r3b", REG_BL);
-  RegReg("bh",  NULL,  REG_BH);
-  RegReg("bx",  "r3w", REG_BX  | REG_BH  | REG_BL);
-  RegReg("ebx", "r3d", REG_EBX | REG_BX  | REG_BH | REG_BL);
-  RegReg("rbx", "r3",  REG_RBX | REG_EBX | REG_BX | REG_BH | REG_BL);
+  AddAlias("bl",  "r3b");
+  AddAlias("bx",  "r3w");
+  AddAlias("ebx", "r3d");
+  AddAlias("rbx", "r3");
 
-  // TODO(rhundt): Model SPL
-  RegReg("sp",  "r4w", REG_SP);
-  RegReg("esp", "r4d", REG_ESP | REG_SP);
-  RegReg("rsp", "r4",  REG_RSP | REG_ESP | REG_SP);
+  AddAlias("spl", "r4b");
+  AddAlias("sp",  "r4w");
+  AddAlias("esp", "r4d");
+  AddAlias("rsp", "r4");
 
-  RegReg("bp",  "r5w", REG_BP);
-  RegReg("ebp", "r5d", REG_EBP | REG_BP);
-  RegReg("rbp", "r5",  REG_RBP | REG_EBP | REG_BP);
+  AddAlias("bpl",  "r5b");
+  AddAlias("bp",  "r5w");
+  AddAlias("ebp", "r5d");
+  AddAlias("rbp", "r5");
 
-  RegReg("si",  "r6w", REG_SI);
-  RegReg("esi", "r6d", REG_ESI | REG_SI);
-  RegReg("rsi", "r6",  REG_RSI | REG_ESI | REG_SI);
+  AddAlias("sil", "r5bw");
+  AddAlias("si",  "r6w");
+  AddAlias("esi", "r6d");
+  AddAlias("rsi", "r6");
 
-  RegReg("di",  "r7w", REG_DI);
-  RegReg("edi", "r7d", REG_EDI | REG_DI);
-  RegReg("rdi", "r7",  REG_RDI | REG_EDI | REG_DI);
+  AddAlias("dil", "r7b");
+  AddAlias("di",  "r7w");
+  AddAlias("edi", "r7d");
+  AddAlias("rdi", "r7");
 
-  RegReg("r8b", NULL, REG_R8B);
-  RegReg("r8w", NULL, REG_R8W | REG_R8B);
-  RegReg("r8d", NULL, REG_R8D | REG_R8W | REG_R8B);
-  RegReg("r8",  NULL, REG_R8  | REG_R8D | REG_R8W | REG_R8B);
-
-  RegReg("r9b", NULL, REG_R9B);
-  RegReg("r9w", NULL, REG_R9W | REG_R9B);
-  RegReg("r9d", NULL, REG_R9D | REG_R9W | REG_R9B);
-  RegReg("r9",  NULL, REG_R9  | REG_R9D | REG_R9W | REG_R9B);
-
-  RegReg("r10b", NULL, REG_R10B);
-  RegReg("r10w", NULL, REG_R10W | REG_R10B);
-  RegReg("r10d", NULL, REG_R10D | REG_R10W | REG_R10B);
-  RegReg("r10",  NULL, REG_R10  | REG_R10D | REG_R10W | REG_R10B);
-
-  RegReg("r11b", NULL, REG_R11B);
-  RegReg("r11w", NULL, REG_R11W | REG_R11B);
-  RegReg("r11d", NULL, REG_R11D | REG_R11W | REG_R11B);
-  RegReg("r11",  NULL, REG_R11  | REG_R11D | REG_R11W | REG_R11B);
-
-  RegReg("r12b", NULL, REG_R12B);
-  RegReg("r12w", NULL, REG_R12W | REG_R12B);
-  RegReg("r12d", NULL, REG_R12D | REG_R12W | REG_R12B);
-  RegReg("r12",  NULL, REG_R12  | REG_R12D | REG_R12W | REG_R12B);
-
-  RegReg("r13b", NULL, REG_R13B);
-  RegReg("r13w", NULL, REG_R13W | REG_R13B);
-  RegReg("r13d", NULL, REG_R13D | REG_R13W | REG_R13B);
-  RegReg("r13",  NULL, REG_R13  | REG_R13D | REG_R13W | REG_R13B);
-
-  RegReg("r14b", NULL, REG_R14B);
-  RegReg("r14w", NULL, REG_R14W | REG_R14B);
-  RegReg("r14d", NULL, REG_R14D | REG_R14W | REG_R14B);
-  RegReg("r14",  NULL, REG_R14  | REG_R14D | REG_R14W | REG_R14B);
-
-  RegReg("r15b", NULL, REG_R15B);
-  RegReg("r15w", NULL, REG_R15W | REG_R15B);
-  RegReg("r15d", NULL, REG_R15D | REG_R15W | REG_R15B);
-  RegReg("r15",  NULL, REG_R15  | REG_R15D | REG_R15W | REG_R15B);
+  AddSubRegs("rax", "eax", "ax", "al");
+  AddSubRegs("rcx", "ecx", "cx", "cl");
+  AddSubRegs("rdx", "edx", "dx", "dl");
+  AddSubRegs("rbx", "ebx", "bx", "bl");
+  AddSubRegs("rsp", "esp", "sp", "spl");
+  AddSubRegs("rbp", "ebp", "bp", "bpl");
+  AddSubRegs("rsi", "esi", "si", "sil");
+  AddSubRegs("rdi", "edi", "di", "dil");
+  AddSubRegs("r8" , "r8d",  "r8w",  "r8b");
+  AddSubRegs("r9" , "r9d",  "r9w",  "r9b");
+  AddSubRegs("r10", "r10d", "r10w", "r10b");
+  AddSubRegs("r11", "r11d", "r11w", "r11b");
+  AddSubRegs("r12", "r12d", "r12w", "r12b");
+  AddSubRegs("r13", "r13d", "r13w", "r13b");
+  AddSubRegs("r14", "r14d", "r14w", "r14b");
+  AddSubRegs("r15", "r15d", "r15w", "r15b");
 }
 
 unsigned long long GetMaskForRegister(const char *reg) {
   static bool regs_initialized = false;
-  if (!regs_initialized) 
+  if (!regs_initialized) { 
     InitRegProps();
+    regs_initialized = true;
+  }
 
   unsigned long long mask = 0ULL;
 
