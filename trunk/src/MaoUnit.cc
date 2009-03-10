@@ -1110,7 +1110,7 @@ MaoEntry::EntryType InstructionEntry::Type() const {
   return INSTRUCTION;
 }
 
-const char *InstructionEntry::GetOp() const {
+const char *InstructionEntry::op_str() const {
   MAO_ASSERT(instruction_);
   MAO_ASSERT(instruction_->tm.name);
   return(instruction_->tm.name);

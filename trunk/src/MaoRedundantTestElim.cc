@@ -78,7 +78,7 @@ class RedTestElimPass : public MaoPass {
 		prev->GetRegisterOperand(op_index) == insn->GetRegisterOperand(0)) {
               redundants.push_back(insn);
 
-	      Trace(1, "Found %s/test seq", prev->GetOp());
+	      Trace(1, "Found %s/test seq", prev->op_str());
 	      if (tracing_level() > 0) {
 		prev->PrintEntry(stderr);
 		insn->PrintEntry(stderr);

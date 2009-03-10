@@ -588,14 +588,12 @@ class InstructionEntry : public MaoEntry {
   void PrintInstruction(FILE *out) const;
   static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
 
-  const char *GetOp() const;
+  const char *op_str() const;
   MaoOpcode   op() const { return op_; }
-  bool        IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
   void        set_op(MaoOpcode op) { op_ = op; }
 
-  bool HasTarget() const;
-
   // Property methods.
+  bool HasTarget() const;
   bool HasFallThrough() const;
   bool IsControlTransfer() const {
     return HasTarget() || IsCall() || IsReturn();
@@ -604,6 +602,8 @@ class InstructionEntry : public MaoEntry {
   bool IsJump() const;
   bool IsCall() const;
   bool IsReturn() const;
+  bool IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
+
 
   int NumOperands() {
     return instruction()->operands;
