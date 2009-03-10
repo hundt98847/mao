@@ -62,14 +62,14 @@ class ZeroExtentElimPass : public MaoPass {
             insn->IsRegister32Operand(0) &&
             insn->IsRegister32Operand(1) &&
             insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1)) {
-          unsigned long long imask = GetRegisterDefMask(insn);
+          BitString imask = GetRegisterDefMask(insn);
           InstructionEntry *prev = insn->prevInstruction();
           while (prev) {
-            unsigned long long pmask = GetRegisterDefMask(prev);
-            if (pmask == REG_ALL)  // insn with unknown side effects, stop
+            BitString pmask = GetRegisterDefMask(prev);
+            if (pmask.IsUndef())  // insn with unknown side effects, stop
               break;
 
-            if (pmask) {
+            if (pmask.IsNonNull()) {
               if (imask == pmask) {
                 Trace(1, "Found redundant zero-extend:");
                 if (tracing_level() > 0) {
@@ -84,12 +84,15 @@ class ZeroExtentElimPass : public MaoPass {
                 redundants.push_back(insn);
                 break;
               }  // def and use match
-              if (imask & pmask)  // some matching register parts are define
-                break;
+
+              if ((imask & pmask).IsNonNull())
+                break; // some matching register parts are define
+
             }  // found mask for current instruction, going upward
             prev = prev->prevInstruction();
             if (prev == first)  // reached top of basic block
               break;
+
           }  // while previous instructions
         }  // Starting from a sign-extend move
       }  // Entries
