@@ -49,7 +49,7 @@ class InstructionEntry;
 BitString  GetRegisterDefMask(InstructionEntry *insn);
 void       PrintRegisterDefMask(FILE *f, BitString mask,
                                 const char *title = NULL);
-BitString &GetMaskForRegister(const char *reg);
+BitString  GetMaskForRegister(const char *reg);
 bool       DefinesSubReg(struct reg_entry *reg,
                          struct reg_entry *sub_reg);
 

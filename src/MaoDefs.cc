@@ -65,6 +65,10 @@ static RegPtrMap reg_ptr_map;
 typedef std::map<int , RegProps *> RegNumMap;
 static RegNumMap reg_num_map;
 
+// maintain pointer to rip - it's always modified, for every insn
+//
+static RegProps *rip_props = NULL;
+
 // Create a register alias, simply enter another name
 // into the name map.
 //
@@ -92,10 +96,14 @@ void ReadRegisterTable() {
     reg_ptr_map[&i386_regtab[i]] = r;
     reg_num_map[i] = r;
 
+    if (!strcmp("rip", i386_regtab[i].reg_name))
+      rip_props = r;
+
     if (!strcmp("mxcsr", i386_regtab[i].reg_name))
       break;
   }
   reg_max = i;
+  MAO_ASSERT(rip_props);
 }
 
 // Create Subreg Relations by populating registers
@@ -107,14 +115,18 @@ void AddSubRegs(const char *r64, const char *r32,
                 const char *r8h = NULL) {
   RegProps *p64 = reg_name_map.find(r64)->second;
   RegProps *p32 = reg_name_map.find(r32)->second;
-  RegProps *p16 = reg_name_map.find(r16)->second;
-  RegProps *p8  = reg_name_map.find(r8)->second;
-  p16->AddSubReg(p8->mask());
-  if (r8h) {
-    RegProps *p8h = reg_name_map.find(r8h)->second;
-    p16->AddSubReg(p8h->mask());
+  if (r16) {
+    RegProps *p16 = reg_name_map.find(r16)->second;
+    if (r8) {
+      RegProps *p8  = reg_name_map.find(r8)->second;
+      p16->AddSubReg(p8->mask());
+      if (r8h) {
+        RegProps *p8h = reg_name_map.find(r8h)->second;
+        p16->AddSubReg(p8h->mask());
+      }
+    }
+    p32->AddSubReg(p16->sub_regs());
   }
-  p32->AddSubReg(p16->sub_regs());
   p64->AddSubReg(p32->sub_regs());
 }
 
@@ -202,6 +214,7 @@ static void InitRegProps() {
   AddSubRegs("r13", "r13d", "r13w", "r13b");
   AddSubRegs("r14", "r14d", "r14w", "r14b");
   AddSubRegs("r15", "r15d", "r15w", "r15b");
+  AddSubRegs("rip", "eip", NULL, NULL);
 
   for (unsigned int i = 0; i < def_entries_size; i++) {
     FillSubRegs(&def_entries[i].reg_mask);
@@ -215,14 +228,12 @@ static void InitRegProps() {
 // For a given register name, return it's
 // sub-register mask.
 //
-BitString &GetMaskForRegister(const char *reg) {
-  static bool regs_initialized = false;
-  if (!regs_initialized) {
-    InitRegProps();
-    regs_initialized = true;
-  }
+BitString GetMaskForRegister(const char *reg) {
+  if (!reg)
+    return BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull);
 
   RegProps *rprops = reg_name_map.find(reg)->second;
+  MAO_ASSERT(rprops);
   return rprops->sub_regs();
 }
 
@@ -231,10 +242,16 @@ BitString &GetMaskForRegister(const char *reg) {
 // the masks to the results.
 //
 BitString GetRegisterDefMask(InstructionEntry *insn) {
+  static bool regs_initialized = false;
+  if (!regs_initialized) {
+    InitRegProps();
+    regs_initialized = true;
+  }
+
   DefEntry *e = &def_entries[insn->op()];
   MAO_ASSERT(e->opcode = insn->op());
 
-  BitString mask = e->reg_mask;
+  BitString mask = e->reg_mask | rip_props->sub_regs();
 
   // check 1st operand. If it is 8/16/32/64 bit operand, see whether
   // there are special register masks stored for insn.
