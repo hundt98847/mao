@@ -38,20 +38,11 @@ typedef struct frag fragS;
 typedef asection *segT;
 //typedef int subsegT;
 
-typedef struct _reg_entry reg_entry;
-
 #include "flonum.h"
 #include "expr.h"
 #include "struc-symbol.h"
 
 #define MAX_PREFIXES 6	/* max prefixes per opcode */
-
-typedef struct
-{
-  char *seg_name;
-  unsigned int seg_prefix;
-}
-seg_entry;
 
 /* 386 operand encoding bytes:  see 386 book for details of this.  */
 typedef struct
@@ -86,7 +77,7 @@ sib_byte;
 
 
 struct expressionS;
-
+struct reg_entry;
 
 /* VEX prefix.  */
 typedef struct
@@ -97,16 +88,6 @@ typedef struct
   /* Destination or source register specifier.  */
   const reg_entry *register_specifier;
 } vex_prefix;
-
-
-
-union i386_op
-  {
-    expressionS *disps;
-    expressionS *imms;
-    const reg_entry *regs;
-  };
-
 
 // copy from i396-opc.h, struct template
 //
@@ -245,128 +226,6 @@ typedef union i386_cpu_flags
   unsigned int array[CpuNumOfUints];
 } i386_cpu_flags;
 
-// /* Position of opcode_modifier bits.  */
-
-// /* has direction bit. */
-// #define D			0
-// /* set if operands can be words or dwords encoded the canonical way */
-// #define W			(D + 1)
-// /* insn has a modrm byte. */
-// #define Modrm			(W + 1)
-// /* register is in low 3 bits of opcode */
-// #define ShortForm		(Modrm + 1)
-// /* special case for jump insns.  */
-// #define Jump			(ShortForm + 1)
-// /* call and jump */
-// #define JumpDword		(Jump + 1)
-// /* loop and jecxz */
-// #define JumpByte		(JumpDword + 1)
-// /* special case for intersegment leaps/calls */
-// #define JumpInterSegment	(JumpByte + 1)
-// /* FP insn memory format bit, sized by 0x4 */
-// #define FloatMF			(JumpInterSegment + 1)
-// /* src/dest swap for floats. */
-// #define FloatR			(FloatMF + 1)
-// /* has float insn direction bit. */
-// #define FloatD			(FloatR + 1)
-// /* needs size prefix if in 32-bit mode */
-// #define Size16			(FloatD + 1)
-// /* needs size prefix if in 16-bit mode */
-// #define Size32			(Size16 + 1)
-// /* needs size prefix if in 64-bit mode */
-// #define Size64			(Size32 + 1)
-// /* instruction ignores operand size prefix and in Intel mode ignores
-//    mnemonic size suffix check.  */
-// #define IgnoreSize		(Size64 + 1)
-// /* default insn size depends on mode */
-// #define DefaultSize		(IgnoreSize + 1)
-// /* b suffix on instruction illegal */
-// #define No_bSuf			(DefaultSize + 1)
-// /* w suffix on instruction illegal */
-// #define No_wSuf			(No_bSuf + 1)
-// /* l suffix on instruction illegal */
-// #define No_lSuf			(No_wSuf + 1)
-// /* s suffix on instruction illegal */
-// #define No_sSuf			(No_lSuf + 1)
-// /* q suffix on instruction illegal */
-// #define No_qSuf			(No_sSuf + 1)
-// /* long double suffix on instruction illegal */
-// #define No_ldSuf		(No_qSuf + 1)
-// /* instruction needs FWAIT */
-// #define FWait			(No_ldSuf + 1)
-// /* quick test for string instructions */
-// #define IsString		(FWait + 1)
-// /* fake an extra reg operand for clr, imul and special register
-//    processing for some instructions.  */
-// #define RegKludge		(IsString + 1)
-// /* The first operand must be xmm0 */
-// #define FirstXmm0		(RegKludge + 1)
-// /* An implicit xmm0 as the first operand */
-// #define Implicit1stXmm0		(FirstXmm0 + 1)
-// /* BYTE is OK in Intel syntax. */
-// #define ByteOkIntel		(Implicit1stXmm0 + 1)
-// /* Convert to DWORD */
-// #define ToDword			(ByteOkIntel + 1)
-// /* Convert to QWORD */
-// #define ToQword			(ToDword + 1)
-// /* Address prefix changes operand 0 */
-// #define AddrPrefixOp0		(ToQword + 1)
-// /* opcode is a prefix */
-// #define IsPrefix		(AddrPrefixOp0 + 1)
-// /* instruction has extension in 8 bit imm */
-// #define ImmExt			(IsPrefix + 1)
-// /* instruction don't need Rex64 prefix.  */
-// #define NoRex64			(ImmExt + 1)
-// /* instruction require Rex64 prefix.  */
-// #define Rex64			(NoRex64 + 1)
-// /* deprecated fp insn, gets a warning */
-// #define Ugh			(Rex64 + 1)
-// #define Drex			(Ugh + 1)
-// /* instruction needs DREX with multiple encodings for memory ops */
-// #define Drexv			(Drex + 1)
-// /* special DREX for comparisons */
-// #define Drexc			(Drexv + 1)
-// /* insn has VEX prefix. */
-// #define Vex			(Drexc + 1)
-// /* insn has 256bit VEX prefix. */
-// #define Vex256			(Vex + 1)
-// /* insn has VEX NDS. Register-only source is encoded in Vex
-//    prefix. */
-// #define VexNDS			(Vex256 + 1)
-// /* insn has VEX NDD. Register destination is encoded in Vex
-//    prefix. */
-// #define VexNDD			(VexNDS + 1)
-// /* insn has VEX W0. */
-// #define VexW0			(VexNDD + 1)
-// /* insn has VEX W1. */
-// #define VexW1			(VexW0 + 1)
-// /* insn has VEX 0x0F opcode prefix. */
-// #define Vex0F			(VexW1 + 1)
-// /* insn has VEX 0x0F38 opcode prefix. */
-// #define Vex0F38			(Vex0F + 1)
-// /* insn has VEX 0x0F3A opcode prefix. */
-// #define Vex0F3A			(Vex0F38 + 1)
-// /* insn has VEX prefix with 3 soures. */
-// #define Vex3Sources		(Vex0F3A + 1)
-// /* instruction has VEX 8 bit imm */
-// #define VexImmExt		(Vex3Sources + 1)
-// /* SSE to AVX support required */
-// #define SSE2AVX			(VexImmExt + 1)
-// /* No AVX equivalent */
-// #define NoAVX			(SSE2AVX + 1)
-// /* Compatible with old (<= 2.8.1) versions of gcc  */
-// #define OldGcc			(NoAVX + 1)
-// /* AT&T mnemonic.  */
-// #define ATTMnemonic		(OldGcc + 1)
-// /* AT&T syntax.  */
-// #define ATTSyntax		(ATTMnemonic + 1)
-// /* Intel syntax.  */
-// #define IntelSyntax		(ATTSyntax + 1)
-// /* The last bitfield in i386_opcode_modifier.  */
-// #define Opcode_Modifier_Max	IntelSyntax
-
-
-
 typedef struct i386_opcode_modifier
 {
   unsigned int d:1;
@@ -426,7 +285,6 @@ typedef struct i386_opcode_modifier
   unsigned int attsyntax:1;
   unsigned int intelsyntax:1;
 } i386_opcode_modifier;
-
 
 /* Position of operand_type bits.  */
 
@@ -601,26 +459,6 @@ typedef union i386_operand_type
   unsigned int array[OTNumOfUints];
 } i386_operand_type;
 
-/* these are for register name --> number & type hash lookup */
-struct _reg_entry
-{
-  char *reg_name;
-  i386_operand_type reg_type;
-  unsigned char reg_flags;
-#define RegRex	    0x1  /* Extended register.  */
-#define RegRex64    0x2  /* Extended 8 bit register.  */
-  unsigned char reg_num;
-#define RegRip	((unsigned char ) ~0)
-#define RegEip	(RegRip - 1)
-/* EIZ and RIZ are fake index registers.  */
-#define RegEiz	(RegEip - 1)
-#define RegRiz	(RegEiz - 1)
-/* FLAT is a fake segment register (Intel mode).  */
-#define RegFlat     ((unsigned char) ~0)
-  signed char dw2_regnum[2];
-#define Dw2Inval (-1)
-};
-
 typedef struct i386InsnTemplate
 {
   /* instruction name sans width suffix ("mov" for movl insns) */
@@ -664,6 +502,52 @@ typedef struct i386InsnTemplate
   i386_operand_type operand_types[MAX_OPERANDS];
 }
 i386InsnTemplate;
+
+extern const i386InsnTemplate i386_optab[];
+
+/* these are for register name --> number & type hash lookup */
+typedef struct reg_entry
+{
+  char *reg_name;
+  i386_operand_type reg_type;
+  unsigned char reg_flags;
+#define RegRex	    0x1  /* Extended register.  */
+#define RegRex64    0x2  /* Extended 8 bit register.  */
+  unsigned char reg_num;
+#define RegRip	((unsigned char ) ~0)
+#define RegEip	(RegRip - 1)
+/* EIZ and RIZ are fake index registers.  */
+#define RegEiz	(RegEip - 1)
+#define RegRiz	(RegEiz - 1)
+/* FLAT is a fake segment register (Intel mode).  */
+#define RegFlat     ((unsigned char) ~0)
+  signed char dw2_regnum[2];
+#define Dw2Inval (-1)
+}
+reg_entry;
+
+/* Entries in i386_regtab.  */
+#define REGNAM_AL 1
+#define REGNAM_AX 25
+#define REGNAM_EAX 41
+
+extern const reg_entry i386_regtab[];
+extern const unsigned int i386_regtab_size;
+
+typedef struct
+{
+  char *seg_name;
+  unsigned int seg_prefix;
+}
+seg_entry;
+
+union i386_op
+  {
+    expressionS *disps;
+    expressionS *imms;
+    const reg_entry *regs;
+  };
+
 
 // copy from tc-i386.c
 //

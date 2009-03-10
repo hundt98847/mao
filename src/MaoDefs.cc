@@ -24,12 +24,12 @@
 
 class RegProps {
  public:
-  RegProps(reg_entry  *reg,
-	   int         num) : 
+  RegProps(const reg_entry *reg,
+	   int              num) :
     reg_(reg),
     num_(num),
     mask_(num),
-    sub_regs_(num) 
+    sub_regs_(num)
   {}
 
   BitString  &mask() { return mask_; }
@@ -41,7 +41,7 @@ class RegProps {
   }
 
  private:
-  reg_entry *        reg_;
+  const reg_entry *  reg_;
   int                num_;
   BitString          mask_;
   BitString          sub_regs_;
@@ -50,12 +50,12 @@ class RegProps {
 typedef std::map<const char *, RegProps *, ltstr> RegNameMap;
 static RegNameMap reg_name_map;
 
-typedef std::map<reg_entry *, RegProps *> RegPtrMap;
+typedef std::map<const reg_entry *, RegProps *> RegPtrMap;
 static RegPtrMap reg_ptr_map;
 
 // Create a register alias
 //
-static void AddAlias(const char *name, 
+static void AddAlias(const char *name,
 		     const char *alias) {
   RegNameMap::iterator it = reg_name_map.find(name);
 
@@ -70,8 +70,6 @@ static void AddAlias(const char *name,
 // create RegProps object for each register.
 //
 void ReadRegisterTable() {
-  extern reg_entry i386_regtab[];
-
   for (unsigned int i = 0; ; ++i) {
     RegProps *r = new RegProps(&i386_regtab[i], i);
     reg_name_map[i386_regtab[i].reg_name] = r;
