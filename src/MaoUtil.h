@@ -18,9 +18,119 @@
 #ifndef MAOUTIL_H_
 #define MAOUTIL_H_
 
-struct MaoStringPiece {
-  const char *data;
-  int length;
+// BitString implementation, 256 bits
+//
+class BitString {
+ public:
+  BitString(int index) {
+    for (int i = 0; i < 4; i++)
+      word[i] = 0;
+    Set(index);
+  }
+  BitString() {
+    for (int i = 0; i < 4; i++)
+      word[i] = 0;
+  }
+  BitString(unsigned long long w0, unsigned long long w1,
+            unsigned long long w2, unsigned long long w3) {
+    word[0] = w0;
+    word[1] = w1;
+    word[2] = w2;
+    word[3] = w3;
+  }
+
+  void Set(int index) {
+    word[index / (sizeof(unsigned long long) * 8)] |=
+      1ull << (index % (sizeof(unsigned long long) * 8));
+  }
+
+  bool Get(int index) {
+    return word[index / (sizeof(unsigned long long) * 8)] &
+      (1ull << (index % (sizeof(unsigned long long) * 8)));
+  }
+
+  unsigned long long GetWord(int index) {
+    return word[index];
+  }
+
+  // Union
+  BitString operator | (const BitString &b) {
+    BitString bs(word[0] | b.word[0],
+                 word[1] | b.word[1],
+                 word[2] | b.word[2],
+                 word[3] | b.word[3]);
+    return bs;
+  }
+
+  // Intersect
+  BitString operator & (const BitString &b) {
+    BitString bs(word[0] & b.word[0],
+                 word[1] & b.word[1],
+                 word[2] & b.word[2],
+                 word[3] & b.word[3]);
+    return bs;
+  }
+
+  BitString operator - (const BitString &b) {
+    BitString bs(word[0] & !b.word[0],
+                 word[1] & !b.word[1],
+                 word[2] & !b.word[2],
+                 word[3] & !b.word[3]);
+
+    return bs;
+  }
+
+  bool operator == (const BitString &b) {
+    return
+      word[0] == b.word[0] &&
+      word[1] == b.word[1] &&
+      word[2] == b.word[2] &&
+      word[3] == b.word[3];
+  }
+
+  bool IsNull() {
+    return
+      word[0] == 0 &&
+      word[1] == 0 &&
+      word[2] == 0 &&
+      word[3] == 0;
+  }
+
+  bool IsNonNull() {
+    return
+      word[0] != 0 ||
+      word[1] != 0 ||
+      word[2] != 0 ||
+      word[3] != 0;
+  }
+
+  bool IsUndef() {
+    return
+      word[0] == (-1ULL) &&
+      word[1] == (-1ULL) &&
+      word[2] == (-1ULL) &&
+      word[3] == (-1ULL);
+  }
+
+  void SetUndef() {
+    word[0] = word[1] = word[2] = word[3] = -1ULL;
+  }
+
+  void Print() {
+    fprintf(stderr, "bits: %llx:%llx:%llx:%llx\n",
+	    word[3], word[2], word[1], word[0] );
+  }
+
+  void PrintInitializer(FILE *f) {
+    if (IsNull())
+      fprintf(f, "BNULL");
+    else
+      fprintf(f, "BitString(0x%llxull, 0x%llxull, 0x%llxull, 0x%llxull)",
+              word[0], word[1], word[2], word[3] );
+  }
+
+ private:
+  unsigned long long word[4]; // 256 bits
 };
 
 #endif  // MAOUTIL_H_

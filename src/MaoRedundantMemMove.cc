@@ -56,16 +56,16 @@ class RedMemMovElimPass : public MaoPass {
             insn->IsRegisterOperand(1) &&
             insn->IsMemOperand(0)) {
           int checked = 0;
-          unsigned long long mask = GetRegisterDefMask(insn);
+          BitString mask = GetRegisterDefMask(insn);
 
           // eliminate this pattern:
           //     movq    (%rax), %rax
-          unsigned long long base_index_mask =
+          BitString base_index_mask =
             GetMaskForRegister(insn->GetBaseRegister()) |
             GetMaskForRegister(insn->GetIndexRegister());
 
-          if (mask & base_index_mask) continue;
-          mask |= base_index_mask;
+          if ((mask & base_index_mask).IsNonNull()) continue;
+          mask = mask | base_index_mask;
 
           InstructionEntry *next = insn->nextInstruction();
           while (checked < look_ahead_ && next) {
@@ -73,9 +73,9 @@ class RedMemMovElimPass : public MaoPass {
                 next->IsCall() ||
                 next->IsReturn())
               break;
-            unsigned long long defs = GetRegisterDefMask(next);
+            BitString defs = GetRegisterDefMask(next);
 
-            if (defs == 0LL || defs == REG_ALL)
+            if (defs.IsNull() || defs.IsUndef())
               break;  // defines something other than registers
 
             if (next->IsOpMov() &&
@@ -106,8 +106,9 @@ class RedMemMovElimPass : public MaoPass {
                 }
               }
             }
-            if (defs & mask)
+            if ((defs & mask).IsNonNull()) {
               break;  // target register gets redefined.
+            }
 
             ++checked;
             next = next->nextInstruction();

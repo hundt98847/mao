@@ -20,15 +20,11 @@
 // memnonic  defs
 //
 // with defs being on of:
+//    reg    all valid register names are supported.
+//
 //    op0    defines operand 0  (also 'src')
 //    op1    defines operand 1  (also 'dest')
 //    ...
-//    al     defines register al
-//    ah     defines register ah
-//    ...
-//    cr0    control register cr0
-//    ...
-//    all    defines all registers
 //
 //    addr8: all following registers are def'ed in case
 //           op0 of the instruction denotes an 8-bit reg
@@ -40,10 +36,8 @@
 //
 //    all:  switches back to default mask.
 //
-aaa   use: al def: ax flags: AF CF undef: OF SF ZF PF
-
-aad   use: ax def: ax flags: SZ ZF PF undef: OF AF CF
- 
+aaa   ax
+aad   ax
 aam   ax
 aas   ax
 adc   dest
@@ -318,15 +312,15 @@ movntq dest
 movq dest
 movq2dq dest
 
-movs   dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
-movsb  dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
-movsbl dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
-movsbw dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
-movsw  dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
-movswl dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
-movslq dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
-movsd  dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
-movsq  dest ecx addr8: si di addr16: si di addr32: esi edi eddr64: rsi rdi
+movs   dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movsb  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movsbl dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movsbw dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movsw  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movswl dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movslq dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movsd  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movsq  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 
 # there is a floating point movsd as well?
 # movsd

@@ -146,7 +146,7 @@ $(GAS_CONFIG_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/config/%.c
 $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/GenOpcodes: GenOpcodes.cc MaoDefs.h MaoDefs.tbl Makefile
+$(OBJDIR)/GenOpcodes: GenOpcodes.cc MaoDefs.h MaoDefs.tbl MaoUtil.h Makefile
 	$(CC) $(CFLAGS) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc -lstdc++
 
 gen-opcodes.h: $(OBJDIR)/GenOpcodes

@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <map>
+#include <list>
 #include <algorithm>
 
 #include "MaoDefs.h"
@@ -93,19 +94,71 @@ void usage(const char *argv[]) {
 
 class GenDefEntry {
  public:
-  GenDefEntry() : op_mask(0), reg_mask(0),
-                  reg_mask8(0), reg_mask16(0),
-                  reg_mask32(0), reg_mask64(0) {}
+  GenDefEntry() {}
   unsigned int       op_mask;
-  unsigned long long reg_mask;
-  unsigned long long reg_mask8;
-  unsigned long long reg_mask16;
-  unsigned long long reg_mask32;
-  unsigned long long reg_mask64;
+  BitString reg_mask;
+  BitString reg_mask8;
+  BitString reg_mask16;
+  BitString reg_mask32;
+  BitString reg_mask64;
 };
 
 typedef std::map<char *, GenDefEntry *, ltstr> MnemMap;
 static MnemMap mnem_map;
+
+class RegEntry {
+ public:
+  RegEntry(char *name, int num) :
+    name_(strdup(name)), num_(num) {}
+  char *name_;
+  int   num_;
+};
+
+typedef std::list<RegEntry *> RegList;
+static RegList reg_list;
+
+void ReadRegisterTable(const char *op_table) {
+  char buff[1024];
+  strcpy(buff, op_table);
+  char *p = strrchr(buff, '/');
+  strcpy(p+1, "i386-reg.tbl");
+
+  FILE *regs = fopen(buff, "r");
+  if (!regs) {
+    fprintf(stderr, "Cannot open register table file: %s\n", buff);
+    exit(1);
+  }
+
+  // every register needs a bit, start counting at 1
+  //
+  int count = 1;
+
+  while (!feof(regs)) {
+    char *p = fgets(buff, 1024, regs);
+    if (!p) break;
+
+    if (buff[0] == '/' && buff[1] == '/') continue;
+    if (buff[0] == '#' || buff[0] == '\n') continue;
+    char *reg = next_field(buff, ',', &p);
+
+    RegEntry *r = new RegEntry(reg, count++);
+    reg_list.push_back(r);
+  }
+
+  fclose(regs);
+}
+
+// linear search through list to find a register by name
+//
+RegEntry *FindRegister(const char *str) {
+  for (RegList::iterator it = reg_list.begin();
+       it != reg_list.end(); ++it) {
+    if (!strcasecmp((*it)->name_, str))
+      return *it;
+  }
+  return NULL;
+}
+
 
 void ReadSideEffects(const char *fname) {
   char buff[1024];
@@ -127,76 +180,35 @@ void ReadSideEffects(const char *fname) {
     GenDefEntry *e = new GenDefEntry;
     mnem_map[strdup(mnem)] = e;
 
-    unsigned long long *mask = &e->reg_mask;
+    BitString *mask = &e->reg_mask;
 
-    while (p && *p) {
+    while (p && *p && (p < end)) {
       char *q = next_field(p, ' ', &p);
+      if (!*q) break;
       if (!strcmp(q, "all:"))    mask = &e->reg_mask; else
       if (!strcmp(q, "addr8:"))  mask = &e->reg_mask8; else
       if (!strcmp(q, "addr16:")) mask = &e->reg_mask16; else
       if (!strcmp(q, "addr32:")) mask = &e->reg_mask32; else
       if (!strcmp(q, "addr64:")) mask = &e->reg_mask64; else
 
-      if (!strcmp(q, "all")) *mask |= REG_ALL; else
-
-      if (!strcmp(q, "al"))  *mask |= REG_AL; else
-      if (!strcmp(q, "ah"))  *mask |= REG_AH; else
-      if (!strcmp(q, "ax"))  *mask |= (REG_AX  | REG_AH  | REG_AL); else
-      if (!strcmp(q, "eax")) *mask |= (REG_EAX | REG_AX  | REG_AH | REG_AL); else
-      if (!strcmp(q, "rax")) *mask |= (REG_RAX | REG_EAX | REG_AX | REG_AH | REG_AL); else
-
-      if (!strcmp(q, "cl"))  *mask |= REG_CL; else
-      if (!strcmp(q, "ch"))  *mask |= REG_CH; else
-      if (!strcmp(q, "cx"))  *mask |= (REG_CX  | REG_CH  | REG_CL); else
-      if (!strcmp(q, "ecx")) *mask |= (REG_ECX | REG_CX  | REG_CH | REG_CL); else
-      if (!strcmp(q, "rcx")) *mask |= (REG_RCX | REG_ECX | REG_CX | REG_CH | REG_CL); else
-
-      if (!strcmp(q, "dl"))  *mask |= REG_DL; else
-      if (!strcmp(q, "dh"))  *mask |= REG_DH; else
-      if (!strcmp(q, "dx"))  *mask |= (REG_DX  | REG_DH  | REG_DL); else
-      if (!strcmp(q, "edx")) *mask |= (REG_EDX | REG_DX  | REG_DH | REG_DL); else
-      if (!strcmp(q, "rdx")) *mask |= (REG_RDX | REG_EDX | REG_DX | REG_DH | REG_DL); else
-
-      if (!strcmp(q, "bl"))  *mask |= REG_BL; else
-      if (!strcmp(q, "bh"))  *mask |= REG_BH; else
-      if (!strcmp(q, "bx"))  *mask |= (REG_BX  | REG_BH  | REG_BL); else
-      if (!strcmp(q, "ebx")) *mask |= (REG_EBX | REG_BX  | REG_BH | REG_BL); else
-      if (!strcmp(q, "rbx")) *mask |= (REG_RBX | REG_EBX | REG_BX | REG_BH | REG_BL); else
-
-      if (!strcmp(q, "sp"))  *mask |= REG_SP; else
-      if (!strcmp(q, "esp"))  *mask |= REG_ESP; else
-      if (!strcmp(q, "rsp"))  *mask |= REG_RSP; else
-
-      if (!strcmp(q, "bp"))  *mask |= REG_BP; else
-      if (!strcmp(q, "ebp"))  *mask |= REG_EBP; else
-      if (!strcmp(q, "rbp"))  *mask |= REG_RBP; else
-
-      if (!strcmp(q, "si"))  *mask |= REG_SI; else
-      if (!strcmp(q, "esi"))  *mask |= REG_ESI; else
-      if (!strcmp(q, "rsi"))  *mask |= REG_RSI; else
-
-      if (!strcmp(q, "di"))  *mask |= REG_DI; else
-      if (!strcmp(q, "edi"))  *mask |= REG_EDI; else
-      if (!strcmp(q, "rdi"))  *mask |= REG_RDI; else
-
-      if (!strcmp(q, "r8"))  *mask |= REG_R8; else
-      if (!strcmp(q, "r9"))  *mask |= REG_R9; else
-      if (!strcmp(q, "r10"))  *mask |= REG_R10; else
-      if (!strcmp(q, "r11"))  *mask |= REG_R11; else
-      if (!strcmp(q, "r12"))  *mask |= REG_R12; else
-      if (!strcmp(q, "r13"))  *mask |= REG_R13; else
-      if (!strcmp(q, "r14"))  *mask |= REG_R14; else
-      if (!strcmp(q, "r15"))  *mask |= REG_R15; else
-
       if (!strcmp(q, "op0"))  e->op_mask |= DEF_OP0; else
       if (!strcmp(q, "src"))  e->op_mask |= DEF_OP0; else
+
       if (!strcmp(q, "op1"))  e->op_mask |= DEF_OP1; else
       if (!strcmp(q, "dest")) e->op_mask |= DEF_OP1; else
+
       if (!strcmp(q, "op2"))  e->op_mask |= DEF_OP2; else
       if (!strcmp(q, "op3"))  e->op_mask |= DEF_OP3; else
       if (!strcmp(q, "op4"))  e->op_mask |= DEF_OP4; else
-      if (!strcmp(q, "op5"))  e->op_mask |= DEF_OP5;
-
+      if (!strcmp(q, "op5"))  e->op_mask |= DEF_OP5; else {
+        RegEntry *r = FindRegister(q);
+        if (r)
+          mask->Set(r->num_);
+        else {
+          fprintf(stderr, "Unknown string: %s <%s>\n", q, buff);
+          exit(1);
+        }
+      }
       if (p > end) break;
     }
   }
@@ -204,57 +216,8 @@ void ReadSideEffects(const char *fname) {
   fclose(f);
 }
 
-static void PrintRegMask(FILE *def, unsigned long long mask) {
-  fprintf(def, ", 0");
-
-  if (mask & REG_AL)  fprintf(def, " | REG_AL");
-  if (mask & REG_AH)  fprintf(def, " | REG_AH");
-  if (mask & REG_AX)  fprintf(def, " | REG_AX");
-  if (mask & REG_EAX) fprintf(def, " | REG_EAX");
-  if (mask & REG_RAX) fprintf(def, " | REG_RAX");
-
-  if (mask & REG_CL)  fprintf(def, " | REG_CL");
-  if (mask & REG_CH)  fprintf(def, " | REG_CH");
-  if (mask & REG_CX)  fprintf(def, " | REG_CX");
-  if (mask & REG_ECX) fprintf(def, " | REG_ECX");
-  if (mask & REG_RCX) fprintf(def, " | REG_RCX");
-
-  if (mask & REG_DL)  fprintf(def, " | REG_DL");
-  if (mask & REG_DH)  fprintf(def, " | REG_DH");
-  if (mask & REG_DX)  fprintf(def, " | REG_DX");
-  if (mask & REG_EDX) fprintf(def, " | REG_EDX");
-  if (mask & REG_RDX) fprintf(def, " | REG_RDX");
-
-  if (mask & REG_BL)  fprintf(def, " | REG_BL");
-  if (mask & REG_BH)  fprintf(def, " | REG_BH");
-  if (mask & REG_BX)  fprintf(def, " | REG_BX");
-  if (mask & REG_EBX) fprintf(def, " | REG_EBX");
-  if (mask & REG_RBX) fprintf(def, " | REG_RBX");
-
-  if (mask & REG_SP)  fprintf(def, " | REG_SP");
-  if (mask & REG_ESP) fprintf(def, " | REG_ESP");
-  if (mask & REG_RSP) fprintf(def, " | REG_RSP");
-
-  if (mask & REG_BP)  fprintf(def, " | REG_BP");
-  if (mask & REG_EBP) fprintf(def, " | REG_EBP");
-  if (mask & REG_RBP) fprintf(def, " | REG_RBP");
-
-  if (mask & REG_SI)  fprintf(def, " | REG_SI");
-  if (mask & REG_ESI) fprintf(def, " | REG_ESI");
-  if (mask & REG_RSI) fprintf(def, " | REG_RSI");
-
-  if (mask & REG_DI)  fprintf(def, " | REG_DI");
-  if (mask & REG_EDI) fprintf(def, " | REG_EDI");
-  if (mask & REG_RDI) fprintf(def, " | REG_RDI");
-
-  if (mask & REG_R8)  fprintf(def, " | REG_R8");
-  if (mask & REG_R9)  fprintf(def, " | REG_R9");
-  if (mask & REG_R10)  fprintf(def, " | REG_R10");
-  if (mask & REG_R11)  fprintf(def, " | REG_R11");
-  if (mask & REG_R12)  fprintf(def, " | REG_R12");
-  if (mask & REG_R13)  fprintf(def, " | REG_R13");
-  if (mask & REG_R14)  fprintf(def, " | REG_R14");
-  if (mask & REG_R15)  fprintf(def, " | REG_R15");
+static void PrintRegMask(FILE *def, BitString &mask) {
+  mask.PrintInitializer(def);
 }
 
 int main(int argc, const char*argv[]) {
@@ -290,6 +253,7 @@ int main(int argc, const char*argv[]) {
     usage(argv);
   }
 
+  ReadRegisterTable(argv[1]);
   ReadSideEffects(argv[2]);
 
   fprintf(out,
@@ -311,8 +275,10 @@ int main(int argc, const char*argv[]) {
   fprintf(def,
           "// DO NOT EDIT - this file is automatically "
           "generated by GenOpcodes\n//\n"
+          "#define BNULL BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull)\n"
+          "#define BALL  BitString(-1ull, -1ull, -1ull, -1ull)\n"
           "DefEntry def_entries [] = {\n"
-          "  { OP_invalid, 0, 0 },\n" );
+          "  { OP_invalid, 0, BNULL, BNULL, BNULL, BNULL, BNULL },\n" );
 
   while (!feof(in)) {
     char *p, *str, *last, *name;
@@ -363,7 +329,7 @@ int main(int argc, const char*argv[]) {
       /* Emit def entry */
       MnemMap::iterator it = mnem_map.find(sanitized_name);
       if (it == mnem_map.end()) {
-        fprintf(def, "  { OP_%s, DEF_OP_ALL, REG_ALL },\n", sanitized_name);
+        fprintf(def, "  { OP_%s, DEF_OP_ALL, BALL, BALL, BALL, BALL, BALL },\n", sanitized_name);
       } else {
         fprintf(def, "  { OP_%s, 0", sanitized_name);
         GenDefEntry *e = (*it).second;
@@ -375,10 +341,15 @@ int main(int argc, const char*argv[]) {
         if (e->op_mask & DEF_OP5) fprintf(def, " | DEF_OP5");
 
         // populate reg_mask
+        fprintf(def, ", ");
         PrintRegMask(def, e->reg_mask);
+        fprintf(def, ", ");
         PrintRegMask(def, e->reg_mask8);
+        fprintf(def, ", ");
         PrintRegMask(def, e->reg_mask16);
+        fprintf(def, ", ");
         PrintRegMask(def, e->reg_mask32);
+        fprintf(def, ", ");
         PrintRegMask(def, e->reg_mask64);
         fprintf(def, " },\n");
       }
@@ -392,7 +363,10 @@ int main(int argc, const char*argv[]) {
   fprintf(table, "  { OP_invalid, 0 }\n");
   fprintf(table, "};\n");
 
-  fprintf(def, "};\n");
+  fprintf(def, "};\n"
+          "const unsigned int def_entries_size = "
+          "sizeof(def_entries) / sizeof(DefEntry);\n"
+          );
 
   fclose(in);
   fclose(out);
