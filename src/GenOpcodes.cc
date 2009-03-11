@@ -129,10 +129,7 @@ void ReadRegisterTable(const char *op_table) {
     exit(1);
   }
 
-  // every register needs a bit, start counting at 1
-  //
-  int count = 1;
-
+  int count = 0;
   while (!feof(regs)) {
     char *p = fgets(buff, 1024, regs);
     if (!p) break;
