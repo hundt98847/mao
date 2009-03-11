@@ -372,6 +372,11 @@ class MaoEntry {
   // that should be translated to a dot.
   const char *GetDotOrSymbol(symbolS *symbol) const;
 
+  const MaoUnit *maounit_;
+
+
+  const char *GetSymbolnameFromExpression(expressionS *expr) const;
+
  private:
   EntryID id_;
 
@@ -386,8 +391,6 @@ class MaoEntry {
   // generated from. Might be NULL for some entries.
   const char *line_verbatim_;
 
-  const MaoUnit *maounit_;
-
   // This flag is true for entries that have been added
   // by mao.
   // For labels, this means that there is NO corresponding
@@ -396,7 +399,6 @@ class MaoEntry {
 };
 
 
-// An Entry of the type Label
 class LabelEntry : public MaoEntry {
  public:
   LabelEntry(const char *const name,
@@ -529,13 +531,20 @@ class DirectiveEntry : public MaoEntry {
     return kOpcodeNames[op_];
   }
 
-  int NumOperands() { return operands_.size(); }
+  int NumOperands() const { return operands_.size(); }
   const Operand *GetOperand(int num) { return operands_[num]; }
 
   virtual void PrintEntry(::FILE *out) const;
   virtual void PrintIR(::FILE *out) const;
   virtual MaoEntry::EntryType  Type() const;
   virtual char GetDescriptiveChar() const {return 'D';}
+
+  bool IsJumpTableEntry() const;
+
+  // For indirect jumps, this instruction finds out the
+  // label identifying the jump table used. If no such label,
+  // can be found, it return NULL.
+  LabelEntry *GetJumpTableTarget();
 
  private:
   const std::string &OperandsToString(std::string *out) const;
@@ -598,6 +607,7 @@ class InstructionEntry : public MaoEntry {
   bool IsControlTransfer() const {
     return HasTarget() || IsCall() || IsReturn();
   }
+  bool IsIndirectJump() const;
   bool IsCondJump() const;
   bool IsJump() const;
   bool IsCall() const;
@@ -657,6 +667,11 @@ class InstructionEntry : public MaoEntry {
     return instruction_->types[op_index].bitfield.regxmm;
   }
 
+  // Return the name of the label that is used
+  // in indirect jump instructions. Asserts
+  // if no such label is found.
+  LabelEntry *GetJumptableLocation() const;
+
   bool CompareMemOperand(int op1, InstructionEntry *i2, int op2);
   void SetOperand(int op1, InstructionEntry *i2, int op2);
 
@@ -665,8 +680,13 @@ class InstructionEntry : public MaoEntry {
   const char  *GetRegisterOperand(const unsigned int op_index) {
     return instruction_->op[op_index].regs->reg_name;
   }
-  const char  *GetBaseRegister();
-  const char  *GetIndexRegister();
+
+  bool HasBaseRegister() const;
+  bool HasIndexRegister() const;
+
+  const char  *GetBaseRegister() const;
+  const char  *GetIndexRegister() const;
+
   unsigned int GetLog2ScaleFactor();
 
  private:

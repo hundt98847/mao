@@ -38,7 +38,7 @@ class LongInstructionsSplitPass : public MaoPass {
   LongInstructionsSplitPass(MaoUnit *mao,
                             Function *func,
                             MaoRelaxer::SizeMap *sizes) :
-    MaoPass("LISPLIT", mao->mao_options(), MAO_OPTIONS(LISPLIT), true,
+    MaoPass("LISPLIT", mao->mao_options(), MAO_OPTIONS(LISPLIT), false,
             CFG::GetCFG(mao, func)),
     mao_(mao), func_(func), sizes_(sizes) {
     length_ = GetOptionInt("length");

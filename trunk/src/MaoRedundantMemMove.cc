@@ -47,6 +47,7 @@ class RedMemMovElimPass : public MaoPass {
   //  movq    24(%rsp), %rcx
   //
   void DoElim() {
+    if (!enabled()) return;
     FORALL_CFG_BB(cfg(),it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
@@ -54,7 +55,9 @@ class RedMemMovElimPass : public MaoPass {
 
         if (insn->IsOpMov() &&
             insn->IsRegisterOperand(1) &&
-            insn->IsMemOperand(0)) {
+            insn->IsMemOperand(0) &&
+            insn->HasBaseRegister() &&
+            insn->HasIndexRegister()) {
           int checked = 0;
           BitString mask = GetRegisterDefMask(insn);
 
