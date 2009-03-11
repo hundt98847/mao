@@ -344,7 +344,7 @@ CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table) {
 
       // Now we need to extract the target from the jumptable entry.
       LabelEntry *target_label = de->GetJumpTableTarget();
-      found_targets->push_back(target_label);
+      found_targets->insert(target_label);
       ++e_iter;
     }
 

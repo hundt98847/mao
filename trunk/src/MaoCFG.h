@@ -21,8 +21,9 @@
 
 #include <stdio.h>
 #include <list>
-#include <vector>
 #include <map>
+#include <set>
+#include <vector>
 
 #include "MaoDebug.h"
 #include "MaoUnit.h"
@@ -220,7 +221,7 @@ class CFG {
   BasicBlock *Sink() const { return basic_blocks_[1]; }
 
   // Lists the targets found in a jump table.
-  typedef std::vector<LabelEntry *> JumpTableTargets;
+  typedef std::set<LabelEntry *> JumpTableTargets;
   typedef std::map<LabelEntry *, JumpTableTargets *> LabelsToJumpTableTargets;
 
   // Returns the target found in the jump table that starts
