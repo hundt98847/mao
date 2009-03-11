@@ -423,6 +423,13 @@ void BasicBlock::Print(FILE *f, MaoEntry *last) {
   e->PrintEntry(f);
 }
 
+void BasicBlock::Print(FILE *f, MaoEntry *from, MaoEntry *to) {
+  while (from != to) {
+    from->PrintEntry(f);
+    from = from->next();
+  }
+  to->PrintEntry(f);
+}
 
 void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg) {
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), function, cfg);

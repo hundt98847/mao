@@ -62,8 +62,8 @@ class RedMemMovElimPass : public MaoPass {
           // eliminate this pattern:
           //     movq    (%rax), %rax
           BitString base_index_mask =
-            GetMaskForRegister(insn->GetBaseRegister()) |
-            GetMaskForRegister(insn->GetIndexRegister());
+            GetMaskForRegister(insn->GetBaseRegisterStr()) |
+            GetMaskForRegister(insn->GetIndexRegisterStr());
 
           if ((mask & base_index_mask).IsNonNull()) continue;
           mask = mask | base_index_mask;

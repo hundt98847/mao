@@ -1504,13 +1504,19 @@ bool InstructionEntry::HasIndexRegister() const {
   return instruction_->index_reg != NULL;
 }
 
-const char *InstructionEntry::GetBaseRegister() const {
+const char *InstructionEntry::GetBaseRegisterStr() const {
   return instruction_->base_reg ? instruction_->base_reg->reg_name : NULL;
 }
-
-const char *InstructionEntry::GetIndexRegister() const {
+const char *InstructionEntry::GetIndexRegisterStr() const {
   return instruction_->index_reg ? instruction_->index_reg->reg_name : NULL;
 }
+const struct reg_entry *InstructionEntry::GetBaseRegister() const {
+  return instruction_->base_reg;
+}
+const struct reg_entry *InstructionEntry::GetIndexRegister() const {
+  return instruction_->index_reg;
+}
+
 
 unsigned int InstructionEntry::GetLog2ScaleFactor() {
   return instruction_->log2_scale_factor;
