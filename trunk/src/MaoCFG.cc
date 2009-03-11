@@ -413,6 +413,18 @@ InstructionEntry *BasicBlock::GetFirstInstruction() {
   }
   return NULL;
 }
+void BasicBlock::Print(FILE *f, MaoEntry *last) {
+  MaoEntry *e = first_entry_;
+  if (!last)
+    last = last_entry_;
+
+  while (e != last) {
+    e->PrintEntry(f);
+    e = e->next();
+  }
+  e->PrintEntry(f);
+}
+
 
 void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg) {
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), function, cfg);

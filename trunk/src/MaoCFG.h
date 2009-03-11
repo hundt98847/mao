@@ -138,6 +138,10 @@ class BasicBlock {
   // Find 1st instruction, can be NULL
   InstructionEntry *GetFirstInstruction();
 
+  // Dump BasicBlock until/including an entry.
+  // If NULL, dump the whole basic block
+  void Print(FILE *f, MaoEntry *last = NULL);
+
   MaoEntry *first_entry() const { return first_entry_;}
   MaoEntry *last_entry() const { return last_entry_;}
   void set_first_entry(MaoEntry *entry)  { first_entry_ = entry;}
