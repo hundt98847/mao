@@ -514,7 +514,6 @@ void MaoUnit::FindFunctions() {
       }
 
       // Now entry_tail can not move more forward.
-      // TODO(martint): Should we move it back though?
       entry_to_function_[entry_tail] = function;
       function->set_last_entry(entry_tail);
       functions_.push_back(function);
@@ -637,7 +636,7 @@ void MaoUnit::DeleteEntry(MaoEntry *entry) {
   if (InSubSection(entry)) {
     SubSection *subsection = GetSubSection(entry);
     if (subsection->first_entry() == subsection->last_entry()) {
-      // TODO(martint): remove function!
+      // TODO(martint): remove subsection!
       MAO_ASSERT_MSG(false, "Not implemented. Remove subsection here.");
     }
     // check if its the start or end pointers
@@ -791,6 +790,13 @@ const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
   const char *label_name = NULL;
   // TODO(martint): support all expression
   switch (expr->X_op) {
+    case O_constant:
+      if (expr->X_add_symbol) {
+        label_name = S_GET_NAME(expr->X_add_symbol);
+      } else {
+        return NULL;
+      }
+      break;
     case O_symbol:
       label_name = S_GET_NAME(expr->X_add_symbol);
       break;
@@ -798,7 +804,7 @@ const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
       label_name = S_GET_NAME(expr->X_add_symbol);
       break;
     default:
-      MAO_ASSERT_MSG(false, "Expression not supported.");
+      MAO_ASSERT_MSG(false, "Expression not supported: %d.", expr->X_op);
   }
   return label_name;
 }
@@ -1085,7 +1091,7 @@ bool DirectiveEntry::IsJumpTableEntry() const {
 }
 
 LabelEntry *DirectiveEntry::GetJumpTableTarget() {
-  const char *label_name;
+  const char *label_name = NULL;
   MAO_ASSERT(IsJumpTableEntry());
   MAO_ASSERT(NumOperands() == 1);
   // Get the operand!
@@ -1102,6 +1108,9 @@ LabelEntry *DirectiveEntry::GetJumpTableTarget() {
       MAO_ASSERT_MSG(false, "Operand type not supported in jump-table.");
   }
   // if we found a label, find the corresponding entry
+  if (label_name == NULL) {
+    MAO_ASSERT_MSG(false, "Unable to find label for jump-table.");
+  }
   return maounit_->GetLabelEntry(label_name);
 }
 
@@ -1907,8 +1916,6 @@ bool InstructionEntry::IsInList(MaoOpcode opcode, const MaoOpcode list[],
 
 
 bool InstructionEntry::HasFallThrough() const {
-  // TODO(martint): Get this info from the i386_insn structure
-  //                or complete the list
   if (IsReturn()) return false;
   if (!HasTarget()) return true;
   if (IsCall()) return true;
@@ -1917,8 +1924,6 @@ bool InstructionEntry::HasFallThrough() const {
 }
 
 bool InstructionEntry::HasTarget() const {
-  // TODO(martint): Get this info from the i386_insn structure
-  //                or complete the list
   const MaoOpcode insn[] = {OP_jmp, OP_ljmp};
   if (IsInList(op(), insn, sizeof(insn)/sizeof(MaoOpcode)))
     return true;
@@ -1958,7 +1963,8 @@ bool InstructionEntry::IsJump() const {
 bool InstructionEntry::IsIndirectJump() const {
   // Jump instructino always have one operand
   MAO_ASSERT(!IsJump() || instruction_->operands == 1);
-  return IsJump() && instruction_->types[0].bitfield.baseindex;
+  return IsJump() && (instruction_->types[0].bitfield.baseindex ||
+                      IsRegisterOperand(instruction_, 0));
 }
 
 
@@ -1979,9 +1985,6 @@ bool InstructionEntry::IsCondJump() const {
   return IsInList(op(), cond_jumps, sizeof(cond_jumps)/sizeof(MaoOpcode));
 }
 
-
-
-
 bool InstructionEntry::IsCall() const {
   const MaoOpcode calls[] = {
     OP_call, OP_lcall, OP_vmcall, OP_syscall, OP_vmmcall
@@ -1996,8 +1999,7 @@ bool InstructionEntry::IsReturn() const {
   return IsInList(op(), rets, sizeof(rets)/sizeof(MaoOpcode));
 }
 
-
-LabelEntry *InstructionEntry::GetJumptableLocation() const {
+LabelEntry *InstructionEntry::GetJumptableLocation() {
   // Make sure its an indirect jump instruction
   const char *label_name = NULL;
   MAO_ASSERT(IsIndirectJump());
@@ -2010,12 +2012,30 @@ LabelEntry *InstructionEntry::GetJumptableLocation() const {
     }
   }
   if (IsRegisterOperand(instruction_, 0)) {
-    // TODO(martint): move back until we find the load instruction!
-    MAO_ASSERT_MSG(false, "Not implemented yet\n");
+    // Testing using pattern matching to find the label:
+    // pattern 1:
+    //	movq	.L112(,%rax,8), %rax
+    //  jmp	*%rax
+    MaoEntry *prev = this->prev();
+    if (prev->IsInstruction()) {
+      InstructionEntry *prev_inst = prev->AsInstruction();
+      if (prev_inst->IsOpMov() &&    // Is previous instruction a move?
+          prev_inst->NumOperands() == 2 &&    // target register matches the jump
+          prev_inst->IsRegisterOperand(1) &&  // register?
+          prev_inst->IsMemOperand(0) &&
+          prev_inst->GetRegisterOperand(1) == GetRegisterOperand(0)) {
+        // Now get the label from the expression, if we found any!
+        label_name = GetSymbolnameFromExpression(
+            prev_inst->instruction()->op[0].disps);
+      }
+    }
+    // TODO(martint): add more patterns here
   }
-
   // if we found a label, find the corresponding entry
-  return maounit_->GetLabelEntry(label_name);
+  if (label_name != NULL) {
+    return maounit_->GetLabelEntry(label_name);
+  }
+  return NULL;
 }
 
 //

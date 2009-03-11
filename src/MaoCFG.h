@@ -179,6 +179,11 @@ class CFG {
          iter != basic_blocks_.end(); ++iter) {
       delete *iter;
     }
+    for (LabelsToJumpTableTargets::iterator iter =
+             labels_to_jumptargets_.begin();
+         iter != labels_to_jumptargets_.end(); ++iter) {
+      delete iter->second;
+    }
   }
 
   // Get the CFG for the given function, build

@@ -670,7 +670,7 @@ class InstructionEntry : public MaoEntry {
   // Return the name of the label that is used
   // in indirect jump instructions. Asserts
   // if no such label is found.
-  LabelEntry *GetJumptableLocation() const;
+  LabelEntry *GetJumptableLocation();
 
   bool CompareMemOperand(int op1, InstructionEntry *i2, int op2);
   void SetOperand(int op1, InstructionEntry *i2, int op2);
