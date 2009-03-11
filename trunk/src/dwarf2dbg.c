@@ -539,11 +539,15 @@ dwarf2_directive_file (int dummy ATTRIBUTE_UNUSED)
 
   get_filenum (filename, num);
 
-  char buffer[MAX_OPERANDS_STRING_LENGTH];
-  sprintf(buffer, "%d \"%s\"", (int)num, filename);
-  link_debug(".file", buffer, 0);
+  int filenum = (int)num;
+  link_file_directive(filename, &filenum);
 
   return filename;
+}
+
+struct MaoStringPiece GetStringPiece(const char *s) {
+  struct MaoStringPiece sp = {s, strlen(s)};
+  return sp;
 }
 
 void
@@ -602,9 +606,9 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
       SKIP_WHITESPACE ();
     }
 
-  // now we can copy the options
-  char options[1024];
-  sprintf(options, "%d %d %d", current.filenum, current.line, current.column);
+  // Array for options to pass to mao.
+  struct MaoStringPiece options[64];
+  int num_options = 0;
 
   while (ISALPHA (*input_line_pointer))
     {
@@ -618,19 +622,19 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
 	{
 	  current.flags |= DWARF2_FLAG_BASIC_BLOCK;
 	  *input_line_pointer = c;
-          strcat(options, " basic_block");
+          options[num_options++] = GetStringPiece("basic_block");
 	}
       else if (strcmp (p, "prologue_end") == 0)
 	{
 	  current.flags |= DWARF2_FLAG_PROLOGUE_END;
 	  *input_line_pointer = c;
-          strcat(options, " prologue_end");
+          options[num_options++] = GetStringPiece("prologue_end");
 	}
       else if (strcmp (p, "epilogue_begin") == 0)
 	{
 	  current.flags |= DWARF2_FLAG_EPILOGUE_BEGIN;
 	  *input_line_pointer = c;
-          strcat(options, " epilogue_begin");
+          options[num_options++] = GetStringPiece("epilogue_begin");
 	}
       else if (strcmp (p, "is_stmt") == 0)
 	{
@@ -645,7 +649,7 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
 	      as_bad (_("is_stmt value not 0 or 1"));
 	      return;
 	    }
-          strcat(options, " is_stmt");
+          options[num_options++] = GetStringPiece("is_stmt");
 	}
       else if (strcmp (p, "isa") == 0)
 	{
@@ -658,7 +662,7 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
 	      as_bad (_("isa number less than zero"));
 	      return;
 	    }
-          strcat(options, " isa");
+          options[num_options++] = GetStringPiece("isa");
 	}
       else
 	{
@@ -675,8 +679,8 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
   debug_type = DEBUG_NONE;
 
   // here we have the following info: fileno lineno [column] [option]
-  //  current.filenum, current.line current.column 
-  link_debug(".loc", options, 0);
+  link_loc_directive(current.filenum, current.line, current.column, options,
+                     num_options);
 
 }
 

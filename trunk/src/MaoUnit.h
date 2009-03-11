@@ -311,7 +311,6 @@ class ConstSectionIterator {
 class InstructionEntry;
 class DirectiveEntry;
 class LabelEntry;
-class DebugEntry;
 
 // base class for all types of entries in the MaoUnit. Example of entries
 // are Labels, Directives, and Instructions
@@ -347,7 +346,6 @@ class MaoEntry {
   InstructionEntry *AsInstruction();
   LabelEntry *AsLabel();
   DirectiveEntry *AsDirective();
-  DebugEntry *AsDebug();
 
   void set_next(MaoEntry *entry) {next_ = entry;}
   void set_prev(MaoEntry *entry) {prev_ = entry;}
@@ -462,6 +460,8 @@ class DirectiveEntry : public MaoEntry {
     EQUIV,
     WEAKREF,
     ARCH,
+    LINEFILE,
+    LOC,
     NUM_OPCODES  // Used to get the size of the array
   };
 
@@ -526,7 +526,7 @@ class DirectiveEntry : public MaoEntry {
     }
   }
 
-  Opcode op() { return op_; }
+  Opcode op() const { return op_; }
   const char *GetOpcodeName() const {
     return kOpcodeNames[op_];
   }
@@ -547,39 +547,25 @@ class DirectiveEntry : public MaoEntry {
   LabelEntry *GetJumpTableTarget();
 
  private:
-  const std::string &OperandsToString(std::string *out) const;
+  const std::string &OperandsToString(std::string *out,
+                                      const char *separator) const;
   const std::string &OperandToString(const Operand &operand,
                                      std::string *out) const;
 
   const std::string &OperandExpressionToString(const expressionS *expr,
                                                std::string *out) const;
 
+  const char *GetOperandSeparator() const;
+
   // op_ holds the type of directive
   const Opcode op_;
 
   // operands_ hold the operands of the directive
   OperandVector operands_;
+
+  bool IsDebugDirective() const;
 };
 
-// An Entry of the type Debug
-// Used for debug directives.
-class DebugEntry : public MaoEntry {
- public:
-  DebugEntry(const char *key, const char* value, unsigned int line_number,
-             const char* line_verbatim, const MaoUnit *maounit)
-      : MaoEntry(line_number, line_verbatim, maounit),
-        key_(key), value_(value) { }
-  virtual void PrintEntry(FILE *out) const;
-  virtual void PrintIR(FILE *out) const;
-  virtual MaoEntry::EntryType  Type() const;
-  virtual char GetDescriptiveChar() const {return 'g';}
-
- private:
-  // key_ holds the name of the directive.
-  const std::string key_;
-  // value holds the arguments to the directive.
-  const std::string value_;
-};
 
 // An Entry of the type Instruction.
 class InstructionEntry : public MaoEntry {

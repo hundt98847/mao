@@ -1765,8 +1765,7 @@ s_app_file (int appfile)
       demand_empty_rest_of_line ();
       if (!may_omit)
 	s_app_file_string (s, appfile);
-
-      link_file_directive(s);
+      link_file_directive(s, NULL);
     }
 }
 
@@ -1794,6 +1793,10 @@ s_app_line (int appline)
   char *file = NULL;
   int l;
 
+  int line_number;
+  int flag_arr[8]; // Asssume 8 flags is enough.
+  int num_flags = 0;
+
   /* The given number is that of the next line.  */
   if (appline)
     l = get_absolute_expression ();
@@ -1802,6 +1805,7 @@ s_app_line (int appline)
       ignore_rest_of_line ();
       return;
     }
+  line_number = l;
 
   l--;
 
@@ -1833,7 +1837,10 @@ s_app_line (int appline)
 	    {
 	      int this_flag;
 
-	      while (get_linefile_number (&this_flag))
+	      while (get_linefile_number (&this_flag)) {
+                if (num_flags < 8)
+                  flag_arr[num_flags++] = this_flag;
+
 		switch (this_flag)
 		  {
 		    /* From GCC's cpp documentation:
@@ -1868,6 +1875,7 @@ s_app_line (int appline)
 			     this_flag);
 		    break;
 		  }
+              }
 
 	      if (!is_end_of_line[(unsigned char)*input_line_pointer])
 		file = 0;
@@ -1887,6 +1895,14 @@ s_app_line (int appline)
     demand_empty_rest_of_line ();
   else
     ignore_rest_of_line ();
+
+  if (!appline && file) {
+    char *filename_tmp = malloc(sizeof(char) * strlen(file)+3);
+    sprintf(filename_tmp, "\"%s\"", file);
+    struct MaoStringPiece linefile_filename = {filename_tmp,
+                                               strlen(filename_tmp)};
+    link_linefile_directive(line_number, linefile_filename, num_flags, flag_arr);
+  }
 }
 
 /* Handle the .end pseudo-op.  Actually, the real work is done in
