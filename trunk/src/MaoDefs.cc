@@ -315,3 +315,10 @@ bool       RegistersOverlap(const struct reg_entry *reg1,
 
   return (p1->sub_regs() & p2->sub_regs()).IsNonNull();
 }
+
+// All bits in child must be set in parent
+//
+bool       RegistersContained(BitString &parent,
+                              BitString &child) {
+  return (parent & child) == child;
+}
