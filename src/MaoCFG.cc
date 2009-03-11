@@ -274,8 +274,14 @@ void CFGBuilder::Build() {
       last_entry->AsInstruction()->HasFallThrough())
     Link(current, sink, true);
 
-  if (dump_vcg_)
-    CFG_->DumpVCG("cfg.vcg");
+  if (dump_vcg_) {
+    // Use the function name..
+    if (strlen(function_->name().c_str()) <= 1024-1-4) {
+      char filename[1024];
+      sprintf(filename, "%s.vcg", function_->name().c_str());
+      CFG_->DumpVCG(filename);
+    }
+  }
 }
 
 
@@ -302,6 +308,88 @@ BasicBlock *CFGBuilder::BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label) {
 
   return new_bb;
 }
+
+// Given a label at the start of a jump-table, return the targets found
+// in this jumptable.
+CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table) {
+  JumpTableTargets *targets = NULL;
+  // We have two possibilities. 1. it is already processed and stored in the
+  // map. 2. We have to manually go through the jump-table, and then add it to
+  // our map.
+  LabelsToJumpTableTargets::iterator iter =
+      labels_to_jumptargets_.find(jump_table);
+  if (iter != labels_to_jumptargets_.end()) {
+    // Case 1: it has already been processed, and exists in our map
+    targets = iter->second;
+  } else {
+    // Case 2: Parse the jumpt able at the jump_table label
+
+    // Move forward while the entries match the jump-table pattern.
+    // TODO(martint): deallocate memory?
+    JumpTableTargets *found_targets = new JumpTableTargets();
+    found_targets->clear();
+    SectionEntryIterator e_iter = SectionEntryIterator(jump_table);
+    // Move past the label to the first entry in the jump table.
+    ++e_iter;
+    while (true) {
+      // The jump table ends at the following conditions
+
+      if (*e_iter == NULL ||           // End of section.
+          !(*e_iter)->IsDirective()) { // No more directives
+        break;
+      }
+      DirectiveEntry *de = (*e_iter)->AsDirective();
+      // Does this directive look like its part of a jump table?
+      if (!de->IsJumpTableEntry()) {
+        break;
+      }
+
+      // Now we need to extract the target from the jumptable entry.
+      LabelEntry *target_label = de->GetJumpTableTarget();
+      found_targets->push_back(target_label);
+      ++e_iter;
+    }
+
+    // Add it to the map and return a pointer.
+    labels_to_jumptargets_[jump_table] = found_targets;
+    targets = found_targets;
+  }
+  return targets;
+}
+
+template <class OutputIterator>
+void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
+  if (entry->Type() == MaoEntry::INSTRUCTION) {
+    InstructionEntry *insn_entry = static_cast<InstructionEntry *>(entry);
+    if (insn_entry->IsIndirectJump()) {
+      // Indirect jumps
+      LabelEntry *label_entry = insn_entry->GetJumptableLocation();
+      // TODO(martint): Instead of assert, flag this function(?)
+      // as unsafe for optimizations as we could not determine
+      // locations for indirect jump.
+      MAO_ASSERT(label_entry != NULL);
+      // Given the start of the jump-table, get the list of possible targets
+      // in this jump table.
+      CFG::JumpTableTargets *targets = CFG_->GetJumptableTargets(label_entry);
+      // Reality check. Did we find any?
+      if (targets->size() == 0) {
+        CFG_->set_has_unresolved_indirect_branches(true);
+      }
+
+      // Iterate over the targets and put them in the output iterator
+      for (CFG::JumpTableTargets::const_iterator t_iter = targets->begin();
+          t_iter != targets->end();
+          ++t_iter) {
+        *iter++ = (*t_iter)->name();
+      }
+
+    } else if (!insn_entry->IsCall() && !insn_entry->IsReturn()) {
+      // Direct branch instructions
+      *iter++ = insn_entry->GetTarget();
+    }
+  }
+}
+
 
 int BasicBlock::NumEntries() {
   int num = 0;

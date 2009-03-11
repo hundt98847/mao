@@ -30,6 +30,10 @@
 
 class BasicBlock;
 
+//
+// CFG - Control Flow Graph
+//
+
 typedef int BasicBlockID;
 
 class BasicBlockEdge {
@@ -159,7 +163,10 @@ class CFG {
   typedef std::vector<BasicBlock *> BBVector;
   typedef std::map<const char *, BasicBlock *, ltstr> LabelToBBMap;
 
-  explicit CFG(MaoUnit *mao_unit) : mao_unit_(mao_unit) { }
+  explicit CFG(MaoUnit *mao_unit) : mao_unit_(mao_unit),
+                                    has_unresolved_indirect_branches_(false) {
+    labels_to_jumptargets_.clear();
+  }
   ~CFG() {
     for (BBVector::iterator iter = basic_blocks_.begin();
          iter != basic_blocks_.end(); ++iter) {
@@ -200,10 +207,37 @@ class CFG {
   BasicBlock *Start() const { return basic_blocks_[0]; }
   BasicBlock *Sink() const { return basic_blocks_[1]; }
 
+  // Lists the targets found in a jump table.
+  typedef std::vector<LabelEntry *> JumpTableTargets;
+  typedef std::map<LabelEntry *, JumpTableTargets *> LabelsToJumpTableTargets;
+
+  // Returns the target found in the jump table that starts
+  // with the jump_table label.
+  CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table);
+
+
+  bool has_unresolved_indirect_branches() const {
+    return has_unresolved_indirect_branches_;
+  }
+
+  void set_has_unresolved_indirect_branches(bool value) {
+    has_unresolved_indirect_branches_ = value;
+  }
+
  private:
   MaoUnit  *mao_unit_;
   LabelToBBMap basic_block_map_;
   BBVector basic_blocks_;
+
+  bool has_unresolved_indirect_branches_;
+
+  // This holds the jumptables we so far have identified, and maps the
+  // label that identifies them to the list of targets in the table.
+  // This is populated on demand. When we reach an indirect jump, we
+  // find which label is used to identify the jump table (possibly by
+  // moving back from the register used). Once the label is found,
+  // the table is parsed and the results cached here.
+  LabelsToJumpTableTargets labels_to_jumptargets_;
 };
 
 // Convenience Macros for BB iteration
@@ -262,14 +296,7 @@ class CFGBuilder : public MaoPass {
   BasicBlock *BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label);
 
   template <class OutputIterator>
-  void GetTargets(MaoEntry *entry, OutputIterator iter) const {
-    // TODO(nvachhar): Generalize this to handle indirect jumps
-    if (entry->Type() == MaoEntry::INSTRUCTION) {
-      InstructionEntry *insn_entry = static_cast<InstructionEntry *>(entry);
-      if (!insn_entry->IsCall() && !insn_entry->IsReturn())
-        *iter++ = insn_entry->GetTarget();
-    }
-  }
+  void GetTargets(MaoEntry *entry, OutputIterator iter);
 
   MaoUnit  *mao_unit_;
   Function *function_;

@@ -732,7 +732,7 @@ bool ConstSectionIterator::operator !=(const ConstSectionIterator &other)
 
 MaoEntry::MaoEntry(unsigned int line_number, const char *line_verbatim,
                    const MaoUnit *maounit) :
-    id_(0), next_(0), prev_(0), line_number_(line_number), maounit_(maounit) {
+    maounit_(maounit), id_(0), next_(0), prev_(0), line_number_(line_number) {
   if (line_verbatim) {
     MAO_ASSERT(strlen(line_verbatim) < MAX_VERBATIM_ASSEMBLY_STRING_LENGTH);
     line_verbatim_ = strdup(line_verbatim);
@@ -763,7 +763,7 @@ void MaoEntry::Spaces(unsigned int n, FILE *outfile) const {
 void MaoEntry::PrintSourceInfo(FILE *out) const {
   fprintf(out, "\t# id: %d, l: %d\t", id(), line_number());
 
-  if (0 && line_verbatim()) // TODO(rhundt): Invent option for this
+  if (0 && line_verbatim())  // TODO(rhundt): Invent option for this
     fprintf(out, "%s\n", line_verbatim());
   else
     fprintf(out, "\n");
@@ -772,11 +772,11 @@ void MaoEntry::PrintSourceInfo(FILE *out) const {
 void MaoEntry::LinkBefore(MaoEntry *entry) {
   entry->set_next(this);
   entry->set_prev(prev());
-  if (prev())
+  if (prev()) {
     prev()->set_next(entry);
-  else
+  } else {
     // TODO(rhundt): Set "first" pointer of everything to entry
-    ;
+  }
 }
 
 void MaoEntry::LinkAfter(MaoEntry *entry) {
@@ -785,6 +785,23 @@ void MaoEntry::LinkAfter(MaoEntry *entry) {
   set_next(entry);
 }
 
+
+
+const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
+  const char *label_name = NULL;
+  // TODO(martint): support all expression
+  switch (expr->X_op) {
+    case O_symbol:
+      label_name = S_GET_NAME(expr->X_add_symbol);
+      break;
+    case O_add:
+      label_name = S_GET_NAME(expr->X_add_symbol);
+      break;
+    default:
+      MAO_ASSERT_MSG(false, "Expression not supported.");
+  }
+  return label_name;
+}
 
 //
 // Class: LabelEntry
@@ -1057,6 +1074,36 @@ MaoEntry::EntryType DirectiveEntry::Type() const {
   return DIRECTIVE;
 }
 
+bool DirectiveEntry::IsJumpTableEntry() const {
+  // TODO(martint): Make sure we support jump tables generated for various
+  // optimization levels and targets.
+  if ((op_ == LONG || op_ == QUAD)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+LabelEntry *DirectiveEntry::GetJumpTableTarget() {
+  const char *label_name;
+  MAO_ASSERT(IsJumpTableEntry());
+  MAO_ASSERT(NumOperands() == 1);
+  // Get the operand!
+  const Operand *op = GetOperand(0);
+  switch (op->type) {
+    case STRING:
+      label_name = op->data.str->c_str();
+      break;
+    case EXPRESSION:
+      // Get the label from expression
+      label_name = GetSymbolnameFromExpression(op->data.expr);
+      break;
+    default:
+      MAO_ASSERT_MSG(false, "Operand type not supported in jump-table.");
+  }
+  // if we found a label, find the corresponding entry
+  return maounit_->GetLabelEntry(label_name);
+}
 
 //
 // Class: DebugEntry
@@ -1423,12 +1470,20 @@ void InstructionEntry::PrintMemoryOperand(FILE                  *out,
   return;
 }
 
-const char *InstructionEntry::GetBaseRegister() {
+bool InstructionEntry::HasBaseRegister() const {
+  return instruction_->base_reg != NULL;
+}
+
+bool InstructionEntry::HasIndexRegister() const {
+  return instruction_->index_reg != NULL;
+}
+
+const char *InstructionEntry::GetBaseRegister() const {
   return instruction_->base_reg ? instruction_->base_reg->reg_name : NULL;
 }
 
-const char *InstructionEntry::GetIndexRegister() {
-  return instruction_->base_reg ? instruction_->base_reg->reg_name : NULL;
+const char *InstructionEntry::GetIndexRegister() const {
+  return instruction_->index_reg ? instruction_->index_reg->reg_name : NULL;
 }
 
 unsigned int InstructionEntry::GetLog2ScaleFactor() {
@@ -1883,6 +1938,13 @@ bool InstructionEntry::IsJump() const {
   return IsInList(op(), jumps, sizeof(jumps)/sizeof(MaoOpcode));
 }
 
+bool InstructionEntry::IsIndirectJump() const {
+  // Jump instructino always have one operand
+  MAO_ASSERT(!IsJump() || instruction_->operands == 1);
+  return IsJump() && instruction_->types[0].bitfield.baseindex;
+}
+
+
 bool InstructionEntry::IsCondJump() const {
   static const MaoOpcode cond_jumps[] = {
     // Conditional jumps.
@@ -1918,7 +1980,31 @@ bool InstructionEntry::IsReturn() const {
 }
 
 
+LabelEntry *InstructionEntry::GetJumptableLocation() const {
+  // Make sure its an indirect jump instruction
+  const char *label_name = NULL;
+  MAO_ASSERT(IsIndirectJump());
+  MAO_ASSERT(instruction_->operands == 1);
+  if (IsMemOperand(instruction_, 0)) {
+    // Get the name of the label from the expression
+    label_name = GetSymbolnameFromExpression(instruction_->op[0].disps);
+    if (label_name == NULL) {
+      return NULL;
+    }
+  }
+  if (IsRegisterOperand(instruction_, 0)) {
+    // TODO(martint): move back until we find the load instruction!
+    MAO_ASSERT_MSG(false, "Not implemented yet\n");
+  }
+
+  // if we found a label, find the corresponding entry
+  return maounit_->GetLabelEntry(label_name);
+}
+
+//
 // Class: SubSection
+//
+
 void SubSection::set_last_entry(MaoEntry *entry) {
   // Link the entries, unless we insert the first entry. This special case is
   // handled in AddEntry().
