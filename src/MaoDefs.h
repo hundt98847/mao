@@ -55,5 +55,7 @@ bool       DefinesSubReg(struct reg_entry *reg,
                          struct reg_entry *sub_reg);
 bool       RegistersOverlap(const struct reg_entry *reg1,
                             const struct reg_entry *reg2);
+bool       RegistersContained(BitString &parent,
+                              BitString &child);
 
 #endif // __MAODEFS_H_INCLUDED

@@ -38,6 +38,15 @@ class ZeroExtentElimPass : public MaoPass {
     mao_(mao) {
   }
 
+  bool IsZeroExtent(InstructionEntry *insn) {
+    if (insn->IsOpMov() &&
+        insn->IsRegister32Operand(0) &&
+        insn->IsRegister32Operand(1) &&
+        insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1))
+      return true;
+    return false;
+  }
+
   // Redundant zero extend elimination. Find pattern:
   //     movl reg32, same-reg32
   //
@@ -49,50 +58,50 @@ class ZeroExtentElimPass : public MaoPass {
     std::list<InstructionEntry *> redundants;
 
     FORALL_CFG_BB(cfg(),it) {
-      MaoEntry *first = NULL;
+      MaoEntry *first = (*it)->GetFirstInstruction();
+      if (!first) continue;
+
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
-        if (!first) {
-          first = (*entry);
-          continue;
-        }
+        if (first == insn) continue;
 
-        if (insn->IsOpMov() &&
-            insn->IsRegister32Operand(0) &&
-            insn->IsRegister32Operand(1) &&
-            insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1)) {
+        if (IsZeroExtent(insn)) {
           BitString imask = GetRegisterDefMask(insn);
           InstructionEntry *prev = insn->prevInstruction();
           while (prev) {
             BitString pmask = GetRegisterDefMask(prev);
-            if (pmask.IsUndef())  // insn with unknown side effects, stop
+            if (pmask.IsUndef())  // insn with unknown side effects, break
               break;
 
-            if (pmask.IsNonNull()) {
-              if (imask == pmask) {
-                Trace(1, "Found redundant zero-extend:");
-                if (tracing_level() > 0) {
-                  MaoEntry *curr = prev;
-                  while (curr != insn) {
-                    curr->PrintEntry(stderr);
-                    curr = curr->next();
-                  }
-                  fprintf(stderr, "  -->");
-                  insn->PrintEntry(stderr);
-                }  // tracing
-                redundants.push_back(insn);
+            if (RegistersContained(pmask, imask)) {  // def and use match
+              if (prev->IsPredicated() ||  // bail on cmoves...
+                  prev->op() == OP_bswap ||
+                  prev->op() == OP_call  ||
+                  prev->op() == OP_lcall)  // bail on these, don't understand em
                 break;
-              }  // def and use match
 
-              if ((imask & pmask).IsNonNull())
-                break; // some matching register parts are define
+              Trace(1, "Found redundant zero-extend:");
+              if (tracing_level() > 0)
+                (*it)->Print(stderr, prev, insn);
+              redundants.push_back(insn);
+              break;
+            }
 
-            }  // found mask for current instruction, going upward
-            prev = prev->prevInstruction();
+            BitString ip = imask & pmask;
+            if (ip.IsNonNull()) {
+              if (prev->op() == OP_movq &&
+                  RegistersOverlap(prev->GetRegisterOperand(1),
+                                   insn->GetRegisterOperand(1))) {
+                Trace(1, "Overlap");
+                (*it)->Print(stderr, prev, insn);
+              }
+              break; // some matching register parts are define
+            }
+
             if (prev == first)  // reached top of basic block
               break;
-
+            prev = prev->prevInstruction();
           }  // while previous instructions
         }  // Starting from a sign-extend move
       }  // Entries
