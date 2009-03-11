@@ -403,7 +403,16 @@ int BasicBlock::NumEntries() {
   return num;
 }
 
-#include "MaoRelax.h"
+InstructionEntry *BasicBlock::GetFirstInstruction() {
+  MaoEntry *e = first_entry_;
+  while (e) {
+    if (e->IsInstruction()) return e->AsInstruction();
+    if (e == last_entry_)
+      return NULL;
+    e = e->next();
+  }
+  return NULL;
+}
 
 void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg) {
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), function, cfg);
