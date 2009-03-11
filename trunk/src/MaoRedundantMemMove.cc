@@ -55,9 +55,7 @@ class RedMemMovElimPass : public MaoPass {
 
         if (insn->IsOpMov() &&
             insn->IsRegisterOperand(1) &&
-            insn->IsMemOperand(0) &&
-            insn->HasBaseRegister() &&
-            insn->HasIndexRegister()) {
+            insn->IsMemOperand(0)) {
           int checked = 0;
           BitString mask = GetRegisterDefMask(insn);
 
