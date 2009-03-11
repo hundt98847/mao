@@ -251,7 +251,7 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
   DefEntry *e = &def_entries[insn->op()];
   MAO_ASSERT(e->opcode = insn->op());
 
-  BitString mask = e->reg_mask | rip_props->sub_regs();
+  BitString mask = e->reg_mask;
 
   // check 1st operand. If it is 8/16/32/64 bit operand, see whether
   // there are special register masks stored for insn.
