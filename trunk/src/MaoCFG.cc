@@ -212,8 +212,7 @@ void CFGBuilder::Build() {
 
         // A NULL label means unknown target
         if (label == NULL) {
-          // TODO(nvachhar): This should deal with indirect branches
-          MAO_ASSERT(false);
+          MAO_ASSERT_MSG(false, "Unable to find target for branch.");
         } else {
           target = CFG_->FindBasicBlock(label);
           if (target == NULL) {
@@ -325,7 +324,6 @@ CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table) {
     // Case 2: Parse the jumpt able at the jump_table label
 
     // Move forward while the entries match the jump-table pattern.
-    // TODO(martint): deallocate memory?
     JumpTableTargets *found_targets = new JumpTableTargets();
     found_targets->clear();
     SectionEntryIterator e_iter = SectionEntryIterator(jump_table);
@@ -364,25 +362,25 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
     if (insn_entry->IsIndirectJump()) {
       // Indirect jumps
       LabelEntry *label_entry = insn_entry->GetJumptableLocation();
-      // TODO(martint): Instead of assert, flag this function(?)
-      // as unsafe for optimizations as we could not determine
-      // locations for indirect jump.
-      MAO_ASSERT(label_entry != NULL);
-      // Given the start of the jump-table, get the list of possible targets
-      // in this jump table.
-      CFG::JumpTableTargets *targets = CFG_->GetJumptableTargets(label_entry);
-      // Reality check. Did we find any?
-      if (targets->size() == 0) {
+      // NULL signals that no jumptable was found.
+      if (label_entry == NULL) {
         CFG_->set_has_unresolved_indirect_branches(true);
-      }
+      } else {
+        // Given the start of the jump-table, get the list of possible targets
+        // in this jump table.
+        CFG::JumpTableTargets *targets = CFG_->GetJumptableTargets(label_entry);
+        // Reality check. Did we find any?
+        if (targets->size() == 0) {
+          CFG_->set_has_unresolved_indirect_branches(true);
+        }
 
-      // Iterate over the targets and put them in the output iterator
-      for (CFG::JumpTableTargets::const_iterator t_iter = targets->begin();
-          t_iter != targets->end();
-          ++t_iter) {
-        *iter++ = (*t_iter)->name();
+        // Iterate over the targets and put them in the output iterator
+        for (CFG::JumpTableTargets::const_iterator t_iter = targets->begin();
+             t_iter != targets->end();
+             ++t_iter) {
+          *iter++ = (*t_iter)->name();
+        }
       }
-
     } else if (!insn_entry->IsCall() && !insn_entry->IsReturn()) {
       // Direct branch instructions
       *iter++ = insn_entry->GetTarget();
