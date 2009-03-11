@@ -135,6 +135,9 @@ class BasicBlock {
   // Caution: This routine iterates through a bb to count entries
   int       NumEntries();
 
+  // Find 1st instruction, can be NULL
+  InstructionEntry *GetFirstInstruction();
+
   MaoEntry *first_entry() const { return first_entry_;}
   MaoEntry *last_entry() const { return last_entry_;}
   void set_first_entry(MaoEntry *entry)  { first_entry_ = entry;}
@@ -213,7 +216,7 @@ class CFG {
 
   // Returns the target found in the jump table that starts
   // with the jump_table label.
-  CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table);
+  CFG::JumpTableTargets *GetJumptableTargets(LabelEntry *jump_table);
 
 
   bool has_unresolved_indirect_branches() const {
