@@ -365,6 +365,8 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
       // NULL signals that no jumptable was found.
       if (label_entry == NULL) {
         CFG_->set_has_unresolved_indirect_branches(true);
+//         fprintf(stderr, "Unidentified pattern starts here\n");
+//         insn_entry->PrintInstruction(stderr);
       } else {
         // Given the start of the jump-table, get the list of possible targets
         // in this jump table.
@@ -372,6 +374,8 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
         // Reality check. Did we find any?
         if (targets->size() == 0) {
           CFG_->set_has_unresolved_indirect_branches(true);
+//           fprintf(stderr, "Invalid jumptable found here:\n");
+//           insn_entry->PrintInstruction(stderr);
         }
 
         // Iterate over the targets and put them in the output iterator

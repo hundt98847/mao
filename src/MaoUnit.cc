@@ -863,26 +863,40 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".set",  // identical to .equ
   ".equiv",
   ".weakref",
-  ".arch"
+  ".arch",
+  ".linefile",
+  ".loc"
 };
+
+
+const char *DirectiveEntry::GetOperandSeparator() const {
+  if (IsDebugDirective()) {
+    return " ";
+  }
+  return ", ";
+}
 
 void DirectiveEntry::PrintEntry(::FILE *out) const {
   std::string operands;
   fprintf(out, "\t%s\t%s", GetOpcodeName(),
-          OperandsToString(&operands).c_str());
+          OperandsToString(&operands, GetOperandSeparator()).c_str());
+
   PrintSourceInfo(out);
 }
 
 void DirectiveEntry::PrintIR(::FILE *out) const {
   std::string operands;
-  fprintf(out, "%s %s", GetOpcodeName(), OperandsToString(&operands).c_str());
+  fprintf(out, "%s %s", GetOpcodeName(),
+          OperandsToString(&operands, GetOperandSeparator()).c_str());
 }
 
-const std::string &DirectiveEntry::OperandsToString(std::string *out) const {
+const std::string &DirectiveEntry::OperandsToString(
+    std::string *out,
+    const char *separator) const {
   for (OperandVector::const_iterator iter = operands_.begin();
        iter != operands_.end(); ++iter) {
     if (iter != operands_.begin())
-      out->append(", ");
+      out->append(separator);
     OperandToString(**iter, out);
   }
 
@@ -1114,24 +1128,11 @@ LabelEntry *DirectiveEntry::GetJumpTableTarget() {
   return maounit_->GetLabelEntry(label_name);
 }
 
-//
-// Class: DebugEntry
-//
-
-void DebugEntry::PrintEntry(FILE *out) const {
-  fprintf(out, "\t%s\t%s", key_.c_str(), value_.c_str());
-  PrintSourceInfo(out);
+bool DirectiveEntry::IsDebugDirective() const {
+  return (op() == DirectiveEntry::LINEFILE ||
+          op() == DirectiveEntry::FILE ||
+          op() == DirectiveEntry::LOC);
 }
-
-void DebugEntry::PrintIR(FILE *out) const {
-  fprintf(out, "%s %s", key_.c_str(), value_.c_str());
-}
-
-
-MaoEntry::EntryType DebugEntry::Type() const {
-  return DEBUG;
-}
-
 
 //
 // Class: InstructionEntry
@@ -2026,16 +2027,18 @@ LabelEntry *InstructionEntry::GetJumptableLocation() {
     if (prev->IsInstruction()) {
       InstructionEntry *prev_inst = prev->AsInstruction();
       if (prev_inst->IsOpMov() &&    // Is previous instruction a move?
-          prev_inst->NumOperands() == 2 &&    // target register matches the jump
+          prev_inst->NumOperands() == 2 &&   // target register matches the jump
           prev_inst->IsRegisterOperand(1) &&  // register?
           prev_inst->IsMemOperand(0) &&
           prev_inst->GetRegisterOperand(1) == GetRegisterOperand(0)) {
         // Now get the label from the expression, if we found any!
         label_name = GetSymbolnameFromExpression(
             prev_inst->instruction()->op[0].disps);
+      } else {
+        // TODO(martint): add more patterns here
+     
       }
     }
-    // TODO(martint): add more patterns here
   }
   // if we found a label, find the corresponding entry
   if (label_name != NULL) {
@@ -2202,11 +2205,6 @@ LabelEntry *MaoEntry::AsLabel() {
 DirectiveEntry *MaoEntry::AsDirective() {
   MAO_ASSERT(IsDirective());
   return static_cast<DirectiveEntry*>(this);
-}
-
-DebugEntry *MaoEntry::AsDebug() {
-  MAO_ASSERT(IsDebug());
-  return static_cast<DebugEntry*>(this);
 }
 
 InstructionEntry *MaoEntry::nextInstruction() {

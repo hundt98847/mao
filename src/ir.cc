@@ -133,17 +133,6 @@ void link_comm(const char *name, unsigned int common_size,
   link_directive_tail(DirectiveEntry::COMM, operands);
 }
 
-
-void link_debug(const char *key, const char *value, const char *line_verbatim) {
-  MAO_ASSERT(key);
-  MAO_ASSERT(value);
-  struct link_context_s link_context = get_link_context();
-  MAO_ASSERT(maounit_);
-  maounit_->AddEntry(new DebugEntry(key, value, link_context.line_number,
-                                    line_verbatim, maounit_), false);
-}
-
-
 char is_whitespace(char c) {
   return (c == ' ' || c == '\t');
 }
@@ -227,10 +216,13 @@ void link_size(const char *name, unsigned int size, const char *line_verbatim) {
   return;
 }
 
-void link_file_directive(const char *name) {
+void link_file_directive(const char *name, const int *filenum) {
   std::string quoted_name = quote_c_string(name);
 
   DirectiveEntry::OperandVector operands;
+  if (filenum != NULL) {
+    operands.push_back(new DirectiveEntry::Operand(*filenum));
+  }
   operands.push_back(new DirectiveEntry::Operand(quoted_name));
   link_directive_tail(DirectiveEntry::FILE, operands);
 }
@@ -390,5 +382,28 @@ void link_arch_directive(struct MaoStringPiece description) {
   DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(description));
   link_directive_tail(DirectiveEntry::ARCH, operands);
-  
+}
+
+void link_linefile_directive(int line_number, struct MaoStringPiece filename,
+                             int num_flags, int* flag) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(line_number));
+  operands.push_back(new DirectiveEntry::Operand(filename));
+  for(int i = 0; i < num_flags; i++) {
+    operands.push_back(new DirectiveEntry::Operand(flag[i]));
+  }
+  link_directive_tail(DirectiveEntry::LINEFILE, operands);
+}
+
+
+void link_loc_directive(int file_number, int line_number, int column,
+                        struct MaoStringPiece options[], int num_options) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(file_number));
+  operands.push_back(new DirectiveEntry::Operand(line_number));
+  operands.push_back(new DirectiveEntry::Operand(column));
+  for (int i = 0; i < num_options; ++i) {
+    operands.push_back(new DirectiveEntry::Operand(options[i]));
+  }
+  link_directive_tail(DirectiveEntry::LOC, operands);
 }
