@@ -613,7 +613,7 @@ class InstructionEntry : public MaoEntry {
   bool IsCall() const;
   bool IsReturn() const;
   bool IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
-
+  bool IsPredicated() const;
 
   int NumOperands() {
     return instruction()->operands;

@@ -1185,6 +1185,23 @@ void InstructionEntry::FreeInstruction() {
   delete instruction_;
 }
 
+bool InstructionEntry::IsPredicated() const {
+  const MaoOpcode opcode_is_predicated[] =  {
+    OP_cmovo,   OP_cmovno,  OP_cmovb,   OP_cmovc,    OP_cmovnae,
+    OP_cmovae,  OP_cmovnc,  OP_cmovnb,  OP_cmove,    OP_cmovz,
+    OP_cmovne,  OP_cmovnz,  OP_cmovbe,  OP_cmovna,   OP_cmova,
+    OP_cmovnbe, OP_cmovs,   OP_cmovns,  OP_cmovp,    OP_cmovnp,
+    OP_cmovl,   OP_cmovnge, OP_cmovge,  OP_cmovnl,   OP_cmovle,
+    OP_cmovng,  OP_cmovg,   OP_cmovnle, OP_fcmovb,   OP_fcmovnae,
+    OP_fcmove,  OP_fcmovbe, OP_fcmovna, OP_fcmovu,   OP_fcmovae,
+    OP_fcmovnb, OP_fcmovne, OP_fcmova,  OP_fcmovnbe, OP_fcmovnu
+  };
+
+  if (IsInList(op(), opcode_is_predicated,
+               sizeof(opcode_is_predicated)/sizeof(MaoOpcode)))
+    return true;
+  return false;
+}
 
 bool InstructionEntry::IsMemOperand(const i386_insn *instruction,
                                   const unsigned int op_index) {
