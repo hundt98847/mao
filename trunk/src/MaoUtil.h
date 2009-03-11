@@ -98,11 +98,11 @@ class BitString {
   }
 
   bool IsNonNull() {
-    return
-      word[0] != 0 ||
-      word[1] != 0 ||
-      word[2] != 0 ||
-      word[3] != 0;
+    if (word[0]) return true;
+    if (word[1]) return true;
+    if (word[2]) return true;
+    if (word[3]) return true;
+    return false;
   }
 
   bool IsUndef() {
