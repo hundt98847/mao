@@ -677,15 +677,20 @@ class InstructionEntry : public MaoEntry {
 
   i386_insn   *instruction() { return instruction_; }
 
-  const char  *GetRegisterOperand(const unsigned int op_index) {
+  const char  *GetRegisterOperandStr(const unsigned int op_index) {
     return instruction_->op[op_index].regs->reg_name;
+  }
+  const struct reg_entry *GetRegisterOperand(const unsigned int op_index) {
+    return instruction_->op[op_index].regs;
   }
 
   bool HasBaseRegister() const;
   bool HasIndexRegister() const;
 
-  const char  *GetBaseRegister() const;
-  const char  *GetIndexRegister() const;
+  const char  *GetBaseRegisterStr() const;
+  const char  *GetIndexRegisterStr() const;
+  const struct reg_entry *GetBaseRegister() const;
+  const struct reg_entry *GetIndexRegister() const;
 
   unsigned int GetLog2ScaleFactor();
 

@@ -155,7 +155,7 @@ void FillSubRegs(BitString *mask) {
 // Read register table, generate aliases, generate
 // sub register relations.
 //
-static void InitRegProps() {
+void InitRegisters() {
   ReadRegisterTable();
 
   AddAlias("al",  "r0b");
@@ -242,12 +242,6 @@ BitString GetMaskForRegister(const char *reg) {
 // the masks to the results.
 //
 BitString GetRegisterDefMask(InstructionEntry *insn) {
-  static bool regs_initialized = false;
-  if (!regs_initialized) {
-    InitRegProps();
-    regs_initialized = true;
-  }
-
   DefEntry *e = &def_entries[insn->op()];
   MAO_ASSERT(e->opcode = insn->op());
 
@@ -269,7 +263,7 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
   for (int op = 0; op < 5 && op < insn->NumOperands(); ++op) {
     if (e->op_mask & (1 << op)) {
       if (insn->IsRegisterOperand(op)) {
-        const char *reg = insn->GetRegisterOperand(op);
+        const char *reg = insn->GetRegisterOperandStr(op);
         mask = mask | GetMaskForRegister(reg);
        }
     }
@@ -308,4 +302,16 @@ bool DefinesSubReg(reg_entry *reg,
     return true;
 
   return false;
+}
+
+// See whether two registers overlap
+//
+bool       RegistersOverlap(const struct reg_entry *reg1,
+                            const struct reg_entry *reg2) {
+  RegProps *p1 = reg_ptr_map.find(reg1)->second;
+  RegProps *p2 = reg_ptr_map.find(reg2)->second;
+  MAO_ASSERT(p1);
+  MAO_ASSERT(p2);
+
+  return (p1->sub_regs() & p2->sub_regs()).IsNonNull();
 }

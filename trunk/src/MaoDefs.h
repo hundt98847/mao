@@ -46,11 +46,14 @@ extern DefEntry def_entries[];
 // external entry points
 class InstructionEntry;
 
+void InitRegisters();
 BitString  GetRegisterDefMask(InstructionEntry *insn);
 void       PrintRegisterDefMask(FILE *f, BitString mask,
                                 const char *title = NULL);
 BitString  GetMaskForRegister(const char *reg);
 bool       DefinesSubReg(struct reg_entry *reg,
                          struct reg_entry *sub_reg);
+bool       RegistersOverlap(const struct reg_entry *reg1,
+                            const struct reg_entry *reg2);
 
 #endif // __MAODEFS_H_INCLUDED

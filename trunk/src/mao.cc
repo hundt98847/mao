@@ -28,6 +28,7 @@
 #include "MaoLoopAlign.h"
 #include "MaoLoops.h"
 #include "MaoRelax.h"
+#include "MaoDefs.h"
 
 //==================================
 // MAO Main Entry
@@ -53,9 +54,9 @@ int main(int argc, const char *argv[]) {
   mao_options.ProvideHelp();
   if (new_argc < 2)
     mao_options.ProvideHelp(true /* always */);
-  register_mao_unit(&mao_unit);
 
-  // Make Passes...
+  register_mao_unit(&mao_unit);
+  InitRegisters();
   MaoPassManager *mao_pass_man = InitPasses(&mao_options);
 
   // global init passes

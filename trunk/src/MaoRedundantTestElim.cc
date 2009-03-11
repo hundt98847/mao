@@ -40,15 +40,17 @@ class RedTestElimPass : public MaoPass {
     mao_(mao) {
   }
 
-  // Find these patterns in a single basic block:
+  // Find patterns like these in a single basic block:
   //
   //   subl     xxx, %r15d
+  //   ... instructions not setting flags
   //   testl    %r15d, %r15d
   //
   //   addl     xxx, %r15d
+  //   ... instructions not setting flags
   //   testl    %r15d, %r15d
   //
-  // subl/addl set all the flags that test is testing for.
+  // subl/addl/others set all the flags that test is testing for.
   // The test instruction is therefore redundant
   //
   void DoElim() {
@@ -60,31 +62,41 @@ class RedTestElimPass : public MaoPass {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
 
-        // TODO: Revert: Check for test instructions first!
         if (insn->op() == OP_test &&
             insn->IsRegisterOperand(0) &&
             insn->IsRegisterOperand(1) &&
             insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1) &&
             insn->prevInstruction()) {
           InstructionEntry *prev = insn->prevInstruction();
-          if (prev->op() == OP_sub || prev->op() == OP_add ||
-	      prev->op() == OP_and || prev->op() == OP_or ||
-	      prev->op() == OP_xor ||
-	      prev->op() == OP_sal || prev->op() == OP_sar ||
-	      prev->op() == OP_shl || prev->op() == OP_shr ||
-	      prev->op() == OP_sbb) {
-	    int op_index = prev->NumOperands() > 1 ? 1 : 0;
-	    if (prev->IsRegisterOperand(op_index) &&
-		prev->GetRegisterOperand(op_index) == insn->GetRegisterOperand(0)) {
-              redundants.push_back(insn);
 
-	      Trace(1, "Found %s/test seq", prev->op_str());
-	      if (tracing_level() > 0) {
-		prev->PrintEntry(stderr);
-		insn->PrintEntry(stderr);
-	      }
-	    }
+          while (prev && prev->IsOpMov()) {
+            // check for re-def's
+            if (prev->IsRegisterOperand(1) &&
+                RegistersOverlap(prev->GetRegisterOperand(1),
+                                 insn->GetRegisterOperand(1))) {
+              prev = NULL;
+              break;
+            }
+            prev = prev->prevInstruction();
           }
+          if (prev)
+            if (prev->op() == OP_sub || prev->op() == OP_add ||
+                prev->op() == OP_and || prev->op() == OP_or ||
+                prev->op() == OP_xor ||
+                prev->op() == OP_sal || prev->op() == OP_sar ||
+                prev->op() == OP_shl || prev->op() == OP_shr ||
+                prev->op() == OP_sbb) {
+              int op_index = prev->NumOperands() > 1 ? 1 : 0;
+              if (prev->IsRegisterOperand(op_index) &&
+                  prev->GetRegisterOperand(op_index) ==
+                  insn->GetRegisterOperand(0)) {
+                redundants.push_back(insn);
+
+                Trace(1, "Found %s/test seq", prev->op_str());
+                if (tracing_level() > 0)
+                  (*it)->Print(stderr, prev,insn);
+              }
+            }
 	}
       }
     }
