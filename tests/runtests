@@ -1,0 +1,25 @@
+MAO=../bin/mao-x86_64-linux
+
+for FILE in `cat testlist`
+do
+  Options=`grep \#Option $FILE | awk '{ print \$2, \$3, \$4 }'`
+  GrepTarget=`grep \#grep $FILE | awk '{ print \$2 }'`
+  GrepN=`grep \#grep $FILE | awk '{ print \$3 }'`
+
+  #
+  # run mao...
+  #
+  printf "run: %15s, grep %-15s %2d:\t" $FILE $GrepTarget $GrepN
+  $MAO $Options $FILE >out 2>&1
+ 
+  # 
+  # check results
+  #
+  Lines=`grep $GrepTarget out | wc -l`
+  if [[ $Lines != $GrepN ]]; then
+    echo "FAIL. Found $Lines instances of $GrepTarget. Should have been $GrepN"
+    echo "      $MAO $Options $FILE"
+  else
+    echo "PASS"
+  fi
+done
