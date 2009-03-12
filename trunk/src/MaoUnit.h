@@ -857,10 +857,10 @@ class Function {
 };
 
 // Convenience macros
-#define FORALL_FUNC_ENTRY(func,entry) \
-   for (MaoEntry *entry = func->first_entry(); \
-        entry != func->end_entry(); \
-        entry = entry->next())
+#define FORALL_FUNC_ENTRY(func, entry) \
+  for (MaoEntry *entry = func->first_entry(); \
+       entry != func->end_entry(); \
+       entry = entry->next())
 
 // A section
 class Section {

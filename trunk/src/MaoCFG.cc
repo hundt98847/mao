@@ -331,9 +331,8 @@ CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table) {
     ++e_iter;
     while (true) {
       // The jump table ends at the following conditions
-
-      if (*e_iter == NULL ||           // End of section.
-          !(*e_iter)->IsDirective()) { // No more directives
+      if (*e_iter == NULL ||            // End of section.
+          !(*e_iter)->IsDirective()) {  // No more directives
         break;
       }
       DirectiveEntry *de = (*e_iter)->AsDirective();
@@ -384,12 +383,12 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
 
   //  movq .L112(,%rax,8), %REG
   //  jmp  *%REG
-  if(entry->IsIndirectJump() && entry->IsRegisterOperand(0)) {
+  if (entry->IsIndirectJump() && entry->IsRegisterOperand(0)) {
     // Get the name of the label from the expression
     MaoEntry *prev = entry->prev();
     InstructionEntry *prev_inst = (prev && prev->IsInstruction())?
         prev->AsInstruction():NULL;
-     if(entry->IsRegisterOperand(0) &&
+     if (entry->IsRegisterOperand(0) &&
         prev_inst &&
         prev_inst->IsOpMov() &&    // Is previous instruction a move?
         prev_inst->NumOperands() == 2 &&   // target register matches the jump
@@ -399,7 +398,7 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
        // Now get the label from the expression, if we found any!
        label_name = prev_inst->GetSymbolnameFromExpression(
            prev_inst->instruction()->op[0].disps);
-       if(label_name) {
+       if (label_name) {
          *out_label = mao_unit_->GetLabelEntry(label_name);
          return true;
        }
@@ -412,12 +411,12 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
 // Does this entry jump based on a vaarg style jump?
 // e.g.:
 // Loop for va_arg patterns!
-// 	mov	XXX, %REG
-// 	jmp	*%REG
+//      mov     XXX, %REG
+//      jmp     *%REG
 // <optional label>:
-// 	movaps	<xmm register>, IMM(%rax)
-// 	movaps	<xmm register>, IMM(%rax)
-// 	movaps	<xmm register>, IMM(%rax)
+//      movaps  <xmm register>, IMM(%rax)
+//      movaps  <xmm register>, IMM(%rax)
+//      movaps  <xmm register>, IMM(%rax)
 //      ....
 // If so, return true and put the movaps instruction in the pattern variable.
 bool CFGBuilder::IsVaargBasedJump(InstructionEntry *entry,
@@ -427,7 +426,7 @@ bool CFGBuilder::IsVaargBasedJump(InstructionEntry *entry,
   MaoEntry *prev = entry->prev();
   InstructionEntry *prev_inst = prev->IsInstruction()?
       prev->AsInstruction():NULL;
-  if(entry->IsRegisterOperand(0) &&
+  if (entry->IsRegisterOperand(0) &&
      prev_inst &&
      prev_inst->IsOpMov() &&    // Is previous instruction a move?
      prev_inst->NumOperands() == 2 &&   // target register matches the jump
@@ -435,7 +434,7 @@ bool CFGBuilder::IsVaargBasedJump(InstructionEntry *entry,
      prev_inst->GetRegisterOperand(1) == entry->GetRegisterOperand(0)) {
     // Possible Vaarg based jump found. Check for xmm based move instructions
     MaoEntry *e = entry->next();
-    if(e && e->IsLabel())
+    if (e && e->IsLabel())
       e = e->next();
     while (e &&
            e->IsInstruction() &&
@@ -468,7 +467,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
   // Pattern one: Look for jump tables
   LabelEntry *label_entry;
   if (!processed && IsTableBasedJump(insn_entry, &label_entry)) {
-    //label_entry points to the table, if it is identified.
+    //  label_entry points to the table, if it is identified.
     MAO_ASSERT(label_entry != NULL);
     // Given the start of the jump-table, get the list of possible targets
     // in this jump table.
@@ -486,7 +485,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
   std::vector<MaoEntry *> pattern;
   if (!processed && IsVaargBasedJump(insn_entry, &pattern)) {
     // Pattern now holds all the possible targets
-    for(std::vector<MaoEntry *>::iterator p_iter = pattern.begin();
+    for (std::vector<MaoEntry *>::iterator p_iter = pattern.begin();
         p_iter != pattern.end();
         ++p_iter) {
       // Add all our outputs, and create new labels if necessary
