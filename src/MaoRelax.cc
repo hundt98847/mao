@@ -44,12 +44,16 @@ extern "C" {
 void MaoRelaxer::RelaxSection(MaoUnit *mao, Section *section, SizeMap *size_map) {
   // Build the fragments (and initial sizes)
   FragToEntryMap relax_map;
+
+
+  asection *bfd_section = bfd_get_section_by_name(stdoutput,
+                                                  section->name().c_str());
+  MAO_ASSERT(bfd_section);
+
   struct frag *fragments =
       BuildFragments(mao, section, size_map, &relax_map);
 
   // Run relaxation
-  asection *bfd_section = bfd_get_section_by_name(stdoutput,
-                                                  section->name().c_str());
   for (int change = 1, pass = 0; change; pass++)
     change = relax_segment(fragments, bfd_section, pass);
 
