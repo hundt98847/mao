@@ -57,5 +57,12 @@ bool       RegistersOverlap(const struct reg_entry *reg1,
                             const struct reg_entry *reg2);
 bool       RegistersContained(BitString &parent,
                               BitString &child);
+BitString  GetParentRegs(const struct reg_entry *reg);
+
+// Provide pointer to
+//   %rip  for 64-bit compiles
+//   %eip  for 32-bit compiles
+//
+const reg_entry *GetIP();
 
 #endif // __MAODEFS_H_INCLUDED
