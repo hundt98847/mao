@@ -25,8 +25,10 @@
 #include "MaoRelax.h"
 #include "MaoUnit.h"
 
-extern "C" const char *S_GET_NAME(symbolS *s);
-
+extern "C" {
+  const char *S_GET_NAME(symbolS *s);
+  extern bfd *stdoutput;
+}
 //
 // Class: MaoUnit
 //
@@ -326,9 +328,15 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
   MAO_ASSERT(entry);
   entry->set_id(entry_index);
 
-  if (!current_subsection_ && !create_default_section) {
-    SetSubSection("mao_start_section", 0,  entry);
-    current_subsection_->set_start_section(true);
+  // Check if we should add a new section for the first directives.
+  if (!current_subsection_ &&
+      !create_default_section) {
+    // Make sure the entry does not create a section
+    DirectiveEntry *de = entry->IsDirective()?entry->AsDirective():NULL;
+    if (de == NULL || de->op() != DirectiveEntry::SECTION) {
+      SetSubSection("mao_start_section", 0,  entry);
+      current_subsection_->set_start_section(true);
+    }
   }
   // Create a subsection if necessary
   if (create_default_section &&
@@ -521,26 +529,41 @@ void MaoUnit::FindFunctions() {
   }
 
 
-  // Now, create an unnamed function for any instructions at the start of the
-  // .text section
-  Section *text_section = GetSection(".text");
-  if (text_section) {
-    // Iterate over entries, until we find an entry belonging to a function,
-    // or the end of the text section
-    MaoEntry *entry = *(text_section->EntryBegin());
-    if (entry &&
-        !InFunction(entry)) {
-      MAO_ASSERT(text_section->GetLastSubSection());
-      Function *function = new Function("__mao_unnamed", functions_.size(),
-                                        text_section->GetLastSubSection());
-      function->set_first_entry(entry);
-      while (entry &&
-             !InFunction(entry)) {
-        function->set_last_entry(entry);
-        entry_to_function_[entry] = function;
-        entry = entry->next();
+
+  // Now, create an unnamed function for any instructions at the start of any
+  // section. Special case for sections created in mao to handle the inital
+  // directives found int he assembly file.
+  int function_number = 0;
+  for (SectionIterator iter = SectionBegin();
+       iter != SectionEnd();
+       ++iter) {
+    // Make sure the section exists in bfd, and it nos created
+    // created temporarily inside mao.
+    Section *section = *iter;
+    if (bfd_get_section_by_name(stdoutput,
+                                section->name().c_str()) != NULL) {
+      // Iterate over entries, until we find an entry belonging to a function,
+      // or the end of the text section
+      MaoEntry *entry = *(section->EntryBegin());
+      if (entry &&
+          !InFunction(entry)) {
+        // Find the subsection from the entry
+        SubSection *subsection = GetSubSection(entry);
+        MAO_ASSERT(subsection);
+
+        char function_name[64];
+        sprintf(function_name, "__mao_unnamed%d", function_number++);
+        Function *function = new Function(function_name, functions_.size(),
+                                          subsection);
+        function->set_first_entry(entry);
+        while (entry &&
+               !InFunction(entry)) {
+          function->set_last_entry(entry);
+          entry_to_function_[entry] = function;
+          entry = entry->next();
+        }
+        functions_.push_back(function);
       }
-      functions_.push_back(function);
     }
   }
   return;
