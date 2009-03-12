@@ -162,7 +162,7 @@ class BasicBlock {
 };
 
 // Convenience Macros for Entry iteration
-#define FORALL_BB_ENTRY(it,entry) \
+#define FORALL_BB_ENTRY(it, entry) \
       for (SectionEntryIterator entry = (*it)->EntryBegin(); \
            entry != (*it)->EntryEnd(); ++entry)
 
@@ -255,7 +255,7 @@ class CFG {
 };
 
 // Convenience Macros for BB iteration
-#define FORALL_CFG_BB(cfg,it) \
+#define FORALL_CFG_BB(cfg, it) \
     for (CFG::BBVector::const_iterator it = cfg->Begin(); \
            it != cfg->End(); ++it)
 
