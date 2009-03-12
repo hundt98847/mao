@@ -312,6 +312,11 @@ class CFGBuilder : public MaoPass {
   template <class OutputIterator>
   void GetTargets(MaoEntry *entry, OutputIterator iter);
 
+  bool IsTableBasedJump(InstructionEntry *entry,
+                        LabelEntry **out_label);
+  bool IsVaargBasedJump(InstructionEntry *entry,
+                        std::vector<MaoEntry *> *pattern);
+
   MaoUnit  *mao_unit_;
   Function *function_;
   CFG      *CFG_;

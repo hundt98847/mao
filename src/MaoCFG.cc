@@ -355,40 +355,158 @@ CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table) {
   return targets;
 }
 
+
+// Does this entry jump based on a jumptable? If so, return true and return the
+// label identifying the jump table in out_label. Otherwise return false and
+// return NULL in out_label.
+// e.g.:
+//  jmp  .L112(,%rax,8)
+// or:
+//  movq .L112(,%rax,8), %REG
+//  jmp  *%REG
+bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
+                                  LabelEntry **out_label) {
+  *out_label = NULL;
+  if (!entry->IsIndirectJump()) return false;
+
+  const char *label_name = NULL;
+
+  //  jmp  .L112(,%rax,8)
+  if (entry->IsMemOperand(0)) {
+    // Get the name of the label from the expression
+    label_name = entry->GetSymbolnameFromExpression(
+        entry->instruction()->op[0].disps);
+    if (label_name != NULL) {
+      *out_label = mao_unit_->GetLabelEntry(label_name);
+      return true;
+    }
+  }
+
+  //  movq .L112(,%rax,8), %REG
+  //  jmp  *%REG
+  if(entry->IsIndirectJump() && entry->IsRegisterOperand(0)) {
+    // Get the name of the label from the expression
+    MaoEntry *prev = entry->prev();
+    InstructionEntry *prev_inst = (prev && prev->IsInstruction())?
+        prev->AsInstruction():NULL;
+     if(entry->IsRegisterOperand(0) &&
+        prev_inst &&
+        prev_inst->IsOpMov() &&    // Is previous instruction a move?
+        prev_inst->NumOperands() == 2 &&   // target register matches the jump
+        prev_inst->IsRegisterOperand(1) &&  // register?
+        prev_inst->IsMemOperand(0) &&
+        prev_inst->GetRegisterOperand(1) == entry->GetRegisterOperand(0)) {
+       // Now get the label from the expression, if we found any!
+       label_name = prev_inst->GetSymbolnameFromExpression(
+           prev_inst->instruction()->op[0].disps);
+       if(label_name) {
+         *out_label = mao_unit_->GetLabelEntry(label_name);
+         return true;
+       }
+     }
+  }
+  return false;
+}
+
+
+// Does this entry jump based on a vaarg style jump?
+// e.g.:
+// Loop for va_arg patterns!
+// 	mov	XXX, %REG
+// 	jmp	*%REG
+// <optional label>:
+// 	movaps	<xmm register>, IMM(%rax)
+// 	movaps	<xmm register>, IMM(%rax)
+// 	movaps	<xmm register>, IMM(%rax)
+//      ....
+// If so, return true and put the movaps instruction in the pattern variable.
+bool CFGBuilder::IsVaargBasedJump(InstructionEntry *entry,
+                                  std::vector<MaoEntry *> *pattern) {
+  pattern->clear();
+  if (!entry->IsIndirectJump()) return false;
+  MaoEntry *prev = entry->prev();
+  InstructionEntry *prev_inst = prev->IsInstruction()?
+      prev->AsInstruction():NULL;
+  if(entry->IsRegisterOperand(0) &&
+     prev_inst &&
+     prev_inst->IsOpMov() &&    // Is previous instruction a move?
+     prev_inst->NumOperands() == 2 &&   // target register matches the jump
+     prev_inst->IsRegisterOperand(1) &&  // register?
+     prev_inst->GetRegisterOperand(1) == entry->GetRegisterOperand(0)) {
+    // Possible Vaarg based jump found. Check for xmm based move instructions
+    MaoEntry *e = entry->next();
+    if(e && e->IsLabel())
+      e = e->next();
+    while (e &&
+           e->IsInstruction() &&
+           e->AsInstruction()->op() == OP_movaps) {
+      pattern->push_back(e);
+      e = e->next();
+    }
+  }
+  return pattern->size() > 0;
+}
+
+
+
 template <class OutputIterator>
 void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
-  if (entry->Type() == MaoEntry::INSTRUCTION) {
-    InstructionEntry *insn_entry = static_cast<InstructionEntry *>(entry);
-    if (insn_entry->IsIndirectJump()) {
-      // Indirect jumps
-      LabelEntry *label_entry = insn_entry->GetJumptableLocation();
-      // NULL signals that no jumptable was found.
-      if (label_entry == NULL) {
-        CFG_->set_has_unresolved_indirect_branches(true);
-//         fprintf(stderr, "Unidentified pattern starts here\n");
-//         insn_entry->PrintInstruction(stderr);
-      } else {
-        // Given the start of the jump-table, get the list of possible targets
-        // in this jump table.
-        CFG::JumpTableTargets *targets = CFG_->GetJumptableTargets(label_entry);
-        // Reality check. Did we find any?
-        if (targets->size() == 0) {
-          CFG_->set_has_unresolved_indirect_branches(true);
-//           fprintf(stderr, "Invalid jumptable found here:\n");
-//           insn_entry->PrintInstruction(stderr);
-        }
+  bool processed = false;
+  MAO_ASSERT(entry->Type() == MaoEntry::INSTRUCTION);
+  InstructionEntry *insn_entry = static_cast<InstructionEntry *>(entry);
 
-        // Iterate over the targets and put them in the output iterator
-        for (CFG::JumpTableTargets::const_iterator t_iter = targets->begin();
-             t_iter != targets->end();
-             ++t_iter) {
-          *iter++ = (*t_iter)->name();
-        }
-      }
-    } else if (!insn_entry->IsCall() && !insn_entry->IsReturn()) {
+  // Is this a "normal" direct branch instruction.
+  if (!processed) {
+    if (!insn_entry->IsCall() && !insn_entry->IsReturn() &&
+        !insn_entry->IsIndirectJump()) {
       // Direct branch instructions
       *iter++ = insn_entry->GetTarget();
+      processed = true;
     }
+  }
+
+  // Pattern one: Look for jump tables
+  LabelEntry *label_entry;
+  if (!processed && IsTableBasedJump(insn_entry, &label_entry)) {
+    //label_entry points to the table, if it is identified.
+    MAO_ASSERT(label_entry != NULL);
+    // Given the start of the jump-table, get the list of possible targets
+    // in this jump table.
+    CFG::JumpTableTargets *targets = CFG_->GetJumptableTargets(label_entry);
+    // Iterate over the targets and put them in the output iterator
+    for (CFG::JumpTableTargets::const_iterator t_iter = targets->begin();
+         t_iter != targets->end();
+         ++t_iter) {
+      *iter++ = (*t_iter)->name();
+      processed = true;
+    }
+  }
+
+  // Pattern two: Look for va_arg patterns!
+  std::vector<MaoEntry *> pattern;
+  if (!processed && IsVaargBasedJump(insn_entry, &pattern)) {
+    // Pattern now holds all the possible targets
+    for(std::vector<MaoEntry *>::iterator p_iter = pattern.begin();
+        p_iter != pattern.end();
+        ++p_iter) {
+      // Add all our outputs, and create new labels if necessary
+      if ((*p_iter)->prev() &&
+          (*p_iter)->prev()->IsLabel()) {
+        *iter++ = (*p_iter)->prev()->AsLabel()->name();
+      } else {
+        // Add a label before p_iter if necessary
+        LabelEntry *l = mao_unit_->CreateLabel(
+            MaoUnit::BBNameGen::GetUniqueName());
+        (*p_iter)->LinkBefore(l);
+        *iter++ = l->name();
+      }
+      processed = true;
+    }
+  }
+
+  if (insn_entry->IsIndirectJump() && !processed) {
+    CFG_->set_has_unresolved_indirect_branches(true);
+    fprintf(stderr, "Unable to find targets for indirect jump\n");
   }
 }
 
