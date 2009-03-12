@@ -36,12 +36,17 @@ class RegProps {
     sub_regs_(num)
   {}
 
-  BitString  &mask() { return mask_; }
-  BitString  &sub_regs() { return sub_regs_; }
-  const char *name() { return reg_->reg_name; }
+  const reg_entry  *reg() { return reg_; }
+  BitString        &mask() { return mask_; }
+  BitString        &sub_regs() { return sub_regs_; }
+  BitString        &parent_regs() { return parent_regs_; }
+  const char       *name() { return reg_->reg_name; }
 
   void        AddSubReg(BitString &bstr) {
     sub_regs_ = sub_regs_ | bstr;
+  }
+  void        AddParentReg(BitString &bstr) {
+    parent_regs_ = parent_regs_ | bstr;
   }
 
  private:
@@ -49,6 +54,7 @@ class RegProps {
   int                num_;
   BitString          mask_;
   BitString          sub_regs_;
+  BitString          parent_regs_;
 };
 
 // Maintain maps to allow fast register (property) lookup by
@@ -68,6 +74,7 @@ static RegNumMap reg_num_map;
 // maintain pointer to rip - it's always modified, for every insn
 //
 static RegProps *rip_props = NULL;
+static RegProps *eip_props = NULL;
 
 // Create a register alias, simply enter another name
 // into the name map.
@@ -98,6 +105,8 @@ void ReadRegisterTable() {
 
     if (!strcmp("rip", i386_regtab[i].reg_name))
       rip_props = r;
+    if (!strcmp("eip", i386_regtab[i].reg_name))
+      eip_props = r;
 
     if (!strcmp("mxcsr", i386_regtab[i].reg_name))
       break;
@@ -113,21 +122,47 @@ void ReadRegisterTable() {
 void AddSubRegs(const char *r64, const char *r32,
 		const char *r16, const char *r8,
                 const char *r8h = NULL) {
+
+  // Find properties
   RegProps *p64 = reg_name_map.find(r64)->second;
   RegProps *p32 = reg_name_map.find(r32)->second;
+  RegProps *p16 = NULL;
+  RegProps *p8  = NULL;
+  RegProps *p8h = NULL;
+
+  // Assign sub-regs
   if (r16) {
-    RegProps *p16 = reg_name_map.find(r16)->second;
+    p16 = reg_name_map.find(r16)->second;
     if (r8) {
-      RegProps *p8  = reg_name_map.find(r8)->second;
+      p8  = reg_name_map.find(r8)->second;
       p16->AddSubReg(p8->mask());
       if (r8h) {
-        RegProps *p8h = reg_name_map.find(r8h)->second;
+        p8h = reg_name_map.find(r8h)->second;
         p16->AddSubReg(p8h->mask());
       }
     }
     p32->AddSubReg(p16->sub_regs());
   }
   p64->AddSubReg(p32->sub_regs());
+
+  // Assign parent-regs
+  p32->AddParentReg(p64->mask());
+  if (p16) {
+    p16->AddParentReg(p64->mask());
+    p16->AddParentReg(p32->mask());
+  }
+  if (p8) {
+    p8->AddParentReg(p64->mask());
+    p8->AddParentReg(p32->mask());
+    if (p16)
+      p8->AddParentReg(p16->mask());
+  }
+  if (p8h) {
+    p8h->AddParentReg(p64->mask());
+    p8h->AddParentReg(p32->mask());
+    if (p16)
+      p8h->AddParentReg(p16->mask());
+  }
 }
 
 // For a given register mask, find the
@@ -321,4 +356,18 @@ bool       RegistersOverlap(const struct reg_entry *reg1,
 bool       RegistersContained(BitString &parent,
                               BitString &child) {
   return (parent & child) == child;
+}
+
+BitString  GetParentRegs(const struct reg_entry *reg) {
+  RegProps *p1 = reg_ptr_map.find(reg)->second;
+  MAO_ASSERT(p1);
+  return p1->parent_regs();
+}
+
+// TODO(rhundt): Change this to eip for 32-bit compiles
+const reg_entry *GetIP() {
+  // if 64-bit mode
+  return rip_props->reg();
+  // else
+  // return eip_props->reg();
 }

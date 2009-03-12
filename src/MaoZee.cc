@@ -74,7 +74,12 @@ class ZeroExtentElimPass : public MaoPass {
             if (pmask.IsUndef())  // insn with unknown side effects, break
               break;
 
-            if (RegistersContained(pmask, imask)) {  // def and use match
+            // check that def and use match.
+            // Make sure, prev doesn't define a parent register
+            // of insn.
+            if (RegistersContained(pmask, imask) &&
+                (GetParentRegs(insn->GetRegisterOperand(0)) &
+                               pmask).IsNull()) {
               if (prev->IsPredicated() ||  // bail on cmoves...
                   prev->op() == OP_bswap ||
                   prev->op() == OP_call  ||
