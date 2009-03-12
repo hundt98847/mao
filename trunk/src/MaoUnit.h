@@ -183,6 +183,7 @@ class MaoUnit {
   // Instruction Creators
   InstructionEntry *CreateInstruction(const char *opcode);
   InstructionEntry *CreateNop();
+  LabelEntry *CreateLabel(const char *labelname);
 
   // Dumpers
   void PrintMaoUnit() const;
@@ -363,6 +364,8 @@ class MaoEntry {
   unsigned int line_number() const { return line_number_; }
   const char *const line_verbatim() const { return line_verbatim_; }
 
+  const char *GetSymbolnameFromExpression(expressionS *expr) const;
+
  protected:
   // Helper function to indent
   void Spaces(unsigned int n, FILE *outfile) const;
@@ -371,9 +374,6 @@ class MaoEntry {
   const char *GetDotOrSymbol(symbolS *symbol) const;
 
   const MaoUnit *maounit_;
-
-
-  const char *GetSymbolnameFromExpression(expressionS *expr) const;
 
  private:
   EntryID id_;
@@ -652,11 +652,6 @@ class InstructionEntry : public MaoEntry {
   bool IsRegisterXMMOperand(const unsigned int op_index) {
     return instruction_->types[op_index].bitfield.regxmm;
   }
-
-  // Return the name of the label that is used
-  // in indirect jump instructions. Asserts
-  // if no such label is found.
-  LabelEntry *GetJumptableLocation();
 
   bool CompareMemOperand(int op1, InstructionEntry *i2, int op2);
   void SetOperand(int op1, InstructionEntry *i2, int op2);

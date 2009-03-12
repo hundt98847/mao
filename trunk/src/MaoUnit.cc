@@ -272,7 +272,7 @@ bool MaoUnit::SetSubSection(const char *section_name,
 LabelEntry *MaoUnit::GetLabelEntry(const char *label_name) const {
   std::map<const char *, LabelEntry *>::const_iterator iter =
       labels_.find(label_name);
-  MAO_ASSERT(iter != labels_.end());
+  MAO_ASSERT_MSG(iter != labels_.end(), "Unable to find label: %s", label_name);
   return iter->second;
 }
 
@@ -311,6 +311,18 @@ InstructionEntry *MaoUnit::CreateNop() {
   // Add the entry to the compilation unit
   entry_vector_.push_back(e);
   return e;
+}
+
+LabelEntry *MaoUnit::CreateLabel(const char *labelname) {
+  LabelEntry *l = new LabelEntry(labelname, 0, NULL, this);
+
+  // next free ID for the entry
+  EntryID entry_index = entry_vector_.size();
+  l->set_id(entry_index);
+
+  // Add the entry to the compilation unit
+  entry_vector_.push_back(l);
+  return l;
 }
 
 
@@ -433,11 +445,12 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
 
 long MaoUnit::BBNameGen::i = 0;
 const char *MaoUnit::BBNameGen::GetUniqueName() {
-  char *buff = strdup(".mao_label_XXXX");
+  char buff[512];
   MAO_ASSERT(i <= LONG_MAX);
-  sprintf(buff, ".mao_label_%ld", i);
+  sprintf(buff, ".L__mao_label_%ld", i);
+  char *buff2 = strdup(buff);
   i++;
-  return buff;
+  return buff2;
 }
 
 MaoUnit::FunctionIterator MaoUnit::FunctionBegin() {
@@ -828,6 +841,7 @@ const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
       break;
     default:
       MAO_ASSERT_MSG(false, "Expression not supported: %d.", expr->X_op);
+      //      return NULL;
   }
   return label_name;
 }
@@ -2027,47 +2041,6 @@ bool InstructionEntry::IsReturn() const {
     OP_ret, OP_lret, OP_retf, OP_iret, OP_sysret
   };
   return IsInList(op(), rets, sizeof(rets)/sizeof(MaoOpcode));
-}
-
-LabelEntry *InstructionEntry::GetJumptableLocation() {
-  // Make sure its an indirect jump instruction
-  const char *label_name = NULL;
-  MAO_ASSERT(IsIndirectJump());
-  MAO_ASSERT(instruction_->operands == 1);
-  if (IsMemOperand(instruction_, 0)) {
-    // Get the name of the label from the expression
-    label_name = GetSymbolnameFromExpression(instruction_->op[0].disps);
-    if (label_name == NULL) {
-      return NULL;
-    }
-  }
-  if (IsRegisterOperand(instruction_, 0)) {
-    // Testing using pattern matching to find the label:
-    // pattern 1:
-    //	movq	.L112(,%rax,8), %rax
-    //  jmp	*%rax
-    MaoEntry *prev = this->prev();
-    if (prev->IsInstruction()) {
-      InstructionEntry *prev_inst = prev->AsInstruction();
-      if (prev_inst->IsOpMov() &&    // Is previous instruction a move?
-          prev_inst->NumOperands() == 2 &&   // target register matches the jump
-          prev_inst->IsRegisterOperand(1) &&  // register?
-          prev_inst->IsMemOperand(0) &&
-          prev_inst->GetRegisterOperand(1) == GetRegisterOperand(0)) {
-        // Now get the label from the expression, if we found any!
-        label_name = GetSymbolnameFromExpression(
-            prev_inst->instruction()->op[0].disps);
-      } else {
-        // TODO(martint): add more patterns here
-     
-      }
-    }
-  }
-  // if we found a label, find the corresponding entry
-  if (label_name != NULL) {
-    return maounit_->GetLabelEntry(label_name);
-  }
-  return NULL;
 }
 
 //
