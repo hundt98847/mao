@@ -1,19 +1,28 @@
 #summary Option Handling in MAO
-#labels Featured
 
-= How to pass options to MAO =
-Initial option handling code has been finalized. It's pretty ugly and likely non-robust, but this can be improved as we find trouble.
+= How to Specify and Define Options for MAO =
 
-  * Mao specific options are passed in via:
+Some initial option handling code has been implemented.
+
+  * Mao specific options are passed to MAO via:
        -mao:option_string
 
-  * The option_string cannot contain spaces, individual options are separated with a comma ','
+  * This option_string cannot contain spaces, individual options are separated with a comma ','
 
   * Multiple -mao: options can be specified.
 
-  * All other options are passed on the assembler.
+  * All other options on the MAO command line are passed to the
+    integrated assembler.
 
-  * Starting mao with no options, or with -mao:-h, displays the help text, which shows all currently registered options:
+  * Options can also be specified via the environment variable
+    MAOOPTS. When setting this variable, omit the preceding -mao: part
+    from the example above, only pass in options_string.
+
+  * Starting MAO with no options, or passing -mao:-h, displays the help text, 
+    which shows all currently "registered" options. Some options are
+    available for all passes, such as the trace or dump-before and
+    dump-after options. They are summarized in this output under "ALL"
+
 <pre>
 Mao 0.1
 Usage: mao [-mao:mao-options]+ [regular-assembler-options]+ input-file
@@ -30,45 +39,57 @@ with PASS and 'phase-option' being:
 
 Pass: ALL
   enable    : (bool)   En/Disable a pass
+  disable   : (bool)   Disable a pass (also: off)
   trace     : (int)    Set trace level to 'val' (0..3)
-Pass: LFIND
-  vcg       : (bool)   Dump VCG file
-  cfg       : (bool)   Dump CFG in text format
-  lsg       : (bool)   Dump LSG in text format
-Pass: CFG
-  callsplit : (bool)   Split Basic Blocks at call sites
+  db[parm]  : (bool)   Dump before a pass
+  da[parm]  : (bool)   Dump after  a pass
+     with parm being one of:
+        cfg : dump CFG, if available
+        vcg : dump VCG file, if CFG is available
+Pass: ZEE
+Pass: REDMOV
+  lookahead : (int)    Look ahead limit for pattern matcher
+Pass: REDTEST
+...
 </pre>
 
 
 = Pass-specific Options =
 
-    * To specify a pass and option, this is a self-explanatory example for the syntax:
-        -mao:CFG=callsplit,other_opts,PASS=...
+    * To specify a pass and a pass-specific option, 
+      please take a look at this self-explanatory example:
+
+        -mao:CFG=callsplit,other_opts,ZEE=trace[2],enable,...
 
     * Valid pass names must be followed by a '=' sign.
 
     * Options can have parameters, which can be specified as either:
-        option:value
         option(value)
         option[value]
 
-    * Supported option types are int, bool, and string
+    * Supported option types are int, bool, and string. Only
+      one value can be passed as a parameter.
 
     * Boolean options are set to true if no parameter is specified.
 
     * The -v option set the tracing level for all passes to 3.
 
-    * The enable and trace options are available for all passes.
+    * The trace option sets the tracing level for a given pass to 1.
 
-    * For example, to enable tracing for all passes at level 3, except for pass LFIND, one would specify:
+    * For example, to enable tracing for all passes at 
+      level 3, except for pass LFIND, one would specify:
+
         ../bin/mao-x86_64-linux -mao:-v-o,/dev/null,LFIND=vcg,trace[0] loop2.s
 
 = Specifying Options in Source =
 
-To enable option processing for a pass in the mao source code:
+To add options and enable option processing for a pass in the mao 
+source code, these are the necessary steps:
 
     * A particular pass must be written as a class and must be derived from
-        <tt>MaoPass</tt>
+{{{
+        MaoPass
+}}}
 
     * Options are defined via the MAO_OPTIONS_DEFINE macro, such as:
 {{{
@@ -77,9 +98,10 @@ To enable option processing for a pass in the mao source code:
       };
 }}}
 
-    * Any number of options can be specified here as a comma separated list. The number of options must be passed to the MAO_OPTIONS_DEFINE macro.
+    * Any number of options can be specified here as a comma separated list. The number of options must be passed as the second parameter to the 
+  MAO_OPTIONS_DEFINE macro.
 
-    * The options array is being passed to the MaoPass as a parameter via the MAO_OPTIONS macro. For example, the current CFG implementation looks like this:
+    * The options array is being passed to the MaoPass as a parameter via the MAO_OPTIONS macro. For example, at time of this writing, the CFG implementation looked like this:
 {{{
       // --------------------------------------------------------------------
       CFGBuilder::CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
@@ -90,8 +112,6 @@ To enable option processing for a pass in the mao source code:
       }
 }}}
 
-    * Options should be held as class local variables, and can be "queried" via the GetOption... member functions from MaoPass. This is slow, and should therefore be done in the constructor of the pass, once.
+    * Options should be held as class local variables, and can be "queried" via the GetOption... member functions from MaoPass. These functions are slow, and should therefore be called in the constructor of the pass, once.
 
-That's pretty much it. Of course we can extend this in many ways, a typical extension would be to allow more option types, such as arrays, and to allow numbered passes. Well, I add that as we need it.
-
-The option parser itself is quite a hack - I didn't spend much time on it. If your programs happens to hang on startup, the options parser likely is in an infinite loop ;-)
+The parser is simple, and likely to run into infinite loops for ill-formatted input. 
