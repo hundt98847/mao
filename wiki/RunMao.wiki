@@ -42,11 +42,11 @@ In order to benefit from MAO optimizations, it should be run right before the GN
 
 To squeeze this script into gcc, you can:
 
-   1 Replace the 'as' directly. For example, rename it, and put a wrapper script named 'as' in its original place, which runs MAO and the former orginal assembler. This method has the drawback that MAO will always be executed.
+   # Replace the 'as' directly. For example, rename it, and put a wrapper script named 'as' in its original place, which runs MAO and the former orginal assembler. This method has the drawback that MAO will always be executed.
 
-   2 Pass the -Bpath option to gcc and place the 'as' wrapper script into the specified path. gcc will look into these paths first, and if it finds an 'as' it will execute it from there. This method allows to selectively apply MAO to compilations.
+   # Pass the -Bpath option to gcc and place the 'as' wrapper script into the specified path. gcc will look into these paths first, and if it finds an 'as' it will execute it from there. This method allows to selectively apply MAO to compilations.
 
-   3 This method is similar to point 2, instead of passing the -B option, the enviroment variable GCC_EXEC_PREFIX can be set.
+   # This method is similar to point 2, instead of passing the -B option, the enviroment variable GCC_EXEC_PREFIX can be set.
 
-   4 TODO: We are planning on adding an explicit option to the gcc driver to enable MAO invocation without the tricks above.
+   # TODO: We are planning on adding an explicit option to the gcc driver to enable MAO invocation without the tricks above.
 
