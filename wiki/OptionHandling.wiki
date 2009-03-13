@@ -11,8 +11,7 @@ Some initial option handling code has been implemented.
 
   * Multiple -mao: options can be specified.
 
-  * All other options on the MAO command line are passed to the
-    integrated assembler.
+  * All other options on the MAO command line are passed to the integrated assembler.
 
   * Options can also be specified via the environment variable MAOOPTS. When setting this variable, omit the preceding -mao: part from the example above, only pass in options_string.
 

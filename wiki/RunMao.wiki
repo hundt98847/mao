@@ -1,21 +1,31 @@
-#summary Example on how to run MAO.
+#summary How to run and integrate MAO.
 
-= Running mao =
+= Running Standalone MAO =
 
-For each target you build MAO, a binary called {{{mao-$TARGET}}} will be placed in 
-{{{./bin/.}}} Besides the normal flags accepted by GNU Assembler, the following can
-be used.
+After building MAO, for each build target, a binary called {{{mao-$TARGET}}} will be placed in 
+{{{./bin/.}}} For example, building a 64-bit MAO on Linux produces {{{./bin/mao-x86_64-linux}}}.
+
+The MAO binary accepts all flags accepted by the GNU Assembler, as a matter of fact, all flags are passed on to the integrated assembler. To specify MAO specific options, use the option {{{-mao:...}, everything after the {{{-mao:}}} will be parsed by MAO. 
+
+Multiple MAO options can be specified on the command line. 
+
+Additionally, the environment variable MAOOPTS can be set. This environment variable is parsed before the actual command line parameters. It should only contain MAO specific options, without the {{{-mao:}}} prefix.
+
+Please find more details on how to specify MAO options in OptionHandling.
+
+The default output of MAO goes to stdout. To change the output file, the option -o can be used. For example:
 
 {{{
-Usage: mao [-mao_o FILE] [-mao_ir FILE] [-mao_v]
-  -mao_o FILE       Prints output to FILE.
-  -mao_ir FILE      Prints the IR in XML-like format to FILE
-  -mao_v            Prints version and usage info, then exits
+  # redirect output to stderr
+  ../bin/mao-x86_64-linux -mao:-o/dev/stderr,ZEE=enable,trace input.s
+
+  # kill all output
+  ../bin/mao-x86_64-linux -mao:-o/dev/null,ZEE=enable,trace input.s
 }}}
 
-In order to read and print out assembly file example.s on a x86_64 target to 
-stdout, run the following
+To see all available options, start MAO with no command line parameters.
 
-{{{
-mao-x86_64-linux -mao_o /dev/stdout example.s
-}}}
+
+
+
+
