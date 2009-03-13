@@ -28,7 +28,7 @@ To see all available options, start MAO with no command line parameters.
 
 = Integrating MAO with gcc =
 
-The gcc compiler runs it's input through a preprocessor and then either cc1 or cc1plus, to generate an assembly file, usually as a temporary file somewhere in {{{/tmp/...}}}. The compiler driver then call the GNU assembler 'as' to produce the final object file. 
+The gcc compiler runs its input through a preprocessor and then through either cc1 or cc1plus to generate an assembly file, which is usually a temporary file in {{{/tmp/...}}} (Note: Modern versions of gcc combine the preprocessor and cc1 into one pass). The compiler driver then call the GNU assembler 'as' to produce the final object file. 
 
 For example, to compile foo.cc, the compiler might call:
 
@@ -38,7 +38,15 @@ $ gcc -o foo.o foo.cc
   ...as  -V -Qy -o hello.o /tmp/cciDot0H.s
 }}}
 
-In order to benefit from MAO optimizations, MAO should be run right before the GNU assembler. There are two ways to achieve this:
+In order to benefit from MAO optimizations, it should be run right before the GNU assembler. The easiest way to do this is to replace the 'as' with a little script which executes MAO first, and then start 'as' on MAO's output. 
 
-   1 Replace the 'as'
-   2 ...
+To squeeze this script into gcc, you can:
+
+   1 Replace the 'as' directly. For example, rename it, and put a wrapper script named 'as' in its original place, which runs MAO and the former orginal assembler. This method has the drawback that MAO will always be executed.
+
+   2 Pass the -Bpath option to gcc and place the 'as' wrapper script into the specified path. gcc will look into these paths first, and if it finds an 'as' it will execute it from there. This method allows to selectively apply MAO to compilations.
+
+   3 This method is similar to point 2, instead of passing the -B option, the enviroment variable GCC_EXEC_PREFIX can be set.
+
+   4 TODO: We are planning on adding an explicit option to the gcc driver to enable MAO invocation without the tricks above.
+
