@@ -14,14 +14,9 @@ Some initial option handling code has been implemented.
   * All other options on the MAO command line are passed to the
     integrated assembler.
 
-  * Options can also be specified via the environment variable
-    MAOOPTS. When setting this variable, omit the preceding -mao: part
-    from the example above, only pass in options_string.
+  * Options can also be specified via the environment variable MAOOPTS. When setting this variable, omit the preceding -mao: part from the example above, only pass in options_string.
 
-  * Starting MAO with no options, or passing -mao:-h, displays the help text, 
-    which shows all currently "registered" options. Some options are
-    available for all passes, such as the trace or dump-before and
-    dump-after options. They are summarized in this output under "ALL"
+  * Starting MAO with no options, or passing -mao:-h, displays the help text,  which shows all currently "registered" options. Some options are available for all passes, such as the trace or dump-before and dump-after options. They are summarized in this output under "ALL"
 
 <pre>
 Mao 0.1
@@ -56,8 +51,7 @@ Pass: REDTEST
 
 = Pass-specific Options =
 
-    * To specify a pass and a pass-specific option, 
-      please take a look at this self-explanatory example:
+    * To specify a pass and a pass-specific option, please take a look at this self-explanatory example:
 
         -mao:CFG=callsplit,other_opts,ZEE=trace[2],enable,...
 
@@ -76,15 +70,13 @@ Pass: REDTEST
 
     * The trace option sets the tracing level for a given pass to 1.
 
-    * For example, to enable tracing for all passes at 
-      level 3, except for pass LFIND, one would specify:
+    * For example, to enable tracing for all passes at level 3, except for pass LFIND, one would specify:
 
         ../bin/mao-x86_64-linux -mao:-v-o,/dev/null,LFIND=vcg,trace[0] loop2.s
 
 = Specifying Options in Source =
 
-To add options and enable option processing for a pass in the mao 
-source code, these are the necessary steps:
+To add options and enable option processing for a pass in the mao source code, these are the necessary steps:
 
     * A particular pass must be written as a class and must be derived from
 {{{
@@ -98,8 +90,7 @@ source code, these are the necessary steps:
       };
 }}}
 
-    * Any number of options can be specified here as a comma separated list. The number of options must be passed as the second parameter to the 
-  MAO_OPTIONS_DEFINE macro.
+    * Any number of options can be specified here as a comma separated list. The number of options must be passed as the second parameter to the MAO_OPTIONS_DEFINE macro.
 
     * The options array is being passed to the MaoPass as a parameter via the MAO_OPTIONS macro. For example, at time of this writing, the CFG implementation looked like this:
 {{{
