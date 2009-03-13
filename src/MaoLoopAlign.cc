@@ -49,6 +49,49 @@ class LoopAlignPass : public MaoPass {
   // Collect stat during the pass?
   bool collect_stat_;
 
+  class LoopAlignStat : public Stat {
+   public:
+    LoopAlignStat() : number_of_inner_loops_(0), number_of_aligned_loops_(0) {
+      inner_loop_size_distribution_.clear();
+    }
+
+    ~LoopAlignStat() {;}
+
+    void FoundInnerLoop(int size, bool aligned) {
+      ++number_of_inner_loops_;
+      if (aligned) {
+        ++number_of_aligned_loops_;
+      }
+      ++inner_loop_size_distribution_[size];
+    }
+
+    virtual void Print(FILE *out) {
+      fprintf(out, "Loop Alignment distribution\n");
+      fprintf(out, "  # Inner   loops : %d\n",
+              number_of_inner_loops_);
+      fprintf(out, "  # Aligned loops : %d\n",
+              number_of_aligned_loops_);
+      fprintf(out, "  # Alignment possibilities : %.2f%%\n",
+              100 * static_cast<double>(number_of_aligned_loops_) /
+              number_of_inner_loops_);
+      // iterate over distribution
+      fprintf(out, "   Size : # loops\n");
+      for (std::map<int, int>::const_iterator iter =
+               inner_loop_size_distribution_.begin();
+           iter != inner_loop_size_distribution_.end();
+           ++iter) {
+        fprintf(out, "   %4d : %4d\n", iter->first, iter->second);
+      }
+    }
+
+   private:
+    int                number_of_inner_loops_;
+    std::map<int, int> inner_loop_size_distribution_;
+    int                number_of_aligned_loops_;
+  };
+
+  LoopAlignStat *loop_align_stat_;
+
   // Returns the size of the entries in the loop.
   int LoopSize(const SimpleLoop *loop) const;
   // Returns the sizes of the entries in the path.
@@ -114,8 +157,16 @@ LoopAlignPass::LoopAlignPass(MaoUnit *mao, LoopStructureGraph *loop_graph,
   maximum_loop_size_ = GetOptionInt("loop_size");
 
   collect_stat_ = GetOptionBool("stat");
+
   if (collect_stat_) {
-    mao->stat()->LoopAlignRegister();
+    // check if a stat object already exists?
+    if (mao_unit_->GetStats()->HasStat("LOOPALIGN")) {
+      loop_align_stat_ = static_cast<LoopAlignStat *>(
+          mao_unit_->GetStats()->GetStat("LOOPALIGN"));
+    } else {
+      loop_align_stat_ = new LoopAlignStat();
+      mao_unit_->GetStats()->Add("LOOPALIGN", loop_align_stat_);
+    }
   }
 }
 
@@ -443,8 +494,8 @@ void LoopAlignPass::FindInner(const SimpleLoop *loop,
 
     // Statistics gathering
     if (collect_stat_) {
-      mao_unit_->stat()->LoopAlignAddInnerLoop(size,
-                                               size <= maximum_loop_size_);
+      loop_align_stat_->FoundInnerLoop(size,
+                                       size <= maximum_loop_size_);
     }
   }
 

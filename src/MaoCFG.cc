@@ -117,9 +117,10 @@ void CFG::DumpVCG(const char *fname) const {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(CFG, 2) {
+MAO_OPTIONS_DEFINE(CFG, 3) {
   OPTION_BOOL("callsplit", false, "Split Basic Blocks at call sites"),
   OPTION_BOOL("vcg", false, "Dump VCG after CFG construction"),
+  OPTION_BOOL("stat", false, "Collect and print statistics about CFG"),
 };
 
 
@@ -130,7 +131,17 @@ CFGBuilder::CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
     mao_unit_(mao_unit), function_(function), CFG_(CFG),
     next_id_(0) {
   split_basic_blocks_ = GetOptionBool("callsplit");
+  collect_stat_ = GetOptionBool("stat");
   dump_vcg_ = GetOptionBool("vcg");
+  if (collect_stat_) {
+    // check if a stat object already exists?
+    if (mao_unit_->GetStats()->HasStat("CFG")) {
+      cfg_stat_ = static_cast<CFGStat *>(mao_unit_->GetStats()->GetStat("CFG"));
+    } else {
+      cfg_stat_ = new CFGStat();
+      mao_unit_->GetStats()->Add("CFG", cfg_stat_);
+    }
+  }
 }
 
 
@@ -454,6 +465,8 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
   MAO_ASSERT(entry->Type() == MaoEntry::INSTRUCTION);
   InstructionEntry *insn_entry = static_cast<InstructionEntry *>(entry);
 
+  if (insn_entry->IsIndirectJump()) cfg_stat_->FoundIndirectJump();
+
   // Is this a "normal" direct branch instruction.
   if (!processed) {
     if (!insn_entry->IsCall() && !insn_entry->IsReturn() &&
@@ -461,6 +474,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
       // Direct branch instructions
       *iter++ = insn_entry->GetTarget();
       processed = true;
+      if (collect_stat_) cfg_stat_->FoundDirectJump();
     }
   }
 
@@ -479,6 +493,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
       *iter++ = (*t_iter)->name();
       processed = true;
     }
+    if (collect_stat_ && processed) cfg_stat_->FoundJumpTablePattern();
   }
 
   // Pattern two: Look for va_arg patterns!
@@ -501,6 +516,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
       }
       processed = true;
     }
+    if (collect_stat_ && processed) cfg_stat_->FoundVaargPattern();
   }
 
   if (insn_entry->IsIndirectJump() && !processed) {

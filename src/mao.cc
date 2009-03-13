@@ -93,7 +93,7 @@ int main(int argc, const char *argv[]) {
   // run the passes
   mao_pass_man->Run();
 
-  mao_unit.stat()->Print(stdout);
+  mao_unit.GetStats()->Print(stdout);
   if (mao_options.timer_print())
     mao_options.TimerPrint();
   return 0;

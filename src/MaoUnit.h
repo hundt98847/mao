@@ -57,7 +57,6 @@ class LabelEntry;
 class MaoEntry;
 class Section;
 class SectionIterator;
-class Statistics;
 class SubSection;
 class Symbol;
 class SymbolTable;
@@ -70,67 +69,50 @@ struct ltstr {
 };
 
 
-
-class Statistics {
+class Stat {
  public:
-  Statistics() : collect_loop_align_stat_(false) {}
-  ~Statistics() {}
-
-  void Print(FILE *out) {
-    if (collect_loop_align_stat_) {
-      LoopAlignPrint(out);
-    }
-  }
-
-  // Loop Alignment related functions
-
-  void LoopAlignRegister() {
-    if (!collect_loop_align_stat_) {
-      loop_statistics.number_of_inner_loops = 0;
-      loop_statistics.number_of_aligned_loops = 0;
-      loop_statistics.inner_loop_size_distribution.clear();
-      collect_loop_align_stat_ = true;
-    }
-  }
-
-  void LoopAlignAddInnerLoop(int size, bool aligned) {
-    ++loop_statistics.number_of_inner_loops;
-    if (aligned) {
-      ++loop_statistics.number_of_aligned_loops;
-    }
-    ++loop_statistics.inner_loop_size_distribution[size];
-  }
-
-  void LoopAlignPrint(FILE *out) {
-    // Dump statistics
-    fprintf(out, "Loop Alignment distribution\n");
-    fprintf(out, "  # Inner   loops : %d\n",
-            loop_statistics.number_of_inner_loops);
-    fprintf(out, "  # Aligned loops : %d\n",
-            loop_statistics.number_of_aligned_loops);
-    fprintf(out, "  # Alignment possibilities : %.2f%%\n",
-            100 * static_cast<double>(loop_statistics.number_of_aligned_loops) /
-            loop_statistics.number_of_inner_loops);
-    // iterate over distribution
-    fprintf(out, "   Size : # loops\n");
-    for (std::map<int, int>::const_iterator iter =
-             loop_statistics.inner_loop_size_distribution.begin();
-         iter != loop_statistics.inner_loop_size_distribution.end();
-         ++iter) {
-      fprintf(out, "   %4d : %4d\n", iter->first, iter->second);
-    }
-  }
-
+  virtual ~Stat() {}
+  virtual void Print(FILE *out) = 0;
+  void Print() {Print(stdout);}
  private:
-  bool collect_loop_align_stat_;
-
-  struct LoopStatistics {
-    int number_of_inner_loops;
-    std::map<int, int> inner_loop_size_distribution;
-    int number_of_aligned_loops;
-  } loop_statistics;
 };
 
+// Print all stats to the same file.
+class Stats {
+ public:
+  Stats() {
+    stats_.clear();
+  }
+  ~Stats() {
+    for (std::map<const char *, Stat *, ltstr>::iterator iter = stats_.begin();
+        iter != stats_.end(); ++iter) {
+      delete iter->second;
+    }
+  }
+  void Add(const char *name, Stat *stat) {
+    MAO_ASSERT(!HasStat(name));
+    stats_[name] = stat;
+  }
+
+  bool HasStat(const char *name) const {
+    return stats_.find(name) != stats_.end();
+  }
+
+  Stat *GetStat(const char *name)  {
+    MAO_ASSERT(HasStat(name));
+    return stats_[name];
+  }
+
+  void Print(FILE *out) {
+    for (std::map<const char *, Stat *, ltstr>::iterator iter = stats_.begin();
+        iter != stats_.end(); ++iter) {
+      iter->second->Print(out);
+    }
+  }
+  void Print() {Print(stdout);}
+ private:
+  std::map<const char *, Stat *, ltstr> stats_;
+};
 
 class MaoUnit {
  public:
@@ -231,10 +213,11 @@ class MaoUnit {
   Symbol *AddSymbol(const char *name);
   Symbol *FindOrCreateAndFindSymbol(const char *name);
 
-  Statistics *stat() {return &stat_;}
-
   // Delete the entry from the IR.
   void DeleteEntry(MaoEntry *entry);
+
+  Stats *GetStats() {return &stats_;}
+
  private:
   // Create the section section_name if it does not already exists. Returns a
   // pointer the section.
@@ -276,7 +259,7 @@ class MaoUnit {
 
   MaoOptions *mao_options_;
 
-  Statistics stat_;
+  Stats stats_;
 };  // MaoUnit
 
 // Iterator wrapper for iterating over all the Sections in a MaoUnit.
