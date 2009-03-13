@@ -2,11 +2,11 @@
 
 = Build instructions =
 
-MAO relies on GNU Binutils for parsing the input assembly file. Make sure
-you download and build the correct version of binutils as indicated
-below. Below are the instruction for builing mao for both i686 and x86_64.
-Also note that --disable-nls might be needed when building binutils for
-Mac (tested on Leopard).
+MAO relies on GNU Binutils (currenty v2.19) for parsing an input assembly 
+file. Make sure you download and build the correct version of binutils as indicated below. 
+
+These are the instructions for builing MAO for both i686 and x86_64,
+for Linux and OSX. Note that --disable-nls might be needed when building binutils for Mac (tested on Leopard).
 
 {{{
 cd $DIR
