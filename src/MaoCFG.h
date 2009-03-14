@@ -64,9 +64,12 @@ class BasicBlock {
   typedef EdgeList::iterator EdgeIterator;
   typedef EdgeList::const_iterator ConstEdgeIterator;
 
-  BasicBlock(BasicBlockID id, const char *label) : id_(id), label_(label),
-                                                   first_entry_(NULL),
-                                                   last_entry_(NULL) { }
+  BasicBlock(BasicBlockID id, const char *label)
+  : id_(id), label_(label),
+    first_entry_(NULL),
+    last_entry_(NULL),
+    chained_indirect_jump_target_(false) {
+  }
   ~BasicBlock() {
     for (EdgeIterator iter = out_edges_.begin();
          iter != out_edges_.end(); ++iter) {
@@ -149,6 +152,14 @@ class BasicBlock {
   void set_first_entry(MaoEntry *entry)  { first_entry_ = entry;}
   void set_last_entry(MaoEntry *entry)  { last_entry_ = entry;}
 
+  void set_chained_indirect_jump_target(bool value) {
+    chained_indirect_jump_target_ = value;
+  }
+
+  bool chained_indirect_jump_target() const {
+    return chained_indirect_jump_target_;
+  }
+
  private:
   const BasicBlockID id_;
   const char *label_;
@@ -159,6 +170,13 @@ class BasicBlock {
   // Pointers to the first and last entry of the basic block.
   MaoEntry *first_entry_;
   MaoEntry *last_entry_;
+
+  // Some indirect jumps relies on that some basic blocks
+  // are placed after eachother. These blocks may not be
+  // changed and reordered without changing the corresponding
+  // jumps. This flags shows that the current basic block
+  // is such a basic block.
+  bool chained_indirect_jump_target_;
 };
 
 // Convenience Macros for Entry iteration
@@ -310,12 +328,13 @@ class CFGBuilder : public MaoPass {
   BasicBlock *BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label);
 
   template <class OutputIterator>
-  void GetTargets(MaoEntry *entry, OutputIterator iter);
+  void GetTargets(MaoEntry *entry, OutputIterator iter, bool *va_arg_targets);
 
   bool IsTableBasedJump(InstructionEntry *entry,
                         LabelEntry **out_label);
   bool IsVaargBasedJump(InstructionEntry *entry,
                         std::vector<MaoEntry *> *pattern);
+  bool IsTailCall(InstructionEntry *entry);
 
   MaoUnit  *mao_unit_;
   Function *function_;
@@ -329,13 +348,15 @@ class CFGBuilder : public MaoPass {
   class CFGStat : public Stat {
    public:
     CFGStat() : number_of_direct_jumps_(0), number_of_indirect_jumps_(0),
-                number_of_jump_table_patterns_(0), number_of_vaarg_patterns_(0)
+                number_of_jump_table_patterns_(0), number_of_vaarg_patterns_(0),
+                number_of_tail_calls_(0)
     {;}
     ~CFGStat() {;}
     void FoundDirectJump()        { ++number_of_direct_jumps_; }
     void FoundIndirectJump()      { ++number_of_indirect_jumps_; }
     void FoundJumpTablePattern()  { ++number_of_jump_table_patterns_; }
     void FoundVaargPattern()      { ++number_of_vaarg_patterns_; }
+    void FoundTailCall()          { ++number_of_tail_calls_; }
 
 
     virtual void Print(FILE *out) {
@@ -343,6 +364,7 @@ class CFGBuilder : public MaoPass {
       fprintf(out, "Indirect jumps:     %7d\n", number_of_indirect_jumps_);
       fprintf(out, "Jump table patterns:%7d\n", number_of_jump_table_patterns_);
       fprintf(out, "VA_ARG patterns    :%7d\n", number_of_vaarg_patterns_);
+      fprintf(out, "Tail calls         :%7d\n", number_of_tail_calls_);
     }
 
    private:
@@ -350,6 +372,7 @@ class CFGBuilder : public MaoPass {
     int number_of_indirect_jumps_;
     int number_of_jump_table_patterns_;
     int number_of_vaarg_patterns_;
+    int number_of_tail_calls_;
   };
 
   bool collect_stat_;
