@@ -21,9 +21,8 @@
 
 #include "MaoUnit.h"
 #include "MaoCFG.h"
+#include "MaoDefs.h"
 #include "MaoOptions.h"
-
-
 
 // Class: BasicBlock
 
@@ -215,7 +214,9 @@ void CFGBuilder::Build() {
       typedef const char *Label;
       typedef std::vector<Label> LabelVector;
       LabelVector targets;
-      GetTargets(entry, std::back_insert_iterator<LabelVector>(targets));
+      bool va_arg_targets;
+      GetTargets(entry, std::back_insert_iterator<LabelVector>(targets),
+                 &va_arg_targets);
       for (LabelVector::iterator iter = targets.begin(); iter != targets.end();
            ++iter) {
         Label label = *iter;
@@ -255,6 +256,9 @@ void CFGBuilder::Build() {
               }
             }
           }
+        }
+        if (va_arg_targets) {
+          target->set_chained_indirect_jump_target(true);
         }
 
         // Insert edges
@@ -366,6 +370,16 @@ CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table) {
 }
 
 
+// A tail call is here defined as a indirect jump
+// direcly after a leave instruction.
+bool CFGBuilder::IsTailCall(InstructionEntry *entry) {
+  MaoEntry *prev = entry->prev();
+  return (entry->IsIndirectJump() &&
+          prev &&
+          prev->IsInstruction() &&
+          prev->AsInstruction()->op() == OP_leave);
+}
+
 // Does this entry jump based on a jumptable? If so, return true and return the
 // label identifying the jump table in out_label. Otherwise return false and
 // return NULL in out_label.
@@ -422,7 +436,6 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
 // Does this entry jump based on a vaarg style jump?
 // e.g.:
 // Loop for va_arg patterns!
-//      mov     XXX, %REG
 //      jmp     *%REG
 // <optional label>:
 //      movaps  <xmm register>, IMM(%rax)
@@ -434,33 +447,32 @@ bool CFGBuilder::IsVaargBasedJump(InstructionEntry *entry,
                                   std::vector<MaoEntry *> *pattern) {
   pattern->clear();
   if (!entry->IsIndirectJump()) return false;
-  MaoEntry *prev = entry->prev();
-  InstructionEntry *prev_inst = prev->IsInstruction()?
-      prev->AsInstruction():NULL;
-  if (entry->IsRegisterOperand(0) &&
-     prev_inst &&
-     prev_inst->IsOpMov() &&    // Is previous instruction a move?
-     prev_inst->NumOperands() == 2 &&   // target register matches the jump
-     prev_inst->IsRegisterOperand(1) &&  // register?
-     prev_inst->GetRegisterOperand(1) == entry->GetRegisterOperand(0)) {
-    // Possible Vaarg based jump found. Check for xmm based move instructions
-    MaoEntry *e = entry->next();
-    if (e && e->IsLabel())
-      e = e->next();
-    while (e &&
-           e->IsInstruction() &&
-           e->AsInstruction()->op() == OP_movaps) {
-      pattern->push_back(e);
-      e = e->next();
-    }
+  if (!entry->IsRegisterOperand(0)) return false;
+
+  // Possible Vaarg based jump found. Check for xmm based move instructions
+  MaoEntry *e = entry->next();
+  if (e && e->IsLabel())
+    e = e->next();
+  while (e &&
+         e->IsInstruction() &&
+         e->AsInstruction()->op() == OP_movaps) {
+    pattern->push_back(e);
+    e = e->next();
   }
-  return pattern->size() > 0;
+  return pattern->size() > 1;
 }
 
 
 
+// va_arg_targets is an output variable that signals if the targets
+// are part of a va_arg style pattern and the target basic blocks
+// need to be flagged.
 template <class OutputIterator>
-void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
+void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
+                            bool *va_arg_targets) {
+
+  *va_arg_targets = false;
+
   bool processed = false;
   MAO_ASSERT(entry->Type() == MaoEntry::INSTRUCTION);
   InstructionEntry *insn_entry = static_cast<InstructionEntry *>(entry);
@@ -468,6 +480,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
   if (insn_entry->IsIndirectJump()) cfg_stat_->FoundIndirectJump();
 
   // Is this a "normal" direct branch instruction.
+  // TODO(martint): Should we care about direct tail-calls here?
   if (!processed) {
     if (!insn_entry->IsCall() && !insn_entry->IsReturn() &&
         !insn_entry->IsIndirectJump()) {
@@ -476,6 +489,13 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
       processed = true;
       if (collect_stat_) cfg_stat_->FoundDirectJump();
     }
+  }
+
+  // Is this a tail call?
+  if (!processed && IsTailCall(insn_entry)) {
+    if (collect_stat_) cfg_stat_->FoundTailCall();
+    // No edges added in this case.
+    processed = true;
   }
 
   // Pattern one: Look for jump tables
@@ -499,6 +519,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter) {
   // Pattern two: Look for va_arg patterns!
   std::vector<MaoEntry *> pattern;
   if (!processed && IsVaargBasedJump(insn_entry, &pattern)) {
+    *va_arg_targets = true;
     // Pattern now holds all the possible targets
     for (std::vector<MaoEntry *>::iterator p_iter = pattern.begin();
         p_iter != pattern.end();
