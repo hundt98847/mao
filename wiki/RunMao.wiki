@@ -38,7 +38,9 @@ $ gcc -o foo.o foo.cc
   ...as  -V -Qy -o hello.o /tmp/cciDot0H.s
 }}}
 
-In order to benefit from MAO optimizations, it should be run right before the GNU assembler. The easiest way to do this is to replace the 'as' with a little script which executes MAO first, and then start 'as' on MAO's output. 
+In order to benefit from MAO optimizations, it should be run right before the GNU assembler. The easiest way to do this is to replace the 'as' with a script which executes MAO first, and then start 'as' on MAO's output. 
+
+We wrote such a wrapper script and put it in {{{ mao/scripts/as }}}.
 
 To squeeze this script into gcc, you can:
 
@@ -47,3 +49,6 @@ To squeeze this script into gcc, you can:
    # This method is similar to point 2, instead of passing the -B option, the enviroment variable GCC_EXEC_PREFIX can be set.
    # TODO: We are planning on adding an explicit option to the gcc driver to enable MAO invocation without the tricks above.
 
+= Integrating MAO with Open64 =
+
+The open64 compiler re-uses parts of an existing gcc installation. In particular, it also re-uses 'as' and has support for {{{-B}}}, as well as it's own options allowing to specify various parts of the toolchain {{{-y...}}}. The same tricks as above apply.
