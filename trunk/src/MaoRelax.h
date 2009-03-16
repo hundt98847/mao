@@ -19,18 +19,19 @@
 #ifndef MAORELAX_H_
 #define MAORELAX_H_
 
-#include "MaoUnit.h"
 #include "MaoDebug.h"
+#include "MaoPasses.h"
+#include "MaoUnit.h"
 #include "tc-i386-helper.h"
 
 #include <map>
 
-class MaoRelaxer {
+class MaoRelaxer : public MaoPass {
  public:
   typedef std::map<MaoEntry *, int> SizeMap;
 
-  MaoRelaxer() {}
-  void RelaxSection(MaoUnit *mao, Section *section, SizeMap *size_map);
+  MaoRelaxer(MaoUnit *mao_unit);
+  void RelaxSection(Section *section, SizeMap *size_map);
 
   // Used when a pass needs the sizes for a given function.
   // Returns the sizemap, which holds entries for the whole section.
@@ -90,6 +91,11 @@ class MaoRelaxer {
       free(fragments);
     }
   }
+
+  MaoUnit *mao_unit_;
+  bool collect_stat_;
+  bool dump_sizemap_;
+
 };
 
 // External entry point
