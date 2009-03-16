@@ -372,8 +372,6 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
       // TODO(martint): The codes does not currently set the correct
       //                section for all labels in the symboltable.
       break;
-    case MaoEntry::DEBUG:
-      break;
     case MaoEntry::DIRECTIVE:
       // Update sections when necessary. Doing it here instead of
       // in ir.cc makes it possible to add the entry
@@ -554,9 +552,11 @@ void MaoUnit::FindFunctions() {
     // created temporarily inside mao.
     Section *section = *iter;
     if (bfd_get_section_by_name(stdoutput,
-                                section->name().c_str()) != NULL) {
+                                section->name().c_str()) != NULL &&
+        section->name() != ".eh_frame") {
       // Iterate over entries, until we find an entry belonging to a function,
-      // or the end of the text section
+
+     // or the end of the text section
       MaoEntry *entry = *(section->EntryBegin());
       if (entry &&
           !InFunction(entry)) {

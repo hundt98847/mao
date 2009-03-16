@@ -296,7 +296,6 @@ class CFGBuilder : public MaoPass {
       case MaoEntry::INSTRUCTION: return true;
       case MaoEntry::LABEL: return true;
       case MaoEntry::DIRECTIVE: return false;
-      case MaoEntry::DEBUG: return false;
       case MaoEntry::UNDEFINED:
       default:
         MAO_ASSERT(false);

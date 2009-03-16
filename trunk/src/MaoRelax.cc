@@ -99,6 +99,25 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
       fprintf(stderr, "\n");
     }
   }
+
+  if (collect_stat_) {
+    // Print out the size for the given section, and for each function in this
+    // section.
+    fprintf(stderr, "Size for section %s [%d] is %d\n", section->name().c_str(),
+            section->id(), SectionSize(size_map));
+
+    // Functions?
+    for (MaoUnit::ConstFunctionIterator iter = mao_unit_->ConstFunctionBegin();
+         iter != mao_unit_->ConstFunctionEnd();
+         ++iter) {
+      Function *function = *iter;
+      if (function->GetSection() == section) {
+        fprintf(stderr, "Size for function %s [%d] is %d\n",
+                function->name().c_str(), function->id(),
+                FunctionSize(function,size_map));
+      }
+    }
+  }
 }
 
 
@@ -289,7 +308,6 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
         break;
       }
       case MaoEntry::LABEL:
-      case MaoEntry::DEBUG:
         // Nothing to do
         break;
       case MaoEntry::UNDEFINED:
@@ -495,6 +513,31 @@ void MaoRelaxer::FragInitOther(struct frag *frag) {
   TC_FRAG_INIT(frag);
 #endif
 }
+
+
+int MaoRelaxer::SectionSize(SizeMap *size_map) {
+  int size = 0;
+  for (SizeMap::const_iterator iter = size_map->begin();
+       iter != size_map->end();
+       ++iter) {
+    size += iter->second;
+  }
+  return size;
+}
+
+int MaoRelaxer::FunctionSize(Function *function, SizeMap *size_map) {
+  int size = 0;
+  for(SectionEntryIterator iter = function->EntryBegin();
+      iter != function->EntryEnd();
+      ++iter) {
+    if (!(*iter)->IsLabel()) {
+      MAO_ASSERT(size_map->find(*iter) != size_map->end());
+      size += (*size_map)[*iter];
+    }
+  }
+  return size;
+}
+
 
 // --------------------------------------------------------------------
 // External entry point
