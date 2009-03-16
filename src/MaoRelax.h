@@ -92,6 +92,10 @@ class MaoRelaxer : public MaoPass {
     }
   }
 
+  static int SectionSize(SizeMap *size_map);
+  static int FunctionSize(Function *function, SizeMap *size_map);
+
+
   MaoUnit *mao_unit_;
   bool collect_stat_;
   bool dump_sizemap_;

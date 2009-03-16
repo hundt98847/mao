@@ -305,8 +305,7 @@ class MaoEntry {
     UNDEFINED = 0,
     INSTRUCTION,
     LABEL,
-    DIRECTIVE,
-    DEBUG,
+    DIRECTIVE
   };
 
   MaoEntry(unsigned int line_number, const char *const line_verbatim,
@@ -325,7 +324,6 @@ class MaoEntry {
   bool IsInstruction() { return Type() == INSTRUCTION; }
   bool IsLabel() { return Type() == LABEL; }
   bool IsDirective() { return Type() == DIRECTIVE; }
-  bool IsDebug() { return Type() == DEBUG; }
 
   InstructionEntry *AsInstruction();
   LabelEntry *AsLabel();
