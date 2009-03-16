@@ -18,6 +18,7 @@
 #ifndef MAOOPTIONS_H_
 #define MAOOPTIONS_H_
 
+#include <unistd.h>
 #include <sys/times.h>
 
 enum MaoOptionType {
