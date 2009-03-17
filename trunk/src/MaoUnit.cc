@@ -957,10 +957,14 @@ const std::string &DirectiveEntry::OperandExpressionToString(
       {
         std::ostringstream exp_string;
         if (expr->X_add_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_add_symbol)
-                     << "+";
+          exp_string << GetDotOrSymbol(expr->X_add_symbol);
+          if (expr->X_add_number != 0) {
+            exp_string << "+";
+          }
         }
-        exp_string << expr->X_add_number;
+        if (expr->X_add_number != 0) {
+          exp_string << expr->X_add_number;
+        }
         out->append(exp_string.str());
       }
       break;
@@ -969,14 +973,20 @@ const std::string &DirectiveEntry::OperandExpressionToString(
       {
         std::ostringstream exp_string;
         if (expr->X_add_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_add_symbol)
-                     << "+";
+          exp_string << GetDotOrSymbol(expr->X_add_symbol);
+          if (expr->X_op_symbol) {
+            exp_string << "+";
+          }
         }
         if (expr->X_op_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_op_symbol)
-                     << "+";
+          exp_string << GetDotOrSymbol(expr->X_op_symbol);
+          if (expr->X_add_number != 0) {
+            exp_string << "+";
+          }
         }
-        exp_string << expr->X_add_number;
+        if (expr->X_add_number != 0) {
+          exp_string << expr->X_add_number;
+        }
         out->append(exp_string.str());
       }
       break;
@@ -985,14 +995,20 @@ const std::string &DirectiveEntry::OperandExpressionToString(
       {
         std::ostringstream exp_string;
         if (expr->X_add_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_add_symbol)
-                     << "-";
+          exp_string << GetDotOrSymbol(expr->X_add_symbol);
+          if (expr->X_op_symbol) {
+            exp_string << "-";
+          }
         }
         if (expr->X_op_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_op_symbol)
-                     << "+";
+          exp_string << GetDotOrSymbol(expr->X_op_symbol);
+          if (expr->X_add_number != 0) {
+            exp_string << "+";
+          }
         }
-        exp_string << expr->X_add_number;
+        if (expr->X_add_number != 0) {
+          exp_string << expr->X_add_number;
+        }
         out->append(exp_string.str());
       }
       break;

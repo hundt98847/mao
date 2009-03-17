@@ -49,7 +49,6 @@ GAS_SRC=					\
 	$(BINUTILSRC)/gas/dw2gencfi.c		\
 	$(BINUTILSRC)/gas/ecoff.c		\
 	$(BINUTILSRC)/gas/ehopt.c		\
-	$(BINUTILSRC)/gas/expr.c		\
 	$(BINUTILSRC)/gas/flonum-copy.c		\
 	$(BINUTILSRC)/gas/flonum-konst.c	\
 	$(BINUTILSRC)/gas/flonum-mult.c		\
@@ -79,6 +78,7 @@ CSRCS=						\
 	tc-i386.c				\
 	dwarf2dbg.c				\
 	obj-elf.c				\
+	expr.c					\
 	symbols.c
 
 CCSRCS=						\

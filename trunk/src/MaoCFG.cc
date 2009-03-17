@@ -532,6 +532,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
         // Add a label before p_iter if necessary
         LabelEntry *l = mao_unit_->CreateLabel(
             MaoUnit::BBNameGen::GetUniqueName());
+        l->set_from_assembly(false);
         (*p_iter)->LinkBefore(l);
         *iter++ = l->name();
       }
