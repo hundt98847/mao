@@ -6,11 +6,18 @@ BINUTILOBJ=$(BINUTILSRC)-obj-$(TARGET)
 PYTHON=../python-2.5.4
 PYTHONLIB=$(PYTHON)/usr/local/lib/python2.5/config/libpython2.5.a
 PYTHONINCL=/usr/local/include/python2.5
+
 ifeq ($(OS),Linux)
  PYTHONLDOPTS=-Xlinker -export-dynamic 
 else
  PYTHONLDOPTS=
 endif
+
+# disable PYTHON integration for now
+PYTHONLIB=
+PYTHONINCL=
+PYTHONLDOPTS=
+
 LIBZ=-lz
 OBJDIR=../obj-$(TARGET)
 BINDIR=../bin
@@ -29,7 +36,6 @@ CFLAGS=						\
 	-I$(BINUTILSRC)				\
 	-I$(BINUTILSRC)/include			\
 	-I$(BINUTILOBJ)/include			\
-	-I$(PYTHON)$(PYTHONINCL)		\
 	-DLOCALEDIR=$(DLOCALEDIR)		\
 	-g -O0 -Wall -fno-exceptions
 
@@ -92,7 +98,6 @@ CCSRCS=						\
 	MaoOpcodes.cc				\
 	MaoOptions.cc				\
 	MaoPasses.cc				\
-	MaoPython.cc				\
 	MaoRedundantTestElim.cc			\
 	MaoRedundantMemMove.cc			\
 	MaoRelax.cc				\
