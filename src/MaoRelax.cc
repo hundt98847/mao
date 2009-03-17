@@ -39,6 +39,10 @@ extern "C" {
   void convert_to_bignum(expressionS *exp);
   int sizeof_leb128(valueT value, int sign);
   int output_big_leb128(char *p, LITTLENUM_TYPE *bignum, int size, int sign);
+  const char *S_GET_NAME(symbolS *s);
+  symbolS *symbol_find (const char *name);
+  void symbol_set_frag (symbolS *s, fragS *f);
+  extern int finalize_syms;
 }
 
 
@@ -63,6 +67,11 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
   // Build the fragments (and initial sizes)
   FragToEntryMap relax_map;
 
+  // This makes sure that gas do not finalize syms after
+  // its first relaxation. We want to keep the symbols
+  // unresolved so that we can update the IR and still
+  // get valid sizes from the relaxer.
+  finalize_syms = 0;
 
   asection *bfd_section = bfd_get_section_by_name(stdoutput,
                                                   section->name().c_str());
@@ -91,12 +100,14 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
   FreeFragments(fragments);
 
   if (dump_sizemap_) {
+    int offset = 0;
     for (SizeMap::const_iterator iter = size_map->begin();
          iter != size_map->end();
          ++iter) {
-      fprintf(stderr, "%d  ", iter->second);
+      fprintf(stderr, "%4x:  ", offset);
       iter->first->PrintIR(stderr);
       fprintf(stderr, "\n");
+      offset += iter->second;
     }
   }
 
@@ -148,6 +159,9 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
                                         FragToEntryMap *relax_map) {
   struct frag *fragments, *frag;
   fragments = frag = NewFragment();
+
+  LabelEntry *le;
+  symbolS *symbolP;
 
   bool is_text = !section->name().compare(".text");
 
@@ -308,9 +322,18 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
         break;
       }
       case MaoEntry::LABEL:
-        // Nothing to do
+        // Assign the frag to the symbol
+        le = entry->AsLabel();
+        // Only assign frags to labels that have a symbol
+        // entry int the gas symbol table.
+        if (le->from_assembly()) {
+          symbolP = symbol_find(le->name());
+          MAO_ASSERT(symbolP != NULL);
+          symbol_set_frag (symbolP, frag);
+        }
         break;
       case MaoEntry::UNDEFINED:
+        // Nothing to do
       default:
         MAO_ASSERT(0);
     }
@@ -370,15 +393,6 @@ struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
     sym = make_expr_symbol(insn->op[0].disps);
     off = 0;
   }
-
-  // TODO(martint): Fix the code below
-  // The following code makes sure the relaxer does not
-  // segfault. Further investigation is needed to make
-  // sure it will produce the correct result!
-  struct local_symbol *lsym = (struct local_symbol *)sym;
-  lsym->lsy_section = 0;
-  lsym->u.lsy_frag = frag;
-
 
   return FragVar(rs_machine_dependent, insn->reloc[0],
                  subtype, sym, off,

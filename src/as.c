@@ -1236,8 +1236,8 @@ as_main (int argc, char ** argv)
      I didn't want to risk the change.  */
   subsegs_finish ();
 
-  if (keep_it)
-    write_object_file ();
+//   if (keep_it)
+//     write_object_file ();
 
   fflush (stderr);
 

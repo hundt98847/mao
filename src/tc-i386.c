@@ -2878,7 +2878,7 @@ md_assemble (char *line)
   link_insn(&i, sizeof(i), line_verbatim);
 
   /* We are ready to output the insn.  */
-  output_insn ();
+  //output_insn ();
 
 
 }

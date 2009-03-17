@@ -385,7 +385,7 @@ class LabelEntry : public MaoEntry {
              const char *const line_verbatim,
              const MaoUnit *maounit)
       : MaoEntry(line_number, line_verbatim, maounit),
-        name_(strdup(name)) { }
+        name_(strdup(name)), from_assembly_(true) { }
   ~LabelEntry() { delete name_; }
 
   virtual void PrintEntry(FILE *out) const;
@@ -393,9 +393,16 @@ class LabelEntry : public MaoEntry {
   virtual EntryType Type() const { return LABEL; }
   const char *name() { return name_; }
   virtual char GetDescriptiveChar() const { return 'L'; }
+  bool from_assembly() const { return from_assembly_; }
+  void set_from_assembly(bool value) { from_assembly_ = value; }
 
  private:
   const char *const name_;
+  // Only labels that are read from the assembly is in the gas symbol table.
+  // Local labels generated in mao are currently not inserted into the gas
+  // symbol table. Labels can be generated when splitting basic blocks,
+  // and for indirect jump patterns.
+  bool from_assembly_;
 };
 
 // An Entry of the type Directive
