@@ -29,13 +29,17 @@ make
 cd ..
 
 # Python
-wget http://www.python.org/ftp/python/2.5.4/Python-2.5.4.tgz
-gzip -dc Python-2.5.4.tgz  | tar xvf -
-cd Python-2.5.4
-./configure PREFIX=$DIR/python-2.5.4 EXEC_PREFIX=$DIR/python-2.5.4
-make
-make DESTDIR=$DIR/python-2.5.4 install
-cd ..
+#
+# Note: Python integration is currently disabled, so 
+#       none of these steps is needed at this point.
+#
+#wget http://www.python.org/ftp/python/2.5.4/Python-2.5.4.tgz
+#gzip -dc Python-2.5.4.tgz  | tar xvf -
+#cd Python-2.5.4
+#./configure PREFIX=$DIR/python-2.5.4 EXEC_PREFIX=$DIR/python-2.5.4
+#make
+#make DESTDIR=$DIR/python-2.5.4 install
+#cd ..
 
 
 cd src
