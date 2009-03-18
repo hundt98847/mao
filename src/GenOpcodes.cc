@@ -94,13 +94,37 @@ void usage(const char *argv[]) {
 
 class GenDefEntry {
  public:
-  GenDefEntry() {}
+  GenDefEntry() {
+    flags.CF = flags.PF = flags.AF = flags.ZF = flags.SF =
+    flags.TP = flags.IF = flags.DF = flags.OF = flags.IOPL =
+    flags.NT = flags.RF = flags.VM = flags.AC = flags.VIF =
+    flags.VIP = flags.ID = 0;
+  }
   unsigned int       op_mask;
   BitString reg_mask;
   BitString reg_mask8;
   BitString reg_mask16;
   BitString reg_mask32;
   BitString reg_mask64;
+  struct flags_ {
+    bool  CF :1;
+    bool  PF :1;
+    bool  AF :1;
+    bool  ZF :1;
+    bool  SF :1;
+    bool  TP :1;
+    bool  IF :1;
+    bool  DF :1;
+    bool  OF :1;
+    bool  IOPL :1;
+    bool  NT :1;
+    bool  RF :1;
+    bool  VM :1;
+    bool  AC :1;
+    bool  VIF:1;
+    bool  VIP :1;
+    bool  ID :1;
+  } flags;
 };
 
 typedef std::map<char *, GenDefEntry *, ltstr> MnemMap;
@@ -182,22 +206,44 @@ void ReadSideEffects(const char *fname) {
     while (p && *p && (p < end)) {
       char *q = next_field(p, ' ', &p);
       if (!*q) break;
-      if (!strcmp(q, "all:"))    mask = &e->reg_mask; else
-      if (!strcmp(q, "addr8:"))  mask = &e->reg_mask8; else
-      if (!strcmp(q, "addr16:")) mask = &e->reg_mask16; else
-      if (!strcmp(q, "addr32:")) mask = &e->reg_mask32; else
-      if (!strcmp(q, "addr64:")) mask = &e->reg_mask64; else
+      if (!strcasecmp(q, "all:"))    mask = &e->reg_mask; else
+      if (!strcasecmp(q, "addr8:"))  mask = &e->reg_mask8; else
+      if (!strcasecmp(q, "addr16:")) mask = &e->reg_mask16; else
+      if (!strcasecmp(q, "addr32:")) mask = &e->reg_mask32; else
+      if (!strcasecmp(q, "addr64:")) mask = &e->reg_mask64; else
 
-      if (!strcmp(q, "op0"))  e->op_mask |= DEF_OP0; else
-      if (!strcmp(q, "src"))  e->op_mask |= DEF_OP0; else
+      if (!strcasecmp(q, "flags:"))  /* TODO(rhundt): refine */; else
+      if (!strcasecmp(q, "clear:"))  /* TODO(rhundt): refine */; else
+      if (!strcasecmp(q, "undef:"))  /* TODO(rhundt): refine */; else
 
-      if (!strcmp(q, "op1"))  e->op_mask |= DEF_OP1; else
-      if (!strcmp(q, "dest")) e->op_mask |= DEF_OP1; else
+      if (!strcasecmp(q, "CF")) e->flags.CF = true; else
+      if (!strcasecmp(q, "PF")) e->flags.PF = true; else
+      if (!strcasecmp(q, "AF")) e->flags.AF = true; else
+      if (!strcasecmp(q, "ZF")) e->flags.ZF = true; else
+      if (!strcasecmp(q, "SF")) e->flags.SF = true; else
+      if (!strcasecmp(q, "TP")) e->flags.TP = true; else
+      if (!strcasecmp(q, "IF")) e->flags.IF = true; else
+      if (!strcasecmp(q, "DF")) e->flags.DF = true; else
+      if (!strcasecmp(q, "OF")) e->flags.OF = true; else
+      if (!strcasecmp(q, "IOPL")) e->flags.IOPL = true; else
+      if (!strcasecmp(q, "NT")) e->flags.NT = true; else
+      if (!strcasecmp(q, "RF")) e->flags.RF = true; else
+      if (!strcasecmp(q, "VM")) e->flags.VM = true; else
+      if (!strcasecmp(q, "AC")) e->flags.AC = true; else
+      if (!strcasecmp(q, "VIF")) e->flags.VIF = true; else
+      if (!strcasecmp(q, "VIP")) e->flags.VIP = true; else
+      if (!strcasecmp(q, "ID")) e->flags.ID = true; else
 
-      if (!strcmp(q, "op2"))  e->op_mask |= DEF_OP2; else
-      if (!strcmp(q, "op3"))  e->op_mask |= DEF_OP3; else
-      if (!strcmp(q, "op4"))  e->op_mask |= DEF_OP4; else
-      if (!strcmp(q, "op5"))  e->op_mask |= DEF_OP5; else {
+      if (!strcasecmp(q, "op0"))  e->op_mask |= DEF_OP0; else
+      if (!strcasecmp(q, "src"))  e->op_mask |= DEF_OP0; else
+
+      if (!strcasecmp(q, "op1"))  e->op_mask |= DEF_OP1; else
+      if (!strcasecmp(q, "dest")) e->op_mask |= DEF_OP1; else
+
+      if (!strcasecmp(q, "op2"))  e->op_mask |= DEF_OP2; else
+      if (!strcasecmp(q, "op3"))  e->op_mask |= DEF_OP3; else
+      if (!strcasecmp(q, "op4"))  e->op_mask |= DEF_OP4; else
+      if (!strcasecmp(q, "op5"))  e->op_mask |= DEF_OP5; else {
         RegEntry *r = FindRegister(q);
         if (r)
           mask->Set(r->num_);
