@@ -325,6 +325,30 @@ LabelEntry *MaoUnit::CreateLabel(const char *labelname) {
   return l;
 }
 
+DirectiveEntry *MaoUnit::CreateDirective(
+    DirectiveEntry::Opcode op,
+    const DirectiveEntry::OperandVector &operands,
+    Function *function,
+    SubSection *subsection) {
+  DirectiveEntry *directive =
+      new DirectiveEntry(op, operands,
+                         0, NULL, this);
+  // next free ID for the entry
+  EntryID entry_index = entry_vector_.size();
+  directive->set_id(entry_index);
+
+  // Add the entry to the compilation unit
+  entry_vector_.push_back(directive);
+
+  if (function) {
+    entry_to_function_[directive] = function;
+  }
+  if (subsection) {
+    entry_to_subsection_[directive] = subsection;
+  }
+
+  return directive;
+}
 
 // Add an entry to the MaoUnit list
 bool MaoUnit::AddEntry(MaoEntry *entry,
@@ -766,7 +790,7 @@ bool ConstSectionIterator::operator !=(const ConstSectionIterator &other)
 //
 
 MaoEntry::MaoEntry(unsigned int line_number, const char *line_verbatim,
-                   const MaoUnit *maounit) :
+                   MaoUnit *maounit) :
     maounit_(maounit), id_(0), next_(0), prev_(0), line_number_(line_number) {
   if (line_verbatim) {
     MAO_ASSERT(strlen(line_verbatim) < MAX_VERBATIM_ASSEMBLY_STRING_LENGTH);
@@ -812,12 +836,40 @@ void MaoEntry::LinkBefore(MaoEntry *entry) {
   } else {
     // TODO(rhundt): Set "first" pointer of everything to entry
   }
+
+  // Do we need to update the function?
+  Function *function = maounit_->GetFunction(this);
+  if (function &&
+      function->first_entry() == this) {
+    function->set_first_entry(entry);
+  }
+
+  // Do we need to update the subsection?
+  SubSection *subsection = maounit_->GetSubSection(this);
+  MAO_ASSERT(subsection);
+  if (subsection->first_entry() == this) {
+    subsection->set_first_entry(entry);
+  }
 }
 
 void MaoEntry::LinkAfter(MaoEntry *entry) {
   entry->set_next(next());
   entry->set_prev(this);
   set_next(entry);
+
+  // Do we need to update the function?
+  Function *function = maounit_->GetFunction(this);
+  if (function &&
+      function->last_entry() == this) {
+    function->set_last_entry(entry);
+  }
+
+  // Do we need to update the subsection?
+  SubSection *subsection = maounit_->GetSubSection(this);
+  MAO_ASSERT(subsection);
+  if (subsection->last_entry() == this) {
+    subsection->set_last_entry(entry);
+  }
 }
 
 
@@ -1194,7 +1246,7 @@ bool DirectiveEntry::IsDebugDirective() const {
 InstructionEntry::InstructionEntry(i386_insn *instruction,
                                    unsigned int line_number,
                                    const char* line_verbatim,
-                                   const MaoUnit *maounit) :
+                                   MaoUnit *maounit) :
     MaoEntry(line_number, line_verbatim, maounit) {
   op_ = GetOpcode(instruction->tm.name);
   MAO_ASSERT(op_ != OP_invalid);

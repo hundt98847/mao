@@ -118,6 +118,8 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
             section->id(), SectionSize(size_map));
 
     // Functions?
+    // TODO(martint): Clean up code. Now I added code to trigger
+    // LinkBefore and LinkAfter methods.
     for (MaoUnit::ConstFunctionIterator iter = mao_unit_->ConstFunctionBegin();
          iter != mao_unit_->ConstFunctionEnd();
          ++iter) {
@@ -126,6 +128,29 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
         fprintf(stderr, "Size for function %s [%d] is %d\n",
                 function->name().c_str(), function->id(),
                 FunctionSize(function,size_map));
+        // create symbols in the object file for these?
+        DirectiveEntry::OperandVector operands;
+        SubSection *ss = mao_unit_->GetSubSection(function->last_entry());
+        MAO_ASSERT(ss);
+	//.size	<functionname>_veri, <calculated size>
+        char func_verification_name[strlen(function->name().c_str())+6];
+        sprintf(func_verification_name, "%s_veri", function->name().c_str());
+        operands.push_back(new DirectiveEntry::Operand(func_verification_name));
+        operands.push_back(new DirectiveEntry::Operand(FunctionSize(function,
+                                                                    size_map)));
+        DirectiveEntry *d_entry = mao_unit_->CreateDirective(
+            DirectiveEntry::SIZE, operands,
+            function, ss);
+        function->last_entry()->LinkAfter(d_entry);
+
+        DirectiveEntry::OperandVector operands2;
+	//.type	foo, @function
+        operands2.push_back(new DirectiveEntry::Operand(func_verification_name));
+        operands2.push_back(new DirectiveEntry::Operand("@function"));
+        DirectiveEntry *d_entry2 = mao_unit_->CreateDirective(
+            DirectiveEntry::TYPE, operands2, function, ss);
+        function->last_entry()->LinkBefore(d_entry2);
+
       }
     }
   }
