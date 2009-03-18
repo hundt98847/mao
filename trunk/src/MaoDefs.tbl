@@ -19,22 +19,28 @@
 //
 // memnonic  defs
 //
-// with defs being on of:
-//    reg    all valid register names are supported.
+// with defs being one of:
+//    reg    all valid register names are supported. Taking the register
+//           names from binutils-2.xx/opcodes/i386-reg.tbl
 //
-//    op0    defines operand 0  (also 'src')
-//    op1    defines operand 1  (also 'dest')
+//    op0    instruction def's operand 0  (also 'src')
+//    op1    instruction def's operand 1  (also 'dest')
 //    ...
 //
 //    addr8: all following registers are def'ed in case
 //           op0 of the instruction denotes an 8-bit reg
-//           or mem.
-//
+//           or mem. Note: The colon : is required.
 //    addr16:
 //    addr32:
 //    addr64: correspondingly.
 //
-//    all:  switches back to default mask.
+//    flags: starting to define flags. Valid flag names are:
+//          CF PF AF ZF SF TP IF DF OF IOPL NT RF VM AC VIF VIP ID
+//
+//    clear: indicate which flags are cleared.
+//    undef: indicate which flags are left undefined.
+//
+//    all:  switches back to default mask and def assignment.
 //
 aaa   ax
 aad   ax
@@ -60,7 +66,7 @@ blendvps dest
 bound 
 bsf dest
 bsr dest
-bswap src
+bswap src dest
 bt 
 btc 
 btr 
@@ -181,10 +187,10 @@ fistp
 
 hlt
 
-idiv addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
+idiv      addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
 imul dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
-in dest
-inc src
+in   dest
+inc  src
 
 # can be refined by mode
 ins  rdi 
@@ -238,11 +244,10 @@ jecxz
 jecxz
 jrcxz
 
-lahf ah
-lar  dest
+lahf  ah
+lar   dest
 lddqu dest
 
-# the special regs are not yet supported.
 ldmxcsr mxcsr
 lds dest ds
 lss dest ss
@@ -250,7 +255,7 @@ les dest es
 lfs dest fs
 lgs dest gs
 
-lea dest
+lea   dest
 leave rsp rbp
 lfence 
 lgdt
@@ -265,10 +270,10 @@ lodsd eax
 lodsq rax
 
 # loops can be refined by address size
-loop  rcx
-loope rcx
+loop   rcx
+loope  rcx
 loopne rcx
-loopz rcx
+loopz  rcx
 loopnz rcx
 
 lsl dest
@@ -348,7 +353,7 @@ movzwq dest
 movzx dest
 
 mpsadbw dest
-mul dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
+mul   dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
 mulpd dest
 mulps dest
 mulsd dest
@@ -370,3 +375,295 @@ movddup dest
 movshdup dest
 movsldup dest
 mwait
+
+
+// N
+neg  op0  flags: CF OF SF ZF AF PF
+nop       flags: 
+not  op0  flags:
+
+// O
+or   dest flags: SF ZF PF clear: OF CF undef: AF
+orpd dest
+orps dest
+out       flags:
+outs  addr8: si addr16: si addr32: esi addr64: rsi  flags:
+outsb addr8: si addr16: si addr32: esi addr64: rsi  flags:
+outsw addr8: si addr16: si addr32: esi addr64: rsi  flags:
+outsd addr8: si addr16: si addr32: esi addr64: rsi  flags:
+
+// P
+pabsb dest
+pabsw dest
+pabsd dest
+packsswb dest  flags:
+packssdw dest  flags:
+packusdw dest  flags:
+packuswb dest  flags:
+paddb    dest  flags:
+paddw    dest  flags:
+paddd    dest  flags:
+paddq    dest  flags:
+paddsb   dest  flags:
+paddsw   dest  flags:
+paddusb  dest  flags:
+paddusw  dest  flags:
+palignr  dest  flags:
+pand     dest  flags:
+pandn    dest  flags:
+pause          flags:
+pavgb    dest  flags:
+opavgw   dest  flags:
+pblendvb dest  flags:
+pblendw  dest  flags:
+pcmpeqb  dest  flags:
+pcmpeqw  dest  flags:
+pcmpeqd  dest  flags:
+pcmpeqq  dest  flags:
+pcmpestri dest eax ecx edx xmm0 addr64: rax rdx xmm0 flags:
+pcmpestrm dest eax ecx edx xmm0 addr64: rax rdx xmm0 flags:
+pcmpistri addr8: ecx addr16: ecx addr32: ecx addr64: rcx flags:
+pcmpistrm xmm0 flags:
+pcmpgtb  dest
+pcmpgtw  dest
+pcmpgtd  dest
+pcmpgtq  dest
+pextrb   dest
+pextrd   dest
+pextrq   dest
+pextrw   dest
+phaddw   dest
+phaddq   dest
+phaddsw  dest
+phminposuw dest
+phsubw   dest
+phsubd   dest
+phsubsw  dest
+pinsrb   dest
+pinsrd   dest
+pinsrq   dest
+pinsrw   dest
+pmaddubsw dest
+pmaddwd   dest
+pmaxsb    dest
+pmaxsd    dest
+pmaxsw    dest
+pmaxub    dest
+pmaxud    dest
+pmaxuw    dest
+pminsb    dest
+pminsd    dest
+pminsw    dest
+pminub    dest
+pminud    dest
+pminuw    dest
+pmovmskb  dest
+pmovsx    dest
+pmovsxbw  dest
+pmovsxbd  dest
+pmovsxbq  dest
+pmovsxwd  dest
+pmovsxwq  dest
+pmovsxdq  dest
+pmovzx    dest
+pmovzxbw  dest
+pmovzxbd  dest
+pmovzxbq  dest
+pmovzxwd  dest
+pmovzxwq  dest
+pmovzxdq  dest
+pmuldq    dest
+pmulhrsw  dest
+pmulhuw   dest
+pmulhw    dest
+pmulld    dest
+pmullw    dest
+pmuludq   dest
+pop   rsp op0
+popa  rsp  di  si  bp  bx  dx  cx  ax  flags:
+popad rsp edi esi ebp ebx edx ecx eax  flags:
+popcnt    dest  clear: OF SF ZF AF CF PF flags: ZF
+popf  rsp  eflags
+popfd rsp  eflags
+popfq rsp  rflags
+por    dest
+prefetch0 dest
+prefetch1 dest
+prefetch2 dest
+prefetchnta dest
+psadbw  dest
+pshufb  dest
+pshufd  dest
+pshufhw dest
+pshuflw dest
+pshufw  dest
+psignb  dest
+psignw  dest
+psignd  dest
+pslldq  dest
+psllw   dest
+pslld   dest
+psllq   dest
+psraw   dest
+psrad   dest
+psrldq  dest
+psrlw   dest
+psrld   dest
+psrlq   dest
+psubb   dest
+psubw   dest
+psubd   dest
+psubq   dest
+psubsb  dest
+psubsw  dest
+psubusb  dest
+psubusw  dest
+ptest    clear: OF AF PF SF flags: ZF CF
+punpckhbw  dest
+punpckhbd  dest
+punpckhbq  dest
+punpckhqdq dest
+punpcklbw  dest
+punpcklbd  dest
+punpcklbq  dest
+punpcklqdq dest
+# TODO: refine by build model
+push   rsp flags:
+pusha  rsp
+pushad rsp
+pushf  rsp
+pushfd rsp
+pushfq rsp
+pxor   dest
+
+// R
+rcl dest flags: CF undef: OF
+rcr dest flags: CF undef: OF
+rol dest flags: CF undef: OF
+ror dest flags: CF undef: OF
+rcpps dest
+rcpps dest
+rdmsr edx eax flags:
+rdpmc edx eax flags:
+rdtsc edx eax flags:
+rdtscp edx eax ecx flags:
+ret   rip
+roundpd  dest
+roundps  dest
+roundsd  dest
+roundss  dest
+rsm
+rsqrtps  dest
+rsqrtss  dest
+
+// S
+sahf eflags flags: SF ZF AF PF CF
+sal dest flags: OF SF ZF PF undef: AF
+sar dest flags: OF SF ZF PF undef: AF
+shl dest flags: OF SF ZF PF undef: AF
+shr dest flags: OF SF ZF PF undef: AF
+sbb dest flags: OF SF ZF AF PF CF
+scas  addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
+scasb addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
+scasw addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
+scasd addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
+seto  src
+setno src
+setb src
+setc src
+setnae src
+setnb src
+setnc src
+setae src
+sete src
+setz src
+setne src
+setnz src
+setbe src
+setna src
+setnbe src
+seta src
+sets src
+setns src
+setp src
+setpe src
+setnp src
+setpo src
+setl src
+setnge src
+setnl src
+setge src
+setle src
+setng src
+setnle src
+setg src
+
+sfence
+sgdt src
+shld dest
+shrd dest
+shufpd dest
+shufps dest
+sidt dest
+sldt dest
+smsw src
+sqrtpd dest
+sqrtps dest
+sqrtsd dest
+sqrtss dest
+stc    flags: CF
+std    flags: DF
+sti    flags: IF VIF
+stmxcsr dest
+stos  src addr8: di addr16: di addr32: edi addr64: rdi
+stosb src addr8: di addr16: di addr32: edi addr64: rdi
+stosw src addr8: di addr16: di addr32: edi addr64: rdi
+stosd src addr8: di addr16: di addr32: edi addr64: rdi
+stosq src addr8: di addr16: di addr32: edi addr64: rdi
+str   src
+sub   dest flags: OF SF ZF AF PF CF
+subpd dest
+subps dest
+subsd dest
+subss dest
+swapgs
+syscall rcx r11
+sysenter
+sysexit
+sysret
+
+
+// T
+test   flags: SF ZF PF
+
+// U
+ucomisd dest
+ucomiss dest
+ud2
+unpckhpd dest
+unpckhps dest
+unpcklpd dest
+unpcklps dest
+
+// V
+verr  flags: ZF
+verw  flags: ZF
+
+// W
+wait
+fwait
+wbinvd
+wrmsr
+
+// X
+xadd dest  flags: CF PF AF SF ZF OF
+xchg src dest
+xgetbv edx eax
+xlat  al
+xlatb al
+xor dest
+xorpd dest
+xorps dest
+xrstor src
+xsave src
+xsetbv
