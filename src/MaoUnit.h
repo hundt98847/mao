@@ -55,6 +55,7 @@ class Function;
 class InstructionEntry;
 class LabelEntry;
 class MaoEntry;
+class MaoUnit;
 class Section;
 class SectionIterator;
 class SubSection;
@@ -114,183 +115,6 @@ class Stats {
   std::map<const char *, Stat *, ltstr> stats_;
 };
 
-class MaoUnit {
- public:
-
-  typedef std::vector<MaoEntry *>      EntryVector;
-  typedef EntryVector::iterator        EntryIterator;
-  typedef EntryVector::const_iterator  ConstEntryIterator;
-
-
-  typedef std::vector<Function *>         FunctionVector;
-  typedef FunctionVector::iterator        FunctionIterator;
-  typedef FunctionVector::const_iterator  ConstFunctionIterator;
-
-
-  explicit MaoUnit(MaoOptions *mao_options);
-  ~MaoUnit();
-
-  // Inserts an entry (Label, Instruction, Directive, ...) to the compilation
-  // unit. create_default_section signals if a default section should be created
-  // if there is no current subsection. Some directives in the beginning of the
-  // file does not belong to any subsection.
-  // The entry is added at the end of the list, unless an iterator to the list
-  // is given.
-  //  build_section - signals if the section building should be triggered.
-  //                  this is true only when building the initial structures,
-  //                  typically not when adding extra entries later on.
-  // create_default_section - signals if an entry can trigger automatic creation
-  //                          of a new section, if there is no "current" section
-  bool AddEntry(MaoEntry *entry, bool create_default_section);
-
-  // Add a common symbol to the symbol table
-  bool AddCommSymbol(const char *name, unsigned int common_size,
-                     unsigned int common_align);
-  // Returns a handle to the symbol table
-  SymbolTable *GetSymbolTable() {return &symbol_table_;}
-
-  // Note that a given subsection identifier can occur in many places in the
-  // code. (.text, .data, .text.)
-  // This will be create several SubSection objects with .text in the
-  // sub_sections_ member.
-  bool SetSubSection(const char *section_name, unsigned int subsection_number,
-                     MaoEntry *entry);
-
-  SubSection *GetSubSection(unsigned int subsection_number) {
-    return sub_sections_[subsection_number];
-  }
-
-  LabelEntry *GetLabelEntry(const char *label_name) const;
-
-  // Instruction Creators
-  InstructionEntry *CreateInstruction(const char *opcode);
-  InstructionEntry *CreateNop();
-  LabelEntry *CreateLabel(const char *labelname);
-
-  // Dumpers
-  void PrintMaoUnit() const;
-  void PrintMaoUnit(FILE *out) const;
-  void PrintIR(bool print_entries, bool print_sections,
-               bool print_subsections, bool print_functions) const;
-  void PrintIR(FILE *out, bool print_entries, bool print_sections,
-               bool print_subsections, bool print_functions) const;
-
-
-  // Returns the section matching the given name. Returns
-  // NULL if no match is found.
-  Section * GetSection(const std::string &section_name) const;
-
-  // Simple class for generating unique names for mao-created labels.
-  class BBNameGen {
-   public:
-    static const char *GetUniqueName();
-   private:
-    static long i;
-  };
-
-  MaoOptions *mao_options() { return mao_options_; }
-
-  // Iterate over the sections
-  SectionIterator SectionBegin();
-  SectionIterator SectionEnd();
-  ConstSectionIterator ConstSectionBegin() const;
-  ConstSectionIterator ConstSectionEnd() const;
-
-  FunctionIterator FunctionBegin();
-  FunctionIterator FunctionEnd();
-  ConstFunctionIterator ConstFunctionBegin() const;
-  ConstFunctionIterator ConstFunctionEnd() const;
-
-  // Find all Functions in the MaoUnit and populate functions_
-  void FindFunctions();
-
-  Function *GetFunction(MaoEntry *entry);
-  bool InFunction(MaoEntry *entry) const;
-  SubSection *GetSubSection(MaoEntry *entry);
-  bool InSubSection(MaoEntry *entry) const;
-
-  // Symbol handling
-  Symbol *AddSymbol(const char *name);
-  Symbol *FindOrCreateAndFindSymbol(const char *name);
-
-  // Delete the entry from the IR.
-  void DeleteEntry(MaoEntry *entry);
-
-  Stats *GetStats() {return &stats_;}
-
- private:
-  // Create the section section_name if it does not already exists. Returns a
-  // pointer the section.
-  std::pair<bool, Section *> FindOrCreateAndFind(const char *section_name);
-
-  // Vector of the entries in the unit. The id of the entry
-  // is also the index into this vector.
-  EntryVector entry_vector_;
-
-  // A list of all subsections found in the unit.
-  // Each subsection should have a pointer to the first and last
-  // entry of the subsection in entries_
-  std::vector<SubSection *> sub_sections_;
-
-  // List of sections_ found in the program. Each subsection has a pointer to
-  // its section.
-  std::map<const char *, Section *, ltstr> sections_;
-
-  // Holds the function identified in the MaoUnit
-  FunctionVector  functions_;
-
-  // Pointer to current subsection. Used when parsing the assembly file.
-  SubSection *current_subsection_;
-
-  // One symbol table holds all symbols found in the assembly file.
-  SymbolTable symbol_table_;
-
-  // Maps label-names to the corresponding label entry.
-  std::map<const char *, LabelEntry *, ltstr> labels_;
-
-  // Maps an entry to the corresponding Function and SubSection.
-  std::map<MaoEntry *, Function *>   entry_to_function_;
-  std::map<MaoEntry *, SubSection *> entry_to_subsection_;
-
-  // Given an entry, return the name of the function it belongs to,
-  // or "" if it is not in any function.
-  const char *FunctionName(MaoEntry *entry) const;
-  const char *SectionName(MaoEntry *entry) const;
-
-  MaoOptions *mao_options_;
-
-  Stats stats_;
-};  // MaoUnit
-
-// Iterator wrapper for iterating over all the Sections in a MaoUnit.
-class SectionIterator {
- public:
-  SectionIterator(std::map<const char *, Section *, ltstr>::iterator
-                  section_iter)
-      : section_iter_(section_iter) { }
-  Section *&operator *() const;
-  SectionIterator &operator ++();
-  SectionIterator &operator --();
-  bool operator ==(const SectionIterator &other) const;
-  bool operator !=(const SectionIterator &other) const;
- private:
-  std::map<const char *, Section *, ltstr>::iterator section_iter_;
-};
-
-class ConstSectionIterator {
- public:
-  ConstSectionIterator(std::map<const char *, Section *, ltstr>::const_iterator
-                       section_iter)
-      : section_iter_(section_iter) { }
-  Section *const &operator *() const;
-  ConstSectionIterator const &operator ++();
-  ConstSectionIterator const &operator --();
-  bool operator ==(const ConstSectionIterator &other) const;
-  bool operator !=(const ConstSectionIterator &other) const;
- private:
-  std::map<const char *, Section *, ltstr>::const_iterator section_iter_;
-};
-
 // Forward Decls
 class InstructionEntry;
 class DirectiveEntry;
@@ -309,7 +133,7 @@ class MaoEntry {
   };
 
   MaoEntry(unsigned int line_number, const char *const line_verbatim,
-           const MaoUnit *maounit);
+           MaoUnit *maounit);
   virtual ~MaoEntry();
 
   virtual void PrintEntry(FILE *out) const = 0;
@@ -354,7 +178,7 @@ class MaoEntry {
   // that should be translated to a dot.
   const char *GetDotOrSymbol(symbolS *symbol) const;
 
-  const MaoUnit *maounit_;
+  MaoUnit *maounit_;
 
  private:
   EntryID id_;
@@ -383,7 +207,7 @@ class LabelEntry : public MaoEntry {
   LabelEntry(const char *const name,
              unsigned int line_number,
              const char *const line_verbatim,
-             const MaoUnit *maounit)
+             MaoUnit *maounit)
       : MaoEntry(line_number, line_verbatim, maounit),
         name_(strdup(name)), from_assembly_(true) { }
   ~LabelEntry() { delete name_; }
@@ -503,7 +327,7 @@ class DirectiveEntry : public MaoEntry {
 
   DirectiveEntry(Opcode op, const OperandVector &operands,
                  unsigned int line_number, const char* line_verbatim,
-                 const MaoUnit *maounit)
+                 MaoUnit *maounit)
       : MaoEntry(line_number, line_verbatim, maounit),
         op_(op), operands_(operands) { }
 
@@ -559,7 +383,7 @@ class DirectiveEntry : public MaoEntry {
 class InstructionEntry : public MaoEntry {
  public:
   InstructionEntry(i386_insn* instruction, unsigned int line_number,
-                   const char* line_verbatim, const MaoUnit *maounit);
+                   const char* line_verbatim, MaoUnit *maounit);
   ~InstructionEntry();
   virtual void PrintEntry(FILE *out) const;
   virtual void PrintIR(FILE *out) const;
@@ -698,6 +522,192 @@ class InstructionEntry : public MaoEntry {
   // Determines if the suffix needs to be printed
   bool PrintSuffix() const;
 };
+
+
+
+class MaoUnit {
+ public:
+
+  typedef std::vector<MaoEntry *>      EntryVector;
+  typedef EntryVector::iterator        EntryIterator;
+  typedef EntryVector::const_iterator  ConstEntryIterator;
+
+
+  typedef std::vector<Function *>         FunctionVector;
+  typedef FunctionVector::iterator        FunctionIterator;
+  typedef FunctionVector::const_iterator  ConstFunctionIterator;
+
+
+  explicit MaoUnit(MaoOptions *mao_options);
+  ~MaoUnit();
+
+  // Inserts an entry (Label, Instruction, Directive, ...) to the compilation
+  // unit. create_default_section signals if a default section should be created
+  // if there is no current subsection. Some directives in the beginning of the
+  // file does not belong to any subsection.
+  // The entry is added at the end of the list, unless an iterator to the list
+  // is given.
+  //  build_section - signals if the section building should be triggered.
+  //                  this is true only when building the initial structures,
+  //                  typically not when adding extra entries later on.
+  // create_default_section - signals if an entry can trigger automatic creation
+  //                          of a new section, if there is no "current" section
+  bool AddEntry(MaoEntry *entry, bool create_default_section);
+
+  // Add a common symbol to the symbol table
+  bool AddCommSymbol(const char *name, unsigned int common_size,
+                     unsigned int common_align);
+  // Returns a handle to the symbol table
+  SymbolTable *GetSymbolTable() {return &symbol_table_;}
+
+  // Note that a given subsection identifier can occur in many places in the
+  // code. (.text, .data, .text.)
+  // This will be create several SubSection objects with .text in the
+  // sub_sections_ member.
+  bool SetSubSection(const char *section_name, unsigned int subsection_number,
+                     MaoEntry *entry);
+
+  SubSection *GetSubSection(unsigned int subsection_number) {
+    return sub_sections_[subsection_number];
+  }
+
+  LabelEntry *GetLabelEntry(const char *label_name) const;
+
+  // Instruction Creators
+  InstructionEntry *CreateInstruction(const char *opcode);
+  InstructionEntry *CreateNop();
+  LabelEntry *CreateLabel(const char *labelname);
+  DirectiveEntry *CreateDirective(DirectiveEntry::Opcode op,
+                                  const DirectiveEntry::OperandVector &operands,
+                                  Function *function,
+                                  SubSection *subsection);
+
+  // Dumpers
+  void PrintMaoUnit() const;
+  void PrintMaoUnit(FILE *out) const;
+  void PrintIR(bool print_entries, bool print_sections,
+               bool print_subsections, bool print_functions) const;
+  void PrintIR(FILE *out, bool print_entries, bool print_sections,
+               bool print_subsections, bool print_functions) const;
+
+
+  // Returns the section matching the given name. Returns
+  // NULL if no match is found.
+  Section * GetSection(const std::string &section_name) const;
+
+  // Simple class for generating unique names for mao-created labels.
+  class BBNameGen {
+   public:
+    static const char *GetUniqueName();
+   private:
+    static long i;
+  };
+
+  MaoOptions *mao_options() { return mao_options_; }
+
+  // Iterate over the sections
+  SectionIterator SectionBegin();
+  SectionIterator SectionEnd();
+  ConstSectionIterator ConstSectionBegin() const;
+  ConstSectionIterator ConstSectionEnd() const;
+
+  FunctionIterator FunctionBegin();
+  FunctionIterator FunctionEnd();
+  ConstFunctionIterator ConstFunctionBegin() const;
+  ConstFunctionIterator ConstFunctionEnd() const;
+
+  // Find all Functions in the MaoUnit and populate functions_
+  void FindFunctions();
+
+  Function *GetFunction(MaoEntry *entry);
+  bool InFunction(MaoEntry *entry) const;
+  SubSection *GetSubSection(MaoEntry *entry);
+  bool InSubSection(MaoEntry *entry) const;
+
+  // Symbol handling
+  Symbol *AddSymbol(const char *name);
+  Symbol *FindOrCreateAndFindSymbol(const char *name);
+
+  // Delete the entry from the IR.
+  void DeleteEntry(MaoEntry *entry);
+
+  Stats *GetStats() {return &stats_;}
+
+ private:
+  // Create the section section_name if it does not already exists. Returns a
+  // pointer the section.
+  std::pair<bool, Section *> FindOrCreateAndFind(const char *section_name);
+
+  // Vector of the entries in the unit. The id of the entry
+  // is also the index into this vector.
+  EntryVector entry_vector_;
+
+  // A list of all subsections found in the unit.
+  // Each subsection should have a pointer to the first and last
+  // entry of the subsection in entries_
+  std::vector<SubSection *> sub_sections_;
+
+  // List of sections_ found in the program. Each subsection has a pointer to
+  // its section.
+  std::map<const char *, Section *, ltstr> sections_;
+
+  // Holds the function identified in the MaoUnit
+  FunctionVector  functions_;
+
+  // Pointer to current subsection. Used when parsing the assembly file.
+  SubSection *current_subsection_;
+
+  // One symbol table holds all symbols found in the assembly file.
+  SymbolTable symbol_table_;
+
+  // Maps label-names to the corresponding label entry.
+  std::map<const char *, LabelEntry *, ltstr> labels_;
+
+  // Maps an entry to the corresponding Function and SubSection.
+  std::map<MaoEntry *, Function *>   entry_to_function_;
+  std::map<MaoEntry *, SubSection *> entry_to_subsection_;
+
+  // Given an entry, return the name of the function it belongs to,
+  // or "" if it is not in any function.
+  const char *FunctionName(MaoEntry *entry) const;
+  const char *SectionName(MaoEntry *entry) const;
+
+  MaoOptions *mao_options_;
+
+  Stats stats_;
+};  // MaoUnit
+
+// Iterator wrapper for iterating over all the Sections in a MaoUnit.
+class SectionIterator {
+ public:
+  SectionIterator(std::map<const char *, Section *, ltstr>::iterator
+                  section_iter)
+      : section_iter_(section_iter) { }
+  Section *&operator *() const;
+  SectionIterator &operator ++();
+  SectionIterator &operator --();
+  bool operator ==(const SectionIterator &other) const;
+  bool operator !=(const SectionIterator &other) const;
+ private:
+  std::map<const char *, Section *, ltstr>::iterator section_iter_;
+};
+
+class ConstSectionIterator {
+ public:
+  ConstSectionIterator(std::map<const char *, Section *, ltstr>::const_iterator
+                       section_iter)
+      : section_iter_(section_iter) { }
+  Section *const &operator *() const;
+  ConstSectionIterator const &operator ++();
+  ConstSectionIterator const &operator --();
+  bool operator ==(const ConstSectionIterator &other) const;
+  bool operator !=(const ConstSectionIterator &other) const;
+ private:
+  std::map<const char *, Section *, ltstr>::const_iterator section_iter_;
+};
+
+
+
 
 
 class SectionEntryIterator {
