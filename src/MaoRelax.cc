@@ -40,6 +40,7 @@ extern "C" {
   int sizeof_leb128(valueT value, int sign);
   int output_big_leb128(char *p, LITTLENUM_TYPE *bignum, int size, int sign);
   const char *S_GET_NAME(symbolS *s);
+  void S_SET_VALUE (symbolS *s, valueT val);
   symbolS *symbol_find (const char *name);
   void symbol_set_frag (symbolS *s, fragS *f);
   extern int finalize_syms;
@@ -61,6 +62,15 @@ MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit)
       mao_unit_(mao_unit) {
   collect_stat_ = GetOptionBool("stat");
   dump_sizemap_ = GetOptionBool("dump_sizemap");
+  if (collect_stat_) {
+    if (mao_unit_->GetStats()->HasStat("RELAX")) {
+      relax_stat_ =
+          static_cast<RelaxStat *>(mao_unit_->GetStats()->GetStat("RELAX"));
+    } else {
+      relax_stat_ = new RelaxStat();
+      mao_unit_->GetStats()->Add("RELAX", relax_stat_);
+    }
+  }
 }
 
 void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
@@ -100,34 +110,49 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
   FreeFragments(fragments);
 
   if (dump_sizemap_) {
-    int offset = 0;
     for (SizeMap::const_iterator iter = size_map->begin();
          iter != size_map->end();
          ++iter) {
-      fprintf(stderr, "%4x:  ", offset);
+      fprintf(stderr, "%4x:  ", iter->second);
       iter->first->PrintIR(stderr);
       fprintf(stderr, "\n");
-      offset += iter->second;
     }
   }
 
-  if (collect_stat_) {
-    // Print out the size for the given section, and for each function in this
-    // section.
-    fprintf(stderr, "Size for section %s [%d] is %d\n", section->name().c_str(),
-            section->id(), SectionSize(size_map));
+  //  // TODO(martint): fix this code and allow a paramter to decide which function
+  //                    to display.
+//     for (MaoUnit::ConstFunctionIterator fiter = mao_unit_->ConstFunctionBegin();
+//          fiter != mao_unit_->ConstFunctionEnd();
+//          ++fiter) {
+//       Function *function = *fiter;
+//       if (function->GetSection() == section) {
+//         if (function->name() == "expr") {
+//           offset = 0;
+//           // print out the function!
+//           for(SectionEntryIterator iter = function->EntryBegin();
+//               iter != function->EntryEnd();
+//               ++iter) {
+//             if (!(*iter)->IsLabel()) {
+//               int size = (*size_map)[*iter];
+//               fprintf(stderr, "%s:  ", function->name().c_str());
+//               fprintf(stderr, "%4x:  ", offset);
+//               (*iter)->PrintIR(stderr);
+//               fprintf(stderr, "\n");
+//               offset += size;
+//             }
+//           }
+//         }
+//       }
+//     }
+//   }
 
-    // Functions?
-    // TODO(martint): Clean up code. Now I added code to trigger
-    // LinkBefore and LinkAfter methods.
+  if (collect_stat_) {
+    // Add symbols to object file with the calculated size of the functions.
     for (MaoUnit::ConstFunctionIterator iter = mao_unit_->ConstFunctionBegin();
          iter != mao_unit_->ConstFunctionEnd();
          ++iter) {
       Function *function = *iter;
       if (function->GetSection() == section) {
-        fprintf(stderr, "Size for function %s [%d] is %d\n",
-                function->name().c_str(), function->id(),
-                FunctionSize(function,size_map));
         // create symbols in the object file for these?
         DirectiveEntry::OperandVector operands;
         SubSection *ss = mao_unit_->GetSubSection(function->last_entry());
@@ -150,7 +175,6 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
         DirectiveEntry *d_entry2 = mao_unit_->CreateDirective(
             DirectiveEntry::TYPE, operands2, function, ss);
         function->last_entry()->LinkBefore(d_entry2);
-
       }
     }
   }
@@ -355,6 +379,9 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           symbolP = symbol_find(le->name());
           MAO_ASSERT(symbolP != NULL);
           symbol_set_frag (symbolP, frag);
+          // set the initial value here?
+          // TODO(martint): find out where OCTETS_PER_BYTE is defined
+          S_SET_VALUE(symbolP, frag->fr_fix); // / OCTETS_PER_BYTE
         }
         break;
       case MaoEntry::UNDEFINED:
