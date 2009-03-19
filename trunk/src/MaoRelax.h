@@ -100,6 +100,29 @@ class MaoRelaxer : public MaoPass {
   bool collect_stat_;
   bool dump_sizemap_;
 
+  class RelaxStat : public Stat {
+   public:
+    RelaxStat()  {}
+    ~RelaxStat() {}
+    void AddFunction(const Function *func, int size) {
+      function_sizes_.push_back(std::make_pair(func, size));
+    }
+    virtual void Print(FILE *out) {
+      // Iterate over the functions
+       for (std::vector<std::pair<const Function *, int> >::const_iterator iter =
+                function_sizes_.begin();
+            iter != function_sizes_.end();
+            ++iter) {
+         fprintf(out, "MaoRelax functionsize %-60s %4d\n", iter->first->name().c_str(),
+                 iter->second);
+       }
+    }
+
+   private:
+    std::vector<std::pair<const Function *, int> > function_sizes_;
+  };
+
+  RelaxStat *relax_stat_;
 };
 
 // External entry point

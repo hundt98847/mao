@@ -859,7 +859,7 @@ void MaoEntry::LinkAfter(MaoEntry *entry) {
 
   // Do we need to update the function?
   Function *function = maounit_->GetFunction(this);
-  if (function &&
+  if (function &&  // Not all entries are part of a function.
       function->last_entry() == this) {
     function->set_last_entry(entry);
   }
