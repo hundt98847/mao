@@ -1,47 +1,47 @@
-//
-// Copyright 2008 Google Inc.
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
+#
+# Copyright 2008 Google Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
-// Side effect table for instructions
-//
-// memnonic  defs
-//
-// with defs being one of:
-//    reg    all valid register names are supported. Taking the register
-//           names from binutils-2.xx/opcodes/i386-reg.tbl
-//
-//    op0    instruction def's operand 0  (also 'src')
-//    op1    instruction def's operand 1  (also 'dest')
-//    ...
-//
-//    addr8: all following registers are def'ed in case
-//           op0 of the instruction denotes an 8-bit reg
-//           or mem. Note: The colon : is required.
-//    addr16:
-//    addr32:
-//    addr64: correspondingly.
-//
-//    flags: starting to define flags. Valid flag names are:
-//          CF PF AF ZF SF TP IF DF OF IOPL NT RF VM AC VIF VIP ID
-//
-//    clear: indicate which flags are cleared.
-//    undef: indicate which flags are left undefined.
-//
-//    all:  switches back to default mask and def assignment.
-//
+# Side effect table for instructions
+#
+# memnonic  defs
+#
+# with defs being one of:
+#    reg    all valid register names are supported. Taking the register
+#           names from binutils-2.xx/opcodes/i386-reg.tbl
+#
+#    op0    instruction def's operand 0  (also 'src')
+#    op1    instruction def's operand 1  (also 'dest')
+#    ...
+#
+#    addr8: all following registers are def'ed in case
+#           op0 of the instruction denotes an 8-bit reg
+#           or mem. Note: The colon : is required.
+#    addr16:
+#    addr32:
+#    addr64: correspondingly.
+#
+#    flags: starting to define flags. Valid flag names are:
+#          CF PF AF ZF SF TP IF DF OF IOPL NT RF VM AC VIF VIP ID
+#
+#    clear: indicate which flags are cleared.
+#    undef: indicate which flags are left undefined.
+#
+#    all:  switches back to default mask and def assignment.
+#
 aaa   ax
 aad   ax
 aam   ax
@@ -117,16 +117,17 @@ cmppd dest
 cmpps dest
 
 cmps   addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
-cmpsb  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
-cmpsw  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 cmpsd  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
-cmpsq  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 
-#todo: cmpsd
-#todo: cmpss
+# these three are mentioned in the Intel manual, but don't have
+# an explicit entry in the opcode tables.
+# cmpsb  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+# cmpsw  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+# cmpsq  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 
-cmpexchg dest addr8: al addr16: ax addr32: eax addr64: rax
-cmpxchg8B dest edx eax ecx ebx
+cmpxchg dest addr8: al addr16: ax addr32: eax addr64: rax
+cmpxchg8b dest edx eax ecx ebx
+cmpxchg16b dest rdx rax rcx rbx
 comisd
 comiss
 cpuid eax ebx ecx edx
@@ -184,6 +185,9 @@ extractps dest
 # ignore for now, escept:
 fist
 fistp
+fistpll
+fisttp
+fisttpll
 
 hlt
 
@@ -194,18 +198,23 @@ inc  src
 
 # can be refined by mode
 ins  rdi 
-insb rdi
-insw rdi
-insd rdi
+# these three are in the Intel manual, but taken care of by the mode
+# append trick in mao/gas
+#
+# insb rdi
+# insw rdi
+# insd rdi
 insertps dest
 int
 into
 invd
 invlpg
-iret  
-iretd
+iret
+# described in the Intel manual, but taken care of by the mode
+# append trick in mao/gas
+# iretd
 
-// jumpers - don't modify regs.
+# jumpers - don't modify regs.
 jmp
 ljmp
 jo
@@ -264,10 +273,12 @@ lldt
 lmsw src
 lock
 lods  addr8: al addr16: ax addr32: eax addr64: rax
-lodsb al
-lodsw ax
-lodsd eax
-lodsq rax
+# these are in the Intel manual, but taken care of by the mode
+# append trick in mao/gas
+# lodsb al
+# lodsw ax
+# lodsd eax
+# lodsq rax
 
 # loops can be refined by address size
 loop   rcx
@@ -289,8 +300,8 @@ minpd dest
 minps dest
 minsd dest
 minss dest
-
-// movers and shakers
+monitor 
+# movers and shakers
 mov  dest
 movapd dest
 movaps dest
@@ -317,15 +328,17 @@ movntq dest
 movq dest
 movq2dq dest
 
+movsd  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 movs   dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
-movsb  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+# taken care of by mode append
+# movsb  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+# movsw  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+# movsq  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+
 movsbl dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 movsbw dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
-movsw  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 movswl dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 movslq dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
-movsd  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
-movsq  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 
 # there is a floating point movsd as well?
 # movsd
@@ -343,12 +356,12 @@ movswq dest
 movslq dest
 movsx dest
 movsxd dest
-movzd dest
+
 movzbl dest
 movzbw dest
 movzbl dest
 movzbq dest
-movabq dest
+movzbq dest
 movzwq dest
 movzx dest
 
@@ -359,40 +372,39 @@ mulps dest
 mulsd dest
 mulss dest
 
-// SSE3 instructions
+mwait
+
+# SSE3 instructions
+# TODO: sort them in...
 addsubpd dest
 addsubps dest
-cmpxchg16B dest rdx rax rcx rbx
-fistpp
-fistppll
 haddpd dest
 haddps dest
 hsubpd dest
-hubbps dest
+hsubps dest
 lddqu dest
-monitor 
 movddup dest
 movshdup dest
 movsldup dest
-mwait
 
 
-// N
+# N
 neg  op0  flags: CF OF SF ZF AF PF
 nop       flags: 
 not  op0  flags:
 
-// O
+# O
 or   dest flags: SF ZF PF clear: OF CF undef: AF
 orpd dest
 orps dest
 out       flags:
 outs  addr8: si addr16: si addr32: esi addr64: rsi  flags:
-outsb addr8: si addr16: si addr32: esi addr64: rsi  flags:
-outsw addr8: si addr16: si addr32: esi addr64: rsi  flags:
-outsd addr8: si addr16: si addr32: esi addr64: rsi  flags:
+# taken care of by mode append:
+# outsb addr8: si addr16: si addr32: esi addr64: rsi  flags:
+# outsw addr8: si addr16: si addr32: esi addr64: rsi  flags:
+# outsd addr8: si addr16: si addr32: esi addr64: rsi  flags:
 
-// P
+# P
 pabsb dest
 pabsw dest
 pabsd dest
@@ -413,7 +425,7 @@ pand     dest  flags:
 pandn    dest  flags:
 pause          flags:
 pavgb    dest  flags:
-opavgw   dest  flags:
+pavgw    dest  flags:
 pblendvb dest  flags:
 pblendw  dest  flags:
 pcmpeqb  dest  flags:
@@ -433,7 +445,7 @@ pextrd   dest
 pextrq   dest
 pextrw   dest
 phaddw   dest
-phaddq   dest
+phaddd   dest
 phaddsw  dest
 phminposuw dest
 phsubw   dest
@@ -458,20 +470,22 @@ pminub    dest
 pminud    dest
 pminuw    dest
 pmovmskb  dest
-pmovsx    dest
+
 pmovsxbw  dest
 pmovsxbd  dest
 pmovsxbq  dest
+
 pmovsxwd  dest
 pmovsxwq  dest
 pmovsxdq  dest
-pmovzx    dest
+
 pmovzxbw  dest
 pmovzxbd  dest
 pmovzxbq  dest
 pmovzxwd  dest
 pmovzxwq  dest
 pmovzxdq  dest
+
 pmuldq    dest
 pmulhrsw  dest
 pmulhuw   dest
@@ -480,16 +494,26 @@ pmulld    dest
 pmullw    dest
 pmuludq   dest
 pop   rsp op0
+
 popa  rsp  di  si  bp  bx  dx  cx  ax  flags:
-popad rsp edi esi ebp ebx edx ecx eax  flags:
+# taken care of by mode append
+# popad rsp edi esi ebp ebx edx ecx eax  flags:
+
 popcnt    dest  clear: OF SF ZF AF CF PF flags: ZF
 popf  rsp  eflags
-popfd rsp  eflags
-popfq rsp  rflags
+
+# taken care of by mode append
+# popfd rsp  eflags
+# popfq rsp  rflags
 por    dest
-prefetch0 dest
-prefetch1 dest
-prefetch2 dest
+
+# These three prefetches are named differently in the Intel manual:
+# prefetch0, prefetch1, prefetch2
+#
+prefetcht0 dest
+prefetcht1 dest
+prefetcht2 dest
+
 prefetchnta dest
 psadbw  dest
 pshufb  dest
@@ -519,24 +543,35 @@ psubsw  dest
 psubusb  dest
 psubusw  dest
 ptest    clear: OF AF PF SF flags: ZF CF
+
+# For punpckh.. and punpckl.., Intel and AT&T differ in the final 
+# characters.
+#
 punpckhbw  dest
-punpckhbd  dest
-punpckhbq  dest
-punpckhqdq dest
+punpckhdq  dest
+punpckhwd  dest
+
 punpcklbw  dest
-punpcklbd  dest
-punpcklbq  dest
+punpckldq  dest
+punpcklwd  dest
+
+punpckhqdq dest
 punpcklqdq dest
+
 # TODO: refine by build model
 push   rsp flags:
 pusha  rsp
-pushad rsp
+# taken care of by mode append:
+# pushad rsp
+
 pushf  rsp
-pushfd rsp
-pushfq rsp
+# taken care of by mode append:
+# pushfd rsp
+# pushfq rsp
+
 pxor   dest
 
-// R
+# R
 rcl dest flags: CF undef: OF
 rcr dest flags: CF undef: OF
 rol dest flags: CF undef: OF
@@ -556,7 +591,7 @@ rsm
 rsqrtps  dest
 rsqrtss  dest
 
-// S
+# S
 sahf eflags flags: SF ZF AF PF CF
 sal dest flags: OF SF ZF PF undef: AF
 sar dest flags: OF SF ZF PF undef: AF
@@ -564,9 +599,10 @@ shl dest flags: OF SF ZF PF undef: AF
 shr dest flags: OF SF ZF PF undef: AF
 sbb dest flags: OF SF ZF AF PF CF
 scas  addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
-scasb addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
-scasw addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
-scasd addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
+# taken care of by mode append:
+# scasb addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
+# scasw addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
+# scasd addr8: di addr16: di addr32: edi addr64: rdi flags: OF SF ZF AF PF CF
 seto  src
 setno src
 setb src
@@ -616,10 +652,12 @@ std    flags: DF
 sti    flags: IF VIF
 stmxcsr dest
 stos  src addr8: di addr16: di addr32: edi addr64: rdi
-stosb src addr8: di addr16: di addr32: edi addr64: rdi
-stosw src addr8: di addr16: di addr32: edi addr64: rdi
-stosd src addr8: di addr16: di addr32: edi addr64: rdi
-stosq src addr8: di addr16: di addr32: edi addr64: rdi
+# taken care of by mode append:
+# stosb src addr8: di addr16: di addr32: edi addr64: rdi
+# stosw src addr8: di addr16: di addr32: edi addr64: rdi
+# stosd src addr8: di addr16: di addr32: edi addr64: rdi
+# stosq src addr8: di addr16: di addr32: edi addr64: rdi
+
 str   src
 sub   dest flags: OF SF ZF AF PF CF
 subpd dest
@@ -633,10 +671,10 @@ sysexit
 sysret
 
 
-// T
+# T
 test   flags: SF ZF PF
 
-// U
+# U
 ucomisd dest
 ucomiss dest
 ud2
@@ -645,22 +683,23 @@ unpckhps dest
 unpcklpd dest
 unpcklps dest
 
-// V
+# V
 verr  flags: ZF
 verw  flags: ZF
 
-// W
+# W
 wait
 fwait
 wbinvd
 wrmsr
 
-// X
+# X
 xadd dest  flags: CF PF AF SF ZF OF
 xchg src dest
 xgetbv edx eax
 xlat  al
-xlatb al
+# taken care of by mode append
+# xlatb al
 xor dest
 xorpd dest
 xorps dest
