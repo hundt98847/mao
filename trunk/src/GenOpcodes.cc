@@ -37,6 +37,8 @@ struct ltstr {
   }
 };
 
+static bool emit_warnings = false;
+
 // Note: The following few helper routines, as
 //       well as the main loop in main(), are directly
 //       copied from the i386-gen.c sources in
@@ -94,12 +96,15 @@ void usage(const char *argv[]) {
 
 class GenDefEntry {
  public:
-  GenDefEntry() {
+  GenDefEntry(char *op_str) :
+    op_str_(op_str) {
     flags.CF = flags.PF = flags.AF = flags.ZF = flags.SF =
     flags.TP = flags.IF = flags.DF = flags.OF = flags.IOPL =
     flags.NT = flags.RF = flags.VM = flags.AC = flags.VIF =
-    flags.VIP = flags.ID = 0;
+    flags.VIP = flags.ID = false;
+    found = false;
   }
+  char *op_str() { return op_str_; }
   unsigned int       op_mask;
   BitString reg_mask;
   BitString reg_mask8;
@@ -125,6 +130,8 @@ class GenDefEntry {
     bool  VIP :1;
     bool  ID :1;
   } flags;
+  bool found :1;
+  char *op_str_;
 };
 
 typedef std::map<char *, GenDefEntry *, ltstr> MnemMap;
@@ -198,7 +205,7 @@ void ReadSideEffects(const char *fname) {
     if (buff[0] == '#' || buff[0] == '\n') continue;
     char *mnem = next_field(buff, ' ', &p);
 
-    GenDefEntry *e = new GenDefEntry;
+    GenDefEntry *e = new GenDefEntry(strdup(mnem));
     mnem_map[strdup(mnem)] = e;
 
     BitString *mask = &e->reg_mask;
@@ -269,9 +276,24 @@ int main(int argc, const char*argv[]) {
   char lastname[2048];
   char sanitized_name[2048];
 
+  // Options processing
+  //
   if (argc < 3)
     usage(argv);
 
+  for (int i = 3; i < argc; i++) {
+    if (!strcmp(argv[i], "-w"))
+      emit_warnings = true;
+  }
+
+  // Get tables and data
+  //
+  ReadRegisterTable(argv[1]);
+  ReadSideEffects(argv[2]);
+
+  // Open the various input and output files,
+  // emit top portion in generated files.
+  //
   FILE *in = fopen(argv[1], "r");
   if (!in) {
     fprintf(stderr, "Cannot open table file: %s\n", argv[1]);
@@ -296,8 +318,6 @@ int main(int argc, const char*argv[]) {
     usage(argv);
   }
 
-  ReadRegisterTable(argv[1]);
-  ReadSideEffects(argv[2]);
 
   fprintf(out,
           "// DO NOT EDIT - this file is automatically "
@@ -323,6 +343,14 @@ int main(int argc, const char*argv[]) {
           "DefEntry def_entries [] = {\n"
           "  { OP_invalid, 0, BNULL, BNULL, BNULL, BNULL, BNULL },\n" );
 
+  // Read through the instruction description file, isolate the first
+  // field, which contains the opcode, and generate an
+  //   OP_... into the gen-opcodes.h file.
+  //
+  // Also, lookup side effects, and generate an entry in the side
+  // effect tables in
+  //    gen-defs.h
+  //
   while (!feof(in)) {
     char *p, *str, *last, *name;
     if (fgets (buf, sizeof (buf), in) == NULL)
@@ -373,9 +401,12 @@ int main(int argc, const char*argv[]) {
       MnemMap::iterator it = mnem_map.find(sanitized_name);
       if (it == mnem_map.end()) {
         fprintf(def, "  { OP_%s, DEF_OP_ALL, BALL, BALL, BALL, BALL, BALL },\n", sanitized_name);
+        if (emit_warnings)
+          fprintf(stderr, "Warning: No side-effects for: %s\n", sanitized_name);
       } else {
         fprintf(def, "  { OP_%s, 0", sanitized_name);
         GenDefEntry *e = (*it).second;
+        e->found = true;
         if (e->op_mask & DEF_OP0) fprintf(def, " | DEF_OP0");
         if (e->op_mask & DEF_OP1) fprintf(def, " | DEF_OP1");
         if (e->op_mask & DEF_OP2) fprintf(def, " | DEF_OP2");
@@ -399,6 +430,16 @@ int main(int argc, const char*argv[]) {
     }
     strcpy(lastname, name);
   }
+
+  // quality check - see which DefEntries remain unused
+  //
+  if (emit_warnings)
+    for (MnemMap::iterator it = mnem_map.begin();
+         it != mnem_map.end(); ++it) {
+      if (!(*it).second->found)
+        fprintf(stderr, "Warning: Unused side-effects description: %s\n",
+                (*it).second->op_str());
+    }
 
   fprintf(out, "};  // MaoOpcode\n\n"
           "MaoOpcode GetOpcode(const char *opcode);\n");
