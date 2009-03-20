@@ -513,7 +513,7 @@ void MaoUnit::FindFunctions() {
   for (SymbolIterator iter = symbol_table_.Begin();
        iter != symbol_table_.End();
        ++iter) {
-    Symbol *symbol = *iter;
+    const Symbol *symbol = *iter;
     if (symbol->IsFunction()) {
       // Find the entry given the label now
       MaoEntry *entry = GetLabelEntry(symbol->name());
@@ -525,13 +525,13 @@ void MaoUnit::FindFunctions() {
       entry_to_function_[entry] = function;
 
       // Find the last entry in this function:
-      // Initial idea:
-      // Move forward until you each one of the following two:
-      //   1. Start of a new function
-      //      (Check for labels that are marked as functions
-      //       in the symbol table).
-      //   2. End of the section.
-      //      (The next pointer of the Entry is NULL)
+      // A function ends when you find one of the following
+      //  - The end of the section (next pointer is NULL)
+      //  - Current entry is a .size directive for the current function.
+      //   (The function includes this entry)
+      //  - Start of a new function. Check if the next entry is a label
+      //    that is marked as a function in the symbol table.
+
       MaoEntry *entry_tail;
       // Assume that the function starts with a label
       // and holds atleast one more entry!
@@ -541,11 +541,26 @@ void MaoUnit::FindFunctions() {
       MAO_ASSERT(entry_tail);
       // Stops at the end of a section, or breaks when a new functions is found.
       while (entry_tail->next()) {
+        // size directive for current function?
+        if (entry_tail->Type() == MaoEntry::DIRECTIVE) {
+          // is it a function?
+          DirectiveEntry *directive_entry = entry_tail->AsDirective();
+          if (directive_entry->op() == DirectiveEntry::SIZE) {
+            MAO_ASSERT(directive_entry->NumOperands() == 2);
+            // check the first operand
+            const DirectiveEntry::Operand *d_op = directive_entry->GetOperand(0);
+            MAO_ASSERT(d_op->type == DirectiveEntry::SYMBOL);
+            const char *size_symbol_name = S_GET_NAME(d_op->data.sym);
+            if (strcmp(size_symbol_name, symbol->name()) == 0) {
+              break;
+            }
+          }
+        }
+
         // check if we found the next function?
         if (entry_tail->next()->Type() == MaoEntry::LABEL) {
           // is it a function?
-          LabelEntry *label_entry =
-              static_cast<LabelEntry *>(entry_tail->next());
+          LabelEntry *label_entry = entry_tail->next()->AsLabel();
           Symbol *l_symbol = symbol_table_.Find(label_entry->name());
           MAO_ASSERT(l_symbol);
           if (l_symbol->IsFunction()) {
