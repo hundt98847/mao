@@ -50,9 +50,12 @@ extern "C" {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(RELAX, 2) {
+MAO_OPTIONS_DEFINE(RELAX, 3) {
   OPTION_BOOL("stat", false, "Collect and print statistics about relaxer"),
-  OPTION_BOOL("dump_sizemap", false, "Dump the sizemap to stderr")
+  OPTION_BOOL("dump_sizemap", false, "Dump the sizemap to stderr"),
+  OPTION_BOOL("verification_symbols", false, "For each function, add a dummy "
+              "function in the program with the calculated size of that "
+              "function.")
 };
 
 
@@ -62,6 +65,7 @@ MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit)
       mao_unit_(mao_unit) {
   collect_stat_ = GetOptionBool("stat");
   dump_sizemap_ = GetOptionBool("dump_sizemap");
+  verification_symbols_ = GetOptionBool("verification_symbols");
   if (collect_stat_) {
     if (mao_unit_->GetStats()->HasStat("RELAX")) {
       relax_stat_ =
@@ -146,7 +150,7 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
 //     }
 //   }
 
-  if (collect_stat_) {
+  if (verification_symbols_) {
     // Add symbols to object file with the calculated size of the functions.
     for (MaoUnit::ConstFunctionIterator iter = mao_unit_->ConstFunctionBegin();
          iter != mao_unit_->ConstFunctionEnd();
@@ -175,6 +179,18 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
         DirectiveEntry *d_entry2 = mao_unit_->CreateDirective(
             DirectiveEntry::TYPE, operands2, function, ss);
         function->last_entry()->LinkBefore(d_entry2);
+      }
+    }
+  }
+
+  if (collect_stat_) {
+    for (MaoUnit::ConstFunctionIterator iter = mao_unit_->ConstFunctionBegin();
+         iter != mao_unit_->ConstFunctionEnd();
+         ++iter) {
+      Function *function = *iter;
+      if (function->GetSection() == section) {
+        relax_stat_->AddFunction(function, FunctionSize(function,
+                                                        size_map));
       }
     }
   }
