@@ -3,8 +3,7 @@
 
 """This script will run MAO on an assembly file and compare the functionsizes
 calculated by the relaxer with the sizes reported by readelf on the assembled
-file. The script assumes that "mao" and "as-orig" exists in the current
-directory. All temporary files are deleted. If verbose_error is True, a line is
+file. All temporary files are deleted. If verbose_error is True, a line is
 printed for each function that is unsuccessfully verified. If no such function
 is found by MAO, the rror message is
 
@@ -13,7 +12,12 @@ is found by MAO, the rror message is
 If the sizes differ the error message is
 
 "functionname     readelf_size mao_size"
-"""
+
+Additionally, the script assumes that in the directory containing the script
+there are binaries named mao and as-orig which are the MAO and original GAS
+binaries, respectively. It also calls readelf to read the symbols of the object
+file."""
+
 
 import os
 import sys
@@ -55,9 +59,9 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
 # Run mao on the inputfile and return a map with the reported function sizes.
 # Assumes that command "mao" exists in the current directory.
 ################################################################################
-def GetMaoSizes(inputfile):
+def GetMaoSizes(inputfile, basedir):
   # Run mao and get the sizes from the report
-  cmd = ["./mao", "-mao:-o/dev/null", "-mao:RELAX=stat[1]", inputfile]
+  cmd = [os.path.join(basedir, "mao"), "-mao:-o/dev/null", "-mao:RELAX=stat[1]", inputfile]
   output = _RunCheck(cmd, stdout=subprocess.PIPE)
   mao_function_sizes = {}
   for outputline in output.split('\n'):
@@ -73,10 +77,10 @@ def GetMaoSizes(inputfile):
 # reported functionsizes from the object files.
 # Assumes that command "as-orig" exists in the current directory.
 ################################################################################
-def GetReadelfSizes(inputfile):
+def GetReadelfSizes(inputfile, basedir):
   (fd, o_tempfile) = tempfile.mkstemp(suffix=".o")
   os.close(fd)
-  as_cmd = ["./as-orig", "-o", o_tempfile, inputfile]
+  as_cmd = [os.path.join(basedir, "as-orig"), "-o", o_tempfile, inputfile]
   _RunCheck(as_cmd)
   readelf_cmd = ["readelf", "--wide", "-s", o_tempfile]
   readelf_output = _RunCheck(readelf_cmd, stdout=subprocess.PIPE)
@@ -101,12 +105,12 @@ def main(argv):
   # If True, print a line for each unsuccessfully verified function
   verbose_errors = True
   # If True, print a line for each verified function
-  verbose_all    = False
-
+  verbose_all    = True
+  
   in_file = argv[1]
 
-  mao_sizes     = GetMaoSizes(in_file)
-  readelf_sizes = GetReadelfSizes(in_file)
+  mao_sizes     = GetMaoSizes(in_file, os.path.join(os.path.dirname(argv[0])))
+  readelf_sizes = GetReadelfSizes(in_file, os.path.join(os.path.dirname(argv[0])))
 
   found_error    = False
   # Iterate over the function found in the object file
@@ -115,7 +119,7 @@ def main(argv):
     if mao_sizes.get(key, None) == None:
       # Function not found in MAO
       if verbose_errors or verbose_all:
-        print '%(functionname)-60s ERROR: Unable to find function in MAO.' % \
+        print 'ERROR %(functionname)-60s ERROR: Unable to find function in MAO.' % \
               {'functionname': key },
     else:
       # Verify calculated size
@@ -123,12 +127,12 @@ def main(argv):
         # Match
         function_ok = True
         if verbose_all:
-          print '%(functionname)-60s %(readelf_size)5d' % \
+          print 'CORRECT %(functionname)-60s %(readelf_size)5d' % \
                 {'functionname': key, 'readelf_size': int(val)}
       else:
         # Mismatch
         if verbose_errors or verbose_all:
-          print '%(functionname)-60s %(readelf_size)5d %(mao_size)5d' % \
+          print 'ERROR %(functionname)-60s %(readelf_size)5d %(mao_size)5d' % \
                 {'functionname': key, \
                  'readelf_size': int(val), \
                  'mao_size': int(mao_sizes[key])}
