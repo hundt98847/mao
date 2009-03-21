@@ -22,6 +22,5 @@ cd Python-2.5.4
 make DESTDIR=$DIR/python-2.5.4 install
 cd ..
 cd src
-make TARGET=i686
-make TARGET=x86_64
-
+make TARGET=i686-linux
+make TARGET=x86_64-linux
