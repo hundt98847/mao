@@ -9,7 +9,7 @@ do
   #
   # run mao...
   #
-  printf "run: %15s, grep %-15s %2d:\t" $FILE $GrepTarget $GrepN
+  printf "run: %20s, grep %-20s %2d:\t" $FILE $GrepTarget $GrepN
   $MAO $Options $FILE >out 2>&1
  
   # 
