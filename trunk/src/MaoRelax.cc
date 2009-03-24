@@ -94,11 +94,21 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
   struct frag *fragments =
       BuildFragments(mao_unit_, section, size_map, &relax_map);
 
+  // Relaxation normally only changes the fr_var part of the
+  // fragment. There are some cases (see md_estimate_size_before_relax())
+  // where fr_fix is changed as well. Therefore we need to keep track
+  // of the fr_fix values before relaxation. We do that in old_fr_fix.
+  std::vector<int> old_fr_fix;
+  for (struct frag *frag = fragments; frag; frag = frag->fr_next) {
+    old_fr_fix.push_back(frag->fr_fix);
+  }
+
   // Run relaxation
   for (int change = 1, pass = 0; change; pass++)
     change = relax_segment(fragments, bfd_section, pass);
 
   // Update sizes based on relaxation
+  int frag_index = 0;
   for (struct frag *frag = fragments; frag; frag = frag->fr_next) {
     std::map<struct frag *, MaoEntry *>::iterator entry =
         relax_map.find(frag);
@@ -108,6 +118,11 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
     // the relax map.
     int var_size = frag->fr_next->fr_address - frag->fr_address - frag->fr_fix;
     (*size_map)[entry->second] += var_size;
+    // Check if fr_fix have changed in relaxation:
+    if (frag->fr_fix != old_fr_fix[frag_index]) {
+      (*size_map)[entry->second] += (frag->fr_fix - old_fr_fix[frag_index]);
+    }
+    frag_index++;
   }
 
   // Throw away the fragments

@@ -1419,6 +1419,7 @@ void InstructionEntry::PrintImmediateOperand(FILE *out,
   return;
 }
 
+// Relocations are defined in bfd-in2.h
 const char *InstructionEntry::GetRelocString(
   const enum bfd_reloc_code_real reloc) const {
   switch (reloc) {
