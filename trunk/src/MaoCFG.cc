@@ -543,7 +543,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
 
   if (insn_entry->IsIndirectJump() && !processed) {
     CFG_->set_has_unresolved_indirect_branches(true);
-    fprintf(stderr, "Unable to find targets for indirect jump\n");
+    Trace(3, "Unable to find targets for indirect jump.");
   }
 }
 
