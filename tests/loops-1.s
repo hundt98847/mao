@@ -65,5 +65,4 @@ foo_with_a_loop:
 	.uleb128 0x6
 	.align 8
 .LEFDE1:
-	.ident	"GCC: (Google_crosstoolv12-gcc-4.3.1-glibc-2.3.6-grte) 4.3.1"
 	.section	.note.GNU-stack,"",@progbits

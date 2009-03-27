@@ -1,4 +1,4 @@
-#Option: -mao:CFG=stat[1]
+#Option: -mao:CFG=stat[1]  -mao:-o/dev/null
 #grep table.patterns\:.* 1 1
 	
 	.file	"switches.c"
@@ -173,5 +173,4 @@ main:
 	.uleb128 0x6
 	.align 8
 .LEFDE5:
-	.ident	"GCC: (Google_crosstoolv12-gcc-4.3.1-glibc-2.3.6-grte-martint-DEVEL) 4.3.1"
 	.section	.note.GNU-stack,"",@progbits
