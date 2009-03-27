@@ -95,6 +95,12 @@ def main(argv):
     else:
       print "Unsupported flag: %(flag)s" % {'flag' : flag}
 
+  # Verify that mao exists and is executable
+  mao_cmd = os.path.join(os.path.dirname(argv[0]), "mao")
+  if not os.access(mao_cmd, os.X_OK):
+    print "ERROR: %(mao)s is not execuable." % {'mao': mao_cmd}
+    sys.exit(1)
+
   # Loop over input filenames
   for inputfile in args:
     options = GetOptions(inputfile)
@@ -105,8 +111,7 @@ def main(argv):
       continue
 
     # Run mao and get the output in mao_output
-    mao_output = RunMao(os.path.join(os.path.dirname(argv[0]), "mao"), \
-                            inputfile, options)
+    mao_output = RunMao(mao_cmd, inputfile, options)
 
     # Run pattern checker
     num_patterns = 0
