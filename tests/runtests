@@ -16,7 +16,7 @@ do
   # check results
   #
   Lines=`grep $GrepTarget out | wc -l`
-  if [[ $Lines != $GrepN ]]; then
+  if [[ $(($Lines)) != $GrepN ]]; then
     echo "FAIL. Found $Lines instances of $GrepTarget. Should have been $GrepN"
     echo "      $MAO $Options $FILE"
   else

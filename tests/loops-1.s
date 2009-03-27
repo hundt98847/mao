@@ -1,5 +1,5 @@
-#Options: -mao:LFIND=lsg
-#grep:    loop-1 2
+#Option: -mao:LFIND=lsg	
+#grep    loop-1 2
         
       	.file	"hello-loop.c"
 	.text
