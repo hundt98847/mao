@@ -477,7 +477,9 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
   MAO_ASSERT(entry->Type() == MaoEntry::INSTRUCTION);
   InstructionEntry *insn_entry = static_cast<InstructionEntry *>(entry);
 
-  if (insn_entry->IsIndirectJump()) cfg_stat_->FoundIndirectJump();
+  if (collect_stat_ && insn_entry->IsIndirectJump()) {
+    cfg_stat_->FoundIndirectJump();
+  }
 
   // Is this a "normal" direct branch instruction.
   // TODO(martint): Should we care about direct tail-calls here?
