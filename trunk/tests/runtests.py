@@ -46,7 +46,9 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
 # Runs mao on the inputfile. and return the output from both
 # standard error and standard output as a big string.
 def RunMao(maocommand, inputfile, options):
-    cmd = [maocommand, options ,inputfile]
+    cmd = [maocommand]
+    cmd.extend(options.split())
+    cmd.append(inputfile)
     output = _RunCheck(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return output
 
