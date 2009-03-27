@@ -1,4 +1,4 @@
-#Options:  -mao:RELAX=stat[1]
+#Option:  -mao:RELAX=stat[1]
 #grep MaoRelax.*foo.*2 1
 # In order to report the correct size, the align directive should not be
 # part of the function sizes.
