@@ -35,7 +35,7 @@ MAO_OPTIONS_DEFINE(MISSDISP, 0) {
 class MissDispElimPass : public MaoPass {
  public:
   MissDispElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("MISSDISP", mao->mao_options(), MAO_OPTIONS(MISSDISP), true, cfg),
+    MaoPass("MISSDISP", mao->mao_options(), MAO_OPTIONS(MISSDISP), false, cfg),
     mao_(mao) {
   }
 
@@ -84,6 +84,8 @@ class MissDispElimPass : public MaoPass {
 //
 void PerformMissDispElimination(MaoUnit *mao, const CFG *cfg) {
   MissDispElimPass missdisp(mao, cfg);
-  missdisp.set_timed();
-  missdisp.DoElim();
+  if (missdisp.enabled()) {
+    missdisp.set_timed();
+    missdisp.DoElim();
+  }
 }

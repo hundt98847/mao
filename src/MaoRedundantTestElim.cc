@@ -54,7 +54,6 @@ class RedTestElimPass : public MaoPass {
   // The test instruction is therefore redundant
   //
   void DoElim() {
-    if (!enabled()) return;
     std::list<InstructionEntry *> redundants;
 
     FORALL_CFG_BB(cfg(),it) {
@@ -117,6 +116,8 @@ class RedTestElimPass : public MaoPass {
 //
 void PerformRedundantTestElimination(MaoUnit *mao, const CFG *cfg) {
   RedTestElimPass redtest(mao, cfg);
-  redtest.set_timed();
-  redtest.DoElim();
+  if (redtest.enabled()) {
+    redtest.set_timed();
+    redtest.DoElim();
+  }
 }
