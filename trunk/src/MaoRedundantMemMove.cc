@@ -47,7 +47,6 @@ class RedMemMovElimPass : public MaoPass {
   //  movq    24(%rsp), %rcx
   //
   void DoElim() {
-    if (!enabled()) return;
     FORALL_CFG_BB(cfg(),it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
@@ -131,6 +130,8 @@ class RedMemMovElimPass : public MaoPass {
 //
 void PerformRedundantMemMoveElimination(MaoUnit *mao, const CFG *cfg) {
   RedMemMovElimPass redmemmov(mao, cfg);
-  redmemmov.set_timed();
-  redmemmov.DoElim();
+  if (redmemmov.enabled()) {
+    redmemmov.set_timed();
+    redmemmov.DoElim();
+  }
 }

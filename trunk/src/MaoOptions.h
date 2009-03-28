@@ -44,11 +44,11 @@ typedef struct MaoOption {
 //
 class MaoTimer {
  public:
-  MaoTimer() : total_(0) { }
+ MaoTimer() : total_(0), triggered_(false) { }
 
   void Start() {
     struct tms t;
-
+    triggered_ = true;
     start_ = times(&t);;
   }
 
@@ -71,9 +71,12 @@ class MaoTimer {
     return 1.0 * total_ / ticks;
   }
 
+  bool Triggered() const { return triggered_; }
+
  private:
   clock_t total_;
   clock_t start_;
+  bool    triggered_;
 };
 
 // This is how to define options, build up an array consisting of

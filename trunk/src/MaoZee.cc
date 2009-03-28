@@ -54,7 +54,6 @@ class ZeroExtentElimPass : public MaoPass {
   // extending def reg32
   //
   void DoElim() {
-    if (!enabled()) return;
     std::list<InstructionEntry *> redundants;
 
     FORALL_CFG_BB(cfg(),it) {
@@ -128,6 +127,8 @@ class ZeroExtentElimPass : public MaoPass {
 //
 void PerformZeroExtensionElimination(MaoUnit *mao, const CFG *cfg) {
   ZeroExtentElimPass zee(mao, cfg);
-  zee.set_timed();
-  zee.DoElim();
+  if (zee.enabled()) {
+    zee.set_timed();
+    zee.DoElim();
+  }
 }

@@ -58,7 +58,7 @@ static void Visit(BasicBlock *bb, BasicBlockMap *bbmap) {
 class DeadCodeElimPass : public MaoPass {
  public:
   DeadCodeElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("DCE", mao->mao_options(), MAO_OPTIONS(DCE), true, cfg),
+    MaoPass("DCE", mao->mao_options(), MAO_OPTIONS(DCE), false, cfg),
     mao_(mao) {
   }
 
@@ -102,7 +102,8 @@ class DeadCodeElimPass : public MaoPass {
 //
 void PerformDeadCodeElimination(MaoUnit *mao, const CFG *cfg) {
   DeadCodeElimPass dce(mao, cfg);
-  dce.set_timed();
-  //disable for now - finding too many things
-  dce.DoElim();
+  if ( dce.enabled()) {
+    dce.set_timed();
+    dce.DoElim();
+  }
 }

@@ -56,8 +56,6 @@ class NopInizerPass : public MaoPass {
   // on some distribution density.
   //
   bool Go() {
-    if (!enabled()) return true;
-
     int count_down = (int) (1.0 * density_ * (rand() / (RAND_MAX + 1.0)));
     FORALL_FUNC_ENTRY(func_,entry) {
       if (!entry->IsInstruction())
@@ -96,6 +94,8 @@ class NopInizerPass : public MaoPass {
 
 void PerformNopinizer(MaoUnit *mao, Function *func) {
   NopInizerPass nopin(mao, func);
-  nopin.set_timed();
-  nopin.Go();
+  if (nopin.enabled()) {
+    nopin.set_timed();
+    nopin.Go();
+  }
 }

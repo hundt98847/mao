@@ -51,7 +51,6 @@ class NopKillerElimPass : public MaoPass {
   // and kill them all
   //
   void DoElim() {
-    if (!enabled()) return;
     std::list<MaoEntry *> redundants;
 
    FORALL_FUNC_ENTRY(func_,entry) {
@@ -102,6 +101,8 @@ class NopKillerElimPass : public MaoPass {
 
 void PerformNopKiller(MaoUnit *mao, const Function *func) {
   NopKillerElimPass nopkill(mao, func);
-  nopkill.set_timed();
-  nopkill.DoElim();
+  if (nopkill.enabled()) {
+    nopkill.set_timed();
+    nopkill.DoElim();
+  }
 }

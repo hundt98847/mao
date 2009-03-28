@@ -51,7 +51,6 @@ class LongInstructionsSplitPass : public MaoPass {
   //
   // For now, only search for such sequences.
   bool Go() {
-    if (!enabled()) return true;
     std::list<InstructionEntry *> split_points;
 
     FORALL_CFG_BB(cfg(),it) {
@@ -101,6 +100,8 @@ void PerformLongInstructionSplit(MaoUnit *mao, Function *function) {
   LongInstructionsSplitPass lipass(mao,
                                    function,
                                    MaoRelaxer::GetSizeMap(mao, function));
-  lipass.set_timed();
-  lipass.Go();
+  if (lipass.enabled()) {
+    lipass.set_timed();
+    lipass.Go();
+  }
 }
