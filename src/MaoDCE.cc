@@ -57,12 +57,14 @@ static void Visit(BasicBlock *bb, BasicBlockMap *bbmap) {
 //
 class DeadCodeElimPass : public MaoPass {
  public:
-  DeadCodeElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("DCE", mao->mao_options(), MAO_OPTIONS(DCE), false, cfg),
-    mao_(mao) {
+  DeadCodeElimPass(MaoUnit *mao, Function *function) :
+    MaoPass("DCE", mao->mao_options(), MAO_OPTIONS(DCE), false),
+    mao_(mao), function_(function) {
   }
 
   void DoElim() {
+    set_cfg(CFG::GetCFG(mao_, function_));
+
     BasicBlockMap bbmap;
     FORALL_CFG_BB(cfg(),it)
       bbmap[(*it)] = false;
@@ -95,13 +97,14 @@ class DeadCodeElimPass : public MaoPass {
 
  private:
   MaoUnit   *mao_;
+  Function  *function_;
 };
 
 
 // External Entry Point
 //
-void PerformDeadCodeElimination(MaoUnit *mao, const CFG *cfg) {
-  DeadCodeElimPass dce(mao, cfg);
+void PerformDeadCodeElimination(MaoUnit *mao, Function *function) {
+  DeadCodeElimPass dce(mao, function);
   if ( dce.enabled()) {
     dce.set_timed();
     dce.DoElim();

@@ -34,9 +34,9 @@ MAO_OPTIONS_DEFINE(MISSDISP, 0) {
 
 class MissDispElimPass : public MaoPass {
  public:
-  MissDispElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("MISSDISP", mao->mao_options(), MAO_OPTIONS(MISSDISP), false, cfg),
-    mao_(mao) {
+  MissDispElimPass(MaoUnit *mao, Function *function) :
+    MaoPass("MISSDISP", mao->mao_options(), MAO_OPTIONS(MISSDISP), false),
+    mao_(mao), function_(function) {
   }
 
   // Find these patterns in a single basic block:
@@ -48,6 +48,8 @@ class MissDispElimPass : public MaoPass {
   //   mov    0x8(%rax),%rax
   //
   void DoElim() {
+    set_cfg(CFG::GetCFG(mao_, function_));
+
     FORALL_CFG_BB(cfg(),it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
@@ -77,13 +79,14 @@ class MissDispElimPass : public MaoPass {
 
  private:
   MaoUnit   *mao_;
+  Function  *function_;
 };
 
 
 // External Entry Point
 //
-void PerformMissDispElimination(MaoUnit *mao, const CFG *cfg) {
-  MissDispElimPass missdisp(mao, cfg);
+void PerformMissDispElimination(MaoUnit *mao, Function *function) {
+  MissDispElimPass missdisp(mao, function);
   if (missdisp.enabled()) {
     missdisp.set_timed();
     missdisp.DoElim();

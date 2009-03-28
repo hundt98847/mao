@@ -34,9 +34,9 @@ MAO_OPTIONS_DEFINE(REDMOV, 1) {
 
 class RedMemMovElimPass : public MaoPass {
  public:
-  RedMemMovElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV), false, cfg),
-    mao_(mao) {
+  RedMemMovElimPass(MaoUnit *mao, Function *function) :
+    MaoPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV), false),
+    mao_(mao), function_(function) {
     look_ahead_ = GetOptionInt("lookahead");
   }
 
@@ -47,6 +47,8 @@ class RedMemMovElimPass : public MaoPass {
   //  movq    24(%rsp), %rcx
   //
   void DoElim() {
+    set_cfg(CFG::GetCFG(mao_, function_));
+
     FORALL_CFG_BB(cfg(),it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
@@ -122,14 +124,15 @@ class RedMemMovElimPass : public MaoPass {
 
  private:
   MaoUnit   *mao_;
+  Function  *function_;
   int        look_ahead_;
 };
 
 
 // External Entry Point
 //
-void PerformRedundantMemMoveElimination(MaoUnit *mao, const CFG *cfg) {
-  RedMemMovElimPass redmemmov(mao, cfg);
+void PerformRedundantMemMoveElimination(MaoUnit *mao, Function *function) {
+  RedMemMovElimPass redmemmov(mao, function);
   if (redmemmov.enabled()) {
     redmemmov.set_timed();
     redmemmov.DoElim();

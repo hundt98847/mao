@@ -68,6 +68,7 @@ class MaoPass {
   bool         enabled() const { return enabled_; }
   unsigned int tracing_level() const { return tracing_level_; }
   bool         tracing() { return tracing_level_ > 0; }
+  void        set_cfg(const CFG *cfg) { cfg_ = cfg; }
   const CFG   *cfg() { return cfg_; }
 
   void set_enabled(bool value) { enabled_ = value; }
@@ -218,11 +219,11 @@ MaoPass *FindPass(MaoOption *arr);
 
 
 // Some Pass Entry Points.
-void PerformZeroExtensionElimination(MaoUnit *mao, const CFG *cfg);
-void PerformRedundantTestElimination(MaoUnit *mao, const CFG *cfg);
-void PerformRedundantMemMoveElimination(MaoUnit *mao, const CFG *cfg);
-void PerformDeadCodeElimination(MaoUnit *mao, const CFG *cfg);
-void PerformMissDispElimination(MaoUnit *mao, const CFG *cfg);
+void PerformZeroExtensionElimination(MaoUnit *mao, Function *function);
+void PerformRedundantTestElimination(MaoUnit *mao,  Function *function);
+void PerformRedundantMemMoveElimination(MaoUnit *mao, Function *function);
+void PerformDeadCodeElimination(MaoUnit *mao, Function *func);
+void PerformMissDispElimination(MaoUnit *mao, Function *func);
 void PerformNopKiller(MaoUnit *mao, const Function *func);
 void PerformNopinizer(MaoUnit *mao,       Function *func);
 void PerformLongInstructionSplit(MaoUnit *mao, Function *func);

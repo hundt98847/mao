@@ -36,7 +36,6 @@
 int main(int argc, const char *argv[]) {
   MaoOptions mao_options;
   MaoUnit    mao_unit(&mao_options);
-  CFG        cfg(&mao_unit);
 
   // Parse any mao-specific command line flags (start with -mao:)
   const char **new_argv = new const char*[argc];
@@ -67,20 +66,19 @@ int main(int argc, const char *argv[]) {
        iter != mao_unit.ConstFunctionEnd();
        ++iter) {
     Function *function = *iter;
-    function->set_lsg(PerformLoopRecognition(&mao_unit, function));
 
     // Optimization passes.
-    PerformDeadCodeElimination(&mao_unit, CFG::GetCFG(&mao_unit, function));
+    PerformDeadCodeElimination(&mao_unit, function);
     PerformNopKiller(&mao_unit, function);
     PerformNopinizer(&mao_unit, function);
     PerformZeroExtensionElimination(&mao_unit,
-                                    CFG::GetCFG(&mao_unit, function));
+                                    function);
     PerformRedundantTestElimination(&mao_unit,
-                                    CFG::GetCFG(&mao_unit, function));
+                                    function);
     PerformRedundantMemMoveElimination(&mao_unit,
-                                       CFG::GetCFG(&mao_unit, function));
+                                       function);
     PerformMissDispElimination(&mao_unit,
-                               CFG::GetCFG(&mao_unit, function));
+                               function);
     PerformLongInstructionSplit(&mao_unit, function);
     DoLoopAlign(&mao_unit, function);
   }

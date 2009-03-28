@@ -1,4 +1,4 @@
-#Option: -mao:CFG=stat[1]  -mao:-o/dev/null
+#Option: -mao:CFG=stat[1]  -mao:-o/dev/null -mao:LOOPALIGN=enable
 #grep table.patterns\:.* 1 1
 	
 	.file	"switches.c"

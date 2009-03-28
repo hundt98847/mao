@@ -466,6 +466,21 @@ class LoopFinderPass : public MaoPass {
   MaoUnit    *mao_;
 };
 
+LoopStructureGraph *LoopStructureGraph::GetLSG(MaoUnit *mao,
+					       Function *function) {
+  MAO_ASSERT(function != NULL);
+  if (function->lsg() == NULL) {
+    CFG *cfg = CFG::GetCFG(mao, function);
+    MAO_ASSERT(cfg != NULL);
+    LoopFinderPass finder(mao, cfg);
+    finder.set_timed();
+    function->set_lsg(finder.DoTheHavlak());
+  }
+  MAO_ASSERT(function->lsg());
+  return function->lsg();
+}
+
+
 // External Entry Point
 //
 LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, Function *function) {
