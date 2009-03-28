@@ -33,9 +33,9 @@ MAO_OPTIONS_DEFINE(ZEE, 0) {
 
 class ZeroExtentElimPass : public MaoPass {
  public:
-  ZeroExtentElimPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("ZEE", mao->mao_options(), MAO_OPTIONS(ZEE), false, cfg),
-    mao_(mao) {
+  ZeroExtentElimPass(MaoUnit *mao, Function *function) :
+    MaoPass("ZEE", mao->mao_options(), MAO_OPTIONS(ZEE), false),
+    mao_(mao), function_(function) {
   }
 
   bool IsZeroExtent(InstructionEntry *insn) {
@@ -54,6 +54,8 @@ class ZeroExtentElimPass : public MaoPass {
   // extending def reg32
   //
   void DoElim() {
+    set_cfg(CFG::GetCFG(mao_, function_));
+
     std::list<InstructionEntry *> redundants;
 
     FORALL_CFG_BB(cfg(),it) {
@@ -120,13 +122,14 @@ class ZeroExtentElimPass : public MaoPass {
 
  private:
   MaoUnit   *mao_;
+  Function  *function_;
 };
 
 
 // External Entry Point
 //
-void PerformZeroExtensionElimination(MaoUnit *mao, const CFG *cfg) {
-  ZeroExtentElimPass zee(mao, cfg);
+void PerformZeroExtensionElimination(MaoUnit *mao, Function *function) {
+  ZeroExtentElimPass zee(mao, function);
   if (zee.enabled()) {
     zee.set_timed();
     zee.DoElim();

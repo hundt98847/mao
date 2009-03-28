@@ -36,11 +36,9 @@ MAO_OPTIONS_DEFINE(LISPLIT, 2) {
 class LongInstructionsSplitPass : public MaoPass {
  public:
   LongInstructionsSplitPass(MaoUnit *mao,
-                            Function *func,
-                            MaoRelaxer::SizeMap *sizes) :
-    MaoPass("LISPLIT", mao->mao_options(), MAO_OPTIONS(LISPLIT), false,
-            CFG::GetCFG(mao, func)),
-    mao_(mao), func_(func), sizes_(sizes) {
+                            Function *func) :
+    MaoPass("LISPLIT", mao->mao_options(), MAO_OPTIONS(LISPLIT), false),
+    mao_(mao), func_(func), sizes_(NULL) {
     length_ = GetOptionInt("length");
     fill_ = GetOptionInt("fill");
   }
@@ -52,6 +50,9 @@ class LongInstructionsSplitPass : public MaoPass {
   // For now, only search for such sequences.
   bool Go() {
     std::list<InstructionEntry *> split_points;
+
+    set_cfg(CFG::GetCFG(mao_, func_));
+    sizes_ = MaoRelaxer::GetSizeMap(mao_, func_);
 
     FORALL_CFG_BB(cfg(),it) {
       FORALL_BB_ENTRY(it,entry) {
@@ -98,8 +99,7 @@ class LongInstructionsSplitPass : public MaoPass {
 //
 void PerformLongInstructionSplit(MaoUnit *mao, Function *function) {
   LongInstructionsSplitPass lipass(mao,
-                                   function,
-                                   MaoRelaxer::GetSizeMap(mao, function));
+                                   function);
   if (lipass.enabled()) {
     lipass.set_timed();
     lipass.Go();

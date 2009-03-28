@@ -205,6 +205,8 @@ class LoopStructureGraph {
   public:
   typedef std::list<SimpleLoop *> LoopList;
 
+  static LoopStructureGraph *GetLSG(MaoUnit *mao, Function *function);
+
   LoopStructureGraph() : root_(new SimpleLoop()),
                          loop_counter_(0) {
     root_->set_nesting_level(0);  // make it root node

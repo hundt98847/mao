@@ -1,4 +1,4 @@
-#Option: -mao:LFIND=lsg	
+#Option: -mao:LFIND=lsg	-mao:LOOPALIGN=enable
 #grep    loop-1 2
         
       	.file	"hello-loop.c"

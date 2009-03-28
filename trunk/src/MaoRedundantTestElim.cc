@@ -34,10 +34,10 @@ MAO_OPTIONS_DEFINE(REDTEST, 0) {
 
 class RedTestElimPass : public MaoPass {
  public:
-  RedTestElimPass(MaoUnit *mao, const CFG *cfg) :
+  RedTestElimPass(MaoUnit *mao, Function *function) :
     MaoPass("REDTEST", mao->mao_options(), MAO_OPTIONS(REDTEST),
-            false, cfg),
-    mao_(mao) {
+            false),
+    mao_(mao), function_(function) {
   }
 
   // Find patterns like these in a single basic block:
@@ -54,6 +54,8 @@ class RedTestElimPass : public MaoPass {
   // The test instruction is therefore redundant
   //
   void DoElim() {
+    set_cfg(CFG::GetCFG(mao_, function_));
+
     std::list<InstructionEntry *> redundants;
 
     FORALL_CFG_BB(cfg(),it) {
@@ -109,13 +111,14 @@ class RedTestElimPass : public MaoPass {
 
  private:
   MaoUnit   *mao_;
+  Function  *function_;
 };
 
 
 // External Entry Point
 //
-void PerformRedundantTestElimination(MaoUnit *mao, const CFG *cfg) {
-  RedTestElimPass redtest(mao, cfg);
+void PerformRedundantTestElimination(MaoUnit *mao, Function *function) {
+  RedTestElimPass redtest(mao, function);
   if (redtest.enabled()) {
     redtest.set_timed();
     redtest.DoElim();

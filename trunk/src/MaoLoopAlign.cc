@@ -27,8 +27,7 @@
 // and alligns all (chains of) basicb locks within the paths.
 class LoopAlignPass : public MaoPass {
  public:
-  explicit LoopAlignPass(MaoUnit *mao, LoopStructureGraph *loop_graph,
-                         MaoRelaxer::SizeMap *sizes);
+  explicit LoopAlignPass(MaoUnit *mao, Function *function);
   void DoLoopAlign();
 
  private:
@@ -37,6 +36,8 @@ class LoopAlignPass : public MaoPass {
 //   typedef std::vector<Path *> Paths;
 
   MaoUnit  *mao_unit_;
+
+  Function *function_;
   // This is the result found by the loop sequence detector.
   LoopStructureGraph *loop_graph_;
   // This is the sizes of all the instructions in the section
@@ -147,16 +148,13 @@ MAO_OPTIONS_DEFINE(LOOPALIGN, 2) {
                              "statistics about loops."),
 };
 
-LoopAlignPass::LoopAlignPass(MaoUnit *mao, LoopStructureGraph *loop_graph,
-                             MaoRelaxer::SizeMap *sizes)
+LoopAlignPass::LoopAlignPass(MaoUnit *mao, Function *function)
     : MaoPass("LOOPALIGN", mao->mao_options(), MAO_OPTIONS(LOOPALIGN), false),
-      mao_unit_(mao),
-      loop_graph_(loop_graph),
-      sizes_(sizes) {
+      mao_unit_(mao), function_(function),
+      sizes_(NULL) {
 
   maximum_loop_size_ = GetOptionInt("loop_size");
-
-  collect_stat_ = GetOptionBool("stat");
+  collect_stat_      = GetOptionBool("stat");
 
   if (collect_stat_) {
     // check if a stat object already exists?
@@ -171,7 +169,11 @@ LoopAlignPass::LoopAlignPass(MaoUnit *mao, LoopStructureGraph *loop_graph,
 }
 
 void LoopAlignPass::DoLoopAlign() {
+  sizes_ = MaoRelaxer::GetSizeMap(mao_unit_, function_);
+  loop_graph_ =  LoopStructureGraph::GetLSG(mao_unit_, function_);
+
   Trace(2, "%d loop(s).", loop_graph_->NumberOfLoops()-1);
+
   if (loop_graph_->NumberOfLoops() > 1) {
     MaoRelaxer::SizeMap offsets;
     // iterate over the entries in the section to solve this..
@@ -462,25 +464,6 @@ int LoopAlignPass::LoopSize(const SimpleLoop *loop) const {
 
 
 // int LoopAlignPass::PathSize(const Path *path) const {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //   int size = 0;
 //   // Loop over basic block to get their sizes!
 //   for (Path::const_iterator iter = path->begin();
@@ -530,8 +513,7 @@ void DoLoopAlign(MaoUnit *mao,
                  Function *function) {
   // Make sure the analysis have been run on this function
   LoopAlignPass align(mao,
-                      function->lsg(),
-                      MaoRelaxer::GetSizeMap(mao, function));
+                      function);
   if (align.enabled()) {
     align.set_timed();
     align.DoLoopAlign();
