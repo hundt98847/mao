@@ -134,7 +134,7 @@ class LoopAlignPass : public MaoPass {
 //   void ProcessInnerLoopOld(const SimpleLoop *loop);
 
   // Add the align directive to the given basic block.
-  void AlignBlock(BasicBlock *basicblock);
+  void AlignBlock(BasicBlock *basicblock, int alignment_base);
 };
 
 
@@ -150,8 +150,7 @@ MAO_OPTIONS_DEFINE(LOOPALIGN, 2) {
 
 LoopAlignPass::LoopAlignPass(MaoUnit *mao, Function *function)
     : MaoPass("LOOPALIGN", mao->mao_options(), MAO_OPTIONS(LOOPALIGN), false),
-      mao_unit_(mao), function_(function),
-      sizes_(NULL) {
+      mao_unit_(mao), function_(function), sizes_(NULL) {
 
   maximum_loop_size_ = GetOptionInt("loop_size");
   collect_stat_      = GetOptionBool("stat");
@@ -175,13 +174,14 @@ void LoopAlignPass::DoLoopAlign() {
   Trace(2, "%d loop(s).", loop_graph_->NumberOfLoops()-1);
 
   if (loop_graph_->NumberOfLoops() > 1) {
+    MAO_ASSERT(function_->GetSection());
+    // Build an offset map fromt he size map we have.
+    // TODO(martint): Optimize the code so that the map is not
+    // rebuild for each function.
     MaoRelaxer::SizeMap offsets;
-    // iterate over the entries in the section to solve this..
-    Section *text_section = mao_unit_->GetSection(".text");
-    MAO_ASSERT(text_section);
     int offset = 0;
-    for (SectionEntryIterator iter = text_section->EntryBegin();
-         iter != text_section->EntryEnd();
+    for (SectionEntryIterator iter = function_->GetSection()->EntryBegin();
+         iter != function_->GetSection()->EntryEnd();
          ++iter) {
       offsets[*iter] = offset;
       offset += (*sizes_)[*iter];
@@ -337,34 +337,43 @@ int LoopAlignPass::BasicBlockSize(BasicBlock *BB) const {
 
 
 // Add an alignment directive at start of this basicblock
-// TODO(martint): add it after label, and only add it if its not already
-// aligned.
-void LoopAlignPass::AlignBlock(BasicBlock *basicblock) {
+void LoopAlignPass::AlignBlock(BasicBlock *basicblock, int alignment_base) {
   MAO_ASSERT(basicblock);
   MaoEntry *entry = basicblock->first_entry();
 
+
   DirectiveEntry::OperandVector operands;
-  operands.push_back(new DirectiveEntry::Operand(6));
-  DirectiveEntry *alignment_directive =
-      new DirectiveEntry(DirectiveEntry::P2ALIGN, operands,
-                         0, NULL, mao_unit_);
-  // Now we have the new entry! the following needs to be updated
-  // 1. the entries themselves!
+  SubSection *ss = function_->GetSubSection();
+  MAO_ASSERT(ss);
+  operands.push_back(new DirectiveEntry::Operand(alignment_base));
+  DirectiveEntry *align_entry = mao_unit_->CreateDirective(
+      DirectiveEntry::P2ALIGN, operands,
+      function_, ss);
+  entry->LinkBefore(align_entry);
 
-  MaoEntry *prev_entry = entry->prev();
-  prev_entry->set_next(alignment_directive);
-  alignment_directive->set_prev(prev_entry);
+  // update the basic block as well!
+  basicblock->set_first_entry(align_entry);
 
-  entry->set_prev(alignment_directive);
-  alignment_directive->set_next(entry);
+//   DirectiveEntry::OperandVector operands;
+//   operands.push_back(new DirectiveEntry::Operand(6));
+//   DirectiveEntry *alignment_directive =
+//       new DirectiveEntry(DirectiveEntry::P2ALIGN, operands,
+//                          0, NULL, mao_unit_);
+//   // Now we have the new entry! the following needs to be updated
+//   // 1. the entries themselves!
 
-  // 2. the basic block
-  basicblock->set_first_entry(alignment_directive);
+//   MaoEntry *prev_entry = entry->prev();
+//   prev_entry->set_next(alignment_directive);
+//   alignment_directive->set_prev(prev_entry);
 
-  // TODO: update sections/functions?
+//   entry->set_prev(alignment_directive);
+//   alignment_directive->set_next(entry);
+
+//   // 2. the basic block
+//   basicblock->set_first_entry(alignment_directive);
+
+//   // TODO: update sections/functions?
 }
-
-
 
 // int LoopAlignPass::ChainSize(BasicBlock *basicblock,
 //                            std::map<BasicBlock *, BasicBlock *> *connections) {
@@ -380,16 +389,12 @@ void LoopAlignPass::AlignBlock(BasicBlock *basicblock) {
 
 void LoopAlignPass::ProcessInnerLoop(const SimpleLoop *loop,
                                      MaoRelaxer::SizeMap *offsets) {
-  // Find out if all the blocks are aligned after each other!
-
-  // Keeps track of what blocks we have already processed
-  // Could be solved by using the sizemap and create offsets
-  // into the section!
-  // TODO(martint)
-  // now we can find the largest and smallest value!
+  // Find out if the distance between the first entry in the first block to the
+  // end of the last block fits in 64 bytes? Then try to align it.
 
   BasicBlock *first = *(loop->ConstBasicBlockBegin());
   BasicBlock *last = *(loop->ConstBasicBlockBegin());
+
   for (SimpleLoop::BasicBlockSet::iterator iter = loop->ConstBasicBlockBegin();
        iter != loop->ConstBasicBlockEnd();
        ++iter) {
@@ -402,13 +407,17 @@ void LoopAlignPass::ProcessInnerLoop(const SimpleLoop *loop,
       first = *iter;
     }
   }
-  int loop_size = (*offsets)[last->last_entry()] + (*sizes_)[last->last_entry()]
+
+  int loop_space = (*offsets)[last->last_entry()] + (*sizes_)[last->last_entry()]
       - (*offsets)[first->first_entry()];
-  if (loop_size <= 64) {
-    // Add align directive
-    AlignBlock(first);
+
+
+  // Only 64-byte looks and smaller will ever fit in the LSD
+  // If the loop is smaller than 50 bytes, it do not need
+  // to be aligned.
+  if (loop_space <= 64 && loop_space >= 50) {
+    AlignBlock(first, 4);
   }
-  Trace(3, "Loop size is: %d", loop_size);
 }
 
 
@@ -489,6 +498,8 @@ void LoopAlignPass::FindInner(const SimpleLoop *loop,
     // candiates for alignment!
     int size = LoopSize(loop);
 
+    // This simple heuristic will process all loops that are
+    // smaller than 64 bytes.
     if (size <= 64) {
       ProcessInnerLoop(loop, offsets);
     }
@@ -508,7 +519,6 @@ void LoopAlignPass::FindInner(const SimpleLoop *loop,
 }
 
 // External Entry Point
-//
 void DoLoopAlign(MaoUnit *mao,
                  Function *function) {
   // Make sure the analysis have been run on this function
