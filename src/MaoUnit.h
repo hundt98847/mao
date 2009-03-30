@@ -825,6 +825,12 @@ class Function {
     return subsection_->section();
   }
 
+  SubSection *GetSubSection() {
+    MAO_ASSERT(subsection_);
+    return subsection_;
+  }
+
+
   // Accesses the size_map associated for the section
   // this function is in.
   std::map<MaoEntry *, int> *sizes();

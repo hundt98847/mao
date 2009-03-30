@@ -41,8 +41,11 @@ extern "C" {
   int output_big_leb128(char *p, LITTLENUM_TYPE *bignum, int size, int sign);
   const char *S_GET_NAME(symbolS *s);
   void S_SET_VALUE (symbolS *s, valueT val);
+  valueT S_GET_VALUE (symbolS *s);
   symbolS *symbol_find (const char *name);
   void symbol_set_frag (symbolS *s, fragS *f);
+  fragS *symbol_get_frag (symbolS *s);
+  void symbol_set_value_expression (symbolS *s, const expressionS *exp);
   extern int finalize_syms;
 }
 
@@ -240,7 +243,6 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
   struct frag *fragments, *frag;
   fragments = frag = NewFragment();
 
-  LabelEntry *le;
   symbolS *symbolP;
 
   bool is_text = !section->name().compare(".text");
@@ -381,6 +383,57 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
             // properly for the ident directive
             (*size_map)[entry] = 0;
             break;
+          case DirectiveEntry::SET: {
+            (*size_map)[entry] = 0;
+//             // Make sure the frags are set correctly for the symbol defined here
+//             // .set LABEL1, LABEL2
+//             const DirectiveEntry::Operand *l1 = dentry->GetOperand(0);
+//             const DirectiveEntry::Operand *l2 = dentry->GetOperand(1);
+//             MAO_ASSERT(l1->type == DirectiveEntry::SYMBOL);
+//             symbolP = l1->data.sym;
+//             MAO_ASSERT(symbolP != NULL);
+//             // Make sure the symbol is assigned to the current frag.
+//             symbol_set_frag (symbolP, frag);
+
+//             // The tricky part: Set the initial value of the symbol
+//             // TODO(martint): The current code does not cover all cases
+//             //                and needs to be updated.
+//             switch (l2->type) {
+//               case DirectiveEntry::INT: {
+//                 S_SET_VALUE(symbolP, l2->data.i); // / OCTETS_PER_BYTE
+//                 break;
+//               }
+//               case DirectiveEntry::SYMBOL: {
+//                 S_SET_VALUE(symbolP, S_GET_VALUE(l2->data.sym));
+//                 break;
+//               }
+//               case DirectiveEntry::EXPRESSION:{
+//                 switch (l2->data.expr->X_op) {
+//                   /* X_add_number (a constant expression).  */
+//                   case O_constant:
+//                     S_SET_VALUE(symbolP, l2->data.expr->X_add_number);
+//                     break;
+//                     /* X_add_symbol + X_add_number.  */
+//                   case O_symbol: {
+//                     MAO_ASSERT(l2->data.expr->X_add_number == 0);
+//                     //symbol_set_value_expression(symbolP, l2->data.expr);
+//                     S_SET_VALUE(symbolP,
+//                                 S_GET_VALUE(l2->data.expr->X_add_symbol));
+//                     break;
+//                   }
+//                   default:
+//                     MAO_ASSERT_MSG(false, "Unable to resolve expression: %d.",
+//                                    l2->data.expr->X_op);
+//                 }
+//                 break;
+//               }
+//               default:
+//                 MAO_ASSERT_MSG(false, "MAO does currently not handle this type "
+//                                "of \".set\" directive in relaxation. %d",
+//                                l2->type);
+//             }
+            break;
+          }
           case DirectiveEntry::FILE:
           case DirectiveEntry::SECTION:
           case DirectiveEntry::GLOBAL:
@@ -388,7 +441,6 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           case DirectiveEntry::WEAK:
           case DirectiveEntry::TYPE:
           case DirectiveEntry::SIZE:
-          case DirectiveEntry::SET:
           case DirectiveEntry::EQUIV:
           case DirectiveEntry::WEAKREF:
           case DirectiveEntry::ARCH:
@@ -401,7 +453,8 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
         }
         break;
       }
-      case MaoEntry::LABEL:
+      case MaoEntry::LABEL: {
+        LabelEntry *le;
         // Assign the frag to the symbol
         le = entry->AsLabel();
         // Only assign frags to labels that have a symbol
@@ -415,6 +468,7 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           S_SET_VALUE(symbolP, frag->fr_fix); // / OCTETS_PER_BYTE
         }
         break;
+      }
       case MaoEntry::UNDEFINED:
         // Nothing to do
       default:
