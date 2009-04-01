@@ -191,7 +191,9 @@ class CFG {
   typedef std::map<const char *, BasicBlock *, ltstr> LabelToBBMap;
 
   explicit CFG(MaoUnit *mao_unit) : mao_unit_(mao_unit),
-                                    has_unresolved_indirect_branches_(false) {
+                                    has_unresolved_indirect_branches_(false),
+                                    has_unresolved_labels_(false),
+                                    jumps_outside_function_(false) {
     labels_to_jumptargets_.clear();
   }
   ~CFG() {
@@ -256,13 +258,35 @@ class CFG {
     has_unresolved_indirect_branches_ = value;
   }
 
+  bool has_unresolved_labels() const {
+    return has_unresolved_labels_;
+  }
+
+  void set_has_unresolved_labels(bool value) {
+    has_unresolved_labels_ = value;
+  }
+
+
+  bool jumps_outside_function() const {
+    return jumps_outside_function_;
+  }
+
+  void set_jumps_outside_function(bool value) {
+    jumps_outside_function_ = value;
+  }
+
  private:
   MaoUnit  *mao_unit_;
   LabelToBBMap basic_block_map_;
   BBVector basic_blocks_;
 
   bool has_unresolved_indirect_branches_;
-
+  bool has_unresolved_labels_;   // Jumps to labels not found
+                                 // in the current unit
+  bool jumps_outside_function_;  // Jumps to labels not found
+                                 // in the current function,
+                                 // but exists ni the current unit
+ 
   // This holds the jumptables we so far have identified, and maps the
   // label that identifies them to the list of targets in the table.
   // This is populated on demand. When we reach an indirect jump, we
