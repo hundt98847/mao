@@ -91,7 +91,7 @@ def main(argv):
     if flag == "-f":
       f = open(value, 'r')
       for line in f:
-        args.append(line.strip())
+        args.append(os.path.join(os.path.dirname(argv[0]), line).strip())
     else:
       print "Unsupported flag: %(flag)s" % {'flag' : flag}
 
@@ -128,7 +128,7 @@ def main(argv):
         num_patterns_passed += 1
 
     # Print out the status line:
-    print '%(f)-20s' % {'f' : inputfile},
+    print '%(f)-20s' % {'f' : os.path.basename(inputfile)},
     if len(error_msgs) == 0:
       print "PASS",
     else:
