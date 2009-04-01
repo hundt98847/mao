@@ -190,10 +190,19 @@ void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
          iter != ConstFunctionEnd();
          ++iter) {
       Function *function = *iter;
-      fprintf(out, "[%3d] [%3d-%3d]: %s\n",
+      fprintf(out, "[%3d] [%3d-%3d] [%c%c%c]: %s \n",
               function->id(),
               function->first_entry()->id(),
               function->last_entry()->id(),
+              function->cfg()?
+                (function->cfg()->has_unresolved_indirect_branches()?'I':' ')
+                :'?',
+              function->cfg()?
+                (function->cfg()->has_unresolved_labels()?'L':' ')
+                :'?',
+              function->cfg()?
+                (function->cfg()->jumps_outside_function()?'F':' ')
+                :'?',
               function->name().c_str());
     }
   }
@@ -269,11 +278,15 @@ bool MaoUnit::SetSubSection(const char *section_name,
   return section_pair.first;
 }
 
+
 LabelEntry *MaoUnit::GetLabelEntry(const char *label_name) const {
   std::map<const char *, LabelEntry *>::const_iterator iter =
       labels_.find(label_name);
-  MAO_ASSERT_MSG(iter != labels_.end(), "Unable to find label: %s", label_name);
-  return iter->second;
+  if (iter == labels_.end()) {
+    return NULL;
+  } else {
+    return iter->second;
+  }
 }
 
 
@@ -517,6 +530,8 @@ void MaoUnit::FindFunctions() {
     if (symbol->IsFunction()) {
       // Find the entry given the label now
       MaoEntry *entry = GetLabelEntry(symbol->name());
+      MAO_ASSERT_MSG(entry != NULL, "Unable to find label: %s", symbol->name());
+
       // TODO(martint): create ID factory for functions
       MAO_ASSERT(GetSubSection(entry));
       Function *function = new Function(symbol->name(), functions_.size(),
@@ -1245,7 +1260,9 @@ LabelEntry *DirectiveEntry::GetJumpTableTarget() {
   if (label_name == NULL) {
     MAO_ASSERT_MSG(false, "Unable to find label for jump-table.");
   }
-  return maounit_->GetLabelEntry(label_name);
+  LabelEntry *le = maounit_->GetLabelEntry(label_name);
+  MAO_ASSERT_MSG(le != NULL, "Unable to find label: %s", label_name);
+  return le;
 }
 
 bool DirectiveEntry::IsDebugDirective() const {

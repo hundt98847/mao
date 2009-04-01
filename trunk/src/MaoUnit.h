@@ -571,6 +571,8 @@ class MaoUnit {
     return sub_sections_[subsection_number];
   }
 
+  // Gets the entry corresponding label_name. Returns NULL
+  // if no such label is found.
   LabelEntry *GetLabelEntry(const char *label_name) const;
 
   // Instruction Creators

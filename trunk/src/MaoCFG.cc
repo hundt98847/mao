@@ -231,6 +231,18 @@ void CFGBuilder::Build() {
             CFG::LabelToBBMap::iterator target_ptr =
                 label_to_bb_map_.find(label);
             if (target_ptr == label_to_bb_map_.end()) {
+              // Create a new basic block for the label found as a jump target.
+              // Here we can check if this label is defined in this basic block
+              // Check if the label_entry exists in MAO UNIT
+              LabelEntry *target_label = mao_unit_->GetLabelEntry(label);
+              if (target_label == NULL) {
+                CFG_->set_has_unresolved_labels(true);
+              } else {
+                // Check if the label exists, but is in another function
+                if (mao_unit_->GetFunction(target_label) != function_) {
+                  CFG_->set_jumps_outside_function(true);
+                }
+              }
               target = CreateBasicBlock(label);
               CFG_->MapBasicBlock(target);
             } else {
@@ -239,6 +251,8 @@ void CFGBuilder::Build() {
                 bool current_is_target = (target == current);
                 target = BreakUpBBAtLabel(target,
                                           mao_unit_->GetLabelEntry(label));
+                MAO_ASSERT_MSG(target != NULL,
+                               "Unable to find label: %s", label);
 
                 for (SectionEntryIterator entry_iter = target->EntryBegin();
                      entry_iter != target->EntryEnd(); ++entry_iter) {
@@ -402,6 +416,8 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
         entry->instruction()->op[0].disps);
     if (label_name != NULL) {
       *out_label = mao_unit_->GetLabelEntry(label_name);
+      MAO_ASSERT_MSG(*out_label != NULL,
+                     "Unable to find label: %s", label_name);
       return true;
     }
   }
@@ -425,6 +441,8 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
            prev_inst->instruction()->op[0].disps);
        if (label_name) {
          *out_label = mao_unit_->GetLabelEntry(label_name);
+         MAO_ASSERT_MSG(*out_label != NULL,
+                        "Unable to find label: %s", label_name);
          return true;
        }
      }
