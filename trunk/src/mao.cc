@@ -81,7 +81,8 @@ int main(int argc, const char *argv[]) {
                                function);
     PerformLongInstructionSplit(&mao_unit, function);
     DoLoopAlign(&mao_unit, function);
-    RunTestCFGPass(&mao_unit, function);
+    TestCFGPass(&mao_unit, function);
+    TestRelaxPass(&mao_unit, function);
   }
 
   // global finalization passes

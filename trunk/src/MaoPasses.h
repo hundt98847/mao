@@ -212,14 +212,21 @@ class DumpSymbolTablePass : public MaoPass {
 class TestCFGPass : public MaoPass {
  public:
   explicit TestCFGPass(MaoUnit *mao_unit, Function *function);
-  bool Go();
- private:
-  MaoUnit    *mao_unit_;
-  Function   *function_;
 };
 
-// External entry point
-void RunTestCFGPass(MaoUnit *mao_unit, Function *function);
+
+// TestRelaxPass
+
+//
+// A pass that runs the relaxer, even though no pass needs it.
+// Useful for debugging
+//
+class TestRelaxPass : public MaoPass {
+ public:
+  explicit TestRelaxPass(MaoUnit *mao_unit, Function *function);
+ private:
+};
+
 
 //
 // External Entry Points
