@@ -25,6 +25,7 @@
 #include "MaoDebug.h"
 #include "MaoPasses.h"
 #include "MaoCFG.h"
+#include "MaoRelax.h"
 
 class PassDebugAction : public MaoDebugAction {
  public:
@@ -396,19 +397,25 @@ MAO_OPTIONS_DEFINE(TESTCFG, 0) {
 // Useful for debugging.
 //
 TestCFGPass::TestCFGPass(MaoUnit *mao_unit, Function *function)
-    : MaoPass("TESTCFG", mao_unit->mao_options(), MAO_OPTIONS(TESTCFG), false),
-      mao_unit_(mao_unit), function_(function) {
+    : MaoPass("TESTCFG", mao_unit->mao_options(), MAO_OPTIONS(TESTCFG), false) {
+  if (enabled()) {
+    CFG::GetCFG(mao_unit, function);
+  }
 }
 
-// Makes sure that the CFG is build at least once.
-bool TestCFGPass::Go() {
-  CFG::GetCFG(mao_unit_, function_);
-  return true;
-}
+// TestRelaxPass
 
-void RunTestCFGPass(MaoUnit *mao_unit, Function *function) {
-  TestCFGPass testpass(mao_unit, function);
-  if (testpass.enabled()) {
-    testpass.Go();
+MAO_OPTIONS_DEFINE(TESTRELAX, 0) {
+};
+
+//
+// A pass that runs the Relax, even though no pass needs it.
+// Useful for debugging.
+//
+TestRelaxPass::TestRelaxPass(MaoUnit *mao_unit, Function *function)
+    : MaoPass("TESTRELAX", mao_unit->mao_options(),
+              MAO_OPTIONS(TESTRELAX), false) {
+  if (enabled()) {
+    MaoRelaxer::GetSizeMap(mao_unit, function);
   }
 }
