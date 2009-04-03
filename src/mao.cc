@@ -61,7 +61,7 @@ int main(int argc, const char *argv[]) {
   // global init passes
   ReadInput(new_argc, new_argv, &mao_unit);
 
-  // Create a CFG for each function
+  // Run passes on functions.
   for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
        iter != mao_unit.ConstFunctionEnd();
        ++iter) {
@@ -81,6 +81,7 @@ int main(int argc, const char *argv[]) {
                                function);
     PerformLongInstructionSplit(&mao_unit, function);
     DoLoopAlign(&mao_unit, function);
+    RunTestCFGPass(&mao_unit, function);
   }
 
   // global finalization passes

@@ -203,6 +203,23 @@ class DumpSymbolTablePass : public MaoPass {
   MaoUnit    *mao_unit_;
 };
 
+// TestCFGPass
+
+//
+// A pass that runs the CFG, even though no pass needs it.
+// Useful for debugging
+//
+class TestCFGPass : public MaoPass {
+ public:
+  explicit TestCFGPass(MaoUnit *mao_unit, Function *function);
+  bool Go();
+ private:
+  MaoUnit    *mao_unit_;
+  Function   *function_;
+};
+
+// External entry point
+void RunTestCFGPass(MaoUnit *mao_unit, Function *function);
 
 //
 // External Entry Points

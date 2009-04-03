@@ -402,7 +402,6 @@ class CFGBuilder : public MaoPass {
   CFGStat *cfg_stat_;
 };
 
-// External entry point
 void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg);
 
 #endif  // MAOCFG_H_

@@ -385,3 +385,30 @@ bool DumpSymbolTablePass::Go() {
   fclose(outfile);
   return true;
 }
+
+// TestCFGPass
+
+MAO_OPTIONS_DEFINE(TESTCFG, 0) {
+};
+
+//
+// A pass that runs the CFG, even though no pass needs it.
+// Useful for debugging.
+//
+TestCFGPass::TestCFGPass(MaoUnit *mao_unit, Function *function)
+    : MaoPass("TESTCFG", mao_unit->mao_options(), MAO_OPTIONS(TESTCFG), false),
+      mao_unit_(mao_unit), function_(function) {
+}
+
+// Makes sure that the CFG is build at least once.
+bool TestCFGPass::Go() {
+  CFG::GetCFG(mao_unit_, function_);
+  return true;
+}
+
+void RunTestCFGPass(MaoUnit *mao_unit, Function *function) {
+  TestCFGPass testpass(mao_unit, function);
+  if (testpass.enabled()) {
+    testpass.Go();
+  }
+}
