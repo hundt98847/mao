@@ -184,8 +184,18 @@ void CFGBuilder::Build() {
     // If there is no current basic block, find or create one
     if (!current) {
       const char *label;
-      if (entry->Type() == MaoEntry::LABEL)
+      if (entry->Type() == MaoEntry::LABEL) {
+        //If the next entry is a .size directive, then the function ends there
+        //In that case a basic block should not be created for this label
+        MaoEntry *next_entry = entry->next();
+        if((next_entry != NULL) &&
+           (next_entry->Type() == MaoEntry::DIRECTIVE) &&
+           (next_entry->AsDirective()->op() == DirectiveEntry::SIZE ))
+          break;
+
         label = static_cast<LabelEntry *>(entry)->name();
+      
+      }
       else
         label = MaoUnit::BBNameGen::GetUniqueName();
 
