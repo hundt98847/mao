@@ -61,7 +61,8 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
 ################################################################################
 def GetMaoSizes(inputfile, basedir):
   # Run mao and get the sizes from the report
-  cmd = [os.path.join(basedir, "mao"), "-mao:-o/dev/null", "-mao:RELAX=stat[1]", inputfile]
+  cmd = [os.path.join(basedir, "mao"), "-mao:-o/dev/null", \
+         "-mao:TESTRELAX=enable", "-mao:RELAX=stat[1]", inputfile]
   output = _RunCheck(cmd, stdout=subprocess.PIPE)
   mao_function_sizes = {}
   for outputline in output.split('\n'):
@@ -106,7 +107,7 @@ def main(argv):
   verbose_errors = True
   # If True, print a line for each verified function
   verbose_all    = True
-  
+
   in_file = argv[1]
 
   mao_sizes     = GetMaoSizes(in_file, os.path.join(os.path.dirname(argv[0])))
@@ -119,7 +120,7 @@ def main(argv):
     if mao_sizes.get(key, None) == None:
       # Function not found in MAO
       if verbose_errors or verbose_all:
-        print 'ERROR %(functionname)-60s ERROR: Unable to find function in MAO.' % \
+        print 'ERROR %(functionname)-60s Unable to find function in MAO.' % \
               {'functionname': key },
     else:
       # Verify calculated size
