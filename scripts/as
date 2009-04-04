@@ -50,6 +50,9 @@ def _Run(command, env=None):
   err = subprocess.call(command, env=env)
   return err
 
+def _GenSizeReport(assembly_file, basedir):
+  relax_cmd = [os.path.join(basedir, "verify_relaxer.py"), assembly_file]
+  error = _Run(relax_cmd)
 
 def main(argv):
   in_file = ""
@@ -59,7 +62,16 @@ def main(argv):
   cmd = []
   gas_args = []
   flag = 0
+
+  args = []
+  verify_function_sizes = False
   for arg in argv:
+    if arg == "-mao_wrapper:verify_relaxer":
+      verify_function_sizes = True
+    else:
+      args.append(arg)
+
+  for arg in args:
     count += 1
     cmd.append(arg)
 
@@ -122,6 +134,14 @@ def main(argv):
     compile_cmd[0] = os.path.join(os.path.dirname(argv[0]), "as-orig")
     compile_cmd[in_file_index] = s_tempfile
     error = _Run(compile_cmd)
+
+
+    #########################################################
+    # Verify / Uncomment the add this feature
+    #########################################################
+    if verify_function_sizes:
+      _GenSizeReport(in_file, os.path.join(os.path.dirname(argv[0])))
+
 
     #########################################################
     # Remove the temporary files
