@@ -1688,7 +1688,7 @@ bool InstructionEntry::PrintSuffix() const {
     OP_cmpeqss, OP_ucomiss, OP_cvtss2sd, OP_divss, OP_minss, OP_maxss,
     OP_movntss, OP_movss, OP_rcpss, OP_rsqrtss, OP_sqrtss, OP_subss,
     OP_unpcklpd, OP_mulss, OP_unpcklps, OP_cmpss, OP_vmovd, OP_vextractps,
-    OP_vpextrb, OP_vpinsrb, OP_vpextrd, OP_cqto
+    OP_vpextrb, OP_vpinsrb, OP_vpextrd, OP_cqto, OP_jecxz
   };
 
 
