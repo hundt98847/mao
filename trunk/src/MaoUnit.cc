@@ -1441,21 +1441,28 @@ const char *InstructionEntry::GetRelocString(
   const enum bfd_reloc_code_real reloc) const {
   switch (reloc) {
     case BFD_RELOC_X86_64_PLT32:
+    case BFD_RELOC_386_PLT32:  
       return "@PLT";
     case BFD_RELOC_32_PCREL:
       return "@GOTPCREL";
     case BFD_RELOC_X86_64_TLSLD:
       return "@TLSLD";
     case BFD_RELOC_X86_64_TLSGD:
+    case BFD_RELOC_386_TLS_GD:  
       return "@TLSGD";
     case BFD_RELOC_X86_64_DTPOFF32:
+    case BFD_RELOC_386_TLS_LDO_32:  
       return "@DTPOFF";
     case BFD_RELOC_NONE:  // found in "leaq    .LC0(%rip), %rcx"
       return "";
     case BFD_RELOC_X86_64_GOTTPOFF:
+    case BFD_RELOC_386_TLS_IE_32:  
       return "@GOTTPOFF";
     case BFD_RELOC_X86_64_TPOFF32:
+    case BFD_RELOC_386_TLS_LE_32:  
       return "@TPOFF";
+    case BFD_RELOC_386_TLS_LE:  
+      return "@NTPOFF";
     default:
       MAO_ASSERT_MSG(false, "Unable to find info about reloc: %d", reloc);
       break;
