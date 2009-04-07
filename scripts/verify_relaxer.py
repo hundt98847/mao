@@ -121,7 +121,7 @@ def main(argv):
       # Function not found in MAO
       if verbose_errors or verbose_all:
         print 'ERROR %(functionname)-60s Unable to find function in MAO.' % \
-              {'functionname': key },
+              {'functionname': key }
     else:
       # Verify calculated size
       if int(val) == int(mao_sizes[key]):
