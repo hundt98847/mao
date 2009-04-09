@@ -19,6 +19,7 @@
 #define SYMBOLTABLE_H_
 
 #include <map>
+#include <vector>
 
 #include "irlink.h"
 
@@ -68,6 +69,15 @@ class Symbol {
 
   SymbolID id() const { return id_; }
 
+  // Associate another symbol to be "equal" to this one.
+  void AddEqual(const Symbol *);
+
+  typedef std::vector<const Symbol *>::const_iterator        EqualIterator;
+  EqualIterator EqualBegin() { return equals_.begin();}
+  EqualIterator EqualEnd()   { return equals_.end();}
+
+//   std::vector<Symbol *> *GetEquals() { return &equals_; }
+
  private:
   // Dynamically allocated, thus not a constant.
   char *name_;
@@ -78,7 +88,6 @@ class Symbol {
   unsigned int size_;
   // Visibility of symbol. See irlink.h for list
   SymbolVisibility symbol_visibility_;
-  bool absolute_;
   // Common symbol?
   bool common_;
   // Only valid if common_ is true
@@ -86,6 +95,9 @@ class Symbol {
   unsigned int common_align_;
   // Section associated with symbol.
   const Section *section_;
+
+  // Other labels that are defined to be .set/.equ to this symbol:
+  std::vector<const Symbol *> equals_;
 
   // Value of symbols are currently not stored in the MAO symbol table
 };
@@ -96,7 +108,7 @@ class SymbolTable {
  public:
   SymbolTable();
   ~SymbolTable();
-  Symbol *Add(const char *name, Symbol *symbol);
+  Symbol *Add(Symbol *symbol);
   bool Exists(const char *name);
   // Returns a pointer to a symbol with the given name. Creates it if it does
   // not already exists.

@@ -41,13 +41,13 @@ extern "C" {
     WEAK
   };
   enum SymbolType {
-    OBJECT_SYMBOL = 0,
-    FUNCTION_SYMBOL,
-    NOTYPE_SYMBOL,
-    FILE_SYMBOL,
-    SECTION_SYMBOL,
-    TLS_SYMBOL,
-    COMMON_SYMBOL
+    OBJECT_SYMBOL = 0, // .type  @object
+    FUNCTION_SYMBOL,   // .type  @function
+    NOTYPE_SYMBOL,     // .type  @notype
+    FILE_SYMBOL,       // .file
+    SECTION_SYMBOL,    // .section
+    TLS_SYMBOL,        // .type  @tls_object
+    COMMON_SYMBOL      // .type  @common
   };
 
   // Link back an instruction from gas

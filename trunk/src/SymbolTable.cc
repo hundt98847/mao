@@ -47,9 +47,7 @@ bool SymbolTable::Exists(const char *name) {
   return it != table_.end();
 }
 
-Symbol *SymbolTable::Add(const char *name, Symbol *symbol) {
-  // the name is in the symbol?
-  //  table_[name] = symbol;
+Symbol *SymbolTable::Add(Symbol *symbol) {
   table_[symbol->name()] = symbol;
   return symbol;
 }
@@ -101,7 +99,7 @@ Symbol *SymbolTable::FindOrCreateAndFind(const char *name,
                                          const Section *section) {
   if (!Exists(name)) {
     // TODO(martint): use ID factory
-    return Add(name, new Symbol(name, Size(), section));
+    return Add(new Symbol(name, Size(), section));
   } else {
     return Find(name);
   }
@@ -165,13 +163,13 @@ Symbol::Symbol(const char *name, SymbolID id, const Section *section,
       symbol_type_(symbol_type),
       size_(0),
       symbol_visibility_(symbol_visibility),
-      absolute_(true),
       common_(false),
       common_size_(0),
       common_align_(0),
       section_(section) {
   MAO_ASSERT(strlen(name) < kMaxSymbolLength);
   name_ = strdup(name);
+  equals_.clear();
 }
 
 Symbol::~Symbol() {
@@ -237,6 +235,11 @@ void Symbol::set_symbol_type(const SymbolType symbol_type) {
 
 const Section *Symbol::section() const {
   return section_;
+}
+
+
+void Symbol::AddEqual(const Symbol *symbol) {
+  equals_.push_back(symbol);
 }
 
 void Symbol::set_section(const Section *section) {
