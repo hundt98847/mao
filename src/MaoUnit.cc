@@ -423,6 +423,32 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
         std::string *s_section_name = section_name->data.str;
         SetSubSection(s_section_name->c_str(), 0, entry);
       }
+
+      if (directive_entry->op() == DirectiveEntry::SET) {
+        // Get the symbols here!
+        MAO_ASSERT(directive_entry->NumOperands() == 2);
+        const DirectiveEntry::Operand *op_symbol =
+            directive_entry->GetOperand(0);
+
+        // Handle the first operand
+        MAO_ASSERT(op_symbol->type == DirectiveEntry::SYMBOL);
+        Symbol *op_mao_symbol = symbol_table_.Find(
+             S_GET_NAME(op_symbol->data.sym));
+        MAO_ASSERT(op_mao_symbol != NULL);
+
+        // Handle the second operand
+        const DirectiveEntry::Operand *op_expr = directive_entry->GetOperand(1);
+        if(op_expr->type == DirectiveEntry::EXPRESSION) {
+          expressionS *op_as_expr = op_expr->data.expr;
+          // make sure its a symbol..
+          if (op_as_expr->X_op == O_symbol) {
+            Symbol *op_symbol_2 =
+                symbol_table_.Find(S_GET_NAME(op_as_expr->X_add_symbol));
+            op_symbol_2->AddEqual(op_mao_symbol);
+          }
+        }
+      }
+
       break;
     case MaoEntry::UNDEFINED:
       break;
@@ -458,8 +484,7 @@ bool MaoUnit::AddCommSymbol(const char *name, unsigned int common_size,
     Section *section = current_subsection_?
         (current_subsection_->section()):
         NULL;
-    symbol = symbol_table_.Add(name,
-                               new Symbol(name, symbol_table_.Size(), section));
+    symbol = symbol_table_.Add(new Symbol(name, symbol_table_.Size(), section));
     symbol->set_symbol_type(OBJECT_SYMBOL);
   } else {
     // Get the symbol
@@ -642,8 +667,7 @@ Symbol *MaoUnit::AddSymbol(const char *name) {
       (current_subsection_->section()):
       NULL;
   // TODO(martint): Use a ID factory
-  return symbol_table_.Add(name,
-                           new Symbol(name, symbol_table_.Size(), section));
+  return symbol_table_.Add(new Symbol(name, symbol_table_.Size(), section));
 }
 
 

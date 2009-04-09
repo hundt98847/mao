@@ -49,6 +49,9 @@ class MaoRelaxer : public MaoPass {
       MaoUnit *mao, Section *section, SizeMap *size_map,
       FragToEntryMap *relax_map);
 
+  static void UpdateSymbol(const char *symbol_name,
+                           struct frag *frag);
+
   static struct frag *EndFragmentInstruction(
       InstructionEntry *entry, struct frag *frag, bool new_frag);
 
