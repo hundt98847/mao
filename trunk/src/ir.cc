@@ -407,3 +407,13 @@ void link_loc_directive(int file_number, int line_number, int column,
   }
   link_directive_tail(DirectiveEntry::LOC, operands);
 }
+
+void link_allow_index_reg_directive() {
+  DirectiveEntry::OperandVector operands;
+  link_directive_tail(DirectiveEntry::ALLOW_INDEX_REG, operands);
+}
+
+void link_disallow_index_reg_directive() {
+  DirectiveEntry::OperandVector operands;
+  link_directive_tail(DirectiveEntry::DISALLOW_INDEX_REG, operands);
+}

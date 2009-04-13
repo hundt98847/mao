@@ -416,6 +416,7 @@ TestRelaxPass::TestRelaxPass(MaoUnit *mao_unit, Function *function)
     : MaoPass("TESTRELAX", mao_unit->mao_options(),
               MAO_OPTIONS(TESTRELAX), false) {
   if (enabled()) {
+    MaoRelaxer::InvalidateSizeMap(function);
     MaoRelaxer::GetSizeMap(mao_unit, function);
   }
 }

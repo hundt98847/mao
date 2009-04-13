@@ -346,6 +346,8 @@ void LoopAlignPass::AlignBlock(BasicBlock *basicblock, int alignment_base) {
   SubSection *ss = function_->GetSubSection();
   MAO_ASSERT(ss);
   operands.push_back(new DirectiveEntry::Operand(alignment_base));
+  operands.push_back(new DirectiveEntry::Operand());// Not used in relaxation
+  operands.push_back(new DirectiveEntry::Operand(0)); // needs to be specified
   DirectiveEntry *align_entry = mao_unit_->CreateDirective(
       DirectiveEntry::P2ALIGN, operands,
       function_, ss);
