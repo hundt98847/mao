@@ -1410,6 +1410,8 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.reg16
           || t.bitfield.reg32
           || t.bitfield.reg64
+          || t.bitfield.control
+          || t.bitfield.debug
           || t.bitfield.floatreg
           || t.bitfield.regxmm
           || t.bitfield.regmmx
@@ -1702,10 +1704,10 @@ bool InstructionEntry::PrintSuffix() const {
     return false;
   }
 
-  if (instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
-      instruction_->suffix == YMMWORD_MNEM_SUFFIX) {
-    return false;
-  }
+  const MaoOpcode opcode_needs_y_suffix[] = {
+    // AVX Instructions from gas test-suite:
+    OP_vcvtpd2dq, OP_vcvtpd2ps, OP_vcvttpd2dq
+  };
 
   const MaoOpcode opcode_has_l_suffix[] =  {
     OP_movsbl, OP_movswl, OP_movzbl, OP_movzwl, OP_movswl, OP_cmovl, OP_cmovnl,
@@ -1730,9 +1732,32 @@ bool InstructionEntry::PrintSuffix() const {
     OP_cmpeqss, OP_ucomiss, OP_cvtss2sd, OP_divss, OP_minss, OP_maxss,
     OP_movntss, OP_movss, OP_rcpss, OP_rsqrtss, OP_sqrtss, OP_subss,
     OP_unpcklpd, OP_mulss, OP_unpcklps, OP_cmpss, OP_vmovd, OP_vextractps,
-    OP_vpextrb, OP_vpinsrb, OP_vpextrd, OP_cqto, OP_jecxz
+    OP_vpextrb, OP_vpinsrb, OP_vpextrd, OP_cqto, OP_jecxz,
+    // AVX Instructions from gas test-suite:
+    OP_vldmxcsr, OP_vstmxcsr, OP_vaddss, OP_vdivss, OP_vcvtss2sd, OP_vmaxss,
+    OP_vminss, OP_vmulss, OP_vrcpss, OP_vrsqrtss, OP_vsqrtss, OP_vsubss,
+    OP_vcmpeqss, OP_vcmpltss, OP_vcmpless, OP_vcmpunordss, OP_vcmpneqss,
+    OP_vcmpnltss, OP_vcmpnless, OP_vcmpordss, OP_vcmpeq_uqss, OP_vcmpngess,
+    OP_vcmpngtss, OP_vcmpfalsess, OP_vcmpneq_oqss, OP_vcmpgess, OP_vcmpgtss,
+    OP_vcmptruess, OP_vcmpeq_osss, OP_vcmplt_oqss, OP_vcmple_oqss,
+    OP_vcmpunord_sss, OP_vcmpneq_usss, OP_vcmpnlt_uqss, OP_vcmpnle_uqss,
+    OP_vcmpord_sss, OP_vcmpeq_usss, OP_vcmpnge_uqss, OP_vcmpngt_uqss,
+    OP_vcmpfalse_osss, OP_vcmpneq_osss, OP_vcmpge_oqss, OP_vcmpgt_oqss,
+    OP_vcmptrue_usss, OP_vbroadcastss, OP_vcomiss, OP_vpmovsxbd, OP_vpmovsxwq,
+    OP_vpmovzxbd, OP_vpmovzxwq, OP_vucomiss, OP_vmovss, OP_vmovss, OP_vcmpss,
+    OP_vinsertps, OP_vroundss, OP_vfmaddss, OP_vfmaddss, OP_vfmsubss,
+    OP_vfmsubss, OP_vfnmaddss, OP_vfnmsubss, OP_vfnmsubss, OP_vpmovsxbq,
+    OP_vpmovzxbq, OP_vpextrw, OP_vpextrw, OP_vpinsrw, OP_vpinsrw,
+    // CBW instructions
+    OP_cbw, OP_cwde, OP_cdqe, OP_cwd, OP_cdq, OP_cqo
   };
 
+  if ((instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
+       instruction_->suffix == YMMWORD_MNEM_SUFFIX) &&
+      !IsInList(op(), opcode_needs_y_suffix,
+                sizeof(opcode_needs_y_suffix)/sizeof(MaoOpcode))) {
+    return false;
+  }
 
   if ((instruction_->suffix == 'l') &&
       IsInList(op(), opcode_has_l_suffix,
@@ -1773,6 +1798,15 @@ bool InstructionEntry::PrintSuffix() const {
   }
 
   return true;
+}
+
+
+void InstructionEntry::PrintRexPrefix(FILE *out, int prefix) const {
+  const char *rex_arr[] = {"rex", "rexz", "rexy", "rexyz", "rexx",
+                           "rexxz", "rexxy", "rexxyz", "rex64",
+                           "rex64z", "rex64y", "rex64yz", "rex64x",
+                           "rex64xz", "rex64xy", "rex64xyz"};
+  fprintf(out, "%s ", rex_arr[prefix-REX_OPCODE]);
 }
 
 // Prints out the instruction.
@@ -1832,8 +1866,21 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           case REX_OPCODE+12:  // e.g.: mov    %r9, (%eax)
           case REX_OPCODE+13:  // e.g : movq    %r12, %r9
           case REX_OPCODE+14:
-          case REX_OPCODE+15:
+          case REX_OPCODE+15:{
+            const MaoOpcode no_rex_prefix[]= {// from x86-64-cbw.s
+                                              OP_cdqe, OP_cqo,
+                                              // from x86-64-rep-suffix.s
+                                              OP_lods, OP_stos,
+                                              // from x86-64-rep.s
+                                              OP_movs, OP_cmps, OP_scas};
+
+            if (instruction_->operands == 0 &&
+                !IsInList(op(), no_rex_prefix,
+                          sizeof(no_rex_prefix)/sizeof(MaoOpcode))) {
+              PrintRexPrefix(out, instruction_->prefix[i]);
+            }
             break;
+          }
           case DATA_PREFIX_OPCODE:  // e.g. : cmpw    %cx, %ax
             break;
           case CS_PREFIX_OPCODE:

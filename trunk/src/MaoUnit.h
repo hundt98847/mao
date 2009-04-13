@@ -521,6 +521,8 @@ class InstructionEntry : public MaoEntry {
                           const bool jumpabsolute) const;
   const char *GetRelocString(const enum bfd_reloc_code_real reloc) const;
 
+  void InstructionEntry::PrintRexPrefix(FILE *out, int prefix) const;
+
   // Determines if the suffix needs to be printed
   bool PrintSuffix() const;
 };
