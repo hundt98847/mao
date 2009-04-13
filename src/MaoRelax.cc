@@ -141,33 +141,6 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
     }
   }
 
-  //  // TODO(martint): fix this code and allow a paramter to decide which function
-  //                    to display.
-//     for (MaoUnit::ConstFunctionIterator fiter = mao_unit_->ConstFunctionBegin();
-//          fiter != mao_unit_->ConstFunctionEnd();
-//          ++fiter) {
-//       Function *function = *fiter;
-//       if (function->GetSection() == section) {
-//         if (function->name() == "expr") {
-//           offset = 0;
-//           // print out the function!
-//           for(SectionEntryIterator iter = function->EntryBegin();
-//               iter != function->EntryEnd();
-//               ++iter) {
-//             if (!(*iter)->IsLabel()) {
-//               int size = (*size_map)[*iter];
-//               fprintf(stderr, "%s:  ", function->name().c_str());
-//               fprintf(stderr, "%4x:  ", offset);
-//               (*iter)->PrintIR(stderr);
-//               fprintf(stderr, "\n");
-//               offset += size;
-//             }
-//           }
-//         }
-//       }
-//     }
-//   }
-
   if (verification_symbols_) {
     // Add symbols to object file with the calculated size of the functions.
     for (MaoUnit::ConstFunctionIterator iter = mao_unit_->ConstFunctionBegin();
@@ -394,6 +367,8 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           case DirectiveEntry::ARCH:
           case DirectiveEntry::LINEFILE:
           case DirectiveEntry::LOC:
+          case DirectiveEntry::ALLOW_INDEX_REG:
+          case DirectiveEntry::DISALLOW_INDEX_REG:
           case DirectiveEntry::NUM_OPCODES:
             (*size_map)[entry] = 0;
             // Nothing to do

@@ -1008,7 +1008,9 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".weakref",
   ".arch",
   ".linefile",
-  ".loc"
+  ".loc",
+  ".allow_index_reg",
+  ".disallow_index_reg"
 };
 
 
@@ -1693,9 +1695,18 @@ unsigned int InstructionEntry::GetLog2ScaleFactor() {
 }
 
 bool InstructionEntry::PrintSuffix() const {
+  #define XMMWORD_MNEM_SUFFIX  'x'
+  #define YMMWORD_MNEM_SUFFIX 'y'
+
   if (instruction_->suffix == 0) {
     return false;
   }
+
+  if (instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
+      instruction_->suffix == YMMWORD_MNEM_SUFFIX) {
+    return false;
+  }
+
   const MaoOpcode opcode_has_l_suffix[] =  {
     OP_movsbl, OP_movswl, OP_movzbl, OP_movzwl, OP_movswl, OP_cmovl, OP_cmovnl,
     OP_cwtl, OP_cltd, OP_movbe
@@ -1896,9 +1907,28 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
         instruction_->op[i].imms->X_add_number  &= mask;
       }
 
-      PrintImmediateOperand(out,
-                            instruction_->reloc[i],
-                            instruction_->op[i].imms);
+      // cpusse4a instruction swap the first two operands!
+      //  extrq   $4,$2,%xmm1
+      if (instruction_->tm.cpu_flags.bitfield.cpusse4a &&
+          num_operands > 2 &&
+          i == 0 &&
+          IsImmediateOperand(instruction_, 1)){
+        PrintImmediateOperand(out,
+                              instruction_->reloc[1],
+                              instruction_->op[1].imms);
+
+      } else if (instruction_->tm.cpu_flags.bitfield.cpusse4a &&
+                 num_operands > 2 &&
+                 i == 1 &&
+                 IsImmediateOperand(instruction_, 0)){
+        PrintImmediateOperand(out,
+                              instruction_->reloc[0],
+                              instruction_->op[0].imms);
+      } else {
+        PrintImmediateOperand(out,
+                              instruction_->reloc[i],
+                              instruction_->op[i].imms);
+      }
     }
 
     // MEMORY OPERANDS

@@ -1870,6 +1870,12 @@ static void
 set_allow_index_reg (int flag)
 {
   allow_index_reg = flag;
+
+  // Link directive to mao
+  if (flag)
+    link_allow_index_reg_directive();
+  else
+    link_disallow_index_reg_directive();
 }
 
 static void

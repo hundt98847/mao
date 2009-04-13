@@ -274,6 +274,8 @@ class DirectiveEntry : public MaoEntry {
     ARCH,
     LINEFILE,
     LOC,
+    ALLOW_INDEX_REG,
+    DISALLOW_INDEX_REG,
     NUM_OPCODES  // Used to get the size of the array
   };
 

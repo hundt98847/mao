@@ -106,6 +106,8 @@ extern "C" {
                                int num_flags, int* flag);
   void link_loc_directive(int file_number, int line_number, int column,
                           struct MaoStringPiece options[], int num_options);
+  void link_allow_index_reg_directive();
+  void link_disallow_index_reg_directive();
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 
