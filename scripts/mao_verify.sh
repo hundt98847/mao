@@ -8,7 +8,6 @@
 #  Some of the more important variables used below
 #  
 #    MAO_ROOT      = Environment variable must be set before running this script
-#    BIN_DIR       = Directory for mao-related binaries
 #    WORKDIR       = Directory used for holding all files used in the verification
 #    IN_FILE       = Input file
 #    S_FILE        = name of assembly file inside the WORKDIR
@@ -95,7 +94,6 @@ fi
 WORKDIR=`mktemp -d Verify.XXXXXX` || (echo "Unable to create directiry" && exit 1)
 
 # Static variables
-BIN_DIR=${MAO_ROOT}/bin/
 FILENAME=`basename "${IN_FILE}"`
 EXTENSION="${FILENAME##*.}"
 BENCHMARK="${FILENAME%.*}"
@@ -132,6 +130,9 @@ if [ $? -ne 0 ]; then
   echo "Error creating assembly";
   exit;
 fi
+
+#echo ${MAO} -mao:-o"${MAO_FILE}" "${S_FILE}"
+#exit
 
 # # Generate object files from both
 ${AS} -o "${S_FILE}.o"   "${S_FILE}" 
