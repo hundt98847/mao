@@ -1724,6 +1724,7 @@ bool InstructionEntry::PrintSuffix() const {
   };
 
   const MaoOpcode supress_suffix[] =  {
+    // Misc instructions from the gas testsuite.
     OP_invept, OP_movd, OP_cmpxchg16b, OP_vmptrld, OP_vmclear, OP_vmxon,
     OP_vmptrst, OP_ldmxcsr, OP_stmxcsr, OP_clflush, OP_addsubps, OP_cvtpd2dq,
     OP_comiss, OP_cvttps2dq, OP_haddps, OP_movdqu, OP_movshdup, OP_pshufhw,
@@ -1749,7 +1750,11 @@ bool InstructionEntry::PrintSuffix() const {
     OP_vfmsubss, OP_vfnmaddss, OP_vfnmsubss, OP_vfnmsubss, OP_vpmovsxbq,
     OP_vpmovzxbq, OP_vpextrw, OP_vpextrw, OP_vpinsrw, OP_vpinsrw,
     // CBW instructions
-    OP_cbw, OP_cwde, OP_cdqe, OP_cwd, OP_cdq, OP_cqo
+    OP_cbw, OP_cwde, OP_cdqe, OP_cwd, OP_cdq, OP_cqo,
+    // From x86-64-ept.s
+    OP_invvpid,
+    // From x86-64-prescott.s
+    OP_monitor, OP_mwait
   };
 
   if ((instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
@@ -1867,16 +1872,35 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           case REX_OPCODE+13:  // e.g : movq    %r12, %r9
           case REX_OPCODE+14:
           case REX_OPCODE+15:{
+            // Gas is usually good at picking up REX prefixes from the
+            // instruction itself. For some instruction we have to state them
+            // explicitly.
+            // These are
+            //   1. Some instruction that have no operands.
+            //   2. xchg instructions that are actually NOPs. They have the same
+            //      registers in both operands.
+
+            // These instructions need no explicit rex prefix.
             const MaoOpcode no_rex_prefix[]= {// from x86-64-cbw.s
                                               OP_cdqe, OP_cqo,
                                               // from x86-64-rep-suffix.s
                                               OP_lods, OP_stos,
                                               // from x86-64-rep.s
-                                              OP_movs, OP_cmps, OP_scas};
-
+                                              OP_movs, OP_cmps, OP_scas,
+                                              // from x86-64-opcode
+                                              OP_iret};
+            // Case number 1, see above
             if (instruction_->operands == 0 &&
                 !IsInList(op(), no_rex_prefix,
                           sizeof(no_rex_prefix)/sizeof(MaoOpcode))) {
+              PrintRexPrefix(out, instruction_->prefix[i]);
+            }
+            // Case number 2, see above
+            if (op() == OP_xchg &&
+                instruction_->operands == 2 &&
+                IsRegisterOperand(instruction_, 0) &&
+                IsRegisterOperand(instruction_, 1) &&
+                instruction_->op[0].regs == instruction_->op[1].regs) {
               PrintRexPrefix(out, instruction_->prefix[i]);
             }
             break;
