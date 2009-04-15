@@ -176,7 +176,7 @@ class MaoEntry {
   void Spaces(unsigned int n, FILE *outfile) const;
   // Gets symbolname. Understands the temporary symbolname
   // that should be translated to a dot.
-  const char *GetDotOrSymbol(symbolS *symbol) const;
+  std::string GetDotOrSymbol(symbolS *symbol) const;
 
   MaoUnit *maounit_;
 
@@ -276,6 +276,7 @@ class DirectiveEntry : public MaoEntry {
     LOC,
     ALLOW_INDEX_REG,
     DISALLOW_INDEX_REG,
+    ORG,
     NUM_OPCODES  // Used to get the size of the array
   };
 

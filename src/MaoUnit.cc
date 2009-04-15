@@ -27,6 +27,7 @@
 
 extern "C" {
   const char *S_GET_NAME(symbolS *s);
+  valueT S_GET_VALUE (symbolS *s);
   extern bfd *stdoutput;
 }
 //
@@ -857,11 +858,22 @@ MaoEntry::MaoEntry(unsigned int line_number, const char *line_verbatim,
 MaoEntry::~MaoEntry() {
 }
 
-const char *MaoEntry::GetDotOrSymbol(symbolS *symbol) const {
+
+#ifndef FAKE_LABEL_NAME
+#define FAKE_LABEL_NAME "L0\001"
+#endif
+
+std::string MaoEntry::GetDotOrSymbol(symbolS *symbol) const {
   const char *s = S_GET_NAME(symbol);
   MAO_ASSERT(s);
   if (strcmp(s, "L0\001") == 0) {
     return ".";
+  } else if (strcmp(s, FAKE_LABEL_NAME) == 0) {
+    // gas can sometimes store temporary value as a symbol.
+    // See /binutils-2.19/gas/testsuite/gas/i386/absrel.s for an example.
+    std::stringstream out;
+    out << S_GET_VALUE(symbol);
+    return out.str();
   } else {
     return s;
   }
@@ -1010,7 +1022,8 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".linefile",
   ".loc",
   ".allow_index_reg",
-  ".disallow_index_reg"
+  ".disallow_index_reg",
+  ".org"
 };
 
 
@@ -1431,7 +1444,7 @@ void InstructionEntry::PrintImmediateOperand(FILE *out,
       /* X_add_symbol + X_add_number.  */
       if (expr->X_add_symbol) {
         fprintf(out, "$%s%s+",
-                GetDotOrSymbol(expr->X_add_symbol),
+                GetDotOrSymbol(expr->X_add_symbol).c_str(),
                 GetRelocString(reloc));
       }
       fprintf(out, "%lld",
@@ -1445,12 +1458,12 @@ void InstructionEntry::PrintImmediateOperand(FILE *out,
       }
       if (expr->X_add_symbol) {
         fprintf(out, "%s%s",
-                GetDotOrSymbol(expr->X_add_symbol),
+                GetDotOrSymbol(expr->X_add_symbol).c_str(),
                 GetRelocString(reloc));
       }
       if (expr->X_op_symbol) {
         fprintf(out, "-%s",
-                GetDotOrSymbol(expr->X_op_symbol));
+                GetDotOrSymbol(expr->X_op_symbol).c_str());
       }
       if (expr->X_add_symbol || expr->X_op_symbol) {
         fprintf(out, ")+");

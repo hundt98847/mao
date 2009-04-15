@@ -369,6 +369,11 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           case DirectiveEntry::LOC:
           case DirectiveEntry::ALLOW_INDEX_REG:
           case DirectiveEntry::DISALLOW_INDEX_REG:
+            (*size_map)[entry] = 0;
+            break;
+          case DirectiveEntry::ORG:
+            // TODO(martint): Add support for ORG directives in the relaxer.
+            MAO_ASSERT_MSG(false, ".org directive unsupported in relaxer.");
           case DirectiveEntry::NUM_OPCODES:
             (*size_map)[entry] = 0;
             // Nothing to do
