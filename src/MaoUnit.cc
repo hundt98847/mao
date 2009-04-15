@@ -1709,12 +1709,25 @@ unsigned int InstructionEntry::GetLog2ScaleFactor() {
   return instruction_->log2_scale_factor;
 }
 
-bool InstructionEntry::PrintSuffix() const {
+
+const std::string InstructionEntry::GetAssemblyInstructionName() const {
   #define XMMWORD_MNEM_SUFFIX  'x'
   #define YMMWORD_MNEM_SUFFIX 'y'
 
+  // This prefix is found for some Intel syntax 
+  // instructions. See tc-i386.c for more info.
+  #ifndef LONG_DOUBLE_MNEM_SUFFIX
+  #define LONG_DOUBLE_MNEM_SUFFIX '\1'
+  #endif
+
   if (instruction_->suffix == 0) {
-    return false;
+    return instruction_->tm.name;
+  }
+
+  if (instruction_->suffix == LONG_DOUBLE_MNEM_SUFFIX) {
+    std::string s = instruction_->tm.name;
+    s.insert(s.begin(), 'l');
+    return s;
   }
 
   const MaoOpcode opcode_needs_y_suffix[] = {
@@ -1774,48 +1787,50 @@ bool InstructionEntry::PrintSuffix() const {
        instruction_->suffix == YMMWORD_MNEM_SUFFIX) &&
       !IsInList(op(), opcode_needs_y_suffix,
                 sizeof(opcode_needs_y_suffix)/sizeof(MaoOpcode))) {
-    return false;
+    return instruction_->tm.name;
   }
 
   if ((instruction_->suffix == 'l') &&
       IsInList(op(), opcode_has_l_suffix,
                sizeof(opcode_has_l_suffix)/sizeof(MaoOpcode))) {
-    return false;
+    return instruction_->tm.name;
   }
   if ((instruction_->suffix == 'w') &&
       IsInList(op(), opcode_has_w_suffix,
                sizeof(opcode_has_w_suffix)/sizeof(MaoOpcode))) {
-    return false;
+    return instruction_->tm.name;
   }
   if ((instruction_->suffix == 'b') &&
       IsInList(op(), opcode_has_b_suffix,
                sizeof(opcode_has_b_suffix)/sizeof(MaoOpcode))) {
-    return false;
+    return instruction_->tm.name;
   }
   if (instruction_->suffix == 'q' &&
       instruction_->tm.name[strlen(instruction_->tm.name)-1] == 'q') {
-    return false;
+    return instruction_->tm.name;
   }
 
   // Do not print suffix for cpusse4_1 instructions
   //  e.g.: OP_extractps, OP_pextrb, OP_pextrd, OP_pinsrb, OP_pinsrd
   if (instruction_->tm.cpu_flags.bitfield.cpusse4_1) {
-    return false;
+    return instruction_->tm.name;
   }
   // Do not print suffix for cpusse4_2 instructions
   // except for OP_crc32
   if (instruction_->tm.cpu_flags.bitfield.cpusse4_2 &&
       !IsInList(op(), keep_sse4_2_suffix,
                sizeof(keep_sse4_2_suffix)/sizeof(MaoOpcode))) {
-    return false;
+    return instruction_->tm.name;
   }
 
   if (IsInList(op(), supress_suffix,
                sizeof(supress_suffix)/sizeof(MaoOpcode))) {
-    return false;
+    return instruction_->tm.name;
   }
 
-  return true;
+  std::string s = instruction_->tm.name;
+  s.insert(s.end(), instruction_->suffix);
+  return s;
 }
 
 
@@ -1944,12 +1959,9 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     }
   }
 
-  // Do not print suffixes that are already in the template
-  if (!PrintSuffix()) {
-    fprintf(out, "%s\t", instruction_->tm.name);
-  } else {
-    fprintf(out, "%s%c\t", instruction_->tm.name, instruction_->suffix);
-  }
+  // Gets the name of the assembly instruction, including
+  // suffixes.
+  fprintf(out, "%s\t", GetAssemblyInstructionName().c_str());
 
   // Loop over operands
   int num_operands = instruction_->operands;
