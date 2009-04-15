@@ -417,3 +417,10 @@ void link_disallow_index_reg_directive() {
   DirectiveEntry::OperandVector operands;
   link_directive_tail(DirectiveEntry::DISALLOW_INDEX_REG, operands);
 }
+
+void link_org_directive(expressionS *expr, int fill) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(expr));
+  operands.push_back(new DirectiveEntry::Operand(fill));
+  link_directive_tail(DirectiveEntry::ORG, operands);
+}

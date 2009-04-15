@@ -2774,6 +2774,8 @@ s_org (int ignore ATTRIBUTE_UNUSED)
   if (!need_pass_2)
     do_org (segment, &exp, temp_fill);
 
+  link_org_directive(&exp, temp_fill);
+
   demand_empty_rest_of_line ();
 }
 

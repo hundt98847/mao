@@ -108,6 +108,7 @@ extern "C" {
                           struct MaoStringPiece options[], int num_options);
   void link_allow_index_reg_directive();
   void link_disallow_index_reg_directive();
+  void link_org_directive(expressionS *expr, int fill);
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 
