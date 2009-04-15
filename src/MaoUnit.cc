@@ -1425,6 +1425,8 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.reg64
           || t.bitfield.control
           || t.bitfield.debug
+          || t.bitfield.sreg2
+          || t.bitfield.sreg3
           || t.bitfield.floatreg
           || t.bitfield.regxmm
           || t.bitfield.regmmx
@@ -1631,7 +1633,7 @@ void InstructionEntry::PrintMemoryOperand(FILE                  *out,
         /* X_add_symbol + X_add_number.  */
         if (expr->X_add_symbol) {
           fprintf(out, "%s%s",
-                  S_GET_NAME(expr->X_add_symbol),
+                  GetDotOrSymbol(expr->X_add_symbol).c_str(),
                   GetRelocString(reloc));
         }
         if (expr->X_add_number) {
@@ -1646,7 +1648,7 @@ void InstructionEntry::PrintMemoryOperand(FILE                  *out,
         }
         if (expr->X_add_symbol) {
           fprintf(out, "%s%s",
-                  S_GET_NAME(expr->X_add_symbol),
+                  GetDotOrSymbol(expr->X_add_symbol).c_str(),
                   GetRelocString(reloc));
         }
         // When GOTPCREL is used, the second symbol is implicit and
@@ -1654,7 +1656,7 @@ void InstructionEntry::PrintMemoryOperand(FILE                  *out,
         if (reloc != BFD_RELOC_32_PCREL) {
           if (expr->X_op_symbol) {
             fprintf(out, "-%s",
-                    S_GET_NAME(expr->X_op_symbol));
+                    GetDotOrSymbol(expr->X_op_symbol).c_str());
           }
         }
         if (expr->X_add_symbol || expr->X_op_symbol) {
@@ -1780,7 +1782,9 @@ const std::string InstructionEntry::GetAssemblyInstructionName() const {
     // From x86-64-ept.s
     OP_invvpid,
     // From x86-64-prescott.s
-    OP_monitor, OP_mwait
+    OP_monitor, OP_mwait,
+    // From general.s
+    OP_movzbw
   };
 
   if ((instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
@@ -2049,6 +2053,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             instruction_->reloc[i],
             instruction_->op[i].disps,
             instruction_->seg[0]?instruction_->seg[0]->seg_name:0,
+            // TODO(martint): Find out how the seg works. The current code
+            // handles sse-cases correctly, but not the general case.
             instruction_->types[i].bitfield.jumpabsolute ||
             instruction_->tm.operand_types[i].bitfield.jumpabsolute);
       }
@@ -2062,42 +2068,6 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     // if ((instruction_->types[i].bitfield.floatacc)...
 
     // REGISTERS
-
-    // Segment register
-    if (instruction_->types[i].bitfield.sreg2) {
-      switch (instruction_->rm.reg) {
-        case 0:
-          fprintf(out, "%%es");
-          break;
-        case 1:
-          fprintf(out, "%%cs");
-          break;
-        case 2:
-          fprintf(out, "%%ss");
-          break;
-        case 3:
-          fprintf(out, "%%ds");
-          break;
-        default:
-          fprintf(stderr, "Unable to find segement regsiter sreg2%d\n",
-                  instruction_->rm.reg);
-          MAO_ASSERT(false);
-      }
-    }
-    if (instruction_->types[i].bitfield.sreg3) {
-      switch (instruction_->rm.reg) {
-        case 4:
-          fprintf(out, "%%fs");
-          break;
-        case 5:
-          fprintf(out, "%%gs");
-          break;
-        default:
-          fprintf(stderr, "Unable to find segement regsiter sreg3%d\n",
-                  instruction_->rm.reg);
-          MAO_ASSERT(false);
-      }
-    }
 
     // The various SSE5 formats. Tested on
     // x86-64-sse5.s in gas test-suite.
