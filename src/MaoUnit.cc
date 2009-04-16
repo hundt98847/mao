@@ -202,18 +202,15 @@ void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
          iter != ConstFunctionEnd();
          ++iter) {
       Function *function = *iter;
-      fprintf(out, "[%3d] [%3d-%3d] [%c%c%c]: %s \n",
+      fprintf(out, "[%3d] [%3d-%3d] [%c%c]: %s \n",
               function->id(),
               function->first_entry()->id(),
               function->last_entry()->id(),
               function->cfg()?
-                (function->cfg()->has_unresolved_indirect_branches()?'I':' ')
+                (function->cfg()->HasUnresolvedIndirectJump()?'I':' ')
                 :'?',
               function->cfg()?
-                (function->cfg()->has_unresolved_labels()?'L':' ')
-                :'?',
-              function->cfg()?
-                (function->cfg()->jumps_outside_function()?'F':' ')
+              (function->cfg()->HasExternalJump()?'E':' ')
                 :'?',
               function->name().c_str());
     }
