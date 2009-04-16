@@ -29,6 +29,7 @@ extern "C" {
   const char *S_GET_NAME(symbolS *s);
   valueT S_GET_VALUE (symbolS *s);
   extern bfd *stdoutput;
+  enum flag_code flag_code;
 }
 //
 // Class: MaoUnit
@@ -859,6 +860,8 @@ MaoEntry::~MaoEntry() {
 }
 
 
+// used when creating temporary expression
+// used when processing the dot (".") label in non-absolute sections
 #ifndef FAKE_LABEL_NAME
 #define FAKE_LABEL_NAME "L0\001"
 #endif
@@ -866,14 +869,16 @@ MaoEntry::~MaoEntry() {
 std::string MaoEntry::GetDotOrSymbol(symbolS *symbol) const {
   const char *s = S_GET_NAME(symbol);
   MAO_ASSERT(s);
-  if (strcmp(s, "L0\001") == 0) {
+  if (strcmp(s, FAKE_LABEL_NAME) == 0) {
     return ".";
-  } else if (strcmp(s, FAKE_LABEL_NAME) == 0) {
-    // gas can sometimes store temporary value as a symbol.
-    // See /binutils-2.19/gas/testsuite/gas/i386/absrel.s for an example.
-    std::stringstream out;
-    out << S_GET_VALUE(symbol);
-    return out.str();
+
+// This code fails, since the same temporary name is used for both dot symbols
+// and other temporary expressions.
+//     // gas can sometimes store temporary value as a symbol.
+//     // See /binutils-2.19/gas/testsuite/gas/i386/absrel.s for an example.
+//     std::stringstream out;
+//     out << S_GET_VALUE(symbol);
+//     return out.str();
   } else {
     return s;
   }
@@ -1597,13 +1602,27 @@ bool InstructionEntry::CompareMemOperand(int op1,
 }
 
 // segment-override:signed-offset(base,index,scale)
-void InstructionEntry::PrintMemoryOperand(FILE                  *out,
-                                        const i386_operand_type &operand_type,
-                                        const enum bfd_reloc_code_real reloc,
-                                        const expressionS     *expr,
-                                        const char            *segment_override,
-                                        const bool            jumpabsolute)
-    const {
+void InstructionEntry::PrintMemoryOperand(FILE *out,
+                                          int op_index) const {
+
+  // Find out the correct segment index. The index is based on the number
+  // of memory operands in the instruction.
+  int seg_index = op_index;
+  for (int i = 0; i < op_index; i++){
+    if (!IsMemOperand(instruction_, i)) {
+      seg_index--;
+    }
+  }
+
+  const i386_operand_type &operand_type = instruction_->types[op_index];
+  const enum bfd_reloc_code_real reloc = instruction_->reloc[op_index];
+  const expressionS *expr = instruction_->op[op_index].disps;
+  const char *segment_override = instruction_->seg[seg_index]?
+      instruction_->seg[seg_index]->seg_name:
+      0;
+  const bool jumpabsolute = instruction_->types[op_index].bitfield.jumpabsolute
+      || instruction_->tm.operand_types[op_index].bitfield.jumpabsolute;
+
   int scale[] = { 1, 2, 4, 8 };
 
   if (jumpabsolute) {
@@ -1669,12 +1688,38 @@ void InstructionEntry::PrintMemoryOperand(FILE                  *out,
                        expr->X_op);
     }
   }
-
   // (base,index,scale)
+
+  // The gas structure only holds on base_reg (the last one parsed in the
+  // instruction). For instructions with multiple base_regs (movs, ..?)
+  // this means that we have manually print out the correct register name.
+  // movs always have si/esi as the first register (depending on the mode).
+  // See the Intel Manual vol 2a specifics on movs instructions.
+  const char *base_reg_name = 0;
+  if (op_index == 0 && instruction_->operands > 1 &&
+      IsMemOperand(instruction_, 0) &&
+      IsMemOperand(instruction_, 1)) {
+    // If the instruction has a prefix, we need to change
+    // the register name accordingly.
+    // e.g.: movsw  %cs:(%si),%es:(%di)
+    // One could either check:
+    //    instruction_->tm.operand_types[op_index].bitfield.disp32
+    // or:
+    //    HasPrefix(ADDR_PREFIX_OPCODE)
+    if (instruction_->tm.operand_types[op_index].bitfield.disp32) {
+      base_reg_name = "esi";
+    } else {
+      base_reg_name = "si";
+    }
+  } else if (instruction_->base_reg) {
+    base_reg_name = instruction_->base_reg->reg_name;
+  }
+
+
   if (instruction_->base_reg || instruction_->index_reg)
     fprintf(out, "(");
   if (instruction_->base_reg)
-    fprintf(out, "%%%s", instruction_->base_reg->reg_name);
+    fprintf(out, "%%%s", base_reg_name);
   if (instruction_->index_reg)
     fprintf(out, ",%%%s", instruction_->index_reg->reg_name);
   if (instruction_->log2_scale_factor)
@@ -1846,6 +1891,20 @@ void InstructionEntry::PrintRexPrefix(FILE *out, int prefix) const {
   fprintf(out, "%s ", rex_arr[prefix-REX_OPCODE]);
 }
 
+
+bool InstructionEntry::HasPrefix(char prefix) const {
+  if (instruction_->prefixes > 0) {
+    for (unsigned int i = 0;
+         i < sizeof(instruction_->prefix)/sizeof(unsigned char);
+         ++i) {
+      if (instruction_->prefix[i] == prefix) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // Prints out the instruction.
 // Goal is to make it print instructions generated by gcc
 void InstructionEntry::PrintInstruction(FILE *out) const {
@@ -1949,7 +2008,15 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           case ADDR_PREFIX_OPCODE:
             // used in movl (%eax), %eax
             //  addr32 lea symbol,%rax
-            fprintf(out, "addr32  ");
+            if (flag_code == CODE_16BIT) {
+              MAO_ASSERT_MSG(false, "Fould illegal prefix in 16-bit code.");
+            }
+            if (flag_code == CODE_32BIT) {
+              fprintf(out, "addr16  ");
+            }
+            if (flag_code == CODE_64BIT) {
+              fprintf(out, "addr32  ");
+            }
             break;
           case LOCK_PREFIX_OPCODE:
             // used in  lock xaddl        %eax, 16(%rdi)
@@ -2047,16 +2114,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
         fprintf(out, "(%%edi) ");
       } else {
-        PrintMemoryOperand(
-            out,
-            instruction_->types[i],
-            instruction_->reloc[i],
-            instruction_->op[i].disps,
-            instruction_->seg[0]?instruction_->seg[0]->seg_name:0,
-            // TODO(martint): Find out how the seg works. The current code
-            // handles sse-cases correctly, but not the general case.
-            instruction_->types[i].bitfield.jumpabsolute ||
-            instruction_->tm.operand_types[i].bitfield.jumpabsolute);
+        PrintMemoryOperand(out, i);
       }
     }
 
