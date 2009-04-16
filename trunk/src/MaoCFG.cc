@@ -194,7 +194,6 @@ void CFGBuilder::Build() {
           break;
 
         label = static_cast<LabelEntry *>(entry)->name();
-      
       }
       else
         label = MaoUnit::BBNameGen::GetUniqueName();
@@ -246,11 +245,11 @@ void CFGBuilder::Build() {
               // Check if the label_entry exists in MAO UNIT
               LabelEntry *target_label = mao_unit_->GetLabelEntry(label);
               if (target_label == NULL) {
-                CFG_->set_has_unresolved_labels(true);
+                CFG_->IncreaseNumExternalJumps();
               } else {
                 // Check if the label exists, but is in another function
                 if (mao_unit_->GetFunction(target_label) != function_) {
-                  CFG_->set_jumps_outside_function(true);
+                  CFG_->IncreaseNumExternalJumps();
                 }
               }
               target = CreateBasicBlock(label);
@@ -572,7 +571,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
   }
 
   if (insn_entry->IsIndirectJump() && !processed) {
-    CFG_->set_has_unresolved_indirect_branches(true);
+    CFG_->IncreaseNumExternalJumps();
     Trace(2, "Unable to find targets for indirect jump.");
   }
 }
