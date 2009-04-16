@@ -395,6 +395,8 @@ class InstructionEntry : public MaoEntry {
   const char *GetTarget() const;
   virtual char GetDescriptiveChar() const {return 'I';}
 
+  bool HasPrefix(char prefix) const;
+
   void PrintInstruction(FILE *out) const;
   static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
 
@@ -515,11 +517,9 @@ class InstructionEntry : public MaoEntry {
   void PrintImmediateOperand(FILE *out,
                              const enum bfd_reloc_code_real reloc,
                              const expressionS *expr) const;
-  void PrintMemoryOperand(FILE *out, const i386_operand_type &operand_type,
-                          const enum bfd_reloc_code_real reloc,
-                          const expressionS *expr,
-                          const char *segment_overried,
-                          const bool jumpabsolute) const;
+  void PrintMemoryOperand(FILE *out,
+                          int op_index) const;
+
   const char *GetRelocString(const enum bfd_reloc_code_real reloc) const;
 
   void PrintRexPrefix(FILE *out, int prefix) const;
