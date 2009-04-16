@@ -76,13 +76,14 @@ static void link_directive_tail(
   maounit_->AddEntry(directive, false);
 }
 
-void link_insn(i386_insn *insn, size_t SizeOfInsn, const char *line_verbatim) {
+void link_insn(i386_insn *insn, size_t SizeOfInsn, int code_flag,
+               const char *line_verbatim) {
   MAO_ASSERT(sizeof(i386_insn) == SizeOfInsn);
   i386_insn *inst = insn;
 
   struct link_context_s link_context = get_link_context();
   MAO_ASSERT(maounit_);
-  maounit_->AddEntry(new InstructionEntry(inst,
+  maounit_->AddEntry(new InstructionEntry(inst, (enum flag_code)code_flag,
                                           link_context.line_number,
                                           line_verbatim, maounit_), true);
 }
@@ -423,4 +424,23 @@ void link_org_directive(expressionS *expr, int fill) {
   operands.push_back(new DirectiveEntry::Operand(expr));
   operands.push_back(new DirectiveEntry::Operand(fill));
   link_directive_tail(DirectiveEntry::ORG, operands);
+}
+
+void link_code_directive(int flag_code) {
+  DirectiveEntry::OperandVector operands;
+  switch(flag_code) {
+    case CODE_16BIT:
+      link_directive_tail(DirectiveEntry::CODE16, operands);
+      break;
+    case CODE_32BIT:
+      link_directive_tail(DirectiveEntry::CODE32, operands);
+      break;
+    case CODE_64BIT:
+      link_directive_tail(DirectiveEntry::CODE64, operands);
+      break;
+    default:
+      MAO_ASSERT_MSG(false, "Unknown code-mode.");
+      break;
+  }
+
 }

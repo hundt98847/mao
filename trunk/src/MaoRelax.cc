@@ -374,6 +374,9 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           case DirectiveEntry::ORG:
             // TODO(martint): Add support for ORG directives in the relaxer.
             MAO_ASSERT_MSG(false, ".org directive unsupported in relaxer.");
+          case DirectiveEntry::CODE16:
+          case DirectiveEntry::CODE32:
+          case DirectiveEntry::CODE64:
           case DirectiveEntry::NUM_OPCODES:
             (*size_map)[entry] = 0;
             // Nothing to do

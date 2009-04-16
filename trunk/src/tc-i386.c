@@ -1812,6 +1812,7 @@ set_code_flag (int value)
       as_bad (_("32bit mode not supported on this CPU."));
     }
   stackop_size = '\0';
+  link_code_directive(flag_code);
 }
 
 static void
@@ -2881,7 +2882,7 @@ md_assemble (char *line)
   else if (i.rex != 0)
     add_prefix (REX_OPCODE | i.rex);
 
-  link_insn(&i, sizeof(i), line_verbatim);
+  link_insn(&i, sizeof(i), flag_code, line_verbatim);
 
   /* We are ready to output the insn.  */
   //output_insn ();

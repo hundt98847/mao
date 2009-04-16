@@ -1079,6 +1079,10 @@ create_obj_attrs_section (void)
 #endif
 
 
+const char *get_arch() {
+  return DEFAULT_ARCH;
+}
+
 int
 as_main (int argc, char ** argv)
 {

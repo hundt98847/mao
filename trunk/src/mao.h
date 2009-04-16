@@ -24,6 +24,7 @@
 extern "C" {
 // gas main entry point
 int as_main (int argc, char ** argv);
+const char *get_arch ();
 }
 
 #endif  // MAO_H_
