@@ -277,6 +277,9 @@ class DirectiveEntry : public MaoEntry {
     ALLOW_INDEX_REG,
     DISALLOW_INDEX_REG,
     ORG,
+    CODE16,
+    CODE32,
+    CODE64,
     NUM_OPCODES  // Used to get the size of the array
   };
 
@@ -385,8 +388,9 @@ class DirectiveEntry : public MaoEntry {
 // An Entry of the type Instruction.
 class InstructionEntry : public MaoEntry {
  public:
-  InstructionEntry(i386_insn* instruction, unsigned int line_number,
-                   const char* line_verbatim, MaoUnit *maounit);
+  InstructionEntry(i386_insn* instruction, enum flag_code entry_mode,
+                   unsigned int line_number, const char* line_verbatim,
+                   MaoUnit *maounit);
   ~InstructionEntry();
   virtual void PrintEntry(FILE *out) const;
   virtual void PrintIR(FILE *out) const;
@@ -495,6 +499,11 @@ class InstructionEntry : public MaoEntry {
  private:
   i386_insn *instruction_;
   MaoOpcode  op_;
+
+  // This flag states which code-mode the instruction is in. This is changed
+  // in the assembly file using the .codeXX directives.
+  // Values can be CODE_16BIT, CODE_32BIT, CODE_64BIT
+  enum flag_code code_flag_;
 
   // Used to determine type of operand.
   static bool IsMemOperand(const i386_insn *instruction,
@@ -641,7 +650,18 @@ class MaoUnit {
 
   Stats *GetStats() {return &stats_;}
 
+
+  bool Is64BitMode() const { return arch_ == X86_64; }
+  bool Is32BitMode() const { return arch_ == I386;   }
+
  private:
+
+  enum Arch {
+    I386,
+    X86_64
+  };
+  enum Arch arch_;
+
   // Create the section section_name if it does not already exists. Returns a
   // pointer the section.
   std::pair<bool, Section *> FindOrCreateAndFind(const char *section_name);

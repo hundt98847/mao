@@ -29,7 +29,6 @@ extern "C" {
   const char *S_GET_NAME(symbolS *s);
   valueT S_GET_VALUE (symbolS *s);
   extern bfd *stdoutput;
-  enum flag_code flag_code;
 }
 //
 // Class: MaoUnit
@@ -45,6 +44,17 @@ MaoUnit::MaoUnit(MaoOptions *mao_options)
   functions_.clear();
   entry_to_function_.clear();
   entry_to_subsection_.clear();
+
+  const char *arch_string = get_arch();
+  if (strcmp(arch_string, "i386") == 0 || strcmp(arch_string, "I386") == 0) {
+    arch_ = I386;
+  } else if (strcmp(arch_string, "x86_64") == 0 ||
+             strcmp(arch_string, "X86_64") == 0) {
+    arch_ = X86_64;
+  } else {
+    MAO_ASSERT_MSG(false, "Unsupported architecture: %s", arch_string);
+  }
+
 }
 
 MaoUnit::~MaoUnit() {
@@ -309,8 +319,20 @@ InstructionEntry *MaoUnit::CreateInstruction(const char *opcode) {
   i386_insn insn;
   memset(&insn, 0, sizeof(i386_insn));
   insn.tm = FindTemplate("nop", 0x90);
-  InstructionEntry *e = new InstructionEntry(
-    &insn, 0, NULL, this);
+
+  enum flag_code flag;
+  switch (arch_) {
+    case X86_64:
+      flag = CODE_64BIT;
+      break;
+    case I386:
+      flag = CODE_32BIT;
+      break;
+    default:
+      MAO_ASSERT_MSG(false, "Unable to match code flag to architecture");
+  }
+
+  InstructionEntry *e = new InstructionEntry(&insn, flag, 0, NULL, this);
   return e;
 }
 
@@ -1028,7 +1050,10 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".loc",
   ".allow_index_reg",
   ".disallow_index_reg",
-  ".org"
+  ".org",
+  ".code16",
+  ".code32",
+  ".code64"
 };
 
 
@@ -1320,10 +1345,12 @@ bool DirectiveEntry::IsDebugDirective() const {
 //
 
 InstructionEntry::InstructionEntry(i386_insn *instruction,
+                                   enum flag_code code_flag,
                                    unsigned int line_number,
                                    const char* line_verbatim,
                                    MaoUnit *maounit) :
-    MaoEntry(line_number, line_verbatim, maounit) {
+    MaoEntry(line_number, line_verbatim, maounit),
+    code_flag_(code_flag) {
   op_ = GetOpcode(instruction->tm.name);
   MAO_ASSERT(op_ != OP_invalid);
   MAO_ASSERT(instruction);
@@ -2008,14 +2035,16 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           case ADDR_PREFIX_OPCODE:
             // used in movl (%eax), %eax
             //  addr32 lea symbol,%rax
-            if (flag_code == CODE_16BIT) {
-              MAO_ASSERT_MSG(false, "Fould illegal prefix in 16-bit code.");
-            }
-            if (flag_code == CODE_32BIT) {
-              fprintf(out, "addr16  ");
-            }
-            if (flag_code == CODE_64BIT) {
-              fprintf(out, "addr32  ");
+            switch(code_flag_) {
+              case  CODE_32BIT:
+                fprintf(out, "addr16  ");
+                break;
+              case  CODE_64BIT:
+                fprintf(out, "addr32  ");
+                break;
+              default:
+                MAO_ASSERT_MSG(false, "Fould illegal prefix in 16-bit code.");
+                break;
             }
             break;
           case LOCK_PREFIX_OPCODE:

@@ -52,7 +52,7 @@ extern "C" {
 
   // Link back an instruction from gas
   void link_insn(struct _i386_insn *i, size_t SizeOfInsn,
-                 const char *line_verbatim);
+                 int entry_mode, const char *line_verbatim);
   // Link back a label from gas
   void link_label(const char *name, const char *line_verbatim);
   // Link back sections from gas (i.e. data, text, bss and section directives)
@@ -109,6 +109,7 @@ extern "C" {
   void link_allow_index_reg_directive();
   void link_disallow_index_reg_directive();
   void link_org_directive(expressionS *expr, int fill);
+  void link_code_directive(int flag_code);
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 
