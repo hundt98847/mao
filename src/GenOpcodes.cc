@@ -86,11 +86,14 @@ next_field(char *str, char sep, char **next) {
   return p;
 }
 
-void usage(const char *argv[]) {
+void usage(char *const argv[]) __attribute__ ((noreturn));
+
+void usage(char *const argv[]) {
   fprintf(stderr, "USAGE:\n"
-          "  %s table-file\n\n", argv[0]);
+          "  %s [-p outputpath] table-file sideeffect-file \n\n", argv[0]);
   fprintf(stderr,
-          "Produces file: gen-opcodes.h\n");
+          "Creates headerfiles in in directory outputpath, "
+          "defaults to current path\n");
   exit(1);
 }
 
@@ -270,7 +273,16 @@ static void PrintRegMask(FILE *def, BitString &mask) {
   mask.PrintInitializer(def);
 }
 
-int main(int argc, const char*argv[]) {
+int fail_on_open(char *const argv[], const char *filename)
+    __attribute__ ((noreturn));
+
+int fail_on_open(char *const argv[], const char *filename) {
+  fprintf(stderr, "Cannot open output file: %s\n", filename);
+  usage(argv);
+  exit(1);
+}
+
+int main(int argc, char *const argv[]) {
   char buf[2048];
   int  lineno = 0;
   char lastname[2048];
@@ -281,43 +293,80 @@ int main(int argc, const char*argv[]) {
   if (argc < 3)
     usage(argv);
 
-  for (int i = 3; i < argc; i++) {
-    if (!strcmp(argv[i], "-w"))
-      emit_warnings = true;
+  const char *out_path = NULL; // Default to current directory.
+  opterr = 0;
+
+  int c;
+  while ((c = getopt (argc, argv, "p:w")) != -1) {
+    switch (c) {
+      case 'w':
+        emit_warnings = true;
+        break;
+      case 'p':
+        out_path = optarg;
+        break;
+      case '?':
+        if (optopt == 'p')
+          fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+        else if (isprint (optopt))
+          fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+        else
+          fprintf (stderr,
+                   "Unknown option character `\\x%x'.\n",
+                   optopt);
+        return 1;
+      default:
+        abort ();
+    }
   }
+
+  // there shoule be two more arguments
+  if ((argc - optind) != 2)
+    usage(argv);
+
+
+  const char *op_table = argv[optind];
+  const char *side_effect_table = argv[optind+1];
 
   // Get tables and data
   //
-  ReadRegisterTable(argv[1]);
-  ReadSideEffects(argv[2]);
+  ReadRegisterTable(op_table);
+  ReadSideEffects(side_effect_table);
 
   // Open the various input and output files,
   // emit top portion in generated files.
   //
-  FILE *in = fopen(argv[1], "r");
+  FILE *in = fopen(op_table, "r");
   if (!in) {
     fprintf(stderr, "Cannot open table file: %s\n", argv[1]);
     usage(argv);
   }
 
-  FILE *out = fopen("gen-opcodes.h", "w");
-  if (!out) {
-    fprintf(stderr, "Cannot open output file: gen-opcodes.h\n");
-    usage(argv);
-  }
+  const char *out_filename;
+  const char *table_filename;
+  const char *defs_filename;
 
-  FILE *table = fopen("gen-opcodes-table.h", "w");
-  if (!table) {
-    fprintf(stderr, "Cannot open table file: gen-opcodes-table.h\n");
-    usage(argv);
-  }
+  if (out_path != NULL) {
+    char out_filename_buf[2048];
+    char table_filename_buf[2048];
+    char defs_filename_buf[2048];
 
-  FILE *def = fopen("gen-defs.h", "w");
-  if (!def) {
-    fprintf(stderr, "Cannot open table file: gen-defs.c\n");
-    usage(argv);
+    sprintf(out_filename_buf, "%s%s",   out_path, "/gen-opcodes.h");
+    out_filename = out_filename_buf;
+    sprintf(table_filename_buf, "%s%s", out_path, "/gen-opcodes-table.h");
+    table_filename = table_filename_buf;
+    sprintf(defs_filename_buf, "%s%s",  out_path, "/gen-defs.h");
+    defs_filename = defs_filename_buf;
+  } else {
+    out_filename   = "gen-opcodes.h";
+    table_filename = "gen-opcodes-table.h";
+    defs_filename  = "gen-defs.h";
   }
+  FILE *out, *table, *def;
 
+  (out   = fopen(out_filename,   "w")) || fail_on_open(argv, out_filename);
+  (table = fopen(table_filename, "w")) || fail_on_open(argv, table_filename);
+  (def   = fopen(defs_filename,  "w")) || fail_on_open(argv, defs_filename);
 
   fprintf(out,
           "// DO NOT EDIT - this file is automatically "
