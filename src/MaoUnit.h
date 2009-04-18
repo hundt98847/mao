@@ -400,6 +400,7 @@ class InstructionEntry : public MaoEntry {
   virtual char GetDescriptiveChar() const {return 'I';}
 
   bool HasPrefix(char prefix) const;
+  bool SuppressLockPrefix() const;
 
   void PrintInstruction(FILE *out) const;
   static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
