@@ -1088,6 +1088,35 @@ const std::string &DirectiveEntry::OperandsToString(
   return *out;
 }
 
+
+const char *DirectiveEntry::OpToString(operatorT op) const {
+  switch(op) {
+    case O_add:             return "+";
+    case O_subtract:        return "-";
+    case O_divide:          return "/";
+    case O_multiply:        return "*";
+    case O_modulus:         return "%";
+    case O_left_shift:      return "<<";
+    case O_right_shift:     return "<<";
+    case O_bit_inclusive_or:return "|";
+    case O_bit_or_not:      return "|~";
+    case O_bit_exclusive_or:return "^";
+    case O_bit_and:         return "&";
+    case O_eq:              return "==";
+    case O_ne:              return "!=";
+    case O_lt:              return "<";
+    case O_le:              return "<=";
+    case O_ge:              return ">=";
+    case O_gt:              return ">";
+    case O_logical_and:     return "&&";
+    case O_logical_or:      return "||";
+    default:
+      break;
+  }
+  MAO_ASSERT(false);
+  return "";
+}
+
 const std::string &DirectiveEntry::OperandExpressionToString(
     const expressionS *expr, std::string *out) const {
   switch (expr->X_op) {
@@ -1116,51 +1145,54 @@ const std::string &DirectiveEntry::OperandExpressionToString(
         out->append(exp_string.str());
       }
       break;
-      /* (X_add_symbol + X_op_symbol) + X_add_number.  */
-    case O_add:
-      {
-        std::ostringstream exp_string;
-        if (expr->X_add_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_add_symbol);
-          if (expr->X_op_symbol) {
-            exp_string << "+";
-          }
-        }
-        if (expr->X_op_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_op_symbol);
-          if (expr->X_add_number != 0) {
-            exp_string << "+";
-          }
-        }
-        if (expr->X_add_number != 0) {
-          exp_string << expr->X_add_number;
-        }
-        out->append(exp_string.str());
-      }
-      break;
-      /* (X_add_symbol - X_op_symbol) + X_add_number.  */
-    case O_subtract:
-      {
-        std::ostringstream exp_string;
-        if (expr->X_add_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_add_symbol);
-          if (expr->X_op_symbol) {
-            exp_string << "-";
-          }
-        }
-        if (expr->X_op_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_op_symbol);
-          if (expr->X_add_number != 0) {
-            exp_string << "+";
-          }
-        }
-        if (expr->X_add_number != 0) {
-          exp_string << expr->X_add_number;
-        }
-        out->append(exp_string.str());
-      }
-      break;
 
+    case O_add:             /* (X_add_symbol +  X_op_symbol) + X_add_number.  */
+    case O_subtract:        /* (X_add_symbol -  X_op_symbol) + X_add_number.  */
+    case O_divide:          /* (X_add_symbol /  X_op_symbol) + X_add_number.  */
+    case O_multiply:        /* (X_add_symbol *  X_op_symbol) + X_add_number.  */
+    case O_modulus:         /* (X_add_symbol %  X_op_symbol) + X_add_number.  */
+    case O_left_shift:      /* (X_add_symbol << X_op_symbol) + X_add_number.  */
+    case O_right_shift:     /* (X_add_symbol >> X_op_symbol) + X_add_number.  */
+    case O_bit_inclusive_or:/* (X_add_symbol |  X_op_symbol) + X_add_number.  */
+    case O_bit_or_not:      /* (X_add_symbol |~ X_op_symbol) + X_add_number.  */
+    case O_bit_exclusive_or:/* (X_add_symbol ^  X_op_symbol) + X_add_number.  */
+    case O_bit_and:         /* (X_add_symbol &  X_op_symbol) + X_add_number.  */
+    case O_eq:              /* (X_add_symbol == X_op_symbol) + X_add_number.  */
+    case O_ne:              /* (X_add_symbol != X_op_symbol) + X_add_number.  */
+    case O_lt:              /* (X_add_symbol <  X_op_symbol) + X_add_number.  */
+    case O_le:              /* (X_add_symbol <= X_op_symbol) + X_add_number.  */
+    case O_ge:              /* (X_add_symbol >= X_op_symbol) + X_add_number.  */
+    case O_gt:              /* (X_add_symbol >  X_op_symbol) + X_add_number.  */
+    case O_logical_and:     /* (X_add_symbol && X_op_symbol) + X_add_number.  */
+    case O_logical_or:      /* (X_add_symbol || X_op_symbol) + X_add_number.  */
+      {
+        std::ostringstream exp_string;
+        if (expr->X_add_symbol) {
+          exp_string << GetDotOrSymbol(expr->X_add_symbol);
+          if (expr->X_op_symbol) {
+            exp_string << OpToString(expr->X_op);
+          }
+        }
+        if (expr->X_op_symbol) {
+          exp_string << GetDotOrSymbol(expr->X_op_symbol);
+          if (expr->X_add_number != 0) {
+            exp_string << "+";
+          }
+        }
+        if (expr->X_add_number != 0) {
+          exp_string << expr->X_add_number;
+        }
+        out->append(exp_string.str());
+      }
+      break;
+      /* A register (X_add_number is register number).  */
+    case O_register:
+      {
+        std::ostringstream exp_string;
+        exp_string << "%" << i386_regtab[expr->X_add_number].reg_name;
+        out->append(exp_string.str());
+      }
+      break;
     // UNSUPPORTED
     /* An illegal expression.  */
     case O_illegal:
@@ -1168,8 +1200,7 @@ const std::string &DirectiveEntry::OperandExpressionToString(
     case O_absent:
       /* X_add_symbol + X_add_number - the base address of the image.  */
     case O_symbol_rva:
-      /* A register (X_add_number is register number).  */
-    case O_register:
+
       /* A big value.  If X_add_number is negative or 0, the value is in
          generic_floating_point_number.  Otherwise the value is in
          generic_bignum, and X_add_number is the number of LITTLENUMs in
@@ -1181,40 +1212,8 @@ const std::string &DirectiveEntry::OperandExpressionToString(
     case O_bit_not:
       /* (! X_add_symbol) + X_add_number.  */
     case O_logical_not:
-      /* (X_add_symbol * X_op_symbol) + X_add_number.  */
-    case O_multiply:
-      /* (X_add_symbol / X_op_symbol) + X_add_number.  */
-    case O_divide:
-      /* (X_add_symbol % X_op_symbol) + X_add_number.  */
-    case O_modulus:
-      /* (X_add_symbol << X_op_symbol) + X_add_number.  */
-    case O_left_shift:
-      /* (X_add_symbol >> X_op_symbol) + X_add_number.  */
-    case O_right_shift:
-      /* (X_add_symbol | X_op_symbol) + X_add_number.  */
-    case O_bit_inclusive_or:
-      /* (X_add_symbol |~ X_op_symbol) + X_add_number.  */
-    case O_bit_or_not:
-      /* (X_add_symbol ^ X_op_symbol) + X_add_number.  */
-    case O_bit_exclusive_or:
-      /* (X_add_symbol & X_op_symbol) + X_add_number.  */
-    case O_bit_and:
-      /* (X_add_symbol == X_op_symbol) + X_add_number.  */
-    case O_eq:
-      /* (X_add_symbol != X_op_symbol) + X_add_number.  */
-    case O_ne:
-      /* (X_add_symbol < X_op_symbol) + X_add_number.  */
-    case O_lt:
-      /* (X_add_symbol <= X_op_symbol) + X_add_number.  */
-    case O_le:
-      /* (X_add_symbol >= X_op_symbol) + X_add_number.  */
-    case O_ge:
-      /* (X_add_symbol > X_op_symbol) + X_add_number.  */
-    case O_gt:
-      /* (X_add_symbol && X_op_symbol) + X_add_number.  */
-    case O_logical_and:
-      /* (X_add_symbol || X_op_symbol) + X_add_number.  */
-    case O_logical_or:
+
+
       /* X_op_symbol [ X_add_symbol ] */
     case O_index:
       /* machine dependent operators */
@@ -1255,7 +1254,7 @@ const std::string &DirectiveEntry::OperandExpressionToString(
     default:
       MAO_ASSERT_MSG(
           0,
-          "OperandExpressionToString does not support the symbol %d\n",
+          "OperandExpressionToString does not support the op %d\n",
           expr->X_op);
       break;
   }
