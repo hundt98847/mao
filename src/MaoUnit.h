@@ -370,6 +370,7 @@ class DirectiveEntry : public MaoEntry {
   const std::string &OperandToString(const Operand &operand,
                                      std::string *out) const;
 
+  const char *OpToString(operatorT op) const;
   const std::string &OperandExpressionToString(const expressionS *expr,
                                                std::string *out) const;
 
