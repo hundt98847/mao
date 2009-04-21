@@ -4719,6 +4719,19 @@ float_cons (/* Clobbers input_line-pointer, checks end-of-line.  */
       /* input_line_pointer->1st char of a flonum (we hope!).  */
       SKIP_WHITESPACE ();
 
+      /* Here we can parse out the current argument. It will end with either
+         a comma (,), or the end of the line. */
+      char buffer[1024];
+      char *buffer_p = buffer;
+      char *argument_p = input_line_pointer;
+      while (*argument_p != '\0'  &&
+             *argument_p != ',' &&
+             *argument_p != '\n') {
+        *buffer_p++ = *argument_p++;
+      }
+      *buffer_p = '\0';
+
+
       /* Skip any 0{letter} that may be present. Don't even check if the
 	 letter is legal. Someone may invent a "z" format and this routine
 	 has no use for such information. Lusers beware: you get
@@ -4778,6 +4791,11 @@ float_cons (/* Clobbers input_line-pointer, checks end-of-line.  */
 	    {
 	      p = frag_more (length);
 	      memcpy (p, temp, (unsigned int) length);
+
+              /* link floating point value back to MAO */
+              struct MaoStringPiece value =
+                  { buffer, strlen(buffer) };
+              link_float_directive(float_type, value);
 	    }
 	}
       SKIP_WHITESPACE ();

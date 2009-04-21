@@ -426,6 +426,19 @@ void link_org_directive(expressionS *expr, int fill) {
   link_directive_tail(DirectiveEntry::ORG, operands);
 }
 
+void link_float_directive(int float_type, struct MaoStringPiece value) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(value));
+  DirectiveEntry::Opcode opcode;
+  switch (float_type) {
+    case 'd': opcode = DirectiveEntry::DC_D; break;
+    case 'f': opcode = DirectiveEntry::DC_S; break;
+    case 'x': opcode = DirectiveEntry::DC_X; break;
+    default: MAO_ASSERT(false);
+  }
+  link_directive_tail(opcode, operands);
+}
+
 void link_code_directive(int flag_code) {
   DirectiveEntry::OperandVector operands;
   switch(flag_code) {

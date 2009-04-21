@@ -377,6 +377,13 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           case DirectiveEntry::CODE16:
           case DirectiveEntry::CODE32:
           case DirectiveEntry::CODE64:
+            (*size_map)[entry] = 0;
+            break;
+          case DirectiveEntry::DC_D:
+          case DirectiveEntry::DC_S:
+          case DirectiveEntry::DC_X:
+            (*size_map)[entry] = SizeOfFloat(dentry);
+            break;
           case DirectiveEntry::NUM_OPCODES:
             (*size_map)[entry] = 0;
             // Nothing to do
@@ -415,6 +422,50 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
 
   return fragments;
 }
+
+
+int MaoRelaxer::SizeOfFloat(DirectiveEntry *entry) {
+  MAO_ASSERT(entry->NumOperands() == 1);
+  const DirectiveEntry::Operand *size_opnd = entry->GetOperand(0);
+  MAO_ASSERT(size_opnd->type == DirectiveEntry::STRING);
+  std::string *str = size_opnd->data.str;
+  if (str->compare(0, 3, "0x:") == 0) {
+    // Hexadecmial floats always have a fixed size.
+    switch(entry->op()) {
+      case DirectiveEntry::DC_D:
+        return 8;
+        break;
+      case DirectiveEntry::DC_S:
+        return 4;
+        break;
+      case DirectiveEntry::DC_X:
+        return 12;
+        break;
+      default:
+        MAO_ASSERT(false);
+    }
+   } else {
+    switch(entry->op()) {
+#define F_PRECISION    2
+#define D_PRECISION    4
+#define X_PRECISION    5
+#define P_PRECISION    5
+      case DirectiveEntry::DC_D:
+        return D_PRECISION * sizeof (LITTLENUM_TYPE);
+        break;
+      case DirectiveEntry::DC_S:
+        return F_PRECISION * sizeof (LITTLENUM_TYPE);
+        break;
+      case DirectiveEntry::DC_X:
+        return P_PRECISION * sizeof (LITTLENUM_TYPE);
+        break;
+      default:
+        MAO_ASSERT(false);
+    }
+  }
+  return 1;
+}
+
 
 // Update the symbol to hold a reference to the current frag
 void MaoRelaxer::UpdateSymbol(const char *symbol_name,

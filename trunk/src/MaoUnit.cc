@@ -1050,7 +1050,10 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".org",
   ".code16",
   ".code32",
-  ".code64"
+  ".code64",
+  ".dc.d",
+  ".dc.s",
+  ".dc.x"
 };
 
 
