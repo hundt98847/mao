@@ -1049,6 +1049,7 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".disallow_index_reg",
   ".org",
   ".code16",
+  ".code16gcc",
   ".code32",
   ".code64",
   ".dc.d",
@@ -2048,6 +2049,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             // used in movl (%eax), %eax
             //  addr32 lea symbol,%rax
             switch(code_flag_) {
+              case  CODE_16BIT:
+                break;
               case  CODE_32BIT:
                 fprintf(out, "addr16  ");
                 break;
@@ -2055,7 +2058,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                 fprintf(out, "addr32  ");
                 break;
               default:
-                MAO_ASSERT_MSG(false, "Fould illegal prefix in 16-bit code.");
+                MAO_ASSERT_MSG(false, "Fould illegal prefix.");
                 break;
             }
             break;
