@@ -110,6 +110,7 @@ extern "C" {
   void link_disallow_index_reg_directive();
   void link_org_directive(expressionS *expr, int fill);
   void link_code_directive(int flag_code);
+  void link_float_directive(int float_type, struct MaoStringPiece value);
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 
