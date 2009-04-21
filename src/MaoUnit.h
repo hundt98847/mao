@@ -278,6 +278,7 @@ class DirectiveEntry : public MaoEntry {
     DISALLOW_INDEX_REG,
     ORG,
     CODE16,
+    CODE16GCC,
     CODE32,
     CODE64,
     DC_D,

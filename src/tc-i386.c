@@ -1812,7 +1812,7 @@ set_code_flag (int value)
       as_bad (_("32bit mode not supported on this CPU."));
     }
   stackop_size = '\0';
-  link_code_directive(flag_code);
+  link_code_directive(flag_code, 0);
 }
 
 static void
@@ -1824,6 +1824,9 @@ set_16bit_gcc_code_flag (int new_code_flag)
   cpu_arch_flags.bitfield.cpu64 = 0;
   cpu_arch_flags.bitfield.cpuno64 = 1;
   stackop_size = LONG_MNEM_SUFFIX;
+
+  /* Link directive to MAO */
+  link_code_directive(flag_code, 1);
 }
 
 static void

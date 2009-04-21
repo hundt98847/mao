@@ -439,21 +439,25 @@ void link_float_directive(int float_type, struct MaoStringPiece value) {
   link_directive_tail(opcode, operands);
 }
 
-void link_code_directive(int flag_code) {
+void link_code_directive(int flag_code, char gcc) {
   DirectiveEntry::OperandVector operands;
   switch(flag_code) {
     case CODE_16BIT:
-      link_directive_tail(DirectiveEntry::CODE16, operands);
+      if (gcc)
+        link_directive_tail(DirectiveEntry::CODE16GCC, operands);
+      else
+        link_directive_tail(DirectiveEntry::CODE16, operands);
       break;
     case CODE_32BIT:
+      MAO_ASSERT(!gcc);
       link_directive_tail(DirectiveEntry::CODE32, operands);
       break;
     case CODE_64BIT:
+      MAO_ASSERT(!gcc);
       link_directive_tail(DirectiveEntry::CODE64, operands);
       break;
     default:
       MAO_ASSERT_MSG(false, "Unknown code-mode.");
       break;
   }
-
 }
