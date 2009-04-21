@@ -1,8 +1,11 @@
 #!/usr/bin/python
 
 """This script runs MAO on the set of files listed in the input argument file(s).
+Each line need to have the syntax:
+TARGET:FILENAME
 Lines starting with # are comments. If the verification script finds an error
-the script exists with the error message."""
+the script exists with the error message. The script uses the executable
+mao_verify.sh do perform the actual test."""
 
 import os
 import subprocess
@@ -24,17 +27,21 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
     print e
     sys.exit(1)
 
-def _VerifyFile(file):
+def _VerifyFile(file, target):
   print "Testing \"" + file + "\":"
-  _RunCheck(["./mao_verify.sh", "x86_64", file]);
+  _RunCheck(["./mao_verify.sh", target, file]);
 
 # Parses a text-file with one assembly-file per line, and runs mao in it.
 # Lines starting with a hash-symbol (#) are ignored.
 def _Process(infile):
   f = open(infile, 'r')
-  for filename in f:
-    if not filename.startswith('#'):
-      _VerifyFile(filename.strip())
+  for line in f:
+    if not line.startswith('#'):
+      line = line.split('#')
+      parse_line = line[0].split(':')
+      filename = parse_line[1]
+      target = parse_line[0]
+      _VerifyFile(filename.strip(), target.strip())
   f.close()
 
 def main(argv):
