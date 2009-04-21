@@ -390,7 +390,7 @@ void link_linefile_directive(int line_number, struct MaoStringPiece filename,
   DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(line_number));
   operands.push_back(new DirectiveEntry::Operand(filename));
-  for(int i = 0; i < num_flags; i++) {
+  for (int i = 0; i < num_flags; i++) {
     operands.push_back(new DirectiveEntry::Operand(flag[i]));
   }
   link_directive_tail(DirectiveEntry::LINEFILE, operands);
@@ -441,7 +441,7 @@ void link_float_directive(int float_type, struct MaoStringPiece value) {
 
 void link_code_directive(int flag_code, char gcc) {
   DirectiveEntry::OperandVector operands;
-  switch(flag_code) {
+  switch (flag_code) {
     case CODE_16BIT:
       if (gcc)
         link_directive_tail(DirectiveEntry::CODE16GCC, operands);

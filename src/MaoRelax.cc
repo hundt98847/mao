@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <string>
+
 #include "MaoOptions.h"
 #include "MaoRelax.h"
 #include "tc-i386-helper.h"
@@ -39,13 +41,11 @@ extern "C" {
   void convert_to_bignum(expressionS *exp);
   int sizeof_leb128(valueT value, int sign);
   int output_big_leb128(char *p, LITTLENUM_TYPE *bignum, int size, int sign);
-  const char *S_GET_NAME(symbolS *s);
-  void S_SET_VALUE (symbolS *s, valueT val);
-  valueT S_GET_VALUE (symbolS *s);
-  symbolS *symbol_find (const char *name);
-  void symbol_set_frag (symbolS *s, fragS *f);
-  fragS *symbol_get_frag (symbolS *s);
-  void symbol_set_value_expression (symbolS *s, const expressionS *exp);
+  void S_SET_VALUE(symbolS *s, valueT val);
+  symbolS *symbol_find(const char *name);
+  void symbol_set_frag(symbolS *s, fragS *f);
+  fragS *symbol_get_frag(symbolS *s);
+  void symbol_set_value_expression(symbolS *s, const expressionS *exp);
   extern int finalize_syms;
 }
 
@@ -152,8 +152,10 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
         DirectiveEntry::OperandVector operands;
         SubSection *ss = mao_unit_->GetSubSection(function->last_entry());
         MAO_ASSERT(ss);
-	//.size	<functionname>_veri, <calculated size>
-        char func_verification_name[strlen(function->name().c_str())+6];
+        // .size <functionname>_veri, <calculated size>
+        char func_verification_name[1024];
+        MAO_ASSERT_MSG(strlen((function->name().c_str())+6) < 1024,
+                       "Function name to large");
         sprintf(func_verification_name, "%s_veri", function->name().c_str());
         operands.push_back(new DirectiveEntry::Operand(func_verification_name));
         operands.push_back(new DirectiveEntry::Operand(FunctionSize(function,
@@ -164,8 +166,9 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
         function->last_entry()->LinkAfter(d_entry);
 
         DirectiveEntry::OperandVector operands2;
-	//.type	foo, @function
-        operands2.push_back(new DirectiveEntry::Operand(func_verification_name));
+        // .type foo, @function
+        operands2.push_back(
+            new DirectiveEntry::Operand(func_verification_name));
         operands2.push_back(new DirectiveEntry::Operand("@function"));
         DirectiveEntry *d_entry2 = mao_unit_->CreateDirective(
             DirectiveEntry::TYPE, operands2, function, ss);
@@ -432,7 +435,7 @@ int MaoRelaxer::SizeOfFloat(DirectiveEntry *entry) {
   std::string *str = size_opnd->data.str;
   if (str->compare(0, 3, "0x:") == 0) {
     // Hexadecmial floats always have a fixed size.
-    switch(entry->op()) {
+    switch (entry->op()) {
       case DirectiveEntry::DC_D:
         return 8;
         break;
@@ -445,8 +448,8 @@ int MaoRelaxer::SizeOfFloat(DirectiveEntry *entry) {
       default:
         MAO_ASSERT(false);
     }
-   } else {
-    switch(entry->op()) {
+  } else {
+    switch (entry->op()) {
 #define F_PRECISION    2
 #define D_PRECISION    4
 #define X_PRECISION    5
@@ -473,9 +476,9 @@ void MaoRelaxer::UpdateSymbol(const char *symbol_name,
                               struct frag *frag) {
   symbolS *symbolP = symbol_find(symbol_name);
   MAO_ASSERT(symbolP != NULL);
-  symbol_set_frag (symbolP, frag);
+  symbol_set_frag(symbolP, frag);
   // TODO(martint): find out where OCTETS_PER_BYTE is defined
-  S_SET_VALUE(symbolP, frag->fr_fix); // / OCTETS_PER_BYTE
+  S_SET_VALUE(symbolP, frag->fr_fix);  //  / OCTETS_PER_BYTE
 }
 
 struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
@@ -674,7 +677,7 @@ int MaoRelaxer::SectionSize(SizeMap *size_map) {
 
 int MaoRelaxer::FunctionSize(Function *function, SizeMap *size_map) {
   int size = 0;
-  for(SectionEntryIterator iter = function->EntryBegin();
+  for (SectionEntryIterator iter = function->EntryBegin();
       iter != function->EntryEnd();
       ++iter) {
     if (!(*iter)->IsLabel()) {

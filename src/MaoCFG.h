@@ -284,11 +284,11 @@ class CFG {
   LabelToBBMap basic_block_map_;
   BBVector basic_blocks_;
 
-  int num_external_jumps_; // Number of branches that have labels not defined
-                           // in the current function.
+  int num_external_jumps_;  // Number of branches that have labels not defined
+                            // in the current function.
 
-  int num_unresolved_indirect_jumps_; // Number of indirect jumps that
-                                      // are unresolved
+  int num_unresolved_indirect_jumps_;  // Number of indirect jumps that
+                                       // are unresolved
 
   // This holds the jumptables we so far have identified, and maps the
   // label that identifies them to the list of targets in the table.

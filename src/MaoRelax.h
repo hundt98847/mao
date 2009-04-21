@@ -25,12 +25,13 @@
 #include "tc-i386-helper.h"
 
 #include <map>
+#include <vector>
 
 class MaoRelaxer : public MaoPass {
  public:
   typedef std::map<MaoEntry *, int> SizeMap;
 
-  MaoRelaxer(MaoUnit *mao_unit);
+  explicit MaoRelaxer(MaoUnit *mao_unit);
   void RelaxSection(Section *section, SizeMap *size_map);
 
   // Used when a pass needs the sizes for a given function.
@@ -115,12 +116,12 @@ class MaoRelaxer : public MaoPass {
     }
     virtual void Print(FILE *out) {
       // Iterate over the functions
-       for (std::vector<std::pair<const Function *, int> >::const_iterator iter =
-                function_sizes_.begin();
+       for (std::vector<std::pair<const Function *, int> >::const_iterator iter
+                = function_sizes_.begin();
             iter != function_sizes_.end();
             ++iter) {
-         fprintf(out, "MaoRelax functionsize %-60s %4d\n", iter->first->name().c_str(),
-                 iter->second);
+         fprintf(out, "MaoRelax functionsize %-60s %4d\n",
+                 iter->first->name().c_str(), iter->second);
        }
     }
 
