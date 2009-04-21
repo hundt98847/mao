@@ -541,7 +541,6 @@ class InstructionEntry : public MaoEntry {
 
   // Returns the instruction op string, including any suffix.
   const std::string GetAssemblyInstructionName() const;
-
 };
 
 

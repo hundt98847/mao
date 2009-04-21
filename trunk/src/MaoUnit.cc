@@ -27,7 +27,7 @@
 
 extern "C" {
   const char *S_GET_NAME(symbolS *s);
-  valueT S_GET_VALUE (symbolS *s);
+  valueT S_GET_VALUE(symbolS *s);
   extern bfd *stdoutput;
 }
 //
@@ -54,7 +54,6 @@ MaoUnit::MaoUnit(MaoOptions *mao_options)
   } else {
     MAO_ASSERT_MSG(false, "Unsupported architecture: %s", arch_string);
   }
-
 }
 
 MaoUnit::~MaoUnit() {
@@ -459,7 +458,7 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
 
         // Handle the second operand
         const DirectiveEntry::Operand *op_expr = directive_entry->GetOperand(1);
-        if(op_expr->type == DirectiveEntry::EXPRESSION) {
+        if (op_expr->type == DirectiveEntry::EXPRESSION) {
           expressionS *op_as_expr = op_expr->data.expr;
           // make sure its a symbol..
           if (op_as_expr->X_op == O_symbol) {
@@ -609,7 +608,8 @@ void MaoUnit::FindFunctions() {
           if (directive_entry->op() == DirectiveEntry::SIZE) {
             MAO_ASSERT(directive_entry->NumOperands() == 2);
             // check the first operand
-            const DirectiveEntry::Operand *d_op = directive_entry->GetOperand(0);
+            const DirectiveEntry::Operand *d_op =
+                directive_entry->GetOperand(0);
             MAO_ASSERT(d_op->type == DirectiveEntry::SYMBOL);
             const char *size_symbol_name = S_GET_NAME(d_op->data.sym);
             if (strcmp(size_symbol_name, symbol->name()) == 0) {
@@ -1094,7 +1094,7 @@ const std::string &DirectiveEntry::OperandsToString(
 
 
 const char *DirectiveEntry::OpToString(operatorT op) const {
-  switch(op) {
+  switch (op) {
     case O_add:             return "+";
     case O_subtract:        return "-";
     case O_divide:          return "/";
@@ -1516,27 +1516,27 @@ const char *InstructionEntry::GetRelocString(
   const enum bfd_reloc_code_real reloc) const {
   switch (reloc) {
     case BFD_RELOC_X86_64_PLT32:
-    case BFD_RELOC_386_PLT32:  
+    case BFD_RELOC_386_PLT32:
       return "@PLT";
     case BFD_RELOC_32_PCREL:
       return "@GOTPCREL";
     case BFD_RELOC_X86_64_TLSLD:
       return "@TLSLD";
     case BFD_RELOC_X86_64_TLSGD:
-    case BFD_RELOC_386_TLS_GD:  
+    case BFD_RELOC_386_TLS_GD:
       return "@TLSGD";
     case BFD_RELOC_X86_64_DTPOFF32:
-    case BFD_RELOC_386_TLS_LDO_32:  
+    case BFD_RELOC_386_TLS_LDO_32:
       return "@DTPOFF";
     case BFD_RELOC_NONE:  // found in "leaq    .LC0(%rip), %rcx"
       return "";
     case BFD_RELOC_X86_64_GOTTPOFF:
-    case BFD_RELOC_386_TLS_IE_32:  
+    case BFD_RELOC_386_TLS_IE_32:
       return "@GOTTPOFF";
     case BFD_RELOC_X86_64_TPOFF32:
-    case BFD_RELOC_386_TLS_LE_32:  
+    case BFD_RELOC_386_TLS_LE_32:
       return "@TPOFF";
-    case BFD_RELOC_386_TLS_LE:  
+    case BFD_RELOC_386_TLS_LE:
       return "@NTPOFF";
     default:
       MAO_ASSERT_MSG(false, "Unable to find info about reloc: %d", reloc);
@@ -1631,11 +1631,10 @@ bool InstructionEntry::CompareMemOperand(int op1,
 // segment-override:signed-offset(base,index,scale)
 void InstructionEntry::PrintMemoryOperand(FILE *out,
                                           int op_index) const {
-
   // Find out the correct segment index. The index is based on the number
   // of memory operands in the instruction.
   int seg_index = op_index;
-  for (int i = 0; i < op_index; i++){
+  for (int i = 0; i < op_index; i++) {
     if (!IsMemOperand(instruction_, i)) {
       seg_index--;
     }
@@ -1788,7 +1787,7 @@ const std::string InstructionEntry::GetAssemblyInstructionName() const {
   #define XMMWORD_MNEM_SUFFIX  'x'
   #define YMMWORD_MNEM_SUFFIX 'y'
 
-  // This prefix is found for some Intel syntax 
+  // This prefix is found for some Intel syntax
   // instructions. See tc-i386.c for more info.
   #ifndef LONG_DOUBLE_MNEM_SUFFIX
   #define LONG_DOUBLE_MNEM_SUFFIX '\1'
@@ -1934,7 +1933,7 @@ bool InstructionEntry::HasPrefix(char prefix) const {
 
 // If the register name cr8..15 is used, the lock prefix is implicit.
 bool InstructionEntry::SuppressLockPrefix() const {
-  for(unsigned int op_index = 0;
+  for (unsigned int op_index = 0;
       op_index < instruction_->operands;
       op_index++) {
     if (instruction_->types[op_index].bitfield.control &&
@@ -2002,8 +2001,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           case REX_OPCODE+12:  // e.g.: mov    %r9, (%eax)
           case REX_OPCODE+13:  // e.g : movq    %r12, %r9
           case REX_OPCODE+14:
-          case REX_OPCODE+15:{
-            // Gas is usually good at picking up REX prefixes from the
+          case REX_OPCODE+15: {
+              // Gas is usually good at picking up REX prefixes from the
             // instruction itself. For some instruction we have to state them
             // explicitly.
             // These are
@@ -2012,14 +2011,15 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             //      registers in both operands.
 
             // These instructions need no explicit rex prefix.
-            const MaoOpcode no_rex_prefix[]= {// from x86-64-cbw.s
-                                              OP_cdqe, OP_cqo,
-                                              // from x86-64-rep-suffix.s
-                                              OP_lods, OP_stos,
-                                              // from x86-64-rep.s
-                                              OP_movs, OP_cmps, OP_scas,
-                                              // from x86-64-opcode
-                                              OP_iret};
+            const MaoOpcode no_rex_prefix[] = {
+              // from x86-64-cbw.s
+              OP_cdqe, OP_cqo,
+              // from x86-64-rep-suffix.s
+              OP_lods, OP_stos,
+              // from x86-64-rep.s
+              OP_movs, OP_cmps, OP_scas,
+              // from x86-64-opcode
+              OP_iret};
             // Case number 1, see above
             if (instruction_->operands == 0 &&
                 !IsInList(op(), no_rex_prefix,
@@ -2048,7 +2048,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           case ADDR_PREFIX_OPCODE:
             // used in movl (%eax), %eax
             //  addr32 lea symbol,%rax
-            switch(code_flag_) {
+            switch (code_flag_) {
               case  CODE_16BIT:
                 break;
               case  CODE_32BIT:
@@ -2128,7 +2128,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       if (instruction_->tm.cpu_flags.bitfield.cpusse4a &&
           num_operands > 2 &&
           i == 0 &&
-          IsImmediateOperand(instruction_, 1)){
+          IsImmediateOperand(instruction_, 1)) {
         PrintImmediateOperand(out,
                               instruction_->reloc[1],
                               instruction_->op[1].imms);
@@ -2136,7 +2136,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
       } else if (instruction_->tm.cpu_flags.bitfield.cpusse4a &&
                  num_operands > 2 &&
                  i == 1 &&
-                 IsImmediateOperand(instruction_, 0)){
+                 IsImmediateOperand(instruction_, 0)) {
         PrintImmediateOperand(out,
                               instruction_->reloc[0],
                               instruction_->op[0].imms);

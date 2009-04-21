@@ -284,8 +284,8 @@ int LoopAlignPass::BasicBlockSize(BasicBlock *BB) const {
 //   std::map<BasicBlock *, BasicBlock *> f_connections;
 //   std::map<BasicBlock *, BasicBlock *> b_connections;
 
-//   for (Path::iterator iiter = path->begin(); iiter !=  path->end(); ++iiter) {
-//     for (Path::iterator jiter = path->begin(); jiter !=  path->end(); ++jiter) {
+//  for (Path::iterator iiter = path->begin(); iiter !=  path->end(); ++iiter) {
+//    for (Path::iterator jiter = path->begin(); jiter !=  path->end(); ++jiter) {
 //       if (*iiter != *jiter) {
 //         if ((*iiter)->DirectlyPreceeds(*jiter)) {
 //           // Connect them!
@@ -346,8 +346,8 @@ void LoopAlignPass::AlignBlock(BasicBlock *basicblock, int alignment_base) {
   SubSection *ss = function_->GetSubSection();
   MAO_ASSERT(ss);
   operands.push_back(new DirectiveEntry::Operand(alignment_base));
-  operands.push_back(new DirectiveEntry::Operand());// Not used in relaxation
-  operands.push_back(new DirectiveEntry::Operand(0)); // needs to be specified
+  operands.push_back(new DirectiveEntry::Operand());  // Not used in relaxation
+  operands.push_back(new DirectiveEntry::Operand(0));  // needs to be specified
   DirectiveEntry *align_entry = mao_unit_->CreateDirective(
       DirectiveEntry::P2ALIGN, operands,
       function_, ss);
@@ -378,7 +378,7 @@ void LoopAlignPass::AlignBlock(BasicBlock *basicblock, int alignment_base) {
 }
 
 // int LoopAlignPass::ChainSize(BasicBlock *basicblock,
-//                            std::map<BasicBlock *, BasicBlock *> *connections) {
+//                          std::map<BasicBlock *, BasicBlock *> *connections) {
 //   int size = 0;
 //   while (connections->find(basicblock) != connections->end()) {
 //     size += BasicBlockSize(basicblock);
@@ -410,8 +410,8 @@ void LoopAlignPass::ProcessInnerLoop(const SimpleLoop *loop,
     }
   }
 
-  int loop_space = (*offsets)[last->last_entry()] + (*sizes_)[last->last_entry()]
-      - (*offsets)[first->first_entry()];
+  int loop_space = (*offsets)[last->last_entry()] +
+      (*sizes_)[last->last_entry()] - (*offsets)[first->first_entry()];
 
 
   // Only 64-byte looks and smaller will ever fit in the LSD

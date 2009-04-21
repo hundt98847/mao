@@ -194,7 +194,8 @@ MAO_OPTIONS_DEFINE(BEG, 0) {
 // Dummy pass to mark begin of compilation
 class BeginPass : public MaoPass {
   public:
-  BeginPass(MaoOptions *opts) : MaoPass("BEG", opts, MAO_OPTIONS(BEG), true) {
+  explicit BeginPass(MaoOptions *opts) : MaoPass("BEG", opts, MAO_OPTIONS(BEG),
+                                                 true) {
   }
 
   bool Go() {
@@ -209,7 +210,8 @@ MAO_OPTIONS_DEFINE(END, 0) {
 // Dummy pass to mark end of compilation
 class EndPass : public MaoPass {
   public:
-  EndPass(MaoOptions *opts) : MaoPass("END", opts, MAO_OPTIONS(END), true) {
+  explicit EndPass(MaoOptions *opts) : MaoPass("END", opts, MAO_OPTIONS(END),
+                                               true) {
   }
 
   bool Go() {
@@ -244,9 +246,9 @@ MAO_OPTIONS_DEFINE(ASM, 0) {
 //
 // Pass to dump out the IR in assembly format
 //
-AssemblyPass::AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit) :
-  MaoPass("ASM", mao_options, MAO_OPTIONS(ASM), true), mao_unit_(mao_unit),
-  mao_options_(mao_options) {}
+AssemblyPass::AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit)
+    : MaoPass("ASM", mao_options, MAO_OPTIONS(ASM), true), mao_unit_(mao_unit),
+      mao_options_(mao_options) {}
 
 bool AssemblyPass::Go() {
   if (mao_options_->write_assembly()) {
