@@ -1,5 +1,5 @@
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/float.s  #-mmnemonic=att
-i686-linux:./binutils-2.19/gas/testsuite/gas/i386/general.s #-mold-gcc.
+i686-linux:../binutils-2.19/gas/testsuite/gas/i386/general.s #-mold-gcc.
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/segment.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/inval.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/inval-seg.s
