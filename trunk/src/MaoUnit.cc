@@ -1456,6 +1456,7 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.reg32
           || t.bitfield.reg64
           || t.bitfield.control
+          || t.bitfield.test
           || t.bitfield.debug
           || t.bitfield.sreg2
           || t.bitfield.sreg3
@@ -1744,11 +1745,14 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
   // See the Intel Manual vol 2a specifics on movs instructions.
   const char *base_reg_name = 0;
   if (op_index == 0 && instruction_->operands > 1 &&
-      IsMemOperand(instruction_, 0) &&
-      IsMemOperand(instruction_, 1)) {
+      (instruction_->types[0].bitfield.baseindex ||
+       instruction_->types[0].bitfield.inoutportreg) &&
+      (instruction_->types[1].bitfield.baseindex ||
+       instruction_->types[1].bitfield.inoutportreg)) {
     // If the instruction has a prefix, we need to change
     // the register name accordingly.
     // e.g.: movsw  %cs:(%si),%es:(%di)
+    //       outsb  %ds:(%esi),(%dx)
     // One could either check:
     //    instruction_->tm.operand_types[op_index].bitfield.disp32
     // or:
@@ -1878,7 +1882,9 @@ const std::string InstructionEntry::GetAssemblyInstructionName() const {
     // From general.s
     OP_movzbw,
     // From i386.s
-    OP_fstsw, OP_movsx
+    OP_fstsw, OP_movsx,
+    // From opcode.s
+    OP_cwtd
   };
 
   if ((instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
