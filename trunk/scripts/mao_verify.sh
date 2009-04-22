@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # input is the benchmark we want to try (and optionally the number of lines in the assembly to test)
 # Simple verification script written by martint
@@ -14,24 +14,38 @@
 #    LINES         = Number of lines to verify in the assembly file (0 means all lines)
 #                    0 is the default, but can be overridden from the command line
 
-#Helper function
+fatal() {
+  echo "$@" 1>&2
+  exit 1
+}
+
 function isNumeric(){ 
   echo "$@" | grep -q -v "[^0-9]"
 }
 
+function validate_target() {
+  local l_target=$1
+
+  supported_targets=( i686-linux x86_64-linux )
+
+  supported=0
+  for supported_target in ${supported_targets[@]}
+  do
+    if [ ${l_target}x == ${supported_target}x ]; then
+      supported=1
+    fi
+  done
+  
+  if [ ${supported} -eq 0 ]; then
+    fatal "Unsupported target : " ${l_target}
+  fi
+
+  echo $l_target
+}
+
 USAGE="Usage: mao_verify.sh target infile [number of lines to verify]"
 
-TARGET=$1
-
-# Set the target variable correctly.
-if [ "$1x" == "i686x" ]; then
-  TARGET=i686-linux
-elif [ "$1x" == "x86_64x" ]; then
-  TARGET=x86_64-linux
-else
-  echo "${USAGE}";
-  exit 1;
-fi
+TARGET=$(validate_target $1)
 
 # Check command line parameters
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then
