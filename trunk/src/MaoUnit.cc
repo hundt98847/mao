@@ -1484,6 +1484,27 @@ void InstructionEntry::PrintImmediateOperand(FILE *out,
       fprintf(out, "%lld",
               (long long)expr->X_add_number);
       break;
+    case O_add:
+      fprintf(out, "$(");
+      /* (X_add_symbol + X_op_symbol) + X_add_number.  */
+      if (expr->X_add_symbol || expr->X_op_symbol) {
+        fprintf(out, "(");
+      }
+      if (expr->X_add_symbol) {
+        fprintf(out, "%s%s",
+                GetDotOrSymbol(expr->X_add_symbol).c_str(),
+                GetRelocString(reloc));
+      }
+      if (expr->X_op_symbol) {
+        fprintf(out, "+%s",
+                GetDotOrSymbol(expr->X_op_symbol).c_str());
+      }
+      if (expr->X_add_symbol || expr->X_op_symbol) {
+        fprintf(out, ")+");
+      }
+      fprintf(out, "%lld)",
+              (long long)expr->X_add_number);
+      break;
     case O_subtract:
       fprintf(out, "$(");
       /* (X_add_symbol - X_op_symbol) + X_add_number.  */
@@ -1855,7 +1876,9 @@ const std::string InstructionEntry::GetAssemblyInstructionName() const {
     // From x86-64-prescott.s
     OP_monitor, OP_mwait,
     // From general.s
-    OP_movzbw
+    OP_movzbw,
+    // From i386.s
+    OP_fstsw, OP_movsx
   };
 
   if ((instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
@@ -2019,7 +2042,9 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
               // from x86-64-rep.s
               OP_movs, OP_cmps, OP_scas,
               // from x86-64-opcode
-              OP_iret};
+              OP_iret,
+              // other
+              OP_cltq}; // sign extention
             // Case number 1, see above
             if (instruction_->operands == 0 &&
                 !IsInList(op(), no_rex_prefix,
@@ -2070,6 +2095,9 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             if (!SuppressLockPrefix()) {
               fprintf(out, "lock ");
             }
+            break;
+          case FWAIT_OPCODE:
+            // Found in fstsw instruction
             break;
           default:
             MAO_ASSERT_MSG(false, "Unknown prefix found 0x%x\n",
