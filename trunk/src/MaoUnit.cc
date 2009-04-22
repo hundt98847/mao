@@ -1679,7 +1679,14 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
 
   // segment-override:
   if (segment_override) {
-    fprintf(out, "%%%s:", segment_override);
+    // cmps only allows es as the first segment override. Gas
+    // incorrectly gives ds as the segement. We need to work
+    // around this here. See tc-i386.c check_string() for details.
+    if (instruction_->tm.operand_types[op_index].bitfield.esseg) {
+      fprintf(out, "%%es:");
+    } else {
+      fprintf(out, "%%%s:", segment_override);
+    }
   }
 
   if (operand_type.bitfield.disp8 ||
@@ -1752,12 +1759,19 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
     // If the instruction has a prefix, we need to change
     // the register name accordingly.
     // e.g.: movsw  %cs:(%si),%es:(%di)
-    //       outsb  %ds:(%esi),(%dx)
+    //       outsb  %ds:(%esi),   (%dx)
+    // rep   cmpsb      (%edi),   (%esi)
     // One could either check:
     //    instruction_->tm.operand_types[op_index].bitfield.disp32
     // or:
     //    HasPrefix(ADDR_PREFIX_OPCODE)
-    if (instruction_->tm.operand_types[op_index].bitfield.disp32) {
+
+    // Depending on the OP, we can determine the actual register.
+    //  CMPS  -> %edi
+    //  Ohter -> %(e)si
+    if (op() == OP_cmps) {
+      base_reg_name = "edi";
+    } else if (instruction_->tm.operand_types[op_index].bitfield.disp32) {
       base_reg_name = "esi";
     } else {
       base_reg_name = "si";
@@ -2182,23 +2196,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     }
 
     // MEMORY OPERANDS
-
-    // Segment overrides are always placed in seg[0], even
-    // if it applies to the second operand.
     if (IsMemOperand(instruction_, i)) {
-      // Ugly hack:
-      // for some string instruction, both operands have baseindex == 1
-      // though only the first should be printed...
-      // the first is implicit "(%edi)".
-      // e.g.: rep   CMPSb (%edi), (%esi)
-      if (instruction_->operands == 2 &&
-          i == 0 &&
-          IsMemOperand(instruction_, 1) &&
-          IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
-        fprintf(out, "(%%edi) ");
-      } else {
-        PrintMemoryOperand(out, i);
-      }
+      PrintMemoryOperand(out, i);
     }
 
     // ACC register
