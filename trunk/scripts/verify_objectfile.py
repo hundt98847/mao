@@ -4,8 +4,8 @@
 """This script will run MAO on an assembly file and compare the result with the
 original assembly file by checking the resulting assembled object files from
 both assembly files. Temporary files are created during execution, and removed
-before exit. The script assumes that mao and as-orig exists in the current
-directory, and that they are executable."""
+before exit. The script assumes that as-orig exists in the current
+directory, and that mao is available as ../bin/mao-TARGET."""
 
 import os
 import sys
@@ -58,21 +58,23 @@ def _Fail(files_to_remove):
 
 def main(argv):
   in_file = ""
-  if len(argv) != 2:
-    print "Usage: " + argv[0] + " inputfile"
+  if len(argv) != 3:
+    print "Usage: " + argv[0] + " TARGET inputfile"
     sys.exit(1)
 
   # Holds the names of the generated temporary files
   generated_files = []
 
-  in_file = argv[1]
+  target  = argv[1]
+  in_file = argv[2]
   basedir = os.path.join(os.path.dirname(argv[0]))
 
   # run mao on the input .s file
   (fd, mao_tempfile) = tempfile.mkstemp(suffix=".mao")
   os.close(fd)
   generated_files.append(mao_tempfile)
-  cmd = [os.path.join(basedir, "mao"), "-mao:-o" + str(mao_tempfile), in_file]
+  cmd = [os.path.join(basedir, "../bin/mao-" + target), "-mao:-o" + \
+         str(mao_tempfile), in_file]
   mao_result = _Run(cmd)
 
   if mao_result != 0:
