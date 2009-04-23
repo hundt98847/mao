@@ -268,6 +268,7 @@ bool MaoUnit::SetSubSection(const char *section_name,
   section->AddSubSection(subsection);
 
   // set current_subsection!
+  prev_subsection_ = current_subsection_;
   current_subsection_ = subsection;
 
   // Assume that the section is only one entry long.
@@ -801,6 +802,42 @@ void MaoUnit::DeleteEntry(MaoEntry *entry) {
     labels_.erase(labels_.find(le->name()));
   }
 }
+
+void MaoUnit::PushCurrentSubSection() {
+  MAO_ASSERT(current_subsection_);
+  subsection_stack_.push(current_subsection_);
+}
+
+
+void MaoUnit::PopSubSection(int line_number) {
+  MAO_ASSERT(current_subsection_);
+  SubSection *ss = subsection_stack_.top();
+  subsection_stack_.pop();
+
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(
+                         ss->name().c_str()));
+  DirectiveEntry *directive =
+      new DirectiveEntry(DirectiveEntry::SECTION, operands,
+                         line_number, NULL, this);
+  AddEntry(directive, false);
+}
+
+
+void MaoUnit::SetPreviousSubSection(int line_number) {
+  MAO_ASSERT(current_subsection_);
+  MAO_ASSERT(prev_subsection_);
+  // TODO(martint): Should we update the subsection_ stack?
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(
+                         prev_subsection_->name().c_str()));
+  DirectiveEntry *directive =
+      new DirectiveEntry(DirectiveEntry::SECTION, operands,
+                         line_number, NULL, this);
+  AddEntry(directive, false);
+}
+
+
 
 //
 // Class: SectionIterator
@@ -2219,8 +2256,6 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     if (instruction_->types[i].bitfield.floatacc) {
         fprintf(out, "%%st");
     }
-    // TODO(martint): fix floatacc
-    // if ((instruction_->types[i].bitfield.floatacc)...
 
     // REGISTERS
 

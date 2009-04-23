@@ -21,6 +21,7 @@
 
 #include <list>
 #include <map>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
@@ -659,6 +660,10 @@ class MaoUnit {
   bool Is64BitMode() const { return arch_ == X86_64; }
   bool Is32BitMode() const { return arch_ == I386;   }
 
+  void PushCurrentSubSection();
+  void PopSubSection(int line_number);
+  void SetPreviousSubSection(int line_number);
+
  private:
 
   enum Arch {
@@ -689,6 +694,10 @@ class MaoUnit {
 
   // Pointer to current subsection. Used when parsing the assembly file.
   SubSection *current_subsection_;
+  // Previous subsection is needed for the .previous directive
+  SubSection *prev_subsection_;
+  std::stack<SubSection *> subsection_stack_;
+
 
   // One symbol table holds all symbols found in the assembly file.
   SymbolTable symbol_table_;
@@ -706,6 +715,9 @@ class MaoUnit {
   const char *SectionName(MaoEntry *entry) const;
 
   MaoOptions *mao_options_;
+
+
+
 
   Stats stats_;
 };  // MaoUnit

@@ -1194,6 +1194,10 @@ obj_elf_previous (int ignore ATTRIBUTE_UNUSED)
 #ifdef md_elf_section_change_hook
   md_elf_section_change_hook ();
 #endif
+
+  /* Link directive to MAO */
+  link_previous_directive();
+
 }
 
 static void
@@ -1216,6 +1220,9 @@ obj_elf_popsection (int xxx ATTRIBUTE_UNUSED)
   previous_subsection = top->prev_subseg;
   subseg_set (top->seg, top->subseg);
   free (top);
+
+  /* Link directive to MAO */
+  link_popsection_directive();
 
 #ifdef md_elf_section_change_hook
   md_elf_section_change_hook ();

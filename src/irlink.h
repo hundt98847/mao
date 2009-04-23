@@ -112,6 +112,9 @@ extern "C" {
   // Link .code directives. For .code16gcc, the gcc flag is set to true.
   void link_code_directive(int flag_code, char gcc);
   void link_float_directive(int float_type, struct MaoStringPiece value);
+
+  void link_popsection_directive();
+  void link_previous_directive();
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 
