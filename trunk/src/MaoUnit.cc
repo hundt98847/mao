@@ -1767,10 +1767,15 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
     //    HasPrefix(ADDR_PREFIX_OPCODE)
 
     // Depending on the OP, we can determine the actual register.
-    //  CMPS  -> %edi
+    //  CMPS  -> %(e)di
     //  Ohter -> %(e)si
-    if (op() == OP_cmps) {
+
+    if (op() == OP_cmps &&
+        instruction_->tm.operand_types[op_index].bitfield.disp32) {
       base_reg_name = "edi";
+    } else if (op() == OP_cmps &&
+               !instruction_->tm.operand_types[op_index].bitfield.disp32) {
+      base_reg_name = "di";
     } else if (instruction_->tm.operand_types[op_index].bitfield.disp32) {
       base_reg_name = "esi";
     } else {
@@ -1993,6 +1998,11 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
   const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
 
+
+  const MaoOpcode via_padlock_ops[] = {OP_xstorerng, OP_xcryptecb, OP_xcryptcbc,
+                                       OP_xcryptcfb, OP_xcryptofb, OP_xstore,
+                                       OP_montmul,   OP_xsha1,     OP_xsha256};
+
   // Prefixes
   fprintf(out, "\t");
   if (instruction_->prefixes > 0) {
@@ -2025,6 +2035,9 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
               fprintf(out, "repe ");
             } else if (IsInList(op(), rep_ops,
                                 sizeof(rep_ops)/sizeof(MaoOpcode))) {
+              fprintf(out, "rep ");
+            } else if (IsInList(op(), via_padlock_ops,
+                                sizeof(via_padlock_ops)/sizeof(MaoOpcode))) {
               fprintf(out, "rep ");
             }
             break;
