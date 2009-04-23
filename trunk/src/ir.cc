@@ -138,37 +138,15 @@ char is_whitespace(char c) {
   return (c == ' ' || c == '\t');
 }
 
-// Get the name of the section from the argument and place the result in the
-// buffer returns a pointer to the buffer
-char *get_section_name(const char *arguments, char *buffer) {
-  MAO_ASSERT(arguments);
-  MAO_ASSERT(strlen(arguments) < MAX_SYMBOL_NAME_LENGTH);
-
-  const char *arguments_p = arguments;
-  while (is_whitespace(*arguments_p)) {
-    arguments_p++;
-  }
-  char *buffer_p = buffer;
-  while (*arguments_p != '\0' && *arguments_p != ',' && *arguments_p != '\n' &&
-         !is_whitespace(*arguments_p)) {
-    *buffer_p++ = *arguments_p++;
-  }
-  *buffer_p = '\0';
-  return buffer;
-}
-
-// A section can be declared in several ways
-// .data, .bss, .txt
-// or
-// .section ARGUMENTS
-//
 void link_section(int push,
                  const char *section_name,
                  MaoStringPiece arguments) {
-  // TODO(nvachhar): handle .pushsection
-  MAO_ASSERT(!push);
   MAO_ASSERT(section_name);
   MAO_ASSERT(maounit_);
+
+  if (push) {
+    maounit_->PushCurrentSubSection();
+  }
 
   DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(
@@ -460,4 +438,15 @@ void link_code_directive(int flag_code, char gcc) {
       MAO_ASSERT_MSG(false, "Unknown code-mode.");
       break;
   }
+}
+
+void link_popsection_directive() {
+  struct link_context_s link_context = get_link_context();
+  maounit_->PopSubSection(link_context.line_number);
+}
+
+
+void link_previous_directive() {
+  struct link_context_s link_context = get_link_context();
+  maounit_->SetPreviousSubSection(link_context.line_number);
 }
