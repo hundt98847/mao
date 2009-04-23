@@ -1903,7 +1903,9 @@ const std::string InstructionEntry::GetAssemblyInstructionName() const {
     // From i386.s
     OP_fstsw, OP_movsx,
     // From opcode.s
-    OP_cwtd
+    OP_cwtd,
+    // From svme.s
+    OP_skinit, OP_vmload, OP_vmsave, OP_invlpga, OP_vmrun
   };
 
   if ((instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
