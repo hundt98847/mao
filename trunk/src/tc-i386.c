@@ -6428,6 +6428,10 @@ lex_got (enum bfd_reloc_code_real *reloc,
 	      char *tmpbuf, *past_reloc;
 
 	      *reloc = gotrel[j].rel[object_64bit];
+              // Link back to MAO that the next .cons will
+              // have a relocation
+              link_cons_reloc(*reloc);
+
 	      if (adjust)
 		*adjust = len;
 

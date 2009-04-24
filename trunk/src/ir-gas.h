@@ -25,6 +25,7 @@ extern "C" {
 #include "bfd.h"
 
 #include "opcode/i386.h"
+#include "opcodes/i386-init.h"
 
 //#include "elf-bfd.h"
 
@@ -745,6 +746,70 @@ enum flag_code {
 
 extern enum flag_code flag_code;
 extern i386_cpu_flags cpu_arch_flags;
+
+
+
+// Copied from tc-i386.c
+// Needed for MAO to to print the relocation used in constants
+// (e.g. .long foo@GOT)
+static const struct {
+  const char *str;
+  const enum bfd_reloc_code_real rel[2];
+  const i386_operand_type types64;
+} gotrel[] = {
+  { "PLTOFF",   { _dummy_first_bfd_reloc_code_real,
+                  BFD_RELOC_X86_64_PLTOFF64 },
+    OPERAND_TYPE_IMM64 },
+  { "PLT",      { BFD_RELOC_386_PLT32,
+                  BFD_RELOC_X86_64_PLT32    },
+    OPERAND_TYPE_IMM32_32S_DISP32 },
+  { "GOTPLT",   { _dummy_first_bfd_reloc_code_real,
+                  BFD_RELOC_X86_64_GOTPLT64 },
+    OPERAND_TYPE_IMM64_DISP64 },
+  { "GOTOFF",   { BFD_RELOC_386_GOTOFF,
+                  BFD_RELOC_X86_64_GOTOFF64 },
+    OPERAND_TYPE_IMM64_DISP64 },
+  { "GOTPCREL", { _dummy_first_bfd_reloc_code_real,
+                  BFD_RELOC_X86_64_GOTPCREL },
+    OPERAND_TYPE_IMM32_32S_DISP32 },
+  { "TLSGD",    { BFD_RELOC_386_TLS_GD,
+                  BFD_RELOC_X86_64_TLSGD    },
+    OPERAND_TYPE_IMM32_32S_DISP32 },
+  { "TLSLDM",   { BFD_RELOC_386_TLS_LDM,
+                 _dummy_first_bfd_reloc_code_real},
+    OPERAND_TYPE_NONE },
+  { "TLSLD",    { _dummy_first_bfd_reloc_code_real,
+                  BFD_RELOC_X86_64_TLSLD    },
+    OPERAND_TYPE_IMM32_32S_DISP32 },
+  { "GOTTPOFF", { BFD_RELOC_386_TLS_IE_32,
+                  BFD_RELOC_X86_64_GOTTPOFF },
+    OPERAND_TYPE_IMM32_32S_DISP32 },
+  { "TPOFF",    { BFD_RELOC_386_TLS_LE_32,
+                  BFD_RELOC_X86_64_TPOFF32  },
+    OPERAND_TYPE_IMM32_32S_64_DISP32_64 },
+  { "NTPOFF",   { BFD_RELOC_386_TLS_LE,
+                  _dummy_first_bfd_reloc_code_real},
+    OPERAND_TYPE_NONE },
+  { "DTPOFF",   { BFD_RELOC_386_TLS_LDO_32,
+                  BFD_RELOC_X86_64_DTPOFF32 },
+    OPERAND_TYPE_IMM32_32S_64_DISP32_64 },
+  { "GOTNTPOFF",{ BFD_RELOC_386_TLS_GOTIE,
+                  _dummy_first_bfd_reloc_code_real},
+    OPERAND_TYPE_NONE },
+  { "INDNTPOFF",{ BFD_RELOC_386_TLS_IE,
+                  _dummy_first_bfd_reloc_code_real},
+    OPERAND_TYPE_NONE },
+  { "GOT",      { BFD_RELOC_386_GOT32,
+                  BFD_RELOC_X86_64_GOT32    },
+    OPERAND_TYPE_IMM32_32S_64_DISP32 },
+  { "TLSDESC",  { BFD_RELOC_386_TLS_GOTDESC,
+                  BFD_RELOC_X86_64_GOTPC32_TLSDESC },
+    OPERAND_TYPE_IMM32_32S_DISP32 },
+  { "TLSCALL",  { BFD_RELOC_386_TLS_DESC_CALL,
+                  BFD_RELOC_X86_64_TLSDESC_CALL },
+    OPERAND_TYPE_IMM32_32S_DISP32 },
+};
+
 
 #ifdef __cplusplus
 }  /*extern "C" */
