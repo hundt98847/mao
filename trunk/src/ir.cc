@@ -89,6 +89,7 @@ void link_insn(i386_insn *insn, size_t SizeOfInsn, int code_flag,
   maounit_->AddEntry(new InstructionEntry(inst, (enum flag_code)code_flag,
                                           link_context.line_number,
                                           line_verbatim, maounit_), true);
+  reloc_ = _dummy_first_bfd_reloc_code_real;
 }
 
 void link_label(const char *name, const char *line_verbatim) {

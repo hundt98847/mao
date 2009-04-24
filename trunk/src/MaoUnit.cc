@@ -954,10 +954,21 @@ const std::string &MaoEntry::RelocToString(const enum bfd_reloc_code_real reloc,
     }
   }
   // Specal case not covered in the gotrel array.
-  // Found in gas test-suite reloc32.s
-  if (reloc == BFD_RELOC_32) {
-    out->append("@GOTOFF");
-    return *out;
+  // Found in gas test-suite reloc32.s etc.
+
+  switch(reloc) {
+    case BFD_RELOC_32:
+      out->append("@GOTOFF");
+      break;
+    case BFD_RELOC_32_PCREL:
+      out->append("@GOTPCREL");
+      break;
+    case   BFD_RELOC_NONE:
+    case _dummy_first_bfd_reloc_code_real:
+      break;
+    default:
+      MAO_ASSERT_MSG(reloc == _dummy_first_bfd_reloc_code_real,
+                     "Unknown reloc: %d", reloc);
   }
   // No matching relocation found!
   return *out;
