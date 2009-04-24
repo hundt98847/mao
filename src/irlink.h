@@ -115,6 +115,9 @@ extern "C" {
 
   void link_popsection_directive();
   void link_previous_directive();
+
+  void link_cons_reloc(enum bfd_reloc_code_real reloc);
+
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 

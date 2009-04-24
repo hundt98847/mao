@@ -33,7 +33,8 @@ extern "C" const char *S_GET_NAME(symbolS *s);
 extern "C" void   as_where(char **, unsigned int *);
 
 // Reference to a the mao_unit.
-MaoUnit *maounit_;
+static MaoUnit *maounit_;
+static enum bfd_reloc_code_real reloc_ = _dummy_first_bfd_reloc_code_real;
 
 struct link_context_s {
   unsigned int line_number;
@@ -74,6 +75,8 @@ static void link_directive_tail(
       new DirectiveEntry(opcode, operands,
                          link_context.line_number, NULL, maounit_);
   maounit_->AddEntry(directive, false);
+  // This makes sure that we only catch relocs that happen in the current entry.
+  reloc_ = _dummy_first_bfd_reloc_code_real;
 }
 
 void link_insn(i386_insn *insn, size_t SizeOfInsn, int code_flag,
@@ -233,7 +236,12 @@ void link_size_directive(symbolS *symbol, expressionS *expr) {
 
 void link_dc_directive(int size, int rva, expressionS *expr) {
   DirectiveEntry::OperandVector operands;
-  operands.push_back(new DirectiveEntry::Operand(expr));
+  if (reloc_ != _dummy_first_bfd_reloc_code_real) {
+    operands.push_back(new DirectiveEntry::Operand(expr, reloc_));
+    reloc_ = _dummy_first_bfd_reloc_code_real;
+  } else {
+    operands.push_back(new DirectiveEntry::Operand(expr));
+  }
 
   DirectiveEntry::Opcode opcode;
   if (rva) {
@@ -449,4 +457,14 @@ void link_popsection_directive() {
 void link_previous_directive() {
   struct link_context_s link_context = get_link_context();
   maounit_->SetPreviousSubSection(link_context.line_number);
+}
+
+// This code makes it possible to catch relocations
+// found in cons directives (.long, .byte etc). The relocation is
+// parsed in the machine dependent code (tc-i386.h) and not visible
+// in read.c where we link the directive itself. To solve this, link_cons_reloc
+// is called from tc-i386.c before link_dc_directive is called in read.c. This
+// way we can check in link_dc_directive if we should include a relocation.
+void link_cons_reloc(enum bfd_reloc_code_real reloc) {
+  reloc_ = reloc;
 }

@@ -471,8 +471,6 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
       }
 
       break;
-    case MaoEntry::UNDEFINED:
-      break;
     default:
       // should never happen. Catch all cases above.
       MAO_RASSERT_MSG(0, "Entry type not recognised.");
@@ -810,7 +808,7 @@ void MaoUnit::PushCurrentSubSection() {
 
 
 void MaoUnit::PopSubSection(int line_number) {
-  MAO_ASSERT(current_subsection_);
+  MAO_ASSERT(!subsection_stack_.empty());
   SubSection *ss = subsection_stack_.top();
   subsection_stack_.pop();
 
@@ -820,6 +818,7 @@ void MaoUnit::PopSubSection(int line_number) {
   DirectiveEntry *directive =
       new DirectiveEntry(DirectiveEntry::SECTION, operands,
                          line_number, NULL, this);
+  // AddEntry will change current_subserction_
   AddEntry(directive, false);
 }
 
@@ -939,6 +938,31 @@ std::string MaoEntry::GetDotOrSymbol(symbolS *symbol) const {
     return s;
   }
 }
+
+
+// Return the matching relocation string, or an empty string
+// if no match is found.
+const std::string &MaoEntry::RelocToString(const enum bfd_reloc_code_real reloc,
+                                           std::string *out) const {
+  // use gotrel from ir-gas.h (originally in tc-i386.c).
+  for (unsigned int i = 0; i < sizeof(gotrel)/sizeof(gotrel[0]); ++i) {
+    int idx = maounit_->Is64BitMode()?1:0;
+    if (reloc == gotrel[i].rel[idx]) {
+      out->append("@");
+      out->append(gotrel[i].str);
+      return *out;
+    }
+  }
+  // Specal case not covered in the gotrel array.
+  // Found in gas test-suite reloc32.s
+  if (reloc == BFD_RELOC_32) {
+    out->append("@GOTOFF");
+    return *out;
+  }
+  // No matching relocation found!
+  return *out;
+}
+
 
 void MaoEntry::Spaces(unsigned int n, FILE *outfile) const {
   for (unsigned int i = 0; i < n; i++) {
@@ -1322,6 +1346,14 @@ const std::string &DirectiveEntry::OperandToString(const Operand &operand,
     case EXPRESSION:
       OperandExpressionToString(operand.data.expr, out);
       break;
+    case EXPRESSION_RELOC:
+      OperandExpressionToString(operand.data.expr_reloc.expr, out);
+      // Append the relocation to the string here!
+      if (operand.data.expr_reloc.reloc != _dummy_first_bfd_reloc_code_real) {
+        std::string reloc;
+        out->append(RelocToString(operand.data.expr_reloc.reloc, &reloc));
+      }
+      break;
     case EMPTY_OPERAND:
       // Nothing to do
       break;
@@ -1506,6 +1538,7 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
 void InstructionEntry::PrintImmediateOperand(FILE *out,
                                            const enum bfd_reloc_code_real reloc,
                                            const expressionS *expr) const {
+  std::string reloc_string;
   switch (expr->X_op) {
     case O_constant:
       /* X_add_number (a constant expression).  */
@@ -1517,91 +1550,56 @@ void InstructionEntry::PrintImmediateOperand(FILE *out,
       if (expr->X_add_symbol) {
         fprintf(out, "$%s%s+",
                 GetDotOrSymbol(expr->X_add_symbol).c_str(),
-                GetRelocString(reloc));
+                RelocToString(reloc, &reloc_string).c_str());
       }
       fprintf(out, "%lld",
               (long long)expr->X_add_number);
       break;
     case O_add:
-      fprintf(out, "$(");
+    case O_subtract: {
       /* (X_add_symbol + X_op_symbol) + X_add_number.  */
-      if (expr->X_add_symbol || expr->X_op_symbol) {
-        fprintf(out, "(");
-      }
-      if (expr->X_add_symbol) {
-        fprintf(out, "%s%s",
-                GetDotOrSymbol(expr->X_add_symbol).c_str(),
-                GetRelocString(reloc));
-      }
-      if (expr->X_op_symbol) {
-        fprintf(out, "+%s",
-                GetDotOrSymbol(expr->X_op_symbol).c_str());
-      }
-      if (expr->X_add_symbol || expr->X_op_symbol) {
-        fprintf(out, ")+");
-      }
-      fprintf(out, "%lld)",
-              (long long)expr->X_add_number);
-      break;
-    case O_subtract:
-      fprintf(out, "$(");
       /* (X_add_symbol - X_op_symbol) + X_add_number.  */
+      char *op;
+      switch (expr->X_op) {
+        case O_add:
+          op = "+";
+          break;
+        case O_subtract:
+          op = "-";
+          break;
+        default:
+          MAO_ASSERT(false);
+      }
+      fprintf(out, "$");
       if (expr->X_add_symbol || expr->X_op_symbol) {
         fprintf(out, "(");
       }
       if (expr->X_add_symbol) {
         fprintf(out, "%s%s",
                 GetDotOrSymbol(expr->X_add_symbol).c_str(),
-                GetRelocString(reloc));
+                RelocToString(reloc, &reloc_string).c_str());
       }
       if (expr->X_op_symbol) {
-        fprintf(out, "-%s",
+        fprintf(out, "%s%s",
+                op,
                 GetDotOrSymbol(expr->X_op_symbol).c_str());
       }
       if (expr->X_add_symbol || expr->X_op_symbol) {
-        fprintf(out, ")+");
+        fprintf(out, ")");
+        if (expr->X_add_number) {
+          fprintf(out, "+");
+        }
       }
-      fprintf(out, "%lld)",
-              (long long)expr->X_add_number);
+      if (expr->X_add_number) {
+        fprintf(out, "%lld)",
+                (long long)expr->X_add_number);
+      }
       break;
+    }
     default:
       MAO_ASSERT_MSG(0, "Unable to print unsupported expression");
   }
   return;
-}
-
-// Relocations are defined in bfd-in2.h
-const char *InstructionEntry::GetRelocString(
-  const enum bfd_reloc_code_real reloc) const {
-  switch (reloc) {
-    case BFD_RELOC_X86_64_PLT32:
-    case BFD_RELOC_386_PLT32:
-      return "@PLT";
-    case BFD_RELOC_32_PCREL:
-      return "@GOTPCREL";
-    case BFD_RELOC_X86_64_TLSLD:
-      return "@TLSLD";
-    case BFD_RELOC_X86_64_TLSGD:
-    case BFD_RELOC_386_TLS_GD:
-      return "@TLSGD";
-    case BFD_RELOC_X86_64_DTPOFF32:
-    case BFD_RELOC_386_TLS_LDO_32:
-      return "@DTPOFF";
-    case BFD_RELOC_NONE:  // found in "leaq    .LC0(%rip), %rcx"
-      return "";
-    case BFD_RELOC_X86_64_GOTTPOFF:
-    case BFD_RELOC_386_TLS_IE_32:
-      return "@GOTTPOFF";
-    case BFD_RELOC_X86_64_TPOFF32:
-    case BFD_RELOC_386_TLS_LE_32:
-      return "@TPOFF";
-    case BFD_RELOC_386_TLS_LE:
-      return "@NTPOFF";
-    default:
-      MAO_ASSERT_MSG(false, "Unable to find info about reloc: %d", reloc);
-      break;
-  }
-  return "";
 }
 
 void InstructionEntry::SetOperand(int op1,
@@ -1726,6 +1724,8 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
     }
   }
 
+  std::string reloc_string;
+
   if (operand_type.bitfield.disp8 ||
       operand_type.bitfield.disp16 ||
       operand_type.bitfield.disp32 ||
@@ -1745,7 +1745,7 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
         if (expr->X_add_symbol) {
           fprintf(out, "%s%s",
                   GetDotOrSymbol(expr->X_add_symbol).c_str(),
-                  GetRelocString(reloc));
+                  RelocToString(reloc, &reloc_string).c_str());
         }
         if (expr->X_add_number) {
           fprintf(out, "+%lld", (long long)expr->X_add_number);
@@ -1760,20 +1760,24 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
         if (expr->X_add_symbol) {
           fprintf(out, "%s%s",
                   GetDotOrSymbol(expr->X_add_symbol).c_str(),
-                  GetRelocString(reloc));
+                  RelocToString(reloc, &reloc_string).c_str());
         }
         // When GOTPCREL is used, the second symbol is implicit and
         // should not be printed.
-        if (reloc != BFD_RELOC_32_PCREL) {
+        if (reloc != BFD_RELOC_32_PCREL && reloc != BFD_RELOC_32) {
           if (expr->X_op_symbol) {
             fprintf(out, "-%s",
                     GetDotOrSymbol(expr->X_op_symbol).c_str());
           }
         }
         if (expr->X_add_symbol || expr->X_op_symbol) {
-          fprintf(out, ")+");
+          fprintf(out, ")");
+          if (expr->X_add_number)
+            fprintf(out, "+");
         }
-        fprintf(out, "%lld", (long long)expr->X_add_number);
+        if (expr->X_add_number) {
+          fprintf(out, "%lld", (long long)expr->X_add_number);
+        }
         break;
       default:
         MAO_ASSERT_MSG(0, "Unable to print unsupported expression: %d",

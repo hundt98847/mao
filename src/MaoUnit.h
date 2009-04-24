@@ -179,6 +179,9 @@ class MaoEntry {
   // that should be translated to a dot.
   std::string GetDotOrSymbol(symbolS *symbol) const;
 
+  const std::string &RelocToString(const enum bfd_reloc_code_real reloc,
+                                   std::string *out) const;
+
   MaoUnit *maounit_;
 
  private:
@@ -290,12 +293,16 @@ class DirectiveEntry : public MaoEntry {
 
   static const char *const kOpcodeNames[NUM_OPCODES];
 
+
+  // The EXPRESSION_RELOC is an operand used in cons directives
+  // (.byte, .long etc) _if_ a relocation is given.
   enum OperandType {
     NO_OPERAND = 0,
     STRING,
     INT,
     SYMBOL,
     EXPRESSION,
+    EXPRESSION_RELOC,
     EMPTY_OPERAND,
   };
 
@@ -317,6 +324,13 @@ class DirectiveEntry : public MaoEntry {
       data.expr = static_cast<expressionS *>(malloc(sizeof(expressionS)));
       *data.expr = *expr;
     }
+    explicit Operand(expressionS *expr, const enum bfd_reloc_code_real reloc)
+        : type(EXPRESSION_RELOC) {
+      data.expr = static_cast<expressionS *>(malloc(sizeof(expressionS)));
+      *data.expr_reloc.expr = *expr;
+      data.expr_reloc.reloc = reloc;
+    }
+
     explicit Operand(int value) : type(INT) { data.i = value; }
     ~Operand() {
       if (type == STRING)
@@ -326,11 +340,17 @@ class DirectiveEntry : public MaoEntry {
     }
 
     OperandType type;
+    struct expr_reloc_s {
+      expressionS *expr;
+      enum bfd_reloc_code_real reloc;
+    };
+
     union  {
       std::string *str;
       int i;
       symbolS *sym;
       expressionS *expr;
+      struct expr_reloc_s expr_reloc;
     } data;
   };
 
@@ -535,8 +555,6 @@ class InstructionEntry : public MaoEntry {
                              const expressionS *expr) const;
   void PrintMemoryOperand(FILE *out,
                           int op_index) const;
-
-  const char *GetRelocString(const enum bfd_reloc_code_real reloc) const;
 
   void PrintRexPrefix(FILE *out, int prefix) const;
 
