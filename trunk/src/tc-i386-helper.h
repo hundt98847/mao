@@ -137,11 +137,6 @@ class X86InstructionSizeHelper {
   std::pair<int, bool> SizeOfDisp();
   std::pair<int, bool> SizeOfImm();
 
-  /* Returns 0 if attempting to add a prefix where one from the same
-     class already exists, 1 if non rep/repne added, 2 if rep/repne
-     added.  */
-  int AddPrefix(unsigned int prefix);
-
   void MergeSizePair(const std::pair<int, bool> &from, std::pair<int, bool> *to);
 
   i386_insn *insn_;

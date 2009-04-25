@@ -145,72 +145,9 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfImm() {
   return std::make_pair(size, false);
 }
 
-
-/* Returns 0 if attempting to add a prefix where one from the same
-   class already exists, 1 if non rep/repne added, 2 if rep/repne
-   added.  */
-int X86InstructionSizeHelper::AddPrefix(unsigned int prefix) {
-  int ret = 1;
-  unsigned int q;
-
-  if (prefix >= REX_OPCODE && prefix < REX_OPCODE + 16
-      && flag_code == CODE_64BIT) {
-    if ((insn_->prefix[REX_PREFIX] & prefix & REX_W)
-        || ((insn_->prefix[REX_PREFIX] & (REX_R | REX_X | REX_B))
-            && (prefix & (REX_R | REX_X | REX_B))))
-      ret = 0;
-    q = REX_PREFIX;
-  } else {
-    switch (prefix) {
-      default:
-        MAO_ASSERT(false);
-
-      case CS_PREFIX_OPCODE:
-      case DS_PREFIX_OPCODE:
-      case ES_PREFIX_OPCODE:
-      case FS_PREFIX_OPCODE:
-      case GS_PREFIX_OPCODE:
-      case SS_PREFIX_OPCODE:
-        q = SEG_PREFIX;
-        break;
-
-      case REPNE_PREFIX_OPCODE:
-      case REPE_PREFIX_OPCODE:
-        ret = 2;
-        /* fall thru */
-      case LOCK_PREFIX_OPCODE:
-        q = LOCKREP_PREFIX;
-        break;
-
-      case FWAIT_OPCODE:
-        q = WAIT_PREFIX;
-        break;
-
-      case ADDR_PREFIX_OPCODE:
-        q = ADDR_PREFIX;
-        break;
-
-      case DATA_PREFIX_OPCODE:
-        q = DATA_PREFIX;
-        break;
-    }
-    if (insn_->prefix[q] != 0)
-      ret = 0;
-  }
-
-  if (ret) {
-    if (!insn_->prefix[q])
-      ++insn_->prefixes;
-    insn_->prefix[q] |= prefix;
-  } else {
-    MAO_ASSERT_MSG(false, "same type of prefix used twice");
-  }
-
-  return ret;
-}
-
 std::pair<int, bool> X86InstructionSizeHelper::SizeOfInstruction() {
   std::pair<int, bool> size(0, false);
+
 
   // Size jumps.
   if (insn_->tm.opcode_modifier.jump)
@@ -224,36 +161,10 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfInstruction() {
     /* Output normal instructions here.  */
     unsigned char *q;
     unsigned int j;
-    unsigned int prefix;
 
     /* Since the VEX prefix contains the implicit prefix, we don't
        need the explicit prefix.  */
     if (!insn_->tm.opcode_modifier.vex) {
-      switch (insn_->tm.opcode_length) {
-        case 3:
-          if (insn_->tm.base_opcode & 0xff000000) {
-            prefix = (insn_->tm.base_opcode >> 24) & 0xff;
-            goto check_prefix;
-          }
-          break;
-        case 2:
-          if ((insn_->tm.base_opcode & 0xff0000) != 0) {
-            prefix = (insn_->tm.base_opcode >> 16) & 0xff;
-            if (insn_->tm.cpu_flags.bitfield.cpupadlock) {
-           check_prefix:
-              if (prefix != REPE_PREFIX_OPCODE || (insn_->prefix[LOCKREP_PREFIX]
-                                                   != REPE_PREFIX_OPCODE))
-                AddPrefix(prefix);
-            } else {
-              AddPrefix(prefix);
-            }
-          }
-          break;
-        case 1:
-          break;
-        default:
-          MAO_ASSERT(false);
-      }
 
       /* The prefix bytes.  */
       for (j = ARRAY_SIZE (insn_->prefix), q = insn_->prefix; j > 0; j--, q++)

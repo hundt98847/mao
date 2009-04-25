@@ -56,9 +56,6 @@ extern "C" {
 MAO_OPTIONS_DEFINE(RELAX, 3) {
   OPTION_BOOL("stat", false, "Collect and print statistics about relaxer"),
   OPTION_BOOL("dump_sizemap", false, "Dump the sizemap to stderr"),
-  OPTION_BOOL("verification_symbols", false, "For each function, add a dummy "
-              "function in the program with the calculated size of that "
-              "function.")
 };
 
 
@@ -68,7 +65,6 @@ MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit)
       mao_unit_(mao_unit) {
   collect_stat_ = GetOptionBool("stat");
   dump_sizemap_ = GetOptionBool("dump_sizemap");
-  verification_symbols_ = GetOptionBool("verification_symbols");
   if (collect_stat_) {
     if (mao_unit_->GetStats()->HasStat("RELAX")) {
       relax_stat_ =
@@ -138,42 +134,6 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
       fprintf(stderr, "%4x:  ", iter->second);
       iter->first->PrintIR(stderr);
       fprintf(stderr, "\n");
-    }
-  }
-
-  if (verification_symbols_) {
-    // Add symbols to object file with the calculated size of the functions.
-    for (MaoUnit::ConstFunctionIterator iter = mao_unit_->ConstFunctionBegin();
-         iter != mao_unit_->ConstFunctionEnd();
-         ++iter) {
-      Function *function = *iter;
-      if (function->GetSection() == section) {
-        // create symbols in the object file for these?
-        DirectiveEntry::OperandVector operands;
-        SubSection *ss = mao_unit_->GetSubSection(function->last_entry());
-        MAO_ASSERT(ss);
-        // .size <functionname>_veri, <calculated size>
-        char func_verification_name[1024];
-        MAO_ASSERT_MSG(strlen((function->name().c_str())+6) < 1024,
-                       "Function name to large");
-        sprintf(func_verification_name, "%s_veri", function->name().c_str());
-        operands.push_back(new DirectiveEntry::Operand(func_verification_name));
-        operands.push_back(new DirectiveEntry::Operand(FunctionSize(function,
-                                                                    size_map)));
-        DirectiveEntry *d_entry = mao_unit_->CreateDirective(
-            DirectiveEntry::SIZE, operands,
-            function, ss);
-        function->last_entry()->LinkAfter(d_entry);
-
-        DirectiveEntry::OperandVector operands2;
-        // .type foo, @function
-        operands2.push_back(
-            new DirectiveEntry::Operand(func_verification_name));
-        operands2.push_back(new DirectiveEntry::Operand("@function"));
-        DirectiveEntry *d_entry2 = mao_unit_->CreateDirective(
-            DirectiveEntry::TYPE, operands2, function, ss);
-        function->last_entry()->LinkBefore(d_entry2);
-      }
     }
   }
 

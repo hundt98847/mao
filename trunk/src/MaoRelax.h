@@ -105,7 +105,6 @@ class MaoRelaxer : public MaoPass {
   MaoUnit *mao_unit_;
   bool collect_stat_;
   bool dump_sizemap_;
-  bool verification_symbols_;
 
   class RelaxStat : public Stat {
    public:
