@@ -558,6 +558,11 @@ class InstructionEntry : public MaoEntry {
 
   void PrintRexPrefix(FILE *out, int prefix) const;
 
+  /* Returns 0 if attempting to add a prefix where one from the same
+     class already exists, 1 if non rep/repne added, 2 if rep/repne
+     added.  */
+  int AddPrefix(unsigned int prefix);
+
   // Returns the instruction op string, including any suffix.
   const std::string GetAssemblyInstructionName() const;
 };

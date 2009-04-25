@@ -25,6 +25,8 @@
 #include "MaoRelax.h"
 #include "MaoUnit.h"
 
+#include "tc-i386-helper.h"
+
 extern "C" {
   const char *S_GET_NAME(symbolS *s);
   valueT S_GET_VALUE(symbolS *s);
@@ -1424,6 +1426,69 @@ bool DirectiveEntry::IsDebugDirective() const {
 // Class: InstructionEntry
 //
 
+/* Returns 0 if attempting to add a prefix where one from the same
+   class already exists, 1 if non rep/repne added, 2 if rep/repne
+   added.  */
+int InstructionEntry::AddPrefix(unsigned int prefix) {
+  int ret = 1;
+  unsigned int q;
+  if (prefix >= REX_OPCODE && prefix < REX_OPCODE + 16
+      && flag_code == CODE_64BIT) {
+    if ((instruction_->prefix[X86InstructionSizeHelper::REX_PREFIX] & prefix & REX_W)
+        || ((instruction_->prefix[X86InstructionSizeHelper::REX_PREFIX] & (REX_R | REX_X | REX_B))
+            && (prefix & (REX_R | REX_X | REX_B))))
+      ret = 0;
+    q = X86InstructionSizeHelper::REX_PREFIX;
+  } else {
+    switch (prefix) {
+      default:
+        MAO_ASSERT(false);
+
+      case CS_PREFIX_OPCODE:
+      case DS_PREFIX_OPCODE:
+      case ES_PREFIX_OPCODE:
+      case FS_PREFIX_OPCODE:
+      case GS_PREFIX_OPCODE:
+      case SS_PREFIX_OPCODE:
+        q = X86InstructionSizeHelper::SEG_PREFIX;
+        break;
+
+      case REPNE_PREFIX_OPCODE:
+      case REPE_PREFIX_OPCODE:
+        ret = 2;
+        /* fall thru */
+      case LOCK_PREFIX_OPCODE:
+        q = X86InstructionSizeHelper::LOCKREP_PREFIX;
+        break;
+
+      case FWAIT_OPCODE:
+        q = X86InstructionSizeHelper::WAIT_PREFIX;
+        break;
+
+      case ADDR_PREFIX_OPCODE:
+        q = X86InstructionSizeHelper::ADDR_PREFIX;
+        break;
+
+      case DATA_PREFIX_OPCODE:
+        q = X86InstructionSizeHelper::DATA_PREFIX;
+        break;
+    }
+    if (instruction_->prefix[q] != 0) {
+      ret = 0;
+    }
+  }
+
+  if (ret) {
+    if (!instruction_->prefix[q])
+      ++instruction_->prefixes;
+    instruction_->prefix[q] |= prefix;
+  } else {
+    MAO_ASSERT_MSG(false, "same type of prefix used twice");
+  }
+
+  return ret;
+}
+
 InstructionEntry::InstructionEntry(i386_insn *instruction,
                                    enum flag_code code_flag,
                                    unsigned int line_number,
@@ -1435,6 +1500,39 @@ InstructionEntry::InstructionEntry(i386_insn *instruction,
   MAO_ASSERT(op_ != OP_invalid);
   MAO_ASSERT(instruction);
   instruction_ = CreateInstructionCopy(instruction);
+
+  // Here we can make sure that the prefixes are correct!
+  unsigned int prefix;
+  if (!instruction_->tm.opcode_modifier.vex) {
+    switch (instruction_->tm.opcode_length) {
+      case 3:
+        if (instruction_->tm.base_opcode & 0xff000000) {
+          prefix = (instruction_->tm.base_opcode >> 24) & 0xff;
+          goto check_prefix;
+        }
+        break;
+      case 2:
+        if ((instruction_->tm.base_opcode & 0xff0000) != 0) {
+          prefix = (instruction_->tm.base_opcode >> 16) & 0xff;
+          if (instruction_->tm.cpu_flags.bitfield.cpupadlock) {
+         check_prefix:
+            if (prefix != REPE_PREFIX_OPCODE ||
+                (instruction_->prefix[X86InstructionSizeHelper::LOCKREP_PREFIX]
+                 != REPE_PREFIX_OPCODE))
+              AddPrefix(prefix);
+              ;
+          } else {
+            AddPrefix(prefix);
+          }
+        }
+        break;
+      case 1:
+        break;
+      default:
+        MAO_ASSERT(false);
+    }
+  }
+
 }
 
 InstructionEntry::~InstructionEntry() {
@@ -2063,6 +2161,16 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     for (unsigned int i = 0;
          i < sizeof(instruction_->prefix)/sizeof(unsigned char);
          ++i) {
+
+      // The prefixes in the instruction is stored in a array of size 6:
+      //    These are the indexes:
+      //    WAIT_PREFIX     0,
+      //    SEG_PREFIX	    1
+      //    ADDR_PREFIX	    2
+      //    DATA_PREFIX	    3
+      //    LOCKREP_PREFIX  4
+      //    REX_PREFIX      5
+
       if (instruction_->prefix[i] != 0) {
         // The list of available prefixes can be found in the following file:
         // ../binutils-2.19/include/opcode/i386.h
@@ -2096,6 +2204,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             }
             break;
             // Rex prefixes are used for 64-bit extention
+            // There are 4 rex-bits -> 16 rex versions
           case REX_OPCODE+0:  // e.g.: movb    %sil, -24(%rbp)
           case REX_OPCODE+1:  // e.g.: movl    $.LC0, %r8d
           case REX_OPCODE+2:
