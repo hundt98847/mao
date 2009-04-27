@@ -101,6 +101,13 @@ class MaoRelaxer : public MaoPass {
   static int SectionSize(SizeMap *size_map);
   static int FunctionSize(Function *function, SizeMap *size_map);
 
+  // The functions below makes is possible to revert any changes
+  // to the IR the relaxation does. The relaxer will change the
+  // base opcode of jump instruction in md_estimate_size_before_relax()
+  // Maps a fragment to the original opcode.
+  typedef std::map<const struct frag *, unsigned int> FragState;
+  void SaveState(const struct frag *fragments, FragState *state);
+  void RestoreState(const struct frag *fragments, FragState *state);
 
   MaoUnit *mao_unit_;
   bool collect_stat_;
