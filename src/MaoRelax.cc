@@ -20,7 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <map>
 #include <string>
+#include <vector>
 
 #include "MaoOptions.h"
 #include "MaoRelax.h"
@@ -76,6 +78,25 @@ MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit)
   }
 }
 
+
+void MaoRelaxer::SaveState(const struct frag *fragments, FragState *state) {
+  // Save the old opcodes, so we can restore them!
+  for (const struct frag *fr_iter = fragments; fr_iter; fr_iter = fr_iter->fr_next) {
+    if(fr_iter->fr_opcode) {
+      (*state)[fr_iter] = *((unsigned int *)(fr_iter->fr_opcode));
+    }
+  }
+}
+
+void MaoRelaxer::RestoreState(const struct frag *fragments, FragState *state) {
+  // Save the old opcodes, so we can restore them!
+  for (const struct frag *fr_iter = fragments; fr_iter; fr_iter = fr_iter->fr_next) {
+    if(fr_iter->fr_opcode) {
+      *((unsigned int *)fr_iter->fr_opcode) = (*state)[fr_iter];
+    }
+  }
+}
+
 void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
   // Build the fragments (and initial sizes)
   FragToEntryMap relax_map;
@@ -92,6 +113,12 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
 
   struct frag *fragments =
       BuildFragments(mao_unit_, section, size_map, &relax_map);
+
+  // The relaxer updates the instruction through the fragment. The opcode
+  // will change. Since we want to be able to relax several times,
+  // we save the state here and restore it after the sizemap has been built.
+  FragState fragment_state;
+  SaveState(fragments, &fragment_state);
 
   // Relaxation normally only changes the fr_var part of the
   // fragment. There are some cases (see md_estimate_size_before_relax())
@@ -123,6 +150,9 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
     }
     frag_index++;
   }
+
+  // Restore fragments/instructions to the originial state.
+  RestoreState(fragments, &fragment_state);
 
   // Throw away the fragments
   FreeFragments(fragments);
