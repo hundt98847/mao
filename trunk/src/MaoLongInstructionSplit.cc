@@ -52,7 +52,7 @@ class LongInstructionsSplitPass : public MaoPass {
     std::list<InstructionEntry *> split_points;
 
     set_cfg(CFG::GetCFG(mao_, func_));
-    sizes_ = MaoRelaxer::GetSizeMap(mao_, func_);
+    sizes_ = MaoRelaxer::GetSizeMap(mao_, func_->GetSection());
 
     FORALL_CFG_BB(cfg(),it) {
       FORALL_BB_ENTRY(it,entry) {

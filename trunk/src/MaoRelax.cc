@@ -181,25 +181,24 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
 }
 
 
-MaoRelaxer::SizeMap *MaoRelaxer::GetSizeMap(MaoUnit *mao, Function *function) {
-  if (function->sizes() == NULL) {
+MaoRelaxer::SizeMap *MaoRelaxer::GetSizeMap(MaoUnit *mao, Section *section) {
+  MAO_ASSERT(section);
+  MaoRelaxer::SizeMap *sizes = section->sizes();
+  if (sizes == NULL) {
     // Run relaxer!
-    // TODO(martint): set the sizemap per section instead
-    MaoRelaxer::SizeMap *sizes = new MaoRelaxer::SizeMap();
-    Section *section = function->GetSection();
-    MAO_ASSERT(section);
+    sizes = new MaoRelaxer::SizeMap();
     Relax(mao, section, sizes);
-    function->set_sizes(sizes);
+    section->set_sizes(sizes);
   }
-  return function->sizes();
+  return sizes;
 }
 
-bool MaoRelaxer::HasSizeMap(Function *function) {
-  return (function->sizes() != NULL);
+bool MaoRelaxer::HasSizeMap(Section *section) {
+  return (section->sizes() != NULL);
 }
 
-void MaoRelaxer::InvalidateSizeMap(Function *function) {
-  function->set_sizes(NULL);
+void MaoRelaxer::InvalidateSizeMap(Section *section) {
+  section->set_sizes(NULL);
 }
 
 

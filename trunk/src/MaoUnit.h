@@ -414,6 +414,8 @@ class DirectiveEntry : public MaoEntry {
 // An Entry of the type Instruction.
 class InstructionEntry : public MaoEntry {
  public:
+  static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
+
   InstructionEntry(i386_insn* instruction, enum flag_code entry_mode,
                    unsigned int line_number, const char* line_verbatim,
                    MaoUnit *maounit);
@@ -429,7 +431,7 @@ class InstructionEntry : public MaoEntry {
   bool SuppressLockPrefix() const;
 
   void PrintInstruction(FILE *out) const;
-  static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
+  void PrintProfile(FILE *out) const;
 
   const char *op_str() const;
   MaoOpcode   op() const { return op_; }
@@ -523,6 +525,27 @@ class InstructionEntry : public MaoEntry {
 
   unsigned int GetLog2ScaleFactor();
 
+  void IncrementExecutionCount(long increment) {
+    if (!execution_count_valid_) {
+      execution_count_valid_ = true;
+      execution_count_ = 0;
+    }
+    execution_count_ += increment;
+  }
+
+  void SetExecutionCount(long count) {
+    execution_count_valid_ = true;
+    execution_count_ = count;
+  }
+
+  bool HasExecutionCount() {
+    return execution_count_valid_;
+  }
+
+  long GetExecutionCount() {
+    return execution_count_valid_ ? execution_count_ : -1;
+  }
+
  private:
   i386_insn *instruction_;
   MaoOpcode  op_;
@@ -531,6 +554,11 @@ class InstructionEntry : public MaoEntry {
   // in the assembly file using the .codeXX directives.
   // Values can be CODE_16BIT, CODE_32BIT, CODE_64BIT
   enum flag_code code_flag_;
+
+  // An execution count per instruction.  execution_count_ contains
+  // usable data if and only if execution_count_valid_ is true.
+  bool execution_count_valid_;
+  long execution_count_;
 
   // Used to determine type of operand.
   static bool IsMemOperand(const i386_insn *instruction,
@@ -781,7 +809,6 @@ class ConstSectionIterator {
 class SectionEntryIterator {
   // This class uses the prev/next of the Entries to move.
  public:
-  typedef MaoEntry *Entry;
   explicit SectionEntryIterator(MaoEntry *entry);
   MaoEntry *operator *() {return current_entry_;}
   SectionEntryIterator &operator ++();
@@ -791,7 +818,6 @@ class SectionEntryIterator {
  private:
   MaoEntry *current_entry_;  // NULL is used for signalling the end.
 };
-
 
 
 // A Subsection is part of a section. The subsection concept allows the assembly
@@ -884,7 +910,6 @@ class Function {
   LoopStructureGraph *lsg() const {return lsg_;}
   void set_lsg(LoopStructureGraph *lsg) {lsg_ = lsg;}
 
-
   void Print();
   void Print(FILE *out);
 
@@ -898,11 +923,6 @@ class Function {
     return subsection_;
   }
 
-
-  // Accesses the size_map associated for the section
-  // this function is in.
-  std::map<MaoEntry *, int> *sizes();
-  void set_sizes(std::map<MaoEntry *, int> *sizes);
 
  private:
   // Name of the function, as given by the function symbol.
@@ -947,8 +967,8 @@ class Section {
 
   void AddSubSection(SubSection *subsection);
 
-  SectionEntryIterator EntryBegin();
-  SectionEntryIterator EntryEnd();
+  SectionEntryIterator EntryBegin() const;
+  SectionEntryIterator EntryEnd() const;
 
   std::vector<SubSectionID> GetSubsectionIDs() const;
 
