@@ -76,6 +76,7 @@ class MaoPass {
   void set_timed(void) { timed_ = true; TimerStart(); }
   void set_db(const char *str);
   void set_da(const char *str);
+
  private:
   const char   *name_;
   MaoOption    *options_;
@@ -251,5 +252,6 @@ void PerformMissDispElimination(MaoUnit *mao, Function *func);
 void PerformNopKiller(MaoUnit *mao, const Function *func);
 void PerformNopinizer(MaoUnit *mao,       Function *func);
 void PerformLongInstructionSplit(MaoUnit *mao, Function *func);
+void PerformProfileAnnotation(MaoUnit *mao_unit);
 
 #endif   // MAP_PASSES_H_INCLUDED_

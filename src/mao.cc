@@ -60,6 +60,7 @@ int main(int argc, const char *argv[]) {
 
   // global init passes
   ReadInput(new_argc, new_argv, &mao_unit);
+  PerformProfileAnnotation(&mao_unit);
 
   // Run passes on functions.
   for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();

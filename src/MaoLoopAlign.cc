@@ -168,7 +168,7 @@ LoopAlignPass::LoopAlignPass(MaoUnit *mao, Function *function)
 }
 
 void LoopAlignPass::DoLoopAlign() {
-  sizes_ = MaoRelaxer::GetSizeMap(mao_unit_, function_);
+  sizes_ = MaoRelaxer::GetSizeMap(mao_unit_, function_->GetSection());
   loop_graph_ =  LoopStructureGraph::GetLSG(mao_unit_, function_);
 
   Trace(2, "%d loop(s).", loop_graph_->NumberOfLoops()-1);

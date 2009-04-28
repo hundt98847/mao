@@ -760,9 +760,10 @@ void MaoUnit::DeleteEntry(MaoEntry *entry) {
     // TODO(martint): Deallocate memory!
     // function->set_cfg(NULL);
 
-    if (MaoRelaxer::HasSizeMap(function)) {
+    Section *section = function->GetSection();
+    if (MaoRelaxer::HasSizeMap(section)) {
         std::map<MaoEntry *, int> *sizes =
-            MaoRelaxer::GetSizeMap(this, function);
+            MaoRelaxer::GetSizeMap(this, section);
         MAO_ASSERT(sizes->find(entry) != sizes->end());
         sizes->erase(sizes->find(entry));
     }
@@ -1494,8 +1495,8 @@ InstructionEntry::InstructionEntry(i386_insn *instruction,
                                    unsigned int line_number,
                                    const char* line_verbatim,
                                    MaoUnit *maounit) :
-    MaoEntry(line_number, line_verbatim, maounit),
-    code_flag_(code_flag) {
+    MaoEntry(line_number, line_verbatim, maounit), code_flag_(code_flag),
+    execution_count_valid_(false), execution_count_(0) {
   op_ = GetOpcode(instruction->tm.name);
   MAO_ASSERT(op_ != OP_invalid);
   MAO_ASSERT(instruction);
@@ -1542,11 +1543,13 @@ InstructionEntry::~InstructionEntry() {
 
 void InstructionEntry::PrintEntry(FILE *out) const {
   PrintInstruction(out);
+  PrintProfile(out);
   PrintSourceInfo(out);
 }
 
 void InstructionEntry::PrintIR(FILE *out) const {
   PrintInstruction(out);
+  PrintProfile(out);
 }
 
 MaoEntry::EntryType InstructionEntry::Type() const {
@@ -1668,7 +1671,7 @@ void InstructionEntry::PrintImmediateOperand(FILE *out,
     case O_subtract: {
       /* (X_add_symbol + X_op_symbol) + X_add_number.  */
       /* (X_add_symbol - X_op_symbol) + X_add_number.  */
-      char *op;
+      const char *op;
       switch (expr->X_op) {
         case O_add:
           op = "+";
@@ -2448,6 +2451,11 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
   }
 }
 
+void InstructionEntry::PrintProfile(FILE *out) const {
+  if (execution_count_valid_)
+    fprintf(out, "\t# ecount=%ld", execution_count_);
+}
+
 // From an instruction given by gas, allocate new memory and populate the
 // members.
 i386_insn *InstructionEntry::CreateInstructionCopy(i386_insn *in_inst) {
@@ -2633,14 +2641,14 @@ std::vector<SubSectionID> Section::GetSubsectionIDs() const {
   return subsections;
 }
 
-SectionEntryIterator Section::EntryBegin() {
+SectionEntryIterator Section::EntryBegin() const {
   if (subsections_.size() == 0)
     return EntryEnd();
   SubSection *ss = subsections_[0];
   return SectionEntryIterator(ss->first_entry());
 }
 
-SectionEntryIterator Section::EntryEnd() {
+SectionEntryIterator Section::EntryEnd() const {
   return SectionEntryIterator(NULL);
 }
 
@@ -2712,15 +2720,6 @@ void Function::Print(FILE *out) {
     entry->PrintEntry(out);
   }
 }
-
-MaoRelaxer::SizeMap *Function::sizes() {
-  return GetSection()->sizes();
-}
-
-void Function::set_sizes(MaoRelaxer::SizeMap *sizes) {
-  return GetSection()->set_sizes(sizes);
-}
-
 
 void Function::set_cfg(CFG *cfg) {
   if (cfg_ != NULL) {

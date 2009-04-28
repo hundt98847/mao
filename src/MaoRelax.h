@@ -34,14 +34,13 @@ class MaoRelaxer : public MaoPass {
   explicit MaoRelaxer(MaoUnit *mao_unit);
   void RelaxSection(Section *section, SizeMap *size_map);
 
-  // Used when a pass needs the sizes for a given function.
+  // Used when a pass needs the sizes for a given section.
   // Returns the sizemap, which holds entries for the whole section.
-  static SizeMap *GetSizeMap(MaoUnit *mao, Function *function);
-  // Checks if function have a sizemap computed
-  static bool HasSizeMap(Function *function);
-
-  // Invalidates the sizemap for the section the function is member of.
-  static void InvalidateSizeMap(Function *function);
+  static SizeMap *GetSizeMap(MaoUnit *mao, Section *section);
+  // Checks if a section has a sizemap computed.
+  static bool HasSizeMap(Section *section);
+  // Invalidates the sizemap for the section.
+  static void InvalidateSizeMap(Section *section);
 
  private:
   typedef std::map<struct frag *, MaoEntry *> FragToEntryMap;
