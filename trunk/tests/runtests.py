@@ -96,7 +96,8 @@ def main(argv):
       print "Unsupported flag: %(flag)s" % {'flag' : flag}
 
   # Verify that mao exists and is executable
-  mao_cmd = os.path.join(os.path.dirname(argv[0]), "mao")
+  mao_cmd = os.path.join(os.path.dirname(argv[0]), "..", "bin",
+                         "mao-x86_64-linux")
   if not os.access(mao_cmd, os.X_OK):
     print "ERROR: %(mao)s is not execuable." % {'mao': mao_cmd}
     sys.exit(1)
