@@ -80,7 +80,7 @@ listing-lhs-width2:,listing-rhs-width:,MD:,mri,nocpp,no-warn,reduce-memory-overh
 strip-local-absolute,version,verbose,target-help,traditional-format,warn,mao:,save-temps"
   
   #short options used by as
-  local as_short_opts="JKLMRWZa::Dfg::I:o:vwXt:"
+  local as_short_opts="JKLMRWZa::Dfg::I:o:vwXt:Q:"
 
   local mao_output_file='a.mao.s'
   if [[ $output_file != "a.out" ]]; then
