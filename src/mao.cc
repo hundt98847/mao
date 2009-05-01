@@ -26,6 +26,7 @@
 #include "MaoPasses.h"
 #include "MaoCFG.h"
 #include "MaoLoopAlign.h"
+#include "MaoBranchSeparator.h"
 #include "MaoLoops.h"
 #include "MaoRelax.h"
 #include "MaoDefs.h"
@@ -82,6 +83,7 @@ int main(int argc, const char *argv[]) {
                                function);
     PerformLongInstructionSplit(&mao_unit, function);
     DoLoopAlign(&mao_unit, function);
+    DoBranchSeparate(&mao_unit, function);
     TestCFGPass(&mao_unit, function);
     TestRelaxPass(&mao_unit, function);
   }
