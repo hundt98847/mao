@@ -84,6 +84,11 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
   local as_short_opts="JKLMRWZa::Dfg::I:o:vwXt:kVQ:sqn"
 
   local mao_output_file='a.mao.s'
+  if [[ ! -x "${as_bin}" ]]; then
+    echo "Unable to execute as binary : ${as_bin}"
+    exit 1
+  fi
+
   if [[ $output_file != "a.out" ]]; then
     mao_output_file=${output_file/%.o/.mao.s}
   fi
@@ -99,23 +104,22 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
   parse_args ${preprocessed_args}
   if [[ ${invoke_mao} = 1 ]]; then
     echo "${mao_bin} ${mao_args[*]} ${input_files} -o ${mao_output_file}"
+    echo "Mao support not enabled"
+    exit 1
+
     if [[ ! -x "${mao_bin}" ]]; then
       echo "Unable to execute mao binary : ${mao_bin}"
       exit 1
     fi
     #${mao_bin} ${mao_args[*]} ${input_files} -o ${mao_output_file}
     echo "${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}"
-    if [[ ! -x "${as_bin}" ]]; then
-      echo "Unable to execute as binary : ${as_bin}"
-      exit 1
-    fi
     #${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}
     if [[ ${save_temps} = 0 ]]; then
       echo "rm ${mao_output_file}"
       # rm {mao_output_file}
     fi
   else
-    echo $0 $@
+    ${as_bin} ${as_args[*]} ${input_files} -o ${output_file}
   fi
 }
 
