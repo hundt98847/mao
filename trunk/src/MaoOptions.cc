@@ -204,7 +204,7 @@ void MaoOptions::TimerStop(const char *pass_name) {
   entry->timer()->Stop();
 }
 
-static char token_buff[128];
+static char *token_buff=NULL; //Allocated inside the Parse routine
 
 static char *NextToken(const char *arg, const char **next) {
   int i = 0;
@@ -329,6 +329,7 @@ void MaoOptions::Parse(const char *arg, bool collect) {
       mao_options_ = buf;
     }
   }
+  token_buff = new char[strlen(arg)+1];
   while (arg && arg[0]) {
     GobbleGarbage(arg, &arg);
 
@@ -437,4 +438,5 @@ void MaoOptions::Parse(const char *arg, bool collect) {
     fprintf(stderr, "Unknown input: %s\n", arg);
     ++arg;
   }
+  delete [] token_buff;
 }
