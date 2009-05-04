@@ -42,7 +42,7 @@ function parse_args() {
       ;;
       
       '--mao')
-        mao_args[${#mao_args[*]}]="--mao=$2"
+        mao_args[${#mao_args[*]}]="-mao:$2"
         invoke_mao=1
         shift 2
       ;;
@@ -89,9 +89,7 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
     exit 1
   fi
 
-  if [[ $output_file != "a.out" ]]; then
-    mao_output_file=${output_file/%.o/.mao.s}
-  fi
+  #echo $@
   
   local preprocessed_args="$(getopt  -u -a -o${as_short_opts} -l${as_long_opts} -- $@)"
   if [[ $? = 1 ]]; then
@@ -102,21 +100,26 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
     exit 1
   fi
   parse_args ${preprocessed_args}
+
+  if [[ $output_file != "a.out" ]]; then
+    mao_output_file=${output_file/%.o/.mao.s}
+  fi
+
   if [[ ${invoke_mao} = 1 ]]; then
-    echo "${mao_bin} ${mao_args[*]} ${input_files} -o ${mao_output_file}"
-    echo "Mao support not enabled"
-    exit 1
 
     if [[ ! -x "${mao_bin}" ]]; then
       echo "Unable to execute mao binary : ${mao_bin}"
       exit 1
     fi
-    #${mao_bin} ${mao_args[*]} ${input_files} -o ${mao_output_file}
-    echo "${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}"
-    #${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}
+    #echo "${mao_bin} ${mao_args[*]} ${input_files} -mao:-o${mao_output_file}"
+    ${mao_bin} ${mao_args[*]} ${input_files} -mao:-o${mao_output_file}
+
+    #echo "${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}"
+    ${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}
+
     if [[ ${save_temps} = 0 ]]; then
-      echo "rm ${mao_output_file}"
-      # rm {mao_output_file}
+      #echo "rm ${mao_output_file}"
+      rm ${mao_output_file}
     fi
   else
     ${as_bin} ${as_args[*]} ${input_files} -o ${output_file}
