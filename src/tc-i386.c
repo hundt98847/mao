@@ -57,18 +57,6 @@
 #endif
 #endif
 
-/* Prefixes will be emitted in the order defined below.
-   WAIT_PREFIX must be the first prefix since FWAIT is really is an
-   instruction, and so must come before any prefixes.
-   The preferred prefix order is SEG_PREFIX, ADDR_PREFIX, DATA_PREFIX,
-   LOCKREP_PREFIX.  */
-#define WAIT_PREFIX	0
-#define SEG_PREFIX	1
-#define ADDR_PREFIX	2
-#define DATA_PREFIX	3
-#define LOCKREP_PREFIX	4
-#define REX_PREFIX	5       /* must come last.  */
-#define MAX_PREFIXES	6	/* max prefixes per opcode */
 
 /* we define the syntax here (modulo base,index,scale syntax) */
 #define REGISTER_PREFIX '%'
@@ -99,22 +87,11 @@
   */
 typedef struct
 {
-  const template *start;
-  const template *end;
+  const insn_template *start;
+  const insn_template *end;
 }
 templates;
 
-/* 386 operand encoding bytes:  see 386 book for details of this.  */
-typedef struct
-{
-  unsigned int regmem;	/* codes register or memory operand */
-  unsigned int reg;	/* codes register operand (or extended opcode) */
-  unsigned int mode;	/* how to interpret regmem & reg */
-}
-modrm_byte;
-
-/* x86-64 extension prefix.  */
-typedef int rex_byte;
 
 /* The SSE5 instructions have a two bit instruction modifier (OC) that 
    is stored in two separate bytes in the instruction.  Pick apart OC 
@@ -134,23 +111,6 @@ typedef int rex_byte;
 #define DREX_XMEM_X1_X2	   0	/* 3 op insn, src1 = reg/mem */
 #define DREX_X1_XMEM_X2	   1	/* 3 op insn, src1 = reg/mem */
 
-/* Information needed to create the DREX byte in SSE5 instructions.  */
-typedef struct
-{
-  unsigned int reg;		/* register */
-  unsigned int rex;		/* REX flags */
-  unsigned int modrm_reg;	/* which arg goes in the modrm.reg field */
-  unsigned int modrm_regmem;	/* which arg goes in the modrm.regmem field */
-} drex_byte;
-
-/* 386 opcode byte to code indirect addressing.  */
-typedef struct
-{
-  unsigned base;
-  unsigned index;
-  unsigned scale;
-}
-sib_byte;
 
 enum processor_type
 {
@@ -223,86 +183,6 @@ static void handle_large_common (int small ATTRIBUTE_UNUSED);
 #endif
 
 static const char *default_arch = DEFAULT_ARCH;
-
-/* VEX prefix.  */
-typedef struct
-{
-  /* VEX prefix is either 2 byte or 3 byte.  */
-  unsigned char bytes[3];
-  unsigned int length;
-  /* Destination or source register specifier.  */
-  const reg_entry *register_specifier;
-} vex_prefix;
-
-/* 'md_assemble ()' gathers together information and puts it into a
-   i386_insn.  */
-
-union i386_op
-  {
-    expressionS *disps;
-    expressionS *imms;
-    const reg_entry *regs;
-  };
-
-struct _i386_insn
-  {
-    /* TM holds the template for the insn were currently assembling.  */
-    template tm;
-
-    /* SUFFIX holds the instruction size suffix for byte, word, dword
-       or qword, if given.  */
-    char suffix;
-
-    /* OPERANDS gives the number of given operands.  */
-    unsigned int operands;
-
-    /* REG_OPERANDS, DISP_OPERANDS, MEM_OPERANDS, IMM_OPERANDS give the number
-       of given register, displacement, memory operands and immediate
-       operands.  */
-    unsigned int reg_operands, disp_operands, mem_operands, imm_operands;
-
-    /* TYPES [i] is the type (see above #defines) which tells us how to
-       use OP[i] for the corresponding operand.  */
-    i386_operand_type types[MAX_OPERANDS];
-
-    /* Displacement expression, immediate expression, or register for each
-       operand.  */
-    union i386_op op[MAX_OPERANDS];
-
-    /* Flags for operands.  */
-    unsigned int flags[MAX_OPERANDS];
-#define Operand_PCrel 1
-
-    /* Relocation type for operand */
-    enum bfd_reloc_code_real reloc[MAX_OPERANDS];
-
-    /* BASE_REG, INDEX_REG, and LOG2_SCALE_FACTOR are used to encode
-       the base index byte below.  */
-    const reg_entry *base_reg;
-    const reg_entry *index_reg;
-    unsigned int log2_scale_factor;
-
-    /* SEG gives the seg_entries of this insn.  They are zero unless
-       explicit segment overrides are given.  */
-    const seg_entry *seg[2];
-
-    /* PREFIX holds all the given prefix opcodes (usually null).
-       PREFIXES is the number of prefix opcodes.  */
-    unsigned int prefixes;
-    unsigned char prefix[MAX_PREFIXES];
-
-    /* RM and SIB are the modrm byte and the sib byte where the
-       addressing modes of this insn are encoded.  DREX is the byte
-       added by the SSE5 instructions.  */
-
-    modrm_byte rm;
-    rex_byte rex;
-    sib_byte sib;
-    drex_byte drex;
-    vex_prefix vex;
-  };
-
-typedef struct _i386_insn i386_insn;
 
 /* List of chars besides those in app.c:symbol_chars that can start an
    operand.  Used to prevent the scrubber eating vital white-space.  */
@@ -400,12 +280,8 @@ static int this_operand;
 /* We support four different modes.  FLAG_CODE variable is used to distinguish
    these.  */
 
-enum flag_code {
-	CODE_32BIT,
-	CODE_16BIT,
-	CODE_64BIT };
-
 enum flag_code flag_code;
+
 static unsigned int object_64bit;
 static int use_rela_relocations = 0;
 
@@ -1274,7 +1150,7 @@ cpu_flags_or (i386_cpu_flags x, i386_cpu_flags y)
 /* Return CPU flags match bits. */
 
 static int
-cpu_flags_match (const template *t)
+cpu_flags_match (const insn_template *t)
 {
   i386_cpu_flags x = t->cpu_flags;
   int match = cpu_flags_check_cpu64 (x) ? CPU_FLAGS_64BIT_MATCH : 0;
@@ -1406,7 +1282,7 @@ static const i386_operand_type vex_imm4 = OPERAND_TYPE_VEX_IMM4;
    operand J for instruction template T.  */
 
 static INLINE int
-match_reg_size (const template *t, unsigned int j)
+match_reg_size (const insn_template *t, unsigned int j)
 {
   return !((i.types[j].bitfield.byte
 	    && !t->operand_types[j].bitfield.byte)
@@ -1422,7 +1298,7 @@ match_reg_size (const template *t, unsigned int j)
    instruction template T.  */
 
 static INLINE int
-match_mem_size (const template *t, unsigned int j)
+match_mem_size (const insn_template *t, unsigned int j)
 {
   return (match_reg_size (t, j)
 	  && !((i.types[j].bitfield.unspecified
@@ -1441,7 +1317,7 @@ match_mem_size (const template *t, unsigned int j)
    instruction template T.  */
 
 static INLINE int
-operand_size_match (const template *t)
+operand_size_match (const insn_template *t)
 {
   unsigned int j;
   int match = 1;
@@ -1477,7 +1353,7 @@ operand_size_match (const template *t)
     return match;
 
   /* Check reverse.  */
-  assert (i.operands == 2);
+  gas_assert (i.operands == 2);
 
   match = 1;
   for (j = 0; j < 2; j++)
@@ -2021,7 +1897,7 @@ md_begin ()
   op_hash = hash_new ();
 
   {
-    const template *optab;
+    const insn_template *optab;
     templates *core_optab;
 
     /* Setup for loop.  */
@@ -2156,7 +2032,7 @@ i386_print_statistics (FILE *file)
 #ifdef DEBUG386
 
 /* Debugging routines for md_assemble.  */
-static void pte (template *);
+static void pte (insn_template *);
 static void pt (i386_operand_type);
 static void pe (expressionS *);
 static void ps (symbolS *);
@@ -2209,7 +2085,7 @@ pi (char *line, i386_insn *x)
 }
 
 static void
-pte (template *t)
+pte (insn_template *t)
 {
   unsigned int i;
   fprintf (stdout, " %d operands ", t->operands);
@@ -2648,7 +2524,7 @@ process_immext (void)
      SSE5 and AVX instructions also use this encoding, for some of
      3 argument instructions.  */
 
-  assert (i.imm_operands == 0
+  gas_assert (i.imm_operands == 0
 	  && (i.operands <= 2
 	      || (i.tm.cpu_flags.bitfield.cpusse5
 		  && i.operands <= 3)
@@ -2900,7 +2776,7 @@ parse_insn (char *line, char *mnemonic)
   char *token_start = l;
   char *mnem_p;
   int supported;
-  const template *t;
+  const insn_template *t;
 
   /* Non-zero if we found a prefix only acceptable with string insns.  */
   const char *expecting_string_instruction = NULL;
@@ -3387,7 +3263,7 @@ optimize_imm (void)
 	       than those matching the insn suffix.  */
 	    {
 	      i386_operand_type mask, allowed;
-	      const template *t;
+	      const insn_template *t;
 
 	      operand_type_set (&mask, 0);
 	      operand_type_set (&allowed, 0);
@@ -3503,7 +3379,7 @@ optimize_disp (void)
    operand types.  */
 
 static int
-VEX_check_operands (const template *t)
+VEX_check_operands (const insn_template *t)
 {
   if (!t->opcode_modifier.vex)
     return 0;
@@ -3526,7 +3402,7 @@ static int
 match_template (void)
 {
   /* Points to template once we've found it.  */
-  const template *t;
+  const insn_template *t;
   i386_operand_type overlap0, overlap1, overlap2, overlap3;
   i386_operand_type overlap4;
   unsigned int found_reverse_match;
@@ -4480,7 +4356,7 @@ finalize_imm (void)
       return 0;
 
   i.types[2] = operand_type_and (i.types[2], i.tm.operand_types[2]);
-  assert (operand_type_check (i.types[2], imm) == 0);
+  gas_assert (operand_type_check (i.types[2], imm) == 0);
 
   return 1;
 }
@@ -4851,14 +4727,14 @@ process_operands (void)
       unsigned int j;
 
       /* The destination must be an xmm register.  */
-      assert (i.reg_operands
+      gas_assert (i.reg_operands
 	      && MAX_OPERANDS > dup
 	      && operand_type_equal (&i.types[dest], &regxmm));
 
       if (i.tm.opcode_modifier.firstxmm0)
 	{
 	  /* The first operand is implicit and must be xmm0.  */
-	  assert (operand_type_equal (&i.types[0], &regxmm));
+	  gas_assert (operand_type_equal (&i.types[0], &regxmm));
 	  if (i.op[0].regs->reg_num != 0)
 	    return bad_implicit_operand (1);
 
@@ -4883,7 +4759,7 @@ process_operands (void)
 	}
       else if (i.tm.opcode_modifier.implicit1stxmm0)
 	{ 
-	  assert ((MAX_OPERANDS - 1) > dup
+	  gas_assert ((MAX_OPERANDS - 1) > dup
 		  && i.tm.opcode_modifier.vex3sources);
 
 	  /* Add the implicit xmm0 for instructions with VEX prefix
@@ -4929,7 +4805,7 @@ duplicate:
       unsigned int j;
 
       /* The first operand is implicit and must be xmm0/ymm0.  */
-      assert (i.reg_operands
+      gas_assert (i.reg_operands
 	      && (operand_type_equal (&i.types[0], &regxmm)
 		  || operand_type_equal (&i.types[0], &regymm)));
       if (i.op[0].regs->reg_num != 0)
@@ -4962,7 +4838,7 @@ duplicate:
       else
 	first_reg_op = 1;
       /* Pretend we saw the extra register operand.  */
-      assert (i.reg_operands == 1
+      gas_assert (i.reg_operands == 1
 	      && i.op[first_reg_op + 1].regs == 0);
       i.op[first_reg_op + 1].regs = i.op[first_reg_op].regs;
       i.types[first_reg_op + 1] = i.types[first_reg_op];
@@ -5075,7 +4951,7 @@ build_modrm_byte (void)
 	  && i.tm.opcode_modifier.immext)
 	{
 	  dest = i.operands - 2;
-	  assert (dest == 3);
+	  gas_assert (dest == 3);
 	}
       else
 	dest = i.operands - 1;
@@ -5135,7 +5011,7 @@ build_modrm_byte (void)
 	      nds = tmp;
 	    }
 
-	  assert (operand_type_equal (&i.tm.operand_types[reg], &regxmm)
+	  gas_assert (operand_type_equal (&i.tm.operand_types[reg], &regxmm)
 		  || operand_type_equal (&i.tm.operand_types[reg],
 					 &regymm));
 	  exp->X_op = O_constant;
@@ -5180,7 +5056,7 @@ build_modrm_byte (void)
 	      i.types[imm].bitfield.imm8 = 1;
 	    }
 
-	  assert (operand_type_equal (&i.tm.operand_types[reg], &regxmm)
+	  gas_assert (operand_type_equal (&i.tm.operand_types[reg], &regxmm)
 		  || operand_type_equal (&i.tm.operand_types[reg],
 					 &regymm));
 	  i.op[imm].imms->X_add_number
@@ -5188,7 +5064,7 @@ build_modrm_byte (void)
 		 + ((i.op[reg].regs->reg_flags & RegRex) ? 8 : 0)) << 4);
 	}
 
-      assert (operand_type_equal (&i.tm.operand_types[nds], &regxmm)
+      gas_assert (operand_type_equal (&i.tm.operand_types[nds], &regxmm)
 	      || operand_type_equal (&i.tm.operand_types[nds], &regymm));
       i.vex.register_specifier = i.op[nds].regs;
 
@@ -5240,7 +5116,7 @@ build_modrm_byte (void)
 	     which may be the first or the last operand.  Otherwise,
 	     the first operand must be shift count register (cl) or it
 	     is an instruction with VexNDS. */
-	  assert (i.imm_operands == 1
+	  gas_assert (i.imm_operands == 1
 		  || (i.imm_operands == 0
 		      && (i.tm.opcode_modifier.vexnds
 			  || i.types[0].bitfield.shiftcount)));
@@ -5258,7 +5134,7 @@ build_modrm_byte (void)
 	     For instructions with VexNDS, if the first operand
 	     an imm8, the source operand is the 2nd one.  If the last
 	     operand is imm8, the source operand is the first one.  */
-	  assert ((i.imm_operands == 2
+	  gas_assert ((i.imm_operands == 2
 		   && i.types[0].bitfield.imm8
 		   && i.types[1].bitfield.imm8)
 		  || (i.tm.opcode_modifier.vexnds
@@ -5356,7 +5232,7 @@ build_modrm_byte (void)
 	      for (op = 0; op < i.operands; op++)
 		if (operand_type_check (i.types[op], anymem))
 		  break;
-	      assert (op < i.operands);
+	      gas_assert (op < i.operands);
 	    }
 
 	  default_seg = &ds;
@@ -5535,7 +5411,7 @@ build_modrm_byte (void)
 		 holds the correct displacement size.  */
 	      expressionS *exp;
 
-	      assert (i.op[op].disps == 0);
+	      gas_assert (i.op[op].disps == 0);
 	      exp = &disp_expressions[i.disp_operands++];
 	      i.op[op].disps = exp;
 	      exp->X_op = O_constant;
@@ -5593,17 +5469,17 @@ build_modrm_byte (void)
 		{
 		  /* For instructions with VexNDS, the register-only
 		     source operand is encoded in VEX prefix. */
-		  assert (mem != (unsigned int) ~0);
+		  gas_assert (mem != (unsigned int) ~0);
 
 		  if (op > mem)
 		    {
 		      vex_reg = op++;
-		      assert (op < i.operands);
+		      gas_assert (op < i.operands);
 		    }
 		  else
 		    {
 		      vex_reg = op + 1;
-		      assert (vex_reg < i.operands);
+		      gas_assert (vex_reg < i.operands);
 		    }
 		}
 	      else if (i.tm.opcode_modifier.vexndd)
@@ -5611,16 +5487,16 @@ build_modrm_byte (void)
 		  /* For instructions with VexNDD, there should be
 		     no memory operand and the register destination
 		     is encoded in VEX prefix.  */
-		  assert (i.mem_operands == 0
+		  gas_assert (i.mem_operands == 0
 			  && (op + 2) == i.operands);
 		  vex_reg = op + 1;
 		}
 	      else
-		assert (op < i.operands);
+		gas_assert (op < i.operands);
 
 	      if (vex_reg != (unsigned int) ~0)
 		{
-		  assert (i.reg_operands == 2);
+		  gas_assert (i.reg_operands == 2);
 
 		  if (!operand_type_equal (&i.tm.operand_types[vex_reg],
 					   & regxmm)
@@ -6105,7 +5981,7 @@ output_disp (fragS *insn_start_frag, offsetT insn_start_off)
 	      int pcrel = (i.flags[n] & Operand_PCrel) != 0;
 
 	      /* We can't have 8 bit displacement here.  */
-	      assert (!i.types[n].bitfield.disp8);
+	      gas_assert (!i.types[n].bitfield.disp8);
 
 	      /* The PC relative address is computed relative
 		 to the instruction boundary, so in case immediate
@@ -6120,12 +5996,12 @@ output_disp (fragS *insn_start_frag, offsetT insn_start_off)
 		      {
 			/* Only one immediate is allowed for PC
 			   relative address.  */
-			assert (sz == 0);
+			gas_assert (sz == 0);
 			sz = imm_size (n1);
 			i.op[n].disps->X_add_number -= sz;
 		      }
 		  /* We should find the immediate.  */
-		  assert (sz != 0);
+		  gas_assert (sz != 0);
 		}
 
 	      p = frag_more (size);
@@ -6973,7 +6849,7 @@ i386_index_check (const char *operand_string)
 		   : i386_regtab[j].reg_type.bitfield.reg16)
 		&& i386_regtab[j].reg_num == expected)
 	      break;
-	  assert (j < i386_regtab_size);
+	  gas_assert (j < i386_regtab_size);
 	  as_warn (_("`%s' is not valid here (expected `%c%s%s%c')"),
 		   operand_string,
 		   intel_syntax ? '[' : '(',
@@ -8671,7 +8547,7 @@ tc_gen_reloc (section, fixp)
 		    bfd_get_reloc_code_name (code));
       /* Set howto to a garbage value so that we can keep going.  */
       rel->howto = bfd_reloc_type_lookup (stdoutput, BFD_RELOC_32);
-      assert (rel->howto != NULL);
+      gas_assert (rel->howto != NULL);
     }
 
   return rel;
@@ -10066,7 +9942,7 @@ tc_x86_frame_initial_instructions (void)
 
       input_line_pointer = sp[flag_code >> 1];
       tc_x86_parse_to_dw2regnum (&exp);
-      assert (exp.X_op == O_constant);
+      gas_assert (exp.X_op == O_constant);
       sp_regno[flag_code >> 1] = exp.X_add_number;
       input_line_pointer = saved_input;
     }

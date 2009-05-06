@@ -1,0 +1,1181 @@
+diff -rupN binutils-2.19-orig/bfd/elf-bfd.h binutils-2.19/bfd/elf-bfd.h
+--- binutils-2.19-orig/bfd/elf-bfd.h	2008-08-20 16:28:58.000000000 -0700
++++ binutils-2.19/bfd/elf-bfd.h	2009-04-29 10:35:22.189340000 -0700
+@@ -81,6 +81,14 @@ struct elf_strtab_hash;
+ struct got_entry;
+ struct plt_entry;
+ 
++union gotplt_union
++{
++  bfd_signed_vma refcount;
++  bfd_vma offset;
++  struct got_entry *glist;
++  struct plt_entry *plist;
++};
++
+ /* ELF linker hash table entries.  */
+ 
+ struct elf_link_hash_entry
+@@ -114,13 +122,7 @@ struct elf_link_hash_entry
+      require a global offset table entry.  The second scheme allows
+      multiple GOT entries per symbol, managed via a linked list
+      pointed to by GLIST.  */
+-  union gotplt_union
+-    {
+-      bfd_signed_vma refcount;
+-      bfd_vma offset;
+-      struct got_entry *glist;
+-      struct plt_entry *plist;
+-    } got;
++  union gotplt_union got;
+ 
+   /* Same, but tracks a procedure linkage table entry.  */
+   union gotplt_union plt;
+diff -rupN binutils-2.19-orig/gas/app.c binutils-2.19/gas/app.c
+--- binutils-2.19-orig/gas/app.c	2008-10-02 01:07:17.000000000 -0700
++++ binutils-2.19/gas/app.c	2009-04-29 11:15:32.607327000 -0700
+@@ -294,7 +294,7 @@ app_pop (char *arg)
+     saved_input = NULL;
+   else
+     {
+-      assert (saved->saved_input_len <= (int) (sizeof input_buffer));
++      gas_assert (saved->saved_input_len <= (int) (sizeof input_buffer));
+       memcpy (input_buffer, saved->saved_input, saved->saved_input_len);
+       saved_input = input_buffer;
+       saved_input_len = saved->saved_input_len;
+diff -rupN binutils-2.19-orig/gas/as.c binutils-2.19/gas/as.c
+--- binutils-2.19-orig/gas/as.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/as.c	2009-04-29 11:18:12.064143000 -0700
+@@ -1154,7 +1154,7 @@ main (int argc, char ** argv)
+   PROGRESS (1);
+ 
+   output_file_create (out_file_name);
+-  assert (stdoutput != 0);
++  gas_assert (stdoutput != 0);
+ 
+ #ifdef tc_init_after_args
+   tc_init_after_args ();
+diff -rupN binutils-2.19-orig/gas/as.h binutils-2.19/gas/as.h
+--- binutils-2.19-orig/gas/as.h	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/as.h	2009-04-30 09:51:22.530936000 -0700
+@@ -137,7 +137,7 @@ typedef int * va_list;
+ #if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 6)
+ #define __PRETTY_FUNCTION__  ((char*)0)
+ #endif
+-#define assert(P) \
++#define gas_assert(P) \
+   ((void) ((P) ? 0 : (as_assert (__FILE__, __LINE__, __PRETTY_FUNCTION__), 0)))
+ #undef abort
+ #define abort()		as_abort (__FILE__, __LINE__, __PRETTY_FUNCTION__)
+diff -rupN binutils-2.19-orig/gas/atof-generic.c binutils-2.19/gas/atof-generic.c
+--- binutils-2.19-orig/gas/atof-generic.c	2007-07-03 04:01:02.000000000 -0700
++++ binutils-2.19/gas/atof-generic.c	2009-04-29 11:18:11.538317000 -0700
+@@ -101,7 +101,7 @@ atof_generic (/* return pointer to just 
+   int seen_significant_digit;
+ 
+ #ifdef ASSUME_DECIMAL_MARK_IS_DOT
+-  assert (string_of_decimal_marks[0] == '.'
++  gas_assert (string_of_decimal_marks[0] == '.'
+ 	  && string_of_decimal_marks[1] == 0);
+ #define IS_DECIMAL_MARK(c)	((c) == '.')
+ #else
+diff -rupN binutils-2.19-orig/gas/config/atof-ieee.c binutils-2.19/gas/config/atof-ieee.c
+--- binutils-2.19-orig/gas/config/atof-ieee.c	2007-10-17 09:45:54.000000000 -0700
++++ binutils-2.19/gas/config/atof-ieee.c	2009-04-29 11:21:45.326300000 -0700
+@@ -784,7 +784,7 @@ ieee_md_atof (int type,
+       return _("Unrecognized or unsupported floating point constant");
+     }
+ 
+-  assert (prec <= MAX_LITTLENUMS);
++  gas_assert (prec <= MAX_LITTLENUMS);
+ 
+   t = atof_ieee (input_line_pointer, type, words);
+   if (t)
+diff -rupN binutils-2.19-orig/gas/config/obj-elf.c binutils-2.19/gas/config/obj-elf.c
+--- binutils-2.19-orig/gas/config/obj-elf.c	2008-04-23 06:54:56.000000000 -0700
++++ binutils-2.19/gas/config/obj-elf.c	2009-04-29 11:21:47.651998000 -0700
+@@ -459,7 +459,7 @@ obj_elf_visibility (int visibility)
+       bfdsym = symbol_get_bfdsym (symbolP);
+       elfsym = elf_symbol_from (bfd_asymbol_bfd (bfdsym), bfdsym);
+ 
+-      assert (elfsym);
++      gas_assert (elfsym);
+ 
+       elfsym->internal_elf_sym.st_other &= ~3;
+       elfsym->internal_elf_sym.st_other |= visibility;
+@@ -1345,7 +1345,7 @@ obj_elf_vtable_inherit (int ignore ATTRI
+   if (bad)
+     return NULL;
+ 
+-  assert (symbol_get_value_expression (csym)->X_op == O_constant);
++  gas_assert (symbol_get_value_expression (csym)->X_op == O_constant);
+   return fix_new (symbol_get_frag (csym),
+ 		  symbol_get_value_expression (csym)->X_add_number,
+ 		  0, psym, 0, 0, BFD_RELOC_VTABLE_INHERIT);
+@@ -1764,7 +1764,7 @@ adjust_stab_sections (bfd *abfd, asectio
+   nsyms = bfd_section_size (abfd, sec) / 12 - 1;
+ 
+   p = seg_info (sec)->stabu.p;
+-  assert (p != 0);
++  gas_assert (p != 0);
+ 
+   bfd_h_put_16 (abfd, nsyms, p + 6);
+   bfd_h_put_32 (abfd, strsz, p + 8);
+@@ -2175,7 +2175,7 @@ elf_frob_file_after_relocs (void)
+ 		  bfd_errmsg (bfd_get_error ()));
+ 
+       sec = bfd_get_section_by_name (stdoutput, ".mdebug");
+-      assert (sec != NULL);
++      gas_assert (sec != NULL);
+ 
+       know (!stdoutput->output_has_begun);
+ 
+diff -rupN binutils-2.19-orig/gas/config/tc-i386.c binutils-2.19/gas/config/tc-i386.c
+--- binutils-2.19-orig/gas/config/tc-i386.c	2008-10-16 05:52:15.000000000 -0700
++++ binutils-2.19/gas/config/tc-i386.c	2009-04-29 14:40:33.293513000 -0700
+@@ -97,23 +97,11 @@
+   */
+ typedef struct
+ {
+-  const template *start;
+-  const template *end;
++  const insn_template *start;
++  const insn_template *end;
+ }
+ templates;
+ 
+-/* 386 operand encoding bytes:  see 386 book for details of this.  */
+-typedef struct
+-{
+-  unsigned int regmem;	/* codes register or memory operand */
+-  unsigned int reg;	/* codes register operand (or extended opcode) */
+-  unsigned int mode;	/* how to interpret regmem & reg */
+-}
+-modrm_byte;
+-
+-/* x86-64 extension prefix.  */
+-typedef int rex_byte;
+-
+ /* The SSE5 instructions have a two bit instruction modifier (OC) that 
+    is stored in two separate bytes in the instruction.  Pick apart OC 
+    into the 2 separate bits for instruction.  */
+@@ -132,23 +120,6 @@ typedef int rex_byte;
+ #define DREX_XMEM_X1_X2	   0	/* 3 op insn, src1 = reg/mem */
+ #define DREX_X1_XMEM_X2	   1	/* 3 op insn, src1 = reg/mem */
+ 
+-/* Information needed to create the DREX byte in SSE5 instructions.  */
+-typedef struct
+-{
+-  unsigned int reg;		/* register */
+-  unsigned int rex;		/* REX flags */
+-  unsigned int modrm_reg;	/* which arg goes in the modrm.reg field */
+-  unsigned int modrm_regmem;	/* which arg goes in the modrm.regmem field */
+-} drex_byte;
+-
+-/* 386 opcode byte to code indirect addressing.  */
+-typedef struct
+-{
+-  unsigned base;
+-  unsigned index;
+-  unsigned scale;
+-}
+-sib_byte;
+ 
+ enum processor_type
+ {
+@@ -222,85 +193,6 @@ static void handle_large_common (int sma
+ 
+ static const char *default_arch = DEFAULT_ARCH;
+ 
+-/* VEX prefix.  */
+-typedef struct
+-{
+-  /* VEX prefix is either 2 byte or 3 byte.  */
+-  unsigned char bytes[3];
+-  unsigned int length;
+-  /* Destination or source register specifier.  */
+-  const reg_entry *register_specifier;
+-} vex_prefix;
+-
+-/* 'md_assemble ()' gathers together information and puts it into a
+-   i386_insn.  */
+-
+-union i386_op
+-  {
+-    expressionS *disps;
+-    expressionS *imms;
+-    const reg_entry *regs;
+-  };
+-
+-struct _i386_insn
+-  {
+-    /* TM holds the template for the insn were currently assembling.  */
+-    template tm;
+-
+-    /* SUFFIX holds the instruction size suffix for byte, word, dword
+-       or qword, if given.  */
+-    char suffix;
+-
+-    /* OPERANDS gives the number of given operands.  */
+-    unsigned int operands;
+-
+-    /* REG_OPERANDS, DISP_OPERANDS, MEM_OPERANDS, IMM_OPERANDS give the number
+-       of given register, displacement, memory operands and immediate
+-       operands.  */
+-    unsigned int reg_operands, disp_operands, mem_operands, imm_operands;
+-
+-    /* TYPES [i] is the type (see above #defines) which tells us how to
+-       use OP[i] for the corresponding operand.  */
+-    i386_operand_type types[MAX_OPERANDS];
+-
+-    /* Displacement expression, immediate expression, or register for each
+-       operand.  */
+-    union i386_op op[MAX_OPERANDS];
+-
+-    /* Flags for operands.  */
+-    unsigned int flags[MAX_OPERANDS];
+-#define Operand_PCrel 1
+-
+-    /* Relocation type for operand */
+-    enum bfd_reloc_code_real reloc[MAX_OPERANDS];
+-
+-    /* BASE_REG, INDEX_REG, and LOG2_SCALE_FACTOR are used to encode
+-       the base index byte below.  */
+-    const reg_entry *base_reg;
+-    const reg_entry *index_reg;
+-    unsigned int log2_scale_factor;
+-
+-    /* SEG gives the seg_entries of this insn.  They are zero unless
+-       explicit segment overrides are given.  */
+-    const seg_entry *seg[2];
+-
+-    /* PREFIX holds all the given prefix opcodes (usually null).
+-       PREFIXES is the number of prefix opcodes.  */
+-    unsigned int prefixes;
+-    unsigned char prefix[MAX_PREFIXES];
+-
+-    /* RM and SIB are the modrm byte and the sib byte where the
+-       addressing modes of this insn are encoded.  DREX is the byte
+-       added by the SSE5 instructions.  */
+-
+-    modrm_byte rm;
+-    rex_byte rex;
+-    sib_byte sib;
+-    drex_byte drex;
+-    vex_prefix vex;
+-  };
+-
+-typedef struct _i386_insn i386_insn;
+ 
+ /* List of chars besides those in app.c:symbol_chars that can start an
+    operand.  Used to prevent the scrubber eating vital white-space.  */
+@@ -398,12 +290,7 @@ static int this_operand;
+ /* We support four different modes.  FLAG_CODE variable is used to distinguish
+    these.  */
+ 
+-enum flag_code {
+-	CODE_32BIT,
+-	CODE_16BIT,
+-	CODE_64BIT };
+-
+-static enum flag_code flag_code;
++enum flag_code flag_code;
+ static unsigned int object_64bit;
+ static int use_rela_relocations = 0;
+ 
+@@ -1272,7 +1159,7 @@ cpu_flags_or (i386_cpu_flags x, i386_cpu
+ /* Return CPU flags match bits. */
+ 
+ static int
+-cpu_flags_match (const template *t)
++cpu_flags_match (const insn_template *t)
+ {
+   i386_cpu_flags x = t->cpu_flags;
+   int match = cpu_flags_check_cpu64 (x) ? CPU_FLAGS_64BIT_MATCH : 0;
+@@ -1453,7 +1340,7 @@ operand_type_check (i386_operand_type t,
+    operand J for instruction template T.  */
+ 
+ static INLINE int
+-match_reg_size (const template *t, unsigned int j)
++match_reg_size (const insn_template *t, unsigned int j)
+ {
+   return !((i.types[j].bitfield.byte
+ 	    && !t->operand_types[j].bitfield.byte)
+@@ -1469,7 +1356,7 @@ match_reg_size (const template *t, unsig
+    instruction template T.  */
+ 
+ static INLINE int
+-match_mem_size (const template *t, unsigned int j)
++match_mem_size (const insn_template *t, unsigned int j)
+ {
+   return (match_reg_size (t, j)
+ 	  && !((i.types[j].bitfield.unspecified
+@@ -1488,7 +1375,7 @@ match_mem_size (const template *t, unsig
+    instruction template T.  */
+ 
+ static INLINE int
+-operand_size_match (const template *t)
++operand_size_match (const insn_template *t)
+ {
+   unsigned int j;
+   int match = 1;
+@@ -1524,7 +1411,7 @@ operand_size_match (const template *t)
+     return match;
+ 
+   /* Check reverse.  */
+-  assert (i.operands == 2);
++  gas_assert (i.operands == 2);
+ 
+   match = 1;
+   for (j = 0; j < 2; j++)
+@@ -2055,7 +1942,7 @@ md_begin ()
+   op_hash = hash_new ();
+ 
+   {
+-    const template *optab;
++    const insn_template *optab;
+     templates *core_optab;
+ 
+     /* Setup for loop.  */
+@@ -2190,7 +2077,7 @@ i386_print_statistics (FILE *file)
+ #ifdef DEBUG386
+ 
+ /* Debugging routines for md_assemble.  */
+-static void pte (template *);
++static void pte (insn_template *);
+ static void pt (i386_operand_type);
+ static void pe (expressionS *);
+ static void ps (symbolS *);
+@@ -2243,7 +2130,7 @@ pi (char *line, i386_insn *x)
+ }
+ 
+ static void
+-pte (template *t)
++pte (insn_template *t)
+ {
+   unsigned int i;
+   fprintf (stdout, " %d operands ", t->operands);
+@@ -2682,7 +2569,7 @@ process_immext (void)
+      SSE5 and AVX instructions also use this encoding, for some of
+      3 argument instructions.  */
+ 
+-  assert (i.imm_operands == 0
++  gas_assert (i.imm_operands == 0
+ 	  && (i.operands <= 2
+ 	      || (i.tm.cpu_flags.bitfield.cpusse5
+ 		  && i.operands <= 3)
+@@ -2926,7 +2813,7 @@ parse_insn (char *line, char *mnemonic)
+   char *token_start = l;
+   char *mnem_p;
+   int supported;
+-  const template *t;
++  const insn_template *t;
+ 
+   /* Non-zero if we found a prefix only acceptable with string insns.  */
+   const char *expecting_string_instruction = NULL;
+@@ -3413,7 +3300,7 @@ optimize_imm (void)
+ 	       than those matching the insn suffix.  */
+ 	    {
+ 	      i386_operand_type mask, allowed;
+-	      const template *t;
++	      const insn_template *t;
+ 
+ 	      operand_type_set (&mask, 0);
+ 	      operand_type_set (&allowed, 0);
+@@ -3529,7 +3416,7 @@ optimize_disp (void)
+    operand types.  */
+ 
+ static int
+-VEX_check_operands (const template *t)
++VEX_check_operands (const insn_template *t)
+ {
+   if (!t->opcode_modifier.vex)
+     return 0;
+@@ -3552,7 +3439,7 @@ static int
+ match_template (void)
+ {
+   /* Points to template once we've found it.  */
+-  const template *t;
++  const insn_template *t;
+   i386_operand_type overlap0, overlap1, overlap2, overlap3;
+   i386_operand_type overlap4;
+   unsigned int found_reverse_match;
+@@ -4506,7 +4393,7 @@ finalize_imm (void)
+       return 0;
+ 
+   i.types[2] = operand_type_and (i.types[2], i.tm.operand_types[2]);
+-  assert (operand_type_check (i.types[2], imm) == 0);
++  gas_assert (operand_type_check (i.types[2], imm) == 0);
+ 
+   return 1;
+ }
+@@ -4877,14 +4764,14 @@ process_operands (void)
+       unsigned int j;
+ 
+       /* The destination must be an xmm register.  */
+-      assert (i.reg_operands
++      gas_assert (i.reg_operands
+ 	      && MAX_OPERANDS > dup
+ 	      && operand_type_equal (&i.types[dest], &regxmm));
+ 
+       if (i.tm.opcode_modifier.firstxmm0)
+ 	{
+ 	  /* The first operand is implicit and must be xmm0.  */
+-	  assert (operand_type_equal (&i.types[0], &regxmm));
++	  gas_assert (operand_type_equal (&i.types[0], &regxmm));
+ 	  if (i.op[0].regs->reg_num != 0)
+ 	    return bad_implicit_operand (1);
+ 
+@@ -4909,7 +4796,7 @@ process_operands (void)
+ 	}
+       else if (i.tm.opcode_modifier.implicit1stxmm0)
+ 	{ 
+-	  assert ((MAX_OPERANDS - 1) > dup
++	  gas_assert ((MAX_OPERANDS - 1) > dup
+ 		  && i.tm.opcode_modifier.vex3sources);
+ 
+ 	  /* Add the implicit xmm0 for instructions with VEX prefix
+@@ -4955,7 +4842,7 @@ duplicate:
+       unsigned int j;
+ 
+       /* The first operand is implicit and must be xmm0/ymm0.  */
+-      assert (i.reg_operands
++      gas_assert (i.reg_operands
+ 	      && (operand_type_equal (&i.types[0], &regxmm)
+ 		  || operand_type_equal (&i.types[0], &regymm)));
+       if (i.op[0].regs->reg_num != 0)
+@@ -4988,7 +4875,7 @@ duplicate:
+       else
+ 	first_reg_op = 1;
+       /* Pretend we saw the extra register operand.  */
+-      assert (i.reg_operands == 1
++      gas_assert (i.reg_operands == 1
+ 	      && i.op[first_reg_op + 1].regs == 0);
+       i.op[first_reg_op + 1].regs = i.op[first_reg_op].regs;
+       i.types[first_reg_op + 1] = i.types[first_reg_op];
+@@ -5101,7 +4988,7 @@ build_modrm_byte (void)
+ 	  && i.tm.opcode_modifier.immext)
+ 	{
+ 	  dest = i.operands - 2;
+-	  assert (dest == 3);
++	  gas_assert (dest == 3);
+ 	}
+       else
+ 	dest = i.operands - 1;
+@@ -5161,7 +5048,7 @@ build_modrm_byte (void)
+ 	      nds = tmp;
+ 	    }
+ 
+-	  assert (operand_type_equal (&i.tm.operand_types[reg], &regxmm)
++	  gas_assert (operand_type_equal (&i.tm.operand_types[reg], &regxmm)
+ 		  || operand_type_equal (&i.tm.operand_types[reg],
+ 					 &regymm));
+ 	  exp->X_op = O_constant;
+@@ -5206,7 +5093,7 @@ build_modrm_byte (void)
+ 	      i.types[imm].bitfield.imm8 = 1;
+ 	    }
+ 
+-	  assert (operand_type_equal (&i.tm.operand_types[reg], &regxmm)
++	  gas_assert (operand_type_equal (&i.tm.operand_types[reg], &regxmm)
+ 		  || operand_type_equal (&i.tm.operand_types[reg],
+ 					 &regymm));
+ 	  i.op[imm].imms->X_add_number
+@@ -5214,7 +5101,7 @@ build_modrm_byte (void)
+ 		 + ((i.op[reg].regs->reg_flags & RegRex) ? 8 : 0)) << 4);
+ 	}
+ 
+-      assert (operand_type_equal (&i.tm.operand_types[nds], &regxmm)
++      gas_assert (operand_type_equal (&i.tm.operand_types[nds], &regxmm)
+ 	      || operand_type_equal (&i.tm.operand_types[nds], &regymm));
+       i.vex.register_specifier = i.op[nds].regs;
+ 
+@@ -5266,7 +5153,7 @@ build_modrm_byte (void)
+ 	     which may be the first or the last operand.  Otherwise,
+ 	     the first operand must be shift count register (cl) or it
+ 	     is an instruction with VexNDS. */
+-	  assert (i.imm_operands == 1
++	  gas_assert (i.imm_operands == 1
+ 		  || (i.imm_operands == 0
+ 		      && (i.tm.opcode_modifier.vexnds
+ 			  || i.types[0].bitfield.shiftcount)));
+@@ -5284,7 +5171,7 @@ build_modrm_byte (void)
+ 	     For instructions with VexNDS, if the first operand
+ 	     an imm8, the source operand is the 2nd one.  If the last
+ 	     operand is imm8, the source operand is the first one.  */
+-	  assert ((i.imm_operands == 2
++	  gas_assert ((i.imm_operands == 2
+ 		   && i.types[0].bitfield.imm8
+ 		   && i.types[1].bitfield.imm8)
+ 		  || (i.tm.opcode_modifier.vexnds
+@@ -5382,7 +5269,7 @@ build_modrm_byte (void)
+ 	      for (op = 0; op < i.operands; op++)
+ 		if (operand_type_check (i.types[op], anymem))
+ 		  break;
+-	      assert (op < i.operands);
++	      gas_assert (op < i.operands);
+ 	    }
+ 
+ 	  default_seg = &ds;
+@@ -5561,7 +5448,7 @@ build_modrm_byte (void)
+ 		 holds the correct displacement size.  */
+ 	      expressionS *exp;
+ 
+-	      assert (i.op[op].disps == 0);
++	      gas_assert (i.op[op].disps == 0);
+ 	      exp = &disp_expressions[i.disp_operands++];
+ 	      i.op[op].disps = exp;
+ 	      exp->X_op = O_constant;
+@@ -5619,17 +5506,17 @@ build_modrm_byte (void)
+ 		{
+ 		  /* For instructions with VexNDS, the register-only
+ 		     source operand is encoded in VEX prefix. */
+-		  assert (mem != (unsigned int) ~0);
++		  gas_assert (mem != (unsigned int) ~0);
+ 
+ 		  if (op > mem)
+ 		    {
+ 		      vex_reg = op++;
+-		      assert (op < i.operands);
++		      gas_assert (op < i.operands);
+ 		    }
+ 		  else
+ 		    {
+ 		      vex_reg = op + 1;
+-		      assert (vex_reg < i.operands);
++		      gas_assert (vex_reg < i.operands);
+ 		    }
+ 		}
+ 	      else if (i.tm.opcode_modifier.vexndd)
+@@ -5637,16 +5524,16 @@ build_modrm_byte (void)
+ 		  /* For instructions with VexNDD, there should be
+ 		     no memory operand and the register destination
+ 		     is encoded in VEX prefix.  */
+-		  assert (i.mem_operands == 0
++		  gas_assert (i.mem_operands == 0
+ 			  && (op + 2) == i.operands);
+ 		  vex_reg = op + 1;
+ 		}
+ 	      else
+-		assert (op < i.operands);
++		gas_assert (op < i.operands);
+ 
+ 	      if (vex_reg != (unsigned int) ~0)
+ 		{
+-		  assert (i.reg_operands == 2);
++		  gas_assert (i.reg_operands == 2);
+ 
+ 		  if (!operand_type_equal (&i.tm.operand_types[vex_reg],
+ 					   & regxmm)
+@@ -6131,7 +6018,7 @@ output_disp (fragS *insn_start_frag, off
+ 	      int pcrel = (i.flags[n] & Operand_PCrel) != 0;
+ 
+ 	      /* We can't have 8 bit displacement here.  */
+-	      assert (!i.types[n].bitfield.disp8);
++	      gas_assert (!i.types[n].bitfield.disp8);
+ 
+ 	      /* The PC relative address is computed relative
+ 		 to the instruction boundary, so in case immediate
+@@ -6146,12 +6033,12 @@ output_disp (fragS *insn_start_frag, off
+ 		      {
+ 			/* Only one immediate is allowed for PC
+ 			   relative address.  */
+-			assert (sz == 0);
++			gas_assert (sz == 0);
+ 			sz = imm_size (n1);
+ 			i.op[n].disps->X_add_number -= sz;
+ 		      }
+ 		  /* We should find the immediate.  */
+-		  assert (sz != 0);
++		  gas_assert (sz != 0);
+ 		}
+ 
+ 	      p = frag_more (size);
+@@ -6995,7 +6882,7 @@ i386_index_check (const char *operand_st
+ 		   : i386_regtab[j].reg_type.bitfield.reg16)
+ 		&& i386_regtab[j].reg_num == expected)
+ 	      break;
+-	  assert (j < i386_regtab_size);
++	  gas_assert (j < i386_regtab_size);
+ 	  as_warn (_("`%s' is not valid here (expected `%c%s%s%c')"),
+ 		   operand_string,
+ 		   intel_syntax ? '[' : '(',
+@@ -8690,7 +8577,7 @@ tc_gen_reloc (section, fixp)
+ 		    bfd_get_reloc_code_name (code));
+       /* Set howto to a garbage value so that we can keep going.  */
+       rel->howto = bfd_reloc_type_lookup (stdoutput, BFD_RELOC_32);
+-      assert (rel->howto != NULL);
++      gas_assert (rel->howto != NULL);
+     }
+ 
+   return rel;
+@@ -10085,7 +9972,7 @@ tc_x86_frame_initial_instructions (void)
+ 
+       input_line_pointer = sp[flag_code >> 1];
+       tc_x86_parse_to_dw2regnum (&exp);
+-      assert (exp.X_op == O_constant);
++      gas_assert (exp.X_op == O_constant);
+       sp_regno[flag_code >> 1] = exp.X_add_number;
+       input_line_pointer = saved_input;
+     }
+diff -rupN binutils-2.19-orig/gas/config/tc-i386.h binutils-2.19/gas/config/tc-i386.h
+--- binutils-2.19-orig/gas/config/tc-i386.h	2008-10-16 05:52:21.000000000 -0700
++++ binutils-2.19/gas/config/tc-i386.h	2009-04-29 11:40:39.511001000 -0700
+@@ -232,4 +232,135 @@ void tc_pe_dwarf2_emit_offset (symbolS *
+ 
+ #endif /* TE_PE */
+ 
++/* 386 opcode byte to code indirect addressing.  */
++typedef struct
++{
++  unsigned base;
++  unsigned index;
++  unsigned scale;
++}
++sib_byte;
++
++/* Information needed to create the DREX byte in SSE5 instructions.  */
++typedef struct
++{
++  unsigned int reg;		/* register */
++  unsigned int rex;		/* REX flags */
++  unsigned int modrm_reg;	/* which arg goes in the modrm.reg field */
++  unsigned int modrm_regmem;	/* which arg goes in the modrm.regmem field */
++} drex_byte;
++
++
++/* 386 operand encoding bytes:  see 386 book for details of this.  */
++typedef struct
++{
++  unsigned int regmem;	/* codes register or memory operand */
++  unsigned int reg;	/* codes register operand (or extended opcode) */
++  unsigned int mode;	/* how to interpret regmem & reg */
++}
++modrm_byte;
++
++/* x86-64 extension prefix.  */
++typedef int rex_byte;
++
++
++/* Prefixes will be emitted in the order defined below.
++   WAIT_PREFIX must be the first prefix since FWAIT is really is an
++   instruction, and so must come before any prefixes.
++   The preferred prefix order is SEG_PREFIX, ADDR_PREFIX, DATA_PREFIX,
++   LOCKREP_PREFIX.  */
++#define WAIT_PREFIX	0
++#define SEG_PREFIX	1
++#define ADDR_PREFIX	2
++#define DATA_PREFIX	3
++#define LOCKREP_PREFIX	4
++#define REX_PREFIX	5       /* must come last.  */
++#define MAX_PREFIXES	6	/* max prefixes per opcode */
++
++/* VEX prefix.  */
++typedef struct
++{
++  /* VEX prefix is either 2 byte or 3 byte.  */
++  unsigned char bytes[3];
++  unsigned int length;
++  /* Destination or source register specifier.  */
++  const reg_entry *register_specifier;
++} vex_prefix;
++
++/* 'md_assemble ()' gathers together information and puts it into a
++   i386_insn.  */
++
++union i386_op
++  {
++    expressionS *disps;
++    expressionS *imms;
++    const reg_entry *regs;
++  };
++
++struct _i386_insn
++  {
++    /* TM holds the template for the insn were currently assembling.  */
++    insn_template tm;
++
++    /* SUFFIX holds the instruction size suffix for byte, word, dword
++       or qword, if given.  */
++    char suffix;
++
++    /* OPERANDS gives the number of given operands.  */
++    unsigned int operands;
++
++    /* REG_OPERANDS, DISP_OPERANDS, MEM_OPERANDS, IMM_OPERANDS give the number
++       of given register, displacement, memory operands and immediate
++       operands.  */
++    unsigned int reg_operands, disp_operands, mem_operands, imm_operands;
++
++    /* TYPES [i] is the type (see above #defines) which tells us how to
++       use OP[i] for the corresponding operand.  */
++    i386_operand_type types[MAX_OPERANDS];
++
++    /* Displacement expression, immediate expression, or register for each
++       operand.  */
++    union i386_op op[MAX_OPERANDS];
++
++    /* Flags for operands.  */
++    unsigned int flags[MAX_OPERANDS];
++#define Operand_PCrel 1
++
++    /* Relocation type for operand */
++    enum bfd_reloc_code_real reloc[MAX_OPERANDS];
++
++    /* BASE_REG, INDEX_REG, and LOG2_SCALE_FACTOR are used to encode
++       the base index byte below.  */
++    const reg_entry *base_reg;
++    const reg_entry *index_reg;
++    unsigned int log2_scale_factor;
++
++    /* SEG gives the seg_entries of this insn.  They are zero unless
++       explicit segment overrides are given.  */
++    const seg_entry *seg[2];
++
++    /* PREFIX holds all the given prefix opcodes (usually null).
++       PREFIXES is the number of prefix opcodes.  */
++    unsigned int prefixes;
++    unsigned char prefix[MAX_PREFIXES];
++
++    /* RM and SIB are the modrm byte and the sib byte where the
++       addressing modes of this insn are encoded.  DREX is the byte
++       added by the SSE5 instructions.  */
++
++    modrm_byte rm;
++    rex_byte rex;
++    sib_byte sib;
++    drex_byte drex;
++    vex_prefix vex;
++  };
++
++typedef struct _i386_insn i386_insn;
++
++enum flag_code {
++	CODE_32BIT,
++	CODE_16BIT,
++	CODE_64BIT };
++
++
+ #endif /* TC_I386 */
+diff -rupN binutils-2.19-orig/gas/dw2gencfi.c binutils-2.19/gas/dw2gencfi.c
+--- binutils-2.19-orig/gas/dw2gencfi.c	2008-10-16 05:52:09.000000000 -0700
++++ binutils-2.19/gas/dw2gencfi.c	2009-04-29 11:18:10.569493000 -0700
+@@ -284,7 +284,7 @@ cfi_add_CFA_offset (unsigned regno, offs
+ {
+   unsigned int abs_data_align;
+ 
+-  assert (DWARF2_CIE_DATA_ALIGNMENT != 0);
++  gas_assert (DWARF2_CIE_DATA_ALIGNMENT != 0);
+   cfi_add_CFA_insn_reg_offset (DW_CFA_offset, regno, offset);
+ 
+   abs_data_align = (DWARF2_CIE_DATA_ALIGNMENT < 0
+diff -rupN binutils-2.19-orig/gas/dwarf2dbg.c binutils-2.19/gas/dwarf2dbg.c
+--- binutils-2.19-orig/gas/dwarf2dbg.c	2008-08-05 01:13:48.000000000 -0700
++++ binutils-2.19/gas/dwarf2dbg.c	2009-04-29 11:19:33.096432000 -0700
+@@ -874,7 +874,7 @@ emit_inc_line_addr (int line_delta, addr
+ 
+   /* Line number sequences cannot go backward in addresses.  This means
+      we've incorrectly ordered the statements in the sequence.  */
+-  assert ((offsetT) addr_delta >= 0);
++  gas_assert ((offsetT) addr_delta >= 0);
+ 
+   /* Scale the address delta by the minimum instruction length.  */
+   scale_addr_delta (&addr_delta);
+@@ -955,7 +955,7 @@ emit_inc_line_addr (int line_delta, addr
+     *p++ = tmp;
+ 
+  done:
+-  assert (p == end);
++  gas_assert (p == end);
+ }
+ 
+ /* Handy routine to combine calls to the above two routines.  */
+@@ -1013,7 +1013,7 @@ emit_fixed_inc_line_addr (int line_delta
+ 
+   /* Line number sequences cannot go backward in addresses.  This means
+      we've incorrectly ordered the statements in the sequence.  */
+-  assert ((offsetT) addr_delta >= 0);
++  gas_assert ((offsetT) addr_delta >= 0);
+ 
+   /* INT_MAX is a signal that this is actually a DW_LNE_end_sequence.  */
+   if (line_delta != INT_MAX)
+@@ -1035,7 +1035,7 @@ emit_fixed_inc_line_addr (int line_delta
+       symbolS *to_sym;
+       expressionS expr;
+ 
+-      assert (exp->X_op = O_subtract);
++      gas_assert (exp->X_op = O_subtract);
+       to_sym = exp->X_add_symbol;
+ 
+       *p++ = DW_LNS_extended_op;
+@@ -1065,7 +1065,7 @@ emit_fixed_inc_line_addr (int line_delta
+   else
+     *p++ = DW_LNS_copy;
+ 
+-  assert (p == end);
++  gas_assert (p == end);
+ }
+ 
+ /* Generate a variant frag that we can use to relax address/line
+@@ -1144,7 +1144,7 @@ dwarf2dbg_convert_frag (fragS *frag)
+   /* fr_var carries the max_chars that we created the fragment with.
+      fr_subtype carries the current expected length.  We must, of
+      course, have allocated enough memory earlier.  */
+-  assert (frag->fr_var >= (int) frag->fr_subtype);
++  gas_assert (frag->fr_var >= (int) frag->fr_subtype);
+ 
+   if (DWARF2_USE_FIXED_ADVANCE_PC)
+     emit_fixed_inc_line_addr (frag->fr_offset, addr_diff, frag,
+@@ -1696,7 +1696,7 @@ dwarf2_finish (void)
+       segT aranges_seg;
+       segT ranges_seg;
+ 
+-      assert (all_segs);
++      gas_assert (all_segs);
+ 
+       info_seg = subseg_new (".debug_info", 0);
+       abbrev_seg = subseg_new (".debug_abbrev", 0);
+diff -rupN binutils-2.19-orig/gas/dwarf2dbg.h binutils-2.19/gas/dwarf2dbg.h
+--- binutils-2.19-orig/gas/dwarf2dbg.h	2007-11-19 11:37:18.000000000 -0800
++++ binutils-2.19/gas/dwarf2dbg.h	2009-04-29 15:43:29.472564000 -0700
+@@ -81,12 +81,12 @@ extern void dwarf2_emit_label (symbolS *
+ 
+ /* True when we've seen a .loc directive recently.  Used to avoid
+    doing work when there's nothing to do.  */
+-bfd_boolean dwarf2_loc_directive_seen;
++extern bfd_boolean dwarf2_loc_directive_seen;
+ 
+ /* True when we're supposed to set the basic block mark whenever a label
+    is seen.  Unless the target is doing Something Weird, just call 
+    dwarf2_emit_label.  */
+-bfd_boolean dwarf2_loc_mark_labels;
++extern bfd_boolean dwarf2_loc_mark_labels;
+ 
+ extern void dwarf2_finish (void);
+ 
+diff -rupN binutils-2.19-orig/gas/ehopt.c binutils-2.19/gas/ehopt.c
+--- binutils-2.19-orig/gas/ehopt.c	2007-11-06 09:15:10.000000000 -0800
++++ binutils-2.19/gas/ehopt.c	2009-04-29 11:19:00.907036000 -0700
+@@ -508,19 +508,19 @@ eh_frame_convert_frag (fragS *frag)
+     case 0:
+       {
+ 	int ca = frag->fr_subtype >> 3;
+-	assert (ca > 0 && diff % ca == 0 && diff / ca < 0x40);
++	gas_assert (ca > 0 && diff % ca == 0 && diff / ca < 0x40);
+ 	loc4_frag->fr_literal[loc4_fix] = DW_CFA_advance_loc | (diff / ca);
+       }
+       break;
+ 
+     case 1:
+-      assert (diff < 0x100);
++      gas_assert (diff < 0x100);
+       loc4_frag->fr_literal[loc4_fix] = DW_CFA_advance_loc1;
+       frag->fr_literal[frag->fr_fix] = diff;
+       break;
+ 
+     case 2:
+-      assert (diff < 0x10000);
++      gas_assert (diff < 0x10000);
+       loc4_frag->fr_literal[loc4_fix] = DW_CFA_advance_loc2;
+       md_number_to_chars (frag->fr_literal + frag->fr_fix, diff, 2);
+       break;
+diff -rupN binutils-2.19-orig/gas/expr.c binutils-2.19/gas/expr.c
+--- binutils-2.19-orig/gas/expr.c	2007-10-19 10:31:24.000000000 -0700
++++ binutils-2.19/gas/expr.c	2009-04-29 11:18:59.986189000 -0700
+@@ -404,7 +404,7 @@ integer_constant (int radix, expressionS
+       if (num_little_digits > SIZE_OF_LARGE_NUMBER - 1)
+ 	num_little_digits = SIZE_OF_LARGE_NUMBER - 1;
+ 
+-      assert (num_little_digits >= 4);
++      gas_assert (num_little_digits >= 4);
+ 
+       if (num_little_digits != 8)
+ 	as_bad (_("a bignum with underscores must have exactly 4 words"));
+@@ -1520,7 +1520,7 @@ expr_begin (void)
+   {
+     expressionS e;
+     e.X_op = O_max;
+-    assert (e.X_op == O_max);
++    gas_assert (e.X_op == O_max);
+   }
+ }
+ 
+diff -rupN binutils-2.19-orig/gas/frags.c binutils-2.19/gas/frags.c
+--- binutils-2.19-orig/gas/frags.c	2007-07-03 04:01:03.000000000 -0700
++++ binutils-2.19/gas/frags.c	2009-04-29 11:20:51.096089000 -0700
+@@ -137,12 +137,12 @@ frag_new (int old_frags_var_max_size
+   fragS *former_last_fragP;
+   frchainS *frchP;
+ 
+-  assert (frchain_now->frch_last == frag_now);
++  gas_assert (frchain_now->frch_last == frag_now);
+ 
+   /* Fix up old frag's fr_fix.  */
+   frag_now->fr_fix = frag_now_fix_octets () - old_frags_var_max_size;
+   /* Make sure its type is valid.  */
+-  assert (frag_now->fr_type != 0);
++  gas_assert (frag_now->fr_type != 0);
+ 
+   /* This will align the obstack so the next struct we allocate on it
+      will begin at a correct boundary.  */
+@@ -150,8 +150,8 @@ frag_new (int old_frags_var_max_size
+   frchP = frchain_now;
+   know (frchP);
+   former_last_fragP = frchP->frch_last;
+-  assert (former_last_fragP != 0);
+-  assert (former_last_fragP == frag_now);
++  gas_assert (former_last_fragP != 0);
++  gas_assert (former_last_fragP == frag_now);
+   frag_now = frag_alloc (&frchP->frch_obstack);
+ 
+   as_where (&frag_now->fr_file, &frag_now->fr_line);
+@@ -170,7 +170,7 @@ frag_new (int old_frags_var_max_size
+   }
+ #endif
+ 
+-  assert (frchain_now->frch_last == frag_now);
++  gas_assert (frchain_now->frch_last == frag_now);
+ 
+   frag_now->fr_next = NULL;
+ }
+diff -rupN binutils-2.19-orig/gas/input-file.c binutils-2.19/gas/input-file.c
+--- binutils-2.19-orig/gas/input-file.c	2007-07-03 04:01:03.000000000 -0700
++++ binutils-2.19/gas/input-file.c	2009-04-29 11:18:08.775652000 -0700
+@@ -124,7 +124,7 @@ input_file_open (char *filename, /* "" m
+ 
+   preprocess = pre;
+ 
+-  assert (filename != 0);	/* Filename may not be NULL.  */
++  gas_assert (filename != 0);	/* Filename may not be NULL.  */
+   if (filename[0])
+     {
+       f_in = fopen (filename, FOPEN_RT);
+diff -rupN binutils-2.19-orig/gas/read.c binutils-2.19/gas/read.c
+--- binutils-2.19-orig/gas/read.c	2008-03-13 03:51:33.000000000 -0700
++++ binutils-2.19/gas/read.c	2009-04-29 11:18:08.351748000 -0700
+@@ -3445,7 +3445,7 @@ s_weakref (int ignore ATTRIBUTE_UNUSED)
+ 	{
+ 	  expressionS *expP = symbol_get_value_expression (symp);
+ 
+-	  assert (expP->X_op == O_symbol
++	  gas_assert (expP->X_op == O_symbol
+ 		  && expP->X_add_number == 0);
+ 	  symp = expP->X_add_symbol;
+ 	}
+diff -rupN binutils-2.19-orig/gas/sb.c binutils-2.19/gas/sb.c
+--- binutils-2.19-orig/gas/sb.c	2007-07-03 04:01:03.000000000 -0700
++++ binutils-2.19/gas/sb.c	2009-04-29 11:18:07.944739000 -0700
+@@ -59,7 +59,7 @@ sb_build (sb *ptr, int size)
+   /* See if we can find one to allocate.  */
+   sb_element *e;
+ 
+-  assert (size < sb_max_power_two);
++  gas_assert (size < sb_max_power_two);
+ 
+   e = free_list.size[size];
+   if (!e)
+diff -rupN binutils-2.19-orig/gas/subsegs.c binutils-2.19/gas/subsegs.c
+--- binutils-2.19-orig/gas/subsegs.c	2007-07-03 04:01:03.000000000 -0700
++++ binutils-2.19/gas/subsegs.c	2009-04-29 11:20:50.676241000 -0700
+@@ -84,7 +84,7 @@ subseg_set_rest (segT seg, subsegT subse
+   if (frag_now && frchain_now)
+     frchain_now->frch_frag_now = frag_now;
+ 
+-  assert (frchain_now == 0
++  gas_assert (frchain_now == 0
+ 	  || frchain_now->frch_last == frag_now);
+ 
+   subseg_change (seg, (int) subseg);
+@@ -125,7 +125,7 @@ subseg_set_rest (segT seg, subsegT subse
+   frchain_now = frcP;
+   frag_now = frcP->frch_frag_now;
+ 
+-  assert (frchain_now->frch_last == frag_now);
++  gas_assert (frchain_now->frch_last == frag_now);
+ }
+ 
+ /*
+diff -rupN binutils-2.19-orig/gas/symbols.c binutils-2.19/gas/symbols.c
+--- binutils-2.19-orig/gas/symbols.c	2008-08-21 23:07:45.000000000 -0700
++++ binutils-2.19/gas/symbols.c	2009-04-29 11:21:16.200476000 -0700
+@@ -217,7 +217,7 @@ local_symbol_convert (struct local_symbo
+ {
+   symbolS *ret;
+ 
+-  assert (locsym->lsy_marker == NULL);
++  gas_assert (locsym->lsy_marker == NULL);
+   if (local_symbol_converted_p (locsym))
+     return local_symbol_get_real_symbol (locsym);
+ 
+@@ -879,11 +879,11 @@ verify_symbol_chain (symbolS *rootP, sym
+ 
+   for (; symbol_next (symbolP) != NULL; symbolP = symbol_next (symbolP))
+     {
+-      assert (symbolP->bsym != NULL);
+-      assert (symbolP->sy_next->sy_previous == symbolP);
++      gas_assert (symbolP->bsym != NULL);
++      gas_assert (symbolP->sy_next->sy_previous == symbolP);
+     }
+ 
+-  assert (lastP == symbolP);
++  gas_assert (lastP == symbolP);
+ }
+ 
+ #ifdef OBJ_COMPLEX_RELC
+@@ -1144,13 +1144,13 @@ resolve_symbol_value (symbolS *symp)
+ 	do_symbol:
+ 	  if (S_IS_WEAKREFR (symp))
+ 	    {
+-	      assert (final_val == 0);
++	      gas_assert (final_val == 0);
+ 	      if (S_IS_WEAKREFR (add_symbol))
+ 		{
+-		  assert (add_symbol->sy_value.X_op == O_symbol
++		  gas_assert (add_symbol->sy_value.X_op == O_symbol
+ 			  && add_symbol->sy_value.X_add_number == 0);
+ 		  add_symbol = add_symbol->sy_value.X_add_symbol;
+-		  assert (! S_IS_WEAKREFR (add_symbol));
++		  gas_assert (! S_IS_WEAKREFR (add_symbol));
+ 		  symp->sy_value.X_add_symbol = add_symbol;
+ 		}
+ 	    }
+@@ -2983,7 +2983,7 @@ symbol_relc_make_sym (symbolS * sym)
+   char typetag;
+   int sname_len;
+ 
+-  assert (sym != NULL);
++  gas_assert (sym != NULL);
+ 
+   /* Recurse to symbol_relc_make_expr if this symbol
+      is defined as an expression or a plain value.  */
+@@ -3048,7 +3048,7 @@ symbol_relc_make_expr (expressionS * exp
+ 
+   operands[0] = operands[1] = operands[2] = NULL;
+ 
+-  assert (exp != NULL);
++  gas_assert (exp != NULL);
+ 
+   /* Match known operators -> fill in opstr, arity, operands[] and fall
+      through to construct subexpression fragments; may instead return 
+@@ -3161,7 +3161,7 @@ symbol_relc_make_expr (expressionS * exp
+ 			       + (arity >= 2 ? (strlen (operands[1]) + 1 ) : 0)
+ 			       + (arity >= 3 ? (strlen (operands[2]) + 0 ) : 0)
+ 			       + 1);
+-      assert (concat_string != NULL);
++      gas_assert (concat_string != NULL);
+       
+       /* Format the thing.  */
+       sprintf (concat_string, 
+diff -rupN binutils-2.19-orig/gas/write.c binutils-2.19/gas/write.c
+--- binutils-2.19-orig/gas/write.c	2008-10-02 01:07:17.000000000 -0700
++++ binutils-2.19/gas/write.c	2009-04-29 11:20:24.924898000 -0700
+@@ -386,7 +386,7 @@ chain_frchains_together_1 (segT section,
+     {
+       prev_frag->fr_next = frchp->frch_root;
+       prev_frag = frchp->frch_last;
+-      assert (prev_frag->fr_type != 0);
++      gas_assert (prev_frag->fr_type != 0);
+       if (frchp->fix_root != (fixS *) NULL)
+ 	{
+ 	  if (seg_info (section)->fix_root == (fixS *) NULL)
+@@ -396,8 +396,8 @@ chain_frchains_together_1 (segT section,
+ 	  prev_fix = frchp->fix_tail;
+ 	}
+     }
+-  assert (prev_frag->fr_type != 0);
+-  assert (prev_frag != &dummy);
++  gas_assert (prev_frag->fr_type != 0);
++  gas_assert (prev_frag != &dummy);
+   prev_frag->fr_next = 0;
+   return prev_frag;
+ }
+@@ -478,7 +478,7 @@ cvt_frag_to_fill (segT sec ATTRIBUTE_UNU
+     case rs_machine_dependent:
+       md_convert_frag (stdoutput, sec, fragP);
+ 
+-      assert (fragP->fr_next == NULL
++      gas_assert (fragP->fr_next == NULL
+ 	      || ((offsetT) (fragP->fr_next->fr_address - fragP->fr_address)
+ 		  == fragP->fr_fix));
+ 
+@@ -566,15 +566,15 @@ size_seg (bfd *abfd, asection *sec, void
+ 
+   flags &= ~SEC_RELOC;
+   x = bfd_set_section_flags (abfd, sec, flags);
+-  assert (x);
++  gas_assert (x);
+ 
+   newsize = md_section_align (sec, size);
+   x = bfd_set_section_size (abfd, sec, newsize);
+-  assert (x);
++  gas_assert (x);
+ 
+   /* If the size had to be rounded up, add some padding in the last
+      non-empty frag.  */
+-  assert (newsize >= size);
++  gas_assert (newsize >= size);
+   if (size != newsize)
+     {
+       fragS *last = seginfo->frchainP->frch_last;
+@@ -1299,7 +1299,7 @@ write_contents (bfd *abfd ATTRIBUTE_UNUS
+       char *fill_literal;
+       offsetT count;
+ 
+-      assert (f->fr_type == rs_fill);
++      gas_assert (f->fr_type == rs_fill);
+       if (f->fr_fix)
+ 	{
+ 	  x = bfd_set_section_contents (stdoutput, sec,
+@@ -1313,7 +1313,7 @@ write_contents (bfd *abfd ATTRIBUTE_UNUS
+       fill_literal = f->fr_literal + f->fr_fix;
+       fill_size = f->fr_var;
+       count = f->fr_offset;
+-      assert (count >= 0);
++      gas_assert (count >= 0);
+       if (fill_size && count)
+ 	{
+ 	  char buf[256];
+@@ -1410,7 +1410,7 @@ set_symtab (void)
+   else
+     asympp = 0;
+   result = bfd_set_symtab (stdoutput, asympp, nsyms);
+-  assert (result);
++  gas_assert (result);
+   symbol_table_frozen = 1;
+ }
+ 
+diff -rupN binutils-2.19-orig/opcodes/i386-opc.h binutils-2.19/opcodes/i386-opc.h
+--- binutils-2.19-orig/opcodes/i386-opc.h	2008-05-02 09:53:40.000000000 -0700
++++ binutils-2.19/opcodes/i386-opc.h	2009-04-28 17:42:27.167628000 -0700
+@@ -513,7 +513,7 @@ typedef union i386_operand_type
+   unsigned int array[OTNumOfUints];
+ } i386_operand_type;
+ 
+-typedef struct template
++typedef struct insn_template
+ {
+   /* instruction name sans width suffix ("mov" for movl insns) */
+   char *name;
+@@ -555,9 +555,9 @@ typedef struct template
+      either a register or an immediate operand.  */
+   i386_operand_type operand_types[MAX_OPERANDS];
+ }
+-template;
++insn_template;
+ 
+-extern const template i386_optab[];
++extern const insn_template i386_optab[];
+ 
+ /* these are for register name --> number & type hash lookup */
+ typedef struct
+diff -rupN binutils-2.19-orig/opcodes/i386-tbl.h binutils-2.19/opcodes/i386-tbl.h
+--- binutils-2.19-orig/opcodes/i386-tbl.h	2008-08-28 08:59:32.000000000 -0700
++++ binutils-2.19/opcodes/i386-tbl.h	2009-04-28 17:44:40.757242000 -0700
+@@ -20,7 +20,7 @@
+ 
+ /* i386 opcode table.  */
+ 
+-const template i386_optab[] =
++const insn_template i386_optab[] =
+ {
+   { "mov", 2, 0xa0, None, 1,
+     { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 

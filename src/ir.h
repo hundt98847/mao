@@ -22,7 +22,4 @@
 
 void register_mao_unit(MaoUnit *);
 
-enum MaoOpcode;
-MaoOpcode GetOpcode(const char *opcode);
-
 #endif  // IR_H_

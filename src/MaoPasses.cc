@@ -304,12 +304,6 @@ void AssemblyPass::PrintAsmSymbolHeader(FILE *out) {
 }
 
 
-
-// Source Correlation
-extern "C" {
-  void as_where(char **namep, unsigned int *linep);
-}
-
 class SourceDebugAction : public MaoDebugAction {
  public:
   SourceDebugAction() {}

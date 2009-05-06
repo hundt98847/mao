@@ -1,11 +1,12 @@
-mao relies on binutils for parsing the input assembly file. Make sure
+MAO relies on binutils for parsing the input assembly file. Make sure
 you download and build the correct version of binutils as indicated
-below. Below are the instruction for builing mao for both i686 and x86_64.
+below. Below are the instruction for builing MAO for both i686 and x86_64.
 
 
 cd $DIR
 wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
 gzip -dc binutils-2.19.tar.gz | tar xvf -
+(cd binutils-2.19 && patch -p1  < ../binutils-2.19-mao.patch)
 mkdir binutils-2.19-obj-i686-linux binutils-2.19-obj-x86_64-linux
 cd binutils-2.19-obj-i686-linux
 ../binutils-2.19/configure --target=i686-linux
@@ -14,12 +15,6 @@ cd ..
 cd binutils-2.19-obj-x86_64-linux
 ../binutils-2.19/configure --target=x86_64-linux
 make
-cd ..
-wget http://www.python.org/ftp/python/2.5.4/Python-2.5.4.tgz
-gzip -dc Python-2.5.4.tgz  | tar xvf -
-cd Python-2.5.4
-./configure PREFIX=$DIR/python-2.5.4 EXEC_PREFIX=$DIR/python-2.5.4
-make DESTDIR=$DIR/python-2.5.4 install
 cd ..
 cd src
 make TARGET=i686-linux

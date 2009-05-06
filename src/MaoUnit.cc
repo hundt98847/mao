@@ -20,18 +20,19 @@
 #include <iostream>
 #include <sstream>
 
+#include "mao.h"
 #include "MaoCFG.h"
 #include "MaoDebug.h"
 #include "MaoRelax.h"
 #include "MaoUnit.h"
 
+#include "ir.h"
+
+// Needed for macros (OPERAND_TYPE_IMM64, ..) in gotrel[]
+#include "opcodes/i386-init.h"
 #include "tc-i386-helper.h"
 
-extern "C" {
-  const char *S_GET_NAME(symbolS *s);
-  valueT S_GET_VALUE(symbolS *s);
-  extern bfd *stdoutput;
-}
+
 //
 // Class: MaoUnit
 //
@@ -301,8 +302,8 @@ LabelEntry *MaoUnit::GetLabelEntry(const char *label_name) const {
 }
 
 
-static struct i386InsnTemplate FindTemplate(const char *opcode,
-                                            unsigned int base_opcode) {
+static struct insn_template FindTemplate(const char *opcode,
+                                         unsigned int base_opcode) {
   for (int i = 0;; ++i) {
     if (!i386_optab[i].name)
       break;
@@ -311,7 +312,7 @@ static struct i386InsnTemplate FindTemplate(const char *opcode,
         return i386_optab[i];
   }
   MAO_ASSERT_MSG(false, "Couldn't find instruction template for: %s", opcode);
-  return i386InsnTemplate();
+  return i386_optab[0]; // Should never happen;
 }
 
 InstructionEntry *MaoUnit::CreateInstruction(const char *opcode) {
@@ -947,7 +948,66 @@ std::string MaoEntry::GetDotOrSymbol(symbolS *symbol) const {
 // if no match is found.
 const std::string &MaoEntry::RelocToString(const enum bfd_reloc_code_real reloc,
                                            std::string *out) const {
-  // use gotrel from ir-gas.h (originally in tc-i386.c).
+  // copied gotrel from tc-i386.c
+  static const struct {
+    const char *str;
+    const enum bfd_reloc_code_real rel[2];
+    const i386_operand_type types64;
+  } gotrel[] = {
+    { "PLTOFF",   { _dummy_first_bfd_reloc_code_real,
+		    BFD_RELOC_X86_64_PLTOFF64 },
+      OPERAND_TYPE_IMM64 },
+    { "PLT",      { BFD_RELOC_386_PLT32,
+		    BFD_RELOC_X86_64_PLT32    },
+      OPERAND_TYPE_IMM32_32S_DISP32 },
+    { "GOTPLT",   { _dummy_first_bfd_reloc_code_real,
+		    BFD_RELOC_X86_64_GOTPLT64 },
+      OPERAND_TYPE_IMM64_DISP64 },
+    { "GOTOFF",   { BFD_RELOC_386_GOTOFF,
+		    BFD_RELOC_X86_64_GOTOFF64 },
+      OPERAND_TYPE_IMM64_DISP64 },
+    { "GOTPCREL", { _dummy_first_bfd_reloc_code_real,
+		    BFD_RELOC_X86_64_GOTPCREL },
+      OPERAND_TYPE_IMM32_32S_DISP32 },
+    { "TLSGD",    { BFD_RELOC_386_TLS_GD,
+		    BFD_RELOC_X86_64_TLSGD    },
+      OPERAND_TYPE_IMM32_32S_DISP32 },
+    { "TLSLDM",   { BFD_RELOC_386_TLS_LDM,
+		    _dummy_first_bfd_reloc_code_real                         },
+      OPERAND_TYPE_NONE },
+    { "TLSLD",    { _dummy_first_bfd_reloc_code_real,
+		    BFD_RELOC_X86_64_TLSLD    },
+      OPERAND_TYPE_IMM32_32S_DISP32 },
+    { "GOTTPOFF", { BFD_RELOC_386_TLS_IE_32,
+		    BFD_RELOC_X86_64_GOTTPOFF },
+      OPERAND_TYPE_IMM32_32S_DISP32 },
+    { "TPOFF",    { BFD_RELOC_386_TLS_LE_32,
+		    BFD_RELOC_X86_64_TPOFF32  },
+      OPERAND_TYPE_IMM32_32S_64_DISP32_64 },
+    { "NTPOFF",   { BFD_RELOC_386_TLS_LE,
+		    _dummy_first_bfd_reloc_code_real                         },
+      OPERAND_TYPE_NONE },
+    { "DTPOFF",   { BFD_RELOC_386_TLS_LDO_32,
+		    BFD_RELOC_X86_64_DTPOFF32 },
+      OPERAND_TYPE_IMM32_32S_64_DISP32_64 },
+    { "GOTNTPOFF",{ BFD_RELOC_386_TLS_GOTIE,
+		    _dummy_first_bfd_reloc_code_real                         },
+      OPERAND_TYPE_NONE },
+    { "INDNTPOFF",{ BFD_RELOC_386_TLS_IE,
+		    _dummy_first_bfd_reloc_code_real                         },
+      OPERAND_TYPE_NONE },
+    { "GOT",      { BFD_RELOC_386_GOT32,
+		    BFD_RELOC_X86_64_GOT32    },
+      OPERAND_TYPE_IMM32_32S_64_DISP32 },
+    { "TLSDESC",  { BFD_RELOC_386_TLS_GOTDESC,
+		    BFD_RELOC_X86_64_GOTPC32_TLSDESC },
+      OPERAND_TYPE_IMM32_32S_DISP32 },
+    { "TLSCALL",  { BFD_RELOC_386_TLS_DESC_CALL,
+		    BFD_RELOC_X86_64_TLSDESC_CALL },
+      OPERAND_TYPE_IMM32_32S_DISP32 },
+  };
+
+
   for (unsigned int i = 0; i < sizeof(gotrel)/sizeof(gotrel[0]); ++i) {
     int idx = maounit_->Is64BitMode()?1:0;
     if (reloc == gotrel[i].rel[idx]) {
@@ -1452,7 +1512,7 @@ int InstructionEntry::AddPrefix(unsigned int prefix) {
   int ret = 1;
   unsigned int q;
   if (prefix >= REX_OPCODE && prefix < REX_OPCODE + 16
-      && flag_code == CODE_64BIT) {
+      && code_flag_ == CODE_64BIT) {
     if ((instruction_->prefix[X86InstructionSizeHelper::REX_PREFIX] &
          prefix & REX_W)
         || ((instruction_->prefix[X86InstructionSizeHelper::REX_PREFIX] &
@@ -1985,10 +2045,10 @@ const char *InstructionEntry::GetBaseRegisterStr() const {
 const char *InstructionEntry::GetIndexRegisterStr() const {
   return instruction_->index_reg ? instruction_->index_reg->reg_name : NULL;
 }
-const struct reg_entry *InstructionEntry::GetBaseRegister() const {
+const reg_entry *InstructionEntry::GetBaseRegister() const {
   return instruction_->base_reg;
 }
-const struct reg_entry *InstructionEntry::GetIndexRegister() const {
+const reg_entry *InstructionEntry::GetIndexRegister() const {
   return instruction_->index_reg;
 }
 

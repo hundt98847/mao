@@ -38,17 +38,9 @@
 */
 
 extern "C" {
-  extern bfd *stdoutput;
-  int relax_segment(struct frag *segment_frag_root, void *segT, int pass);
   void convert_to_bignum(expressionS *exp);
-  int sizeof_leb128(valueT value, int sign);
   int output_big_leb128(char *p, LITTLENUM_TYPE *bignum, int size, int sign);
-  void S_SET_VALUE(symbolS *s, valueT val);
-  symbolS *symbol_find(const char *name);
-  void symbol_set_frag(symbolS *s, fragS *f);
-  fragS *symbol_get_frag(symbolS *s);
-  void symbol_set_value_expression(symbolS *s, const expressionS *exp);
-  extern int finalize_syms;
+  extern i386_cpu_flags cpu_arch_flags;
 }
 
 
@@ -220,7 +212,8 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
         InstructionEntry *ientry = static_cast<InstructionEntry*>(entry);
         X86InstructionSizeHelper size_helper(
             ientry->instruction());
-        std::pair<int, bool> size_pair = size_helper.SizeOfInstruction();
+        std::pair<int, bool> size_pair =
+            size_helper.SizeOfInstruction(ientry->GetFlag());
         frag->fr_fix += size_pair.first;
         (*size_map)[entry] = size_pair.first;
 
@@ -496,7 +489,7 @@ struct frag *MaoRelaxer::EndFragmentInstruction(InstructionEntry *entry,
   MAO_ASSERT(insn->tm.opcode_modifier.jump);
 
   int code16 = 0;
-  if (flag_code == CODE_16BIT)
+  if (entry->GetFlag() == CODE_16BIT)
     code16 = CODE16;
 
   if (insn->prefix[X86InstructionSizeHelper::DATA_PREFIX] != 0)

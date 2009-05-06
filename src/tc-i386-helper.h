@@ -27,6 +27,8 @@
    Bugs & suggestions are completely welcome.  This is free software.
    Please help us make it better.  */
 
+#include "as.h"
+
 #ifndef TC_I386_HELPER_H_
 #define TC_I386_HELPER_H_
 
@@ -123,7 +125,7 @@ class X86InstructionSizeHelper {
   // which indicates whether or not the instruction can be variably
   // sized.  If the bool is true, the size does *NOT* include the size
   // of the variable length part of the instruction.
-  std::pair<int, bool> SizeOfInstruction();
+  std::pair<int, bool> SizeOfInstruction(enum flag_code flag);
 
  private:
   /* Prefixes will be emitted in the order defined below.
@@ -132,8 +134,8 @@ class X86InstructionSizeHelper {
      The preferred prefix order is SEG_PREFIX, ADDR_PREFIX, DATA_PREFIX,
      LOCKREP_PREFIX.  */
   std::pair<int, bool> SizeOfBranch();
-  std::pair<int, bool> SizeOfJump();
-  std::pair<int, bool> SizeOfIntersegJump();
+  std::pair<int, bool> SizeOfJump(enum flag_code flag);
+  std::pair<int, bool> SizeOfIntersegJump(enum flag_code flag);
   std::pair<int, bool> SizeOfDisp();
   std::pair<int, bool> SizeOfImm();
 

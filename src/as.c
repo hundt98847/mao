@@ -218,7 +218,7 @@ print_version_id (void)
     return;
   printed = 1;
 
-  fprintf (stderr, _("GNU assembler version %s (%s) using BFD version %s\n."),
+  fprintf (stderr, _("GNU assembler version %s (%s) using BFD version %s\n"),
 	   VERSION, TARGET_ALIAS, BFD_VERSION_STRING);
 }
 
@@ -600,7 +600,7 @@ parse_args (int * pargc, char *** pargv)
 
 	case OPTION_VERSION:
 	  /* This output is intended to follow the GNU standards document.  */
-	  printf (_("GNU assembler %s modified by martint\n"), BFD_VERSION_STRING);
+	  printf (_("GNU assembler %s\n"), BFD_VERSION_STRING);
 	  printf (_("Copyright 2007 Free Software Foundation, Inc.\n"));
 	  printf (_("\
 This program is free software; you may redistribute it under the terms of\n\
@@ -1159,7 +1159,7 @@ as_main (int argc, char ** argv)
   PROGRESS (1);
 
   output_file_create (out_file_name);
-  assert (stdoutput != 0);
+  gas_assert (stdoutput != 0);
 
 #ifdef tc_init_after_args
   tc_init_after_args ();
@@ -1199,7 +1199,6 @@ as_main (int argc, char ** argv)
   md_end ();
 #endif
 
-
 #ifdef OBJ_ELF
   if (IS_ELF)
     create_obj_attrs_section ();
@@ -1226,13 +1225,11 @@ as_main (int argc, char ** argv)
      directives from the user or by the backend, emit it now.  */
   cfi_finish ();
 
-
   if (seen_at_least_1_file ()
       && (flag_always_generate_output || had_errors () == 0))
     keep_it = 1;
   else
     keep_it = 0;
-
 
   /* This used to be done at the start of write_object_file in
      write.c, but that caused problems when doing listings when

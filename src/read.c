@@ -2108,8 +2108,6 @@ s_globl (int ignore ATTRIBUTE_UNUSED)
       name = input_line_pointer;
       c = get_symbol_end ();
       symbolP = symbol_find_or_make (name);
-
-
       S_SET_EXTERNAL (symbolP);
 
       link_symbol(symbolP->bsym->name, GLOBAL, 0);
@@ -2129,7 +2127,6 @@ s_globl (int ignore ATTRIBUTE_UNUSED)
   while (c == ',');
 
   demand_empty_rest_of_line ();
-
 
   if (flag_mri)
     mri_comment_end (stop, stopc);
@@ -3549,7 +3546,7 @@ s_weakref (int ignore ATTRIBUTE_UNUSED)
 	{
 	  expressionS *expP = symbol_get_value_expression (symp);
 
-	  assert (expP->X_op == O_symbol
+	  gas_assert (expP->X_op == O_symbol
 		  && expP->X_add_number == 0);
 	  symp = expP->X_add_symbol;
 	}
