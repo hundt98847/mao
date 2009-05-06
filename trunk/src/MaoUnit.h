@@ -584,6 +584,8 @@ class InstructionEntry : public MaoEntry {
   void PrintMemoryOperand(FILE *out,
                           int op_index) const;
 
+  int StripRexPrefix(int prefix) const;
+
   void PrintRexPrefix(FILE *out, int prefix) const;
 
   /* Returns 0 if attempting to add a prefix where one from the same

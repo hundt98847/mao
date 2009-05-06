@@ -172,11 +172,11 @@ stamp-bin:
 	touch stamp-bin
 
 clean : 
-	rm -f $(OBJDIR)/*
-	rm -f $(BINDIR)/mao-$(TARGET)
-	rm -f gen-opcodes-table.h
-	rm -f gen-opcodes.h
-	rm -f gen-defs.h
-	rm -f stamp-bin
+	-rm -f $(OBJDIR)/*
+	-rm -f $(BINDIR)/mao-$(TARGET)
+	-rm -f gen-opcodes-table.h
+	-rm -f gen-opcodes.h
+	-rm -f gen-defs.h
+	-rm -f stamp-bin
 
 -include $(DEPS)
