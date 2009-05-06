@@ -306,6 +306,8 @@ class HavlakLoopFinder {
         SimpleLoop* loop = lsg_->CreateNewLoop();
 
         loop->set_header(node_w, true);
+        IntList::iterator backp_iter  = backPreds[w].begin();
+        loop->set_bottom(nodes[*backp_iter].bb());
         loop->set_is_reducible(type[w] != BB_IRREDUCIBLE);
 
         // At this point, one can set attributes to the loop, such as:
