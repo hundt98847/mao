@@ -987,12 +987,16 @@ class Section {
   SubSection *GetLastSubSection() const;
 
   std::map<MaoEntry *, int> *sizes() {return sizes_;}
+  std::map<MaoEntry *, int> *offsets() {return offsets_;}
   void set_sizes(std::map<MaoEntry *, int> *sizes) {
-    // Deallocate memory if needed
-    if (sizes_ != NULL) {
+    if (sizes_ != NULL)
       delete sizes_;
-    }
     sizes_ = sizes;
+  }
+  void set_offsets(std::map<MaoEntry *, int> *offsets) {
+    if (offsets_ != NULL)
+      delete offsets_;
+    offsets_ = offsets;
   }
 
  private:
@@ -1006,6 +1010,9 @@ class Section {
   // TODO(martint): fix types to use the named type in relax.h
   // NULL if not set.
   std::map<MaoEntry *, int> *sizes_;
+
+  // Store corresponding entry offsets
+  std::map<MaoEntry *, int> *offsets_;
 };
 
 #endif  // MAOUNIT_H_
