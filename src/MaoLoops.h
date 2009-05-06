@@ -48,7 +48,7 @@ class SimpleLoop {
   typedef std::set<SimpleLoop *> LoopSet;
 
 
-  SimpleLoop() : header_(NULL), parent_(NULL), is_root_(false),
+  SimpleLoop() : header_(NULL), bottom_(NULL), parent_(NULL), is_root_(false),
                  is_reducible_(true), depth_level_(0), nesting_level_(0) {
   }
 
@@ -126,6 +126,7 @@ class SimpleLoop {
   bool         is_root() const { return is_root_; }
   bool         is_reducible() const { return is_reducible_; }
   BasicBlock  *header() const { return header_; }
+  BasicBlock  *bottom() const { return bottom_; }
 
   void set_parent(SimpleLoop *parent) {
     MAO_ASSERT(parent);
@@ -137,6 +138,10 @@ class SimpleLoop {
 
     if (add_node) AddNode(header);
     header_ = header;
+  }
+  void set_bottom(BasicBlock *bottom) {
+    MAO_ASSERT(bottom);
+    bottom_ = bottom;
   }
 
   void set_is_root() { is_root_ = true; }
@@ -174,6 +179,7 @@ class SimpleLoop {
   private:
   BasicBlockSet          basic_blocks_;
   BasicBlock            *header_;
+  BasicBlock            *bottom_;
   LoopSet                children_;
   SimpleLoop            *parent_;
 
