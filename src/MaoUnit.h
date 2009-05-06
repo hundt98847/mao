@@ -167,6 +167,11 @@ class MaoEntry {
   void LinkBefore(MaoEntry *entry);
   void LinkAfter(MaoEntry *entry);
 
+  // Align an entry via .p2align
+  void AlignTo(int power_of_2_alignment, // 0: 1, 1: 2, 2: 4, 3: 8, 4: 16, 5: 32
+               int fill_value = 0,
+               int max_bytes_to_skip = 0 );
+
   unsigned int line_number() const { return line_number_; }
   const char *const line_verbatim() const { return line_verbatim_; }
 
