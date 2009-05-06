@@ -1037,6 +1037,25 @@ void MaoEntry::LinkAfter(MaoEntry *entry) {
 }
 
 
+void MaoEntry::AlignTo(int power_of_2_alignment,
+                       int fill_value,
+                       int max_bytes_to_skip) {
+  MAO_ASSERT(maounit_->GetFunction(this));
+
+  Function *function = maounit_->GetFunction(this);
+  SubSection *ss = function->GetSubSection();
+  MAO_ASSERT(ss);
+
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(power_of_2_alignment));
+  operands.push_back(new DirectiveEntry::Operand(fill_value));
+  operands.push_back(new DirectiveEntry::Operand(max_bytes_to_skip));
+  DirectiveEntry *align_entry = maounit_->CreateDirective(
+    DirectiveEntry::P2ALIGN, operands,
+    function, ss);
+  LinkBefore(align_entry);
+}
+
 
 const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
   const char *label_name = NULL;
