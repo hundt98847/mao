@@ -132,9 +132,6 @@ class LoopAlignPass : public MaoPass {
   void ProcessInnerLoop(const SimpleLoop *loop,
                         MaoRelaxer::SizeMap *offsets);
 //   void ProcessInnerLoopOld(const SimpleLoop *loop);
-
-  // Add the align directive to the given basic block.
-  void AlignBlock(BasicBlock *basicblock, int alignment_base);
 };
 
 
@@ -336,47 +333,6 @@ int LoopAlignPass::BasicBlockSize(BasicBlock *BB) const {
 // }
 
 
-// Add an alignment directive at start of this basicblock
-void LoopAlignPass::AlignBlock(BasicBlock *basicblock, int alignment_base) {
-  MAO_ASSERT(basicblock);
-  MaoEntry *entry = basicblock->first_entry();
-
-
-  DirectiveEntry::OperandVector operands;
-  SubSection *ss = function_->GetSubSection();
-  MAO_ASSERT(ss);
-  operands.push_back(new DirectiveEntry::Operand(alignment_base));
-  operands.push_back(new DirectiveEntry::Operand());  // Not used in relaxation
-  operands.push_back(new DirectiveEntry::Operand(0));  // needs to be specified
-  DirectiveEntry *align_entry = mao_unit_->CreateDirective(
-      DirectiveEntry::P2ALIGN, operands,
-      function_, ss);
-  entry->LinkBefore(align_entry);
-
-  // update the basic block as well!
-  basicblock->set_first_entry(align_entry);
-
-//   DirectiveEntry::OperandVector operands;
-//   operands.push_back(new DirectiveEntry::Operand(6));
-//   DirectiveEntry *alignment_directive =
-//       new DirectiveEntry(DirectiveEntry::P2ALIGN, operands,
-//                          0, NULL, mao_unit_);
-//   // Now we have the new entry! the following needs to be updated
-//   // 1. the entries themselves!
-
-//   MaoEntry *prev_entry = entry->prev();
-//   prev_entry->set_next(alignment_directive);
-//   alignment_directive->set_prev(prev_entry);
-
-//   entry->set_prev(alignment_directive);
-//   alignment_directive->set_next(entry);
-
-//   // 2. the basic block
-//   basicblock->set_first_entry(alignment_directive);
-
-//   // TODO: update sections/functions?
-}
-
 // int LoopAlignPass::ChainSize(BasicBlock *basicblock,
 //                          std::map<BasicBlock *, BasicBlock *> *connections) {
 //   int size = 0;
@@ -418,7 +374,8 @@ void LoopAlignPass::ProcessInnerLoop(const SimpleLoop *loop,
   // If the loop is smaller than 50 bytes, it do not need
   // to be aligned.
   if (loop_space <= 64 && loop_space >= 50) {
-    AlignBlock(first, 4);
+    // Align the first entry int he basic block.
+    first->first_entry()->AlignTo(4, 0, 0);
   }
 }
 
