@@ -177,12 +177,21 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
 
 MaoRelaxer::SizeMap *MaoRelaxer::GetSizeMap(MaoUnit *mao, Section *section) {
   MAO_ASSERT(section);
-  MaoRelaxer::SizeMap *sizes = section->sizes();
+  MaoRelaxer::SizeMap *offsets, *sizes = section->sizes();
   if (sizes == NULL) {
-    // Run relaxer!
-    sizes = new MaoRelaxer::SizeMap();
+    sizes   = new MaoRelaxer::SizeMap();
+    offsets = new MaoRelaxer::SizeMap();
+
     Relax(mao, section, sizes);
+    int offset = 0;
+    for (SectionEntryIterator iter = section->EntryBegin();
+         iter != section->EntryEnd(); ++iter) {
+      (*offsets)[*iter] = offset;
+      offset += (*sizes)[*iter];
+    }
+
     section->set_sizes(sizes);
+    section->set_offsets(offsets);
   }
   return sizes;
 }
@@ -193,6 +202,7 @@ bool MaoRelaxer::HasSizeMap(Section *section) {
 
 void MaoRelaxer::InvalidateSizeMap(Section *section) {
   section->set_sizes(NULL);
+  section->set_offsets(NULL);
 }
 
 
