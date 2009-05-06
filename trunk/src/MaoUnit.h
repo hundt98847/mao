@@ -26,17 +26,20 @@
 #include <utility>
 #include <vector>
 
+extern "C" {
+  #include "as.h"
+  #include "tc-i386.h"
+}
+
 #include "gen-opcodes.h"
-#include "ir-gas.h"
-#include "irlink.h"
+
 #include "MaoOptions.h"
-#include "MaoUtil.h"
 #include "MaoDebug.h"
+#include "MaoDefs.h"
 
 class CFG;
 class LoopStructureGraph;
 
-// TODO(martint): Find a better way make Section available in the Symbol table
 class Section;
 #include "SymbolTable.h"
 
@@ -516,7 +519,7 @@ class InstructionEntry : public MaoEntry {
   const char  *GetRegisterOperandStr(const unsigned int op_index) {
     return instruction_->op[op_index].regs->reg_name;
   }
-  const struct reg_entry *GetRegisterOperand(const unsigned int op_index) {
+  const reg_entry *GetRegisterOperand(const unsigned int op_index) {
     return instruction_->op[op_index].regs;
   }
 
@@ -525,8 +528,8 @@ class InstructionEntry : public MaoEntry {
 
   const char  *GetBaseRegisterStr() const;
   const char  *GetIndexRegisterStr() const;
-  const struct reg_entry *GetBaseRegister() const;
-  const struct reg_entry *GetIndexRegister() const;
+  const reg_entry *GetBaseRegister() const;
+  const reg_entry *GetIndexRegister() const;
 
   unsigned int GetLog2ScaleFactor();
 
@@ -551,6 +554,7 @@ class InstructionEntry : public MaoEntry {
     return execution_count_valid_ ? execution_count_ : -1;
   }
 
+  enum flag_code GetFlag() const { return code_flag_; }
  private:
   i386_insn *instruction_;
   MaoOpcode  op_;

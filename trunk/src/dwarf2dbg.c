@@ -898,7 +898,7 @@ emit_inc_line_addr (int line_delta, addressT addr_delta, char *p, int len)
 
   /* Line number sequences cannot go backward in addresses.  This means
      we've incorrectly ordered the statements in the sequence.  */
-  assert ((offsetT) addr_delta >= 0);
+  gas_assert ((offsetT) addr_delta >= 0);
 
   /* Scale the address delta by the minimum instruction length.  */
   scale_addr_delta (&addr_delta);
@@ -979,7 +979,7 @@ emit_inc_line_addr (int line_delta, addressT addr_delta, char *p, int len)
     *p++ = tmp;
 
  done:
-  assert (p == end);
+  gas_assert (p == end);
 }
 
 /* Handy routine to combine calls to the above two routines.  */
@@ -1037,7 +1037,7 @@ emit_fixed_inc_line_addr (int line_delta, addressT addr_delta, fragS *frag,
 
   /* Line number sequences cannot go backward in addresses.  This means
      we've incorrectly ordered the statements in the sequence.  */
-  assert ((offsetT) addr_delta >= 0);
+  gas_assert ((offsetT) addr_delta >= 0);
 
   /* INT_MAX is a signal that this is actually a DW_LNE_end_sequence.  */
   if (line_delta != INT_MAX)
@@ -1059,7 +1059,7 @@ emit_fixed_inc_line_addr (int line_delta, addressT addr_delta, fragS *frag,
       symbolS *to_sym;
       expressionS expr;
 
-      assert (exp->X_op = O_subtract);
+      gas_assert (exp->X_op = O_subtract);
       to_sym = exp->X_add_symbol;
 
       *p++ = DW_LNS_extended_op;
@@ -1089,7 +1089,7 @@ emit_fixed_inc_line_addr (int line_delta, addressT addr_delta, fragS *frag,
   else
     *p++ = DW_LNS_copy;
 
-  assert (p == end);
+  gas_assert (p == end);
 }
 
 /* Generate a variant frag that we can use to relax address/line
@@ -1168,7 +1168,7 @@ dwarf2dbg_convert_frag (fragS *frag)
   /* fr_var carries the max_chars that we created the fragment with.
      fr_subtype carries the current expected length.  We must, of
      course, have allocated enough memory earlier.  */
-  assert (frag->fr_var >= (int) frag->fr_subtype);
+  gas_assert (frag->fr_var >= (int) frag->fr_subtype);
 
   if (DWARF2_USE_FIXED_ADVANCE_PC)
     emit_fixed_inc_line_addr (frag->fr_offset, addr_diff, frag,
@@ -1720,7 +1720,7 @@ dwarf2_finish (void)
       segT aranges_seg;
       segT ranges_seg;
 
-      assert (all_segs);
+      gas_assert (all_segs);
 
       info_seg = subseg_new (".debug_info", 0);
       abbrev_seg = subseg_new (".debug_abbrev", 0);

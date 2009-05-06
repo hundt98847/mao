@@ -15,8 +15,9 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
-#include "MaoDefs.h"
+
 #include "MaoUnit.h"
+#include "MaoDefs.h"
 #include "gen-defs.h"
 
 #include <string.h>
@@ -341,8 +342,8 @@ bool DefinesSubReg(reg_entry *reg,
 
 // See whether two registers overlap
 //
-bool       RegistersOverlap(const struct reg_entry *reg1,
-                            const struct reg_entry *reg2) {
+bool       RegistersOverlap(const reg_entry *reg1,
+                            const reg_entry *reg2) {
   RegProps *p1 = reg_ptr_map.find(reg1)->second;
   RegProps *p2 = reg_ptr_map.find(reg2)->second;
   MAO_ASSERT(p1);
@@ -358,7 +359,7 @@ bool       RegistersContained(BitString &parent,
   return (parent & child) == child;
 }
 
-BitString  GetParentRegs(const struct reg_entry *reg) {
+BitString  GetParentRegs(const reg_entry *reg) {
   RegProps *p1 = reg_ptr_map.find(reg)->second;
   MAO_ASSERT(p1);
   return p1->parent_regs();

@@ -21,6 +21,9 @@
 #include <stdio.h>
 #include "MaoUtil.h"
 
+//This should be included, but since its not guraded, it will generate errors
+//#include "opcodes/i386-opc.h"
+
 // Bitmasks for operands
 #define  DEF_OP0      (1 << 0)
 #define  DEF_OP1      (1 << 1)
@@ -51,13 +54,13 @@ BitString  GetRegisterDefMask(InstructionEntry *insn);
 void       PrintRegisterDefMask(FILE *f, BitString mask,
                                 const char *title = NULL);
 BitString  GetMaskForRegister(const char *reg);
-bool       DefinesSubReg(struct reg_entry *reg,
-                         struct reg_entry *sub_reg);
-bool       RegistersOverlap(const struct reg_entry *reg1,
-                            const struct reg_entry *reg2);
+bool       DefinesSubReg(reg_entry *reg,
+                         reg_entry *sub_reg);
+bool       RegistersOverlap(const reg_entry *reg1,
+                            const reg_entry *reg2);
 bool       RegistersContained(BitString &parent,
                               BitString &child);
-BitString  GetParentRegs(const struct reg_entry *reg);
+BitString  GetParentRegs(const reg_entry *reg);
 
 // Provide pointer to
 //   %rip  for 64-bit compiles

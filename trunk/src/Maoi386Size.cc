@@ -25,7 +25,10 @@
 #include <stdlib.h>
 #include "MaoDebug.h"
 #include "libiberty.h"
-#include "ir-gas.h"
+extern "C" {
+  #include "as.h"
+}
+#include "tc-i386.h"
 #include "tc-i386-helper.h"
 
 void X86InstructionSizeHelper::MergeSizePair(const std::pair<int, bool> &from,
@@ -52,7 +55,7 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfBranch() {
   return std::make_pair(size, true);
 }
 
-std::pair<int, bool> X86InstructionSizeHelper::SizeOfJump() {
+std::pair<int, bool> X86InstructionSizeHelper::SizeOfJump(enum flag_code flag) {
   int size = 1;  // 1 byte for the opcode
 
   if (insn_->tm.opcode_modifier.jumpbyte) {
@@ -66,7 +69,7 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfJump() {
         || insn_->prefix[SEG_PREFIX] == DS_PREFIX_OPCODE /* taken */)
       size++;
   } else {
-    int width16 = flag_code == CODE_16BIT ? true : false;
+    int width16 = flag == CODE_16BIT ? true : false;
     if (insn_->prefix[DATA_PREFIX] != 0) {
       size++;
       width16 = !width16;
@@ -84,9 +87,10 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfJump() {
   return std::make_pair(size, false);
 }
 
-std::pair<int, bool> X86InstructionSizeHelper::SizeOfIntersegJump() {
+std::pair<int, bool> X86InstructionSizeHelper::SizeOfIntersegJump(
+    enum flag_code flag) {
   int size = 0;
-  bool width16 = flag_code == CODE_16BIT ? true : false;
+  bool width16 = flag == CODE_16BIT ? true : false;
 
   if (insn_->prefix[DATA_PREFIX] != 0) {
     size++;
@@ -145,7 +149,8 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfImm() {
   return std::make_pair(size, false);
 }
 
-std::pair<int, bool> X86InstructionSizeHelper::SizeOfInstruction() {
+std::pair<int, bool> X86InstructionSizeHelper::SizeOfInstruction(
+    enum flag_code flag) {
   std::pair<int, bool> size(0, false);
 
 
@@ -154,9 +159,9 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfInstruction() {
     size = SizeOfBranch();
   else if (insn_->tm.opcode_modifier.jumpbyte ||
            insn_->tm.opcode_modifier.jumpdword)
-    size = SizeOfJump();
+    size = SizeOfJump(flag);
   else if (insn_->tm.opcode_modifier.jumpintersegment) {
-    size = SizeOfIntersegJump();
+    size = SizeOfIntersegJump(flag);
   } else {
     /* Output normal instructions here.  */
     unsigned char *q;

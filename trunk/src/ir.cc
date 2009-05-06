@@ -23,14 +23,15 @@
 
 #include <stdio.h>
 
-#include "ir-gas.h"
-#include "irlink.h"
+extern "C" {
+  #include "as.h"
+  #include "struc-symbol.h"
+}
+
 #include "MaoDebug.h"
 #include "MaoOptions.h"
 #include "MaoUnit.h"
-
-extern "C" const char *S_GET_NAME(symbolS *s);
-extern "C" void   as_where(char **, unsigned int *);
+#include "SymbolTable.h"
 
 // Reference to a the mao_unit.
 static MaoUnit *maounit_;

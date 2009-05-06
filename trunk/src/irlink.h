@@ -25,6 +25,8 @@
 #define MAX_DIRECTIVE_NAME_LENGTH 1024
 #define MAX_REGISTER_NAME_LENGTH 16
 
+#include "as.h"
+
 struct MaoStringPiece {
   const char *data;
   int length;

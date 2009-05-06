@@ -32,8 +32,6 @@
 
 #include "struc-symbol.h"
 
-
-
 /* This is non-zero if symbols are case sensitive, which is the
    default.  */
 int symbols_case_sensitive = 1;
@@ -227,7 +225,7 @@ local_symbol_convert (struct local_symbol *locsym)
 {
   symbolS *ret;
 
-  assert (locsym->lsy_marker == NULL);
+  gas_assert (locsym->lsy_marker == NULL);
   if (local_symbol_converted_p (locsym))
     return local_symbol_get_real_symbol (locsym);
 
@@ -534,9 +532,7 @@ symbol_find_or_make (const char *name)
 	  symbolP = (symbolS *) local_symbol_make (name, undefined_section,
 						   (valueT) 0,
 						   &zero_address_frag);
-
           link_symbol((char *)name, LOCAL, 0);
-
 	  return symbolP;
 	}
 
@@ -544,7 +540,6 @@ symbol_find_or_make (const char *name)
 
       symbol_table_insert (symbolP);
       link_symbol((char *)name, LOCAL, 0);
-
     }				/* if symbol wasn't found */
 
   return (symbolP);
@@ -894,11 +889,11 @@ verify_symbol_chain (symbolS *rootP, symbolS *lastP)
 
   for (; symbol_next (symbolP) != NULL; symbolP = symbol_next (symbolP))
     {
-      assert (symbolP->bsym != NULL);
-      assert (symbolP->sy_next->sy_previous == symbolP);
+      gas_assert (symbolP->bsym != NULL);
+      gas_assert (symbolP->sy_next->sy_previous == symbolP);
     }
 
-  assert (lastP == symbolP);
+  gas_assert (lastP == symbolP);
 }
 
 #ifdef OBJ_COMPLEX_RELC
@@ -1159,13 +1154,13 @@ resolve_symbol_value (symbolS *symp)
 	do_symbol:
 	  if (S_IS_WEAKREFR (symp))
 	    {
-	      assert (final_val == 0);
+	      gas_assert (final_val == 0);
 	      if (S_IS_WEAKREFR (add_symbol))
 		{
-		  assert (add_symbol->sy_value.X_op == O_symbol
+		  gas_assert (add_symbol->sy_value.X_op == O_symbol
 			  && add_symbol->sy_value.X_add_number == 0);
 		  add_symbol = add_symbol->sy_value.X_add_symbol;
-		  assert (! S_IS_WEAKREFR (add_symbol));
+		  gas_assert (! S_IS_WEAKREFR (add_symbol));
 		  symp->sy_value.X_add_symbol = add_symbol;
 		}
 	    }
@@ -1850,9 +1845,6 @@ fb_label_name (long n,	/* We just saw "n:", "nf" or "nb" : n a number.  */
   }
 #endif
   *p++ = 'L';
-
-  //
-
 
   /* Next code just does sprintf( {}, "%d", n);  */
   /* Label number.  */
@@ -3022,7 +3014,7 @@ symbol_relc_make_sym (symbolS * sym)
   char typetag;
   int sname_len;
 
-  assert (sym != NULL);
+  gas_assert (sym != NULL);
 
   /* Recurse to symbol_relc_make_expr if this symbol
      is defined as an expression or a plain value.  */
@@ -3087,7 +3079,7 @@ symbol_relc_make_expr (expressionS * exp)
 
   operands[0] = operands[1] = operands[2] = NULL;
 
-  assert (exp != NULL);
+  gas_assert (exp != NULL);
 
   /* Match known operators -> fill in opstr, arity, operands[] and fall
      through to construct subexpression fragments; may instead return 
@@ -3200,7 +3192,7 @@ symbol_relc_make_expr (expressionS * exp)
 			       + (arity >= 2 ? (strlen (operands[1]) + 1 ) : 0)
 			       + (arity >= 3 ? (strlen (operands[2]) + 0 ) : 0)
 			       + 1);
-      assert (concat_string != NULL);
+      gas_assert (concat_string != NULL);
       
       /* Format the thing.  */
       sprintf (concat_string, 

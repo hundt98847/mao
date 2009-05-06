@@ -29,6 +29,7 @@
 #include <list>
 #include <algorithm>
 
+#include "opcodes/i386-opc.h"
 #include "MaoDefs.h"
 
 struct ltstr {

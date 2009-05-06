@@ -29,7 +29,8 @@
 #include "MaoBranchSeparator.h"
 #include "MaoLoops.h"
 #include "MaoRelax.h"
-#include "MaoDefs.h"
+//#include "MaoDefs.h" // Problematic header since it uses "opcodes/i386-opc.h"
+                       // which is guard-less
 
 //==================================
 // MAO Main Entry
