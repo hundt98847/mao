@@ -81,8 +81,9 @@ MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit)
 
 void MaoRelaxer::SaveState(const struct frag *fragments, FragState *state) {
   // Save the old opcodes, so we can restore them!
-  for (const struct frag *fr_iter = fragments; fr_iter; fr_iter = fr_iter->fr_next) {
-    if(fr_iter->fr_opcode) {
+  for (const struct frag *fr_iter = fragments; fr_iter;
+       fr_iter = fr_iter->fr_next) {
+    if (fr_iter->fr_opcode) {
       (*state)[fr_iter] = *((unsigned int *)(fr_iter->fr_opcode));
     }
   }
@@ -90,8 +91,9 @@ void MaoRelaxer::SaveState(const struct frag *fragments, FragState *state) {
 
 void MaoRelaxer::RestoreState(const struct frag *fragments, FragState *state) {
   // Save the old opcodes, so we can restore them!
-  for (const struct frag *fr_iter = fragments; fr_iter; fr_iter = fr_iter->fr_next) {
-    if(fr_iter->fr_opcode) {
+  for (const struct frag *fr_iter = fragments; fr_iter;
+       fr_iter = fr_iter->fr_next) {
+    if (fr_iter->fr_opcode) {
       *((unsigned int *)fr_iter->fr_opcode) = (*state)[fr_iter];
     }
   }

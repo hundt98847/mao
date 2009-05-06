@@ -958,8 +958,7 @@ const std::string &MaoEntry::RelocToString(const enum bfd_reloc_code_real reloc,
   }
   // Specal case not covered in the gotrel array.
   // Found in gas test-suite reloc32.s etc.
-
-  switch(reloc) {
+  switch (reloc) {
     case BFD_RELOC_32:
       out->append("@GOTOFF");
       break;
@@ -1435,8 +1434,10 @@ int InstructionEntry::AddPrefix(unsigned int prefix) {
   unsigned int q;
   if (prefix >= REX_OPCODE && prefix < REX_OPCODE + 16
       && flag_code == CODE_64BIT) {
-    if ((instruction_->prefix[X86InstructionSizeHelper::REX_PREFIX] & prefix & REX_W)
-        || ((instruction_->prefix[X86InstructionSizeHelper::REX_PREFIX] & (REX_R | REX_X | REX_B))
+    if ((instruction_->prefix[X86InstructionSizeHelper::REX_PREFIX] &
+         prefix & REX_W)
+        || ((instruction_->prefix[X86InstructionSizeHelper::REX_PREFIX] &
+             (REX_R | REX_X | REX_B))
             && (prefix & (REX_R | REX_X | REX_B))))
       ret = 0;
     q = X86InstructionSizeHelper::REX_PREFIX;
@@ -1521,7 +1522,6 @@ InstructionEntry::InstructionEntry(i386_insn *instruction,
                 (instruction_->prefix[X86InstructionSizeHelper::LOCKREP_PREFIX]
                  != REPE_PREFIX_OPCODE))
               AddPrefix(prefix);
-              ;
           } else {
             AddPrefix(prefix);
           }
@@ -1533,7 +1533,6 @@ InstructionEntry::InstructionEntry(i386_insn *instruction,
         MAO_ASSERT(false);
     }
   }
-
 }
 
 InstructionEntry::~InstructionEntry() {
@@ -2117,6 +2116,11 @@ void InstructionEntry::PrintRexPrefix(FILE *out, int prefix) const {
                            "rexxz", "rexxy", "rexxyz", "rex64",
                            "rex64z", "rex64y", "rex64yz", "rex64x",
                            "rex64xz", "rex64xy", "rex64xyz"};
+
+  MAO_ASSERT_MSG(prefix >= REX_OPCODE &&
+                 prefix < REX_OPCODE+16,
+                 "Error in REX prefix: %d\n", prefix);
+
   fprintf(out, "%s ", rex_arr[prefix-REX_OPCODE]);
 }
 
@@ -2147,6 +2151,91 @@ bool InstructionEntry::SuppressLockPrefix() const {
   return false;
 }
 
+// Removes prefixes from the prefix byte that are implicit from the instruction.
+int InstructionEntry::StripRexPrefix(int prefix) const {
+  int stripped_prefix = prefix;
+
+  // there are 4 bits that we want to track
+  // - rex.w REX_W
+  // - rex.r REX_R
+  // - rex.x REX_X
+  // - rex.b REX_B
+
+  // If none of the bits are given, return unmodified.
+  if (stripped_prefix == REX_OPCODE) {
+    return prefix;
+  }
+
+  // No prefixes for NOP instructions
+  if (op() == OP_nop) {
+    return 0;
+  }
+
+  // No prefixes for multimedia instructions
+  if (instruction_->tm.cpu_flags.bitfield.cpuavx ||
+      instruction_->tm.cpu_flags.bitfield.cpusse ||
+      instruction_->tm.cpu_flags.bitfield.cpusse2 ||
+      instruction_->tm.cpu_flags.bitfield.cpusse3 ||
+      instruction_->tm.cpu_flags.bitfield.cpusse4_1 ||
+      instruction_->tm.cpu_flags.bitfield.cpusse4_2 ||
+      instruction_->tm.cpu_flags.bitfield.cpusse5 ) {
+    return 0;
+  }
+
+  // Check for the four bits, and remove them if they are unnecessary
+
+  if ((stripped_prefix-REX_OPCODE) & REX_W) {
+    // Make sure xchange-based noops are not stripped of their rex prefix
+    if (op() == OP_xchg &&
+        instruction_->operands == 2 &&
+        IsRegisterOperand(instruction_, 0) &&
+        IsRegisterOperand(instruction_, 1) &&
+        instruction_->op[0].regs == instruction_->op[1].regs) {
+    } else if (instruction_->suffix == 'q') {
+      // Remove prefixes for instructions with the q suffix
+      stripped_prefix = ((stripped_prefix-REX_OPCODE) & ~REX_W)+REX_OPCODE;
+    }
+  }
+
+  if ((stripped_prefix-REX_OPCODE) & REX_R) {
+    // Does this instruction have a register
+    for (unsigned int i = 0; i < instruction_->operands; ++i) {
+      if (IsRegisterOperand(instruction_, i)) {
+        stripped_prefix = ((stripped_prefix-REX_OPCODE) & ~REX_R)+REX_OPCODE;
+      }
+    }
+  }
+  if ((stripped_prefix-REX_OPCODE) & REX_X) {
+    // Does this instruction have a register
+    for (unsigned int i = 0; i < instruction_->operands; ++i) {
+      if (IsMemOperand(instruction_, i)) {
+        stripped_prefix = ((stripped_prefix-REX_OPCODE) & ~REX_X)+REX_OPCODE;
+      }
+    }
+  }
+  if ((stripped_prefix-REX_OPCODE) & REX_B) {
+    // Special case with xchg. e.g. xchg %rax,%r8
+    if (op() == OP_xchg) {
+      stripped_prefix = ((stripped_prefix-REX_OPCODE) & ~REX_B)+REX_OPCODE;
+    } else {
+      for (unsigned int i = 0; i < instruction_->operands; ++i) {
+        if (IsMemOperand(instruction_, i) ||
+            IsRegisterOperand(instruction_, i)) {
+          // Does this instruction have a register
+          stripped_prefix = ((stripped_prefix-REX_OPCODE) & ~REX_B)+REX_OPCODE;
+        }
+      }
+    }
+  }
+
+  // Stripped away rex prefix if all the bits are removed
+  if (stripped_prefix == REX_OPCODE) {
+    return 0;
+  }
+
+  return stripped_prefix;
+}
+
 // Prints out the instruction.
 // Goal is to make it print instructions generated by gcc
 void InstructionEntry::PrintInstruction(FILE *out) const {
@@ -2164,13 +2253,12 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     for (unsigned int i = 0;
          i < sizeof(instruction_->prefix)/sizeof(unsigned char);
          ++i) {
-
       // The prefixes in the instruction is stored in a array of size 6:
       //    These are the indexes:
       //    WAIT_PREFIX     0,
-      //    SEG_PREFIX	    1
-      //    ADDR_PREFIX	    2
-      //    DATA_PREFIX	    3
+      //    SEG_PREFIX      1
+      //    ADDR_PREFIX     2
+      //    DATA_PREFIX     3
       //    LOCKREP_PREFIX  4
       //    REX_PREFIX      5
 
@@ -2206,57 +2294,29 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
               fprintf(out, "rep ");
             }
             break;
-            // Rex prefixes are used for 64-bit extention
-            // There are 4 rex-bits -> 16 rex versions
-          case REX_OPCODE+0:  // e.g.: movb    %sil, -24(%rbp)
-          case REX_OPCODE+1:  // e.g.: movl    $.LC0, %r8d
+          // Rex prefixes are used for 64-bit extention
+          // There are 4 rex-bits -> 16 rex versions
+          case REX_OPCODE+0:
+          case REX_OPCODE+1:
           case REX_OPCODE+2:
           case REX_OPCODE+3:
-          case REX_OPCODE+4:  // e.g.: movl    %r8d, -100(%rbp)
-          case REX_OPCODE+5:  // e.g.: movl    %r13d, %r8d
+          case REX_OPCODE+4:
+          case REX_OPCODE+5:
           case REX_OPCODE+6:
           case REX_OPCODE+7:
-          case REX_OPCODE+8:  // e.g.: add $1, %rax
-          case REX_OPCODE+9:  // e.g.: add $1, %r9
+          case REX_OPCODE+8:
+          case REX_OPCODE+9:
           case REX_OPCODE+10:
           case REX_OPCODE+11:
-          case REX_OPCODE+12:  // e.g.: mov    %r9, (%eax)
-          case REX_OPCODE+13:  // e.g : movq    %r12, %r9
+          case REX_OPCODE+12:
+          case REX_OPCODE+13:
           case REX_OPCODE+14:
           case REX_OPCODE+15: {
-              // Gas is usually good at picking up REX prefixes from the
-            // instruction itself. For some instruction we have to state them
-            // explicitly.
-            // These are
-            //   1. Some instruction that have no operands.
-            //   2. xchg instructions that are actually NOPs. They have the same
-            //      registers in both operands.
-
-            // These instructions need no explicit rex prefix.
-            const MaoOpcode no_rex_prefix[] = {
-              // from x86-64-cbw.s
-              OP_cdqe, OP_cqo,
-              // from x86-64-rep-suffix.s
-              OP_lods, OP_stos,
-              // from x86-64-rep.s
-              OP_movs, OP_cmps, OP_scas,
-              // from x86-64-opcode
-              OP_iret,
-              // other
-              OP_cltq}; // sign extention
-            // Case number 1, see above
-            if (instruction_->operands == 0 &&
-                !IsInList(op(), no_rex_prefix,
-                          sizeof(no_rex_prefix)/sizeof(MaoOpcode))) {
-              PrintRexPrefix(out, instruction_->prefix[i]);
-            }
-            // Case number 2, see above
-            if (op() == OP_xchg &&
-                instruction_->operands == 2 &&
-                IsRegisterOperand(instruction_, 0) &&
-                IsRegisterOperand(instruction_, 1) &&
-                instruction_->op[0].regs == instruction_->op[1].regs) {
-              PrintRexPrefix(out, instruction_->prefix[i]);
+            // Remove prefixes that are implicit in the instruction
+            int stripped_prefix = StripRexPrefix(instruction_->prefix[i]);
+            // Print the remaining
+            if (stripped_prefix != 0) {
+              PrintRexPrefix(out, stripped_prefix);
             }
             break;
           }
