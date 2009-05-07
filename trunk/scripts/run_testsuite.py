@@ -17,7 +17,7 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
     child = subprocess.Popen(command,
                              stdin=stdin, stdout=stdout, stderr=stderr,
                              env=env)
-    (_, err) = child.communicate()
+    (_, _) = child.communicate()
     err = child.wait()
     if err != 0:
       sys.stderr.write("Error running command: %s\n" % " ".join(command))

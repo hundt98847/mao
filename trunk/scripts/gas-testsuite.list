@@ -1,15 +1,15 @@
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/float.s  #-mmnemonic=att
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/general.s #-mold-gcc.
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/segment.s
-#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/inval.s
-#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/inval-seg.s
+#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/inval.s      # list invalid formats
+#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/inval-seg.s  # list invalid formats
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/modrm.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/naked.s
-#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/opcode.s
+i686-linux:../binutils-2.19/gas/testsuite/gas/i386/opcode.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/intel.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/intel16.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/intelok.s
-#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/prefix.s
+i686-linux:../binutils-2.19/gas/testsuite/gas/i386/prefix.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/amd.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/katmai.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/jump.s
@@ -24,10 +24,10 @@ i686-linux:../binutils-2.19/gas/testsuite/gas/i386/suffix.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/immed32.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/equ.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/divide.s          # Problem with FAKE_LABEL_NAME
-#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/padlock.s
+i686-linux:../binutils-2.19/gas/testsuite/gas/i386/padlock.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/crx.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/cr-err.s
-#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/svme.s
+i686-linux:../binutils-2.19/gas/testsuite/gas/i386/svme.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/amdfam10.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/merom.s
 i686-linux:../binutils-2.19/gas/testsuite/gas/i386/rep.s
@@ -94,8 +94,8 @@ i686-linux:../binutils-2.19/gas/testsuite/gas/i386/white.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/tlsd.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/tlspic.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/tlsnopic.s
-#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/bss.s
-#i686-linux:../binutils-2.19/gas/testsuite/gas/i386/reloc32.s
+i686-linux:../binutils-2.19/gas/testsuite/gas/i386/bss.s
+i686-linux:../binutils-2.19/gas/testsuite/gas/i386/reloc32.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/att-regs.s # --defsym _bad_b=1
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/intel-regs.s
 #i686-linux:../binutils-2.19/gas/testsuite/gas/i386/inval-equ-1.s
@@ -121,7 +121,7 @@ x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-merom.s
 x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-rep.s
 x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-rep-suffix.s
 x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-cbw.s
-#x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-io.s
+x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-io.s
 x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-gidt.s
 x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-nops.s
 x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-sse4_1.s
@@ -149,6 +149,6 @@ x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-movbe.s
 #x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-inval-movbe.s
 x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-ept.s
 #x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-inval-ept.s
-#x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/rex.s
+x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/rex.s
 x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/x86-64-unwind.s
 #x86_64-linux:../binutils-2.19/gas/testsuite/gas/i386/reloc64.s # --defsym _bad_=1

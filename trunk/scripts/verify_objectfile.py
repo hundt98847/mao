@@ -33,7 +33,7 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
     child = subprocess.Popen(command,
                              stdin=stdin, stdout=stdout, stderr=stderr,
                              env=env)
-    (output, err) = child.communicate()
+    (output, _) = child.communicate()
     err = child.wait()
     if err != 0:
       raise RunError(err, command, None)

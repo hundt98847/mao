@@ -46,7 +46,7 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
     child = subprocess.Popen(command,
                              stdin=stdin, stdout=stdout, stderr=stderr,
                              env=env)
-    (output, err) = child.communicate()
+    (output, _) = child.communicate()
     err = child.wait()
     if err != 0:
       raise RunError(err, command, None)
@@ -69,7 +69,8 @@ def GetMaoSizes(inputfile, basedir):
     outwords = outputline.split()
     if len(outwords) == 4 and outwords[0] == 'MaoRelax' and \
        outwords[1] == 'functionsize':
-      mao_function_sizes[outwords[2]] = outwords[3]
+      if not outwords[2] in mao_function_sizes:
+        mao_function_sizes[outwords[2]] = outwords[3]
   return mao_function_sizes
 
 
