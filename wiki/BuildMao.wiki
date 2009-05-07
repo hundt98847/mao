@@ -12,7 +12,7 @@ for Linux and OSX. Note that --disable-nls might be needed when building binutil
 cd $DIR
 wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
 gzip -dc binutils-2.19.tar.gz | tar xvf -
-(cd binutils-2.19 && patch -p1  < ../binutils-2.19-mao.patch)
+(cd binutils-2.19 && patch -p1  < ../data/binutils-2.19-mao.patch)
 
 # For i686-linux
 mkdir binutils-2.19-obj-i686-linux 
