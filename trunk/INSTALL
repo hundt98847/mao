@@ -6,7 +6,7 @@ below. Below are the instruction for builing MAO for both i686 and x86_64.
 cd $DIR
 wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
 gzip -dc binutils-2.19.tar.gz | tar xvf -
-(cd binutils-2.19 && patch -p1  < ../binutils-2.19-mao.patch)
+(cd binutils-2.19 && patch -p1  < ../data/binutils-2.19-mao.patch)
 mkdir binutils-2.19-obj-i686-linux binutils-2.19-obj-x86_64-linux
 cd binutils-2.19-obj-i686-linux
 ../binutils-2.19/configure --target=i686-linux
