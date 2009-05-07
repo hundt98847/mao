@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 # input is the benchmark we want to try (and optionally the number of lines in the assembly to test)
 # Simple verification script written by martint
