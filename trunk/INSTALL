@@ -1,21 +1,3 @@
-MAO relies on binutils for parsing the input assembly file. Make sure
-you download and build the correct version of binutils as indicated
-below. Below are the instruction for builing MAO for both i686 and x86_64.
+For installation instructions see:
 
-
-cd $DIR
-wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
-gzip -dc binutils-2.19.tar.gz | tar xvf -
-(cd binutils-2.19 && patch -p1  < ../data/binutils-2.19-mao.patch)
-mkdir binutils-2.19-obj-i686-linux binutils-2.19-obj-x86_64-linux
-cd binutils-2.19-obj-i686-linux
-../binutils-2.19/configure --target=i686-linux
-make
-cd ..
-cd binutils-2.19-obj-x86_64-linux
-../binutils-2.19/configure --target=x86_64-linux
-make
-cd ..
-cd src
-make TARGET=i686-linux
-make TARGET=x86_64-linux
+    http://code.google.com/p/mao/wiki/BuildMao
