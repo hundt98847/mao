@@ -118,7 +118,7 @@ class BitString {
   }
 
   void Print() {
-    fprintf(stderr, "bits: %llx:%llx:%llx:%llx\n",
+    fprintf(stderr, "bits: %016llx:%016llx:%016llx:%016llx\n",
 	    word[3], word[2], word[1], word[0] );
   }
 
