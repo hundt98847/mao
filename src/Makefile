@@ -92,6 +92,7 @@ CCSRCS=						\
 	Maoi386Size.cc				\
 	MaoLongInstructionSplit.cc		\
 	MaoLoopAlign.cc				\
+	MaoLoop16.cc				\
 	MaoLoops.cc				\
 	MaoMissDisp.cc				\
 	MaoNopinizer.cc				\
