@@ -74,6 +74,8 @@ int main(int argc, const char *argv[]) {
     PerformDeadCodeElimination(&mao_unit, function);
     PerformNopKiller(&mao_unit, function);
     PerformNopinizer(&mao_unit, function);
+    PerformAddAddElimination(&mao_unit,
+                             function);
     PerformZeroExtensionElimination(&mao_unit,
                                     function);
     PerformRedundantTestElimination(&mao_unit,

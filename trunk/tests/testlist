@@ -7,3 +7,4 @@ loops-1.s
 long-jump.s
 long-jump-space.s
 relax-function-end.s
+addadd.s

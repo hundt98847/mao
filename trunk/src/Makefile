@@ -84,6 +84,7 @@ CSRCS=						\
 CCSRCS=						\
 	ir.cc					\
 	mao.cc					\
+	MaoAddAdd.cc				\
 	MaoCFG.cc				\
 	MaoDCE.cc				\
 	MaoDefs.cc				\

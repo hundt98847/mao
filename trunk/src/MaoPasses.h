@@ -244,6 +244,7 @@ MaoPass *FindPass(MaoOption *arr);
 
 
 // Some Pass Entry Points.
+void PerformAddAddElimination(MaoUnit *mao, Function *function);
 void PerformZeroExtensionElimination(MaoUnit *mao, Function *function);
 void PerformRedundantTestElimination(MaoUnit *mao,  Function *function);
 void PerformRedundantMemMoveElimination(MaoUnit *mao, Function *function);
