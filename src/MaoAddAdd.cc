@@ -44,13 +44,11 @@ class AddAddElimPass : public MaoPass {
             insn->IsRegisterOperand(1));
   }
 
-  // Redundant add add elimination. Find pattern:
+  // Add add  pattern finder:
   //     add/sub rX, IMM1
   //     add/sub rX, IMM2
   void DoElim() {
     set_cfg(CFG::GetCFG(mao_, function_));
-
-    std::list<InstructionEntry *> redundants;
 
     FORALL_CFG_BB(cfg(),it) {
       MaoEntry *first = (*it)->GetFirstInstruction();
@@ -101,12 +99,6 @@ class AddAddElimPass : public MaoPass {
         } // IsAdd()
       }  // Entries
     }  // BB
-
-    // Now delete all the redundant ones.
-    for (std::list<InstructionEntry *>::iterator it = redundants.begin();
-         it != redundants.end(); ++it) {
-      mao_->DeleteEntry(*it);
-    }
   }
 
  private:
