@@ -85,6 +85,7 @@ int main(int argc, const char *argv[]) {
     PerformMissDispElimination(&mao_unit,
                                function);
     PerformLongInstructionSplit(&mao_unit, function);
+    PerformAlignTinyLoops16(&mao_unit, function);
     DoLoopAlign(&mao_unit, function);
     DoBranchSeparate(&mao_unit, function);
     TestCFGPass(&mao_unit, function);

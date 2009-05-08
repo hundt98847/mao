@@ -88,8 +88,12 @@ class SimpleLoop {
       for (BasicBlockSet::iterator bbiter = basic_blocks_.begin();
            bbiter != basic_blocks_.end(); ++bbiter) {
         BasicBlock *BB = *bbiter;
-        fprintf(stderr, "BB%d%s ", BB->id(),
-                BB == header() ? "<head> " : "");
+        fprintf(stderr, "BB%d", BB->id());
+        if (BB == header())
+          fprintf(stderr, "<head>");
+        if (BB == bottom())
+          fprintf(stderr, "<bottom>");
+        fprintf(stderr, " ");
       }
     }
 

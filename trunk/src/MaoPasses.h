@@ -253,6 +253,7 @@ void PerformMissDispElimination(MaoUnit *mao, Function *func);
 void PerformNopKiller(MaoUnit *mao, const Function *func);
 void PerformNopinizer(MaoUnit *mao,       Function *func);
 void PerformLongInstructionSplit(MaoUnit *mao, Function *func);
-void PerformProfileAnnotation(MaoUnit *mao_unit);
+void PerformProfileAnnotation(MaoUnit *mao);
+void PerformAlignTinyLoops16(MaoUnit *mao, Function *func);
 
 #endif   // MAP_PASSES_H_INCLUDED_
