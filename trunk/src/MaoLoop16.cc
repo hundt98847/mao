@@ -48,9 +48,11 @@ class AlignTinyLoops16 : public MaoPass {
   }
 
 
-  void AlignInner(const SimpleLoop *loop,
-                  MaoRelaxer::SizeMap *offsets) {
+  void AlignInner(const SimpleLoop    *loop,
+                  MaoRelaxer::SizeMap *offsets,
+                  MaoRelaxer::SizeMap *sizes) {
     MAO_ASSERT(offsets);
+    MAO_ASSERT(sizes);
 
     if (!loop->nesting_level() &&   // Leaf node = Inner loop
         !loop->is_root()) {         // not root
@@ -74,7 +76,8 @@ class AlignTinyLoops16 : public MaoPass {
       }
 
 
-      int end_off = (*offsets)[max_bb->last_entry()];
+      int end_off = (*offsets)[max_bb->last_entry()] +
+                    (*sizes)[max_bb->last_entry()];
       int start_off   = (*offsets)[min_bb->first_entry()];
       int size = end_off - start_off;
 
@@ -101,7 +104,7 @@ class AlignTinyLoops16 : public MaoPass {
     // Recursive call in order to find all
     for (SimpleLoop::LoopSet::const_iterator liter = loop->ConstChildrenBegin();
          liter != loop->ConstChildrenEnd(); ++liter) {
-      AlignInner(*liter, offsets);
+      AlignInner(*liter, offsets, sizes);
     }
   }
 
@@ -112,7 +115,9 @@ class AlignTinyLoops16 : public MaoPass {
         !loop_graph_->NumberOfLoops()) return;
 
     MaoRelaxer::GetSizeMap(mao_, function_->GetSection());
-    AlignInner(loop_graph_->root(), function_->GetSection()->offsets());
+    AlignInner(loop_graph_->root(),
+               function_->GetSection()->offsets(),
+               function_->GetSection()->sizes());
   }
 
  private:
