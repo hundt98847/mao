@@ -53,8 +53,6 @@ int main(int argc, const char *argv[]) {
 
   // Static Initialization
   mao_options.ProvideHelp();
-  if (new_argc < 2)
-    mao_options.ProvideHelp(true /* always */);
 
   register_mao_unit(&mao_unit);
   InitRegisters();
