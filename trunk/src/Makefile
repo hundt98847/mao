@@ -133,7 +133,7 @@ DEPS=$(CDEPS) $(CCDEPS)
 
 all: mao-$(TARGET)
 
-$(OBJDIR)/%.o : %.c
+$(OBJDIR)/%.o : %.c stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	@$(MAKEDEPEND) -MQ $@;					\
 	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//'	\
@@ -142,7 +142,7 @@ $(OBJDIR)/%.o : %.c
 	rm -f $(OBJDIR)/$*.P
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/%.o : %.cc
+$(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	@$(MAKEDEPEND) -MQ $@;					\
 	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//'	\
