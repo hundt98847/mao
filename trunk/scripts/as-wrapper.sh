@@ -40,24 +40,24 @@ function parse_args() {
         save_temps=1
         shift 1
       ;;
-      
+
       '--mao')
         mao_args[${#mao_args[*]}]="-mao:$2"
         invoke_mao=1
         shift 2
       ;;
-  
+
       '-o')
         output_file=$2
         shift 2
       ;;
-  
+
       '--')
         shift
         input_files=$@
         break;
       ;;
-  
+
       *)
         mao_args[${#mao_args[*]}]=$1
         as_args[${#as_args[*]}]=$1
@@ -73,32 +73,36 @@ function main()  {
   local dir_name=`dirname $0`
   local mao_bin=${dir_name}/mao
   local as_bin=${dir_name}/as-orig
+  local mao_output_file='a.mao.s'
+
   #long options used by as
   local as_long_opts="alternate,a::,al::debug-prefix-map:,defsym:,dump-config,emulation:,execstack,noexecstack,\
 fatal-warnings,gdwarf-2,gdwarf2,gen-debug,gstabs,gstabs+,hash-size:,help,itbl:,keep-locals,listing-lhs-width:,\
 listing-lhs-width2:,listing-rhs-width:,MD:,mri,nocpp,no-warn,reduce-memory-overheads,statistics,\
 strip-local-absolute,version,verbose,target-help,traditional-format,warn,mao:,save-temps,32,64,divide,march:,\
 mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
-  
+
   #short options used by as
   local as_short_opts="JKLMRWZa::Dfg::I:o:vwXt:kVQ:sqn"
 
-  local mao_output_file='a.mao.s'
+  #Abort if the real as does not exist
   if [[ ! -x "${as_bin}" ]]; then
-    echo "Unable to execute as binary : ${as_bin}"
+    echo "$0: Unable to execute the assembler ${as_bin}"
     exit 1
   fi
-
-  #echo $@
-  
+  #Pre-process the arguments using getopt
   local preprocessed_args="$(getopt  -u -a -o${as_short_opts} -l${as_long_opts} -- $@)"
   if [[ $? = 1 ]]; then
     echo "$0: Unable to parse options" >&2
+    exit 1
+  elif [[ $? = 2 ]]; then
+    echo "$0: getopt does not understand its own parameters" >&2
     exit 1
   elif [[ $? = 3 ]]; then
     echo "$0: Internal error in getopt" >&2
     exit 1
   fi
+
   parse_args ${preprocessed_args}
 
   if [[ $output_file != "a.out" ]]; then
@@ -108,22 +112,36 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
   if [[ ${invoke_mao} = 1 ]]; then
 
     if [[ ! -x "${mao_bin}" ]]; then
-      echo "Unable to execute mao binary : ${mao_bin}"
+      echo "$0: Unable to execute  ${mao_bin}"
       exit 1
     fi
-    #echo "${mao_bin} ${mao_args[*]} ${input_files} -mao:-o${mao_output_file}"
     ${mao_bin} ${mao_args[*]} ${input_files} -mao:-o${mao_output_file}
+    if [[ $? != 0 ]]; then
+      echo "$0: Execution of ${mao_bin} failed with error code $?"
+      exit 1
+    fi
+
+
 
     #echo "${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}"
     ${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}
+    if [[ $? != 0 ]]; then
+      echo "$0: Execution of ${as_bin} failed with error code $?"
+      exit 1
+    fi
 
     if [[ ${save_temps} = 0 ]]; then
       #echo "rm ${mao_output_file}"
-      rm ${mao_output_file}
+      rm -f ${mao_output_file}
     fi
   else
     ${as_bin} ${as_args[*]} ${input_files} -o ${output_file}
+    if [[ $? != 0 ]]; then
+      echo "$0: Execution of ${as_bin} failed with error code $?"
+      exit 1
+    fi
   fi
 }
 
-main $@  
+main $@
+
