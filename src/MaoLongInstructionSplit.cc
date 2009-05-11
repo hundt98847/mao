@@ -89,7 +89,7 @@ class LongInstructionsSplitPass : public MaoPass {
  private:
   MaoUnit   *mao_;
   Function  *func_;
-  MaoRelaxer::SizeMap *sizes_;
+  MaoEntryIntMap *sizes_;
   int        length_;
   int        fill_;
 };

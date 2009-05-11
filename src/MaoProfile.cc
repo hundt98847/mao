@@ -342,7 +342,7 @@ bool ProfileAnnotationPass::Go() {
 
     // Get the size map for this function
     Section *section = function->GetSection();
-    MaoRelaxer::SizeMap *sizes = MaoRelaxer::GetSizeMap(mao_, section);
+    MaoEntryIntMap *sizes = MaoRelaxer::GetSizeMap(mao_, section);
 
     // For each sample, attribute it to the corresponding instruction
     InstructionSampleSet *function_samples = function_samples_iterator->second;

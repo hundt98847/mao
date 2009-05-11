@@ -959,6 +959,9 @@ class Function {
   LoopStructureGraph *lsg_;
 };
 
+// Global Map Types
+typedef std::map<MaoEntry *, int> MaoEntryIntMap;
+
 // Convenience macros
 #define FORALL_FUNC_ENTRY(func, entry) \
   for (MaoEntry *entry = func->first_entry(); \
@@ -971,7 +974,7 @@ class Section {
   // Memory for the name is allocated in the constructor and freed
   // in the destructor.
   explicit Section(const char *name, const SectionID id) :
-      name_(name), id_(id), sizes_(NULL) {}
+    name_(name), id_(id), sizes_(NULL), offsets_(NULL) {}
   ~Section() {}
   std::string name() const {return name_;}
   SectionID id() const {return id_;}
@@ -986,14 +989,14 @@ class Section {
   // Return the last subsection in the section or NULL if section is empty.
   SubSection *GetLastSubSection() const;
 
-  std::map<MaoEntry *, int> *sizes() {return sizes_;}
-  std::map<MaoEntry *, int> *offsets() {return offsets_;}
-  void set_sizes(std::map<MaoEntry *, int> *sizes) {
+  MaoEntryIntMap *sizes() {return sizes_;}
+  MaoEntryIntMap *offsets() {return offsets_;}
+  void set_sizes(MaoEntryIntMap *sizes) {
     if (sizes_ != NULL)
       delete sizes_;
     sizes_ = sizes;
   }
-  void set_offsets(std::map<MaoEntry *, int> *offsets) {
+  void set_offsets(MaoEntryIntMap *offsets) {
     if (offsets_ != NULL)
       delete offsets_;
     offsets_ = offsets;
@@ -1009,10 +1012,14 @@ class Section {
   // Sizes as determined by the relaxer
   // TODO(martint): fix types to use the named type in relax.h
   // NULL if not set.
-  std::map<MaoEntry *, int> *sizes_;
+  MaoEntryIntMap *sizes_;
 
   // Store corresponding entry offsets
-  std::map<MaoEntry *, int> *offsets_;
+  MaoEntryIntMap *offsets_;
 };
+
+
+
+
 
 #endif  // MAOUNIT_H_

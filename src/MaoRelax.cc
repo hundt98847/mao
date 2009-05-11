@@ -91,7 +91,7 @@ void MaoRelaxer::RestoreState(const struct frag *fragments, FragState *state) {
   }
 }
 
-void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
+void MaoRelaxer::RelaxSection(Section *section, MaoEntryIntMap *size_map) {
   // Build the fragments (and initial sizes)
   FragToEntryMap relax_map;
 
@@ -152,7 +152,7 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
   FreeFragments(fragments);
 
   if (dump_sizemap_) {
-    for (SizeMap::const_iterator iter = size_map->begin();
+    for (MaoEntryIntMap::const_iterator iter = size_map->begin();
          iter != size_map->end();
          ++iter) {
       fprintf(stderr, "%4x:  ", iter->second);
@@ -175,12 +175,12 @@ void MaoRelaxer::RelaxSection(Section *section, SizeMap *size_map) {
 }
 
 
-MaoRelaxer::SizeMap *MaoRelaxer::GetSizeMap(MaoUnit *mao, Section *section) {
+MaoEntryIntMap *MaoRelaxer::GetSizeMap(MaoUnit *mao, Section *section) {
   MAO_ASSERT(section);
-  MaoRelaxer::SizeMap *offsets, *sizes = section->sizes();
+  MaoEntryIntMap *offsets, *sizes = section->sizes();
   if (sizes == NULL) {
-    sizes   = new MaoRelaxer::SizeMap();
-    offsets = new MaoRelaxer::SizeMap();
+    sizes   = new MaoEntryIntMap();
+    offsets = new MaoEntryIntMap();
 
     Relax(mao, section, sizes);
     int offset = 0;
@@ -207,7 +207,7 @@ void MaoRelaxer::InvalidateSizeMap(Section *section) {
 
 
 struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
-                                        SizeMap *size_map,
+                                        MaoEntryIntMap *size_map,
                                         FragToEntryMap *relax_map) {
   struct frag *fragments, *frag;
   fragments = frag = NewFragment();
@@ -577,7 +577,7 @@ struct frag *MaoRelaxer::HandleSpace(DirectiveEntry *entry,
                                      int mult,
                                      struct frag *frag,
                                      bool new_frag,
-                                     SizeMap *size_map,
+                                     MaoEntryIntMap *size_map,
                                      FragToEntryMap *relax_map) {
   MAO_ASSERT(entry->NumOperands() == 2);
   const DirectiveEntry::Operand *size_opnd = entry->GetOperand(0);
@@ -608,7 +608,7 @@ struct frag *MaoRelaxer::HandleSpace(DirectiveEntry *entry,
 
 void MaoRelaxer::HandleString(DirectiveEntry *entry, int multiplier,
                               bool null_terminate, struct frag *frag,
-                              SizeMap *size_map) {
+                              MaoEntryIntMap *size_map) {
   int size = StringSize(entry, multiplier, null_terminate);
   (*size_map)[entry] = size;
   frag->fr_fix += size;
@@ -659,9 +659,9 @@ void MaoRelaxer::FragInitOther(struct frag *frag) {
 }
 
 
-int MaoRelaxer::SectionSize(SizeMap *size_map) {
+int MaoRelaxer::SectionSize(MaoEntryIntMap *size_map) {
   int size = 0;
-  for (SizeMap::const_iterator iter = size_map->begin();
+  for (MaoEntryIntMap::const_iterator iter = size_map->begin();
        iter != size_map->end();
        ++iter) {
     size += iter->second;
@@ -669,7 +669,7 @@ int MaoRelaxer::SectionSize(SizeMap *size_map) {
   return size;
 }
 
-int MaoRelaxer::FunctionSize(Function *function, SizeMap *size_map) {
+int MaoRelaxer::FunctionSize(Function *function, MaoEntryIntMap *size_map) {
   int size = 0;
   for (SectionEntryIterator iter = function->EntryBegin();
       iter != function->EntryEnd();
@@ -686,7 +686,7 @@ int MaoRelaxer::FunctionSize(Function *function, SizeMap *size_map) {
 // --------------------------------------------------------------------
 // External entry point
 // --------------------------------------------------------------------
-void Relax(MaoUnit *mao, Section *section, MaoRelaxer::SizeMap *size_map) {
+void Relax(MaoUnit *mao, Section *section, MaoEntryIntMap *size_map) {
   MaoRelaxer relaxer(mao);
   relaxer.RelaxSection(section, size_map);
 }
