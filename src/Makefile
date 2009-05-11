@@ -1,6 +1,6 @@
 OS=Linux
 TARGET=x86_64-linux
-DLOCALEDIR="\"/usr/share/locale\""
+LOCALEDIR=/usr/share/locale
 BINUTILSRC=../binutils-2.19
 BINUTILOBJ=$(BINUTILSRC)-obj-$(TARGET)
 PYTHON=../python-2.5.4
@@ -23,9 +23,14 @@ OBJDIR=../obj-$(TARGET)
 BINDIR=../bin
 CC=gcc
 
+# Allow users to set this SRCDIR, to build outside of the source directory.
+SRCDIR=.
+VPATH=$(SRCDIR)
+
 CFLAGS=						\
 	-D_GNU_SOURCE				\
 	-I.					\
+	-I$(OBJDIR)				\
 	-I$(BINUTILOBJ)/gas 			\
 	-I$(BINUTILSRC)/gas 			\
 	-I$(BINUTILOBJ)/bfd			\
@@ -36,7 +41,7 @@ CFLAGS=						\
 	-I$(BINUTILSRC)				\
 	-I$(BINUTILSRC)/include			\
 	-I$(BINUTILOBJ)/include			\
-	-DLOCALEDIR=$(DLOCALEDIR)		\
+	-DLOCALEDIR="\"$(LOCALEDIR)\""		\
 	-g -O0 -Wall -fno-exceptions
 
 MAKEDEPEND=gcc -MM $(CFLAGS) -o $(patsubst %.o,%.P,$@) $<
@@ -155,30 +160,35 @@ $(GAS_CONFIG_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/config/%.c
 $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/GenOpcodes: GenOpcodes.cc MaoDefs.h MaoDefs.tbl MaoUtil.h Makefile
-	$(CC) $(CFLAGS) -o $(OBJDIR)/GenOpcodes GenOpcodes.cc -lstdc++
+$(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) GenOpcodes.cc MaoDefs.h MaoDefs.tbl MaoUtil.h Makefile
+	$(CC) $(CFLAGS) -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
 
-gen-opcodes.h: $(OBJDIR)/GenOpcodes
-	$(OBJDIR)/GenOpcodes $(BINUTILSRC)/opcodes/i386-opc.tbl ./MaoDefs.tbl
+$(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes
+	$(OBJDIR)/GenOpcodes -p $(OBJDIR) $(BINUTILSRC)/opcodes/i386-opc.tbl $(SRCDIR)/MaoDefs.tbl
 
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
-$(BINDIR)/mao-$(TARGET): stamp-bin gen-opcodes.h $(OBJS)
+$(BINDIR)/mao-$(TARGET): stamp-bin $(OBJDIR)/gen-opcodes.h $(OBJS)
 	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil
 
-.PHONY : clean all mao-$(TARGET)
+.PHONY : clean allclean all mao-$(TARGET)
 
 stamp-bin:
 	test -d $(BINDIR) || mkdir -p $(BINDIR)
-	test -d $(OBJDIR) || mkdir -p $(OBJDIR)
 	touch stamp-bin
+
+stamp-obj-$(TARGET):
+	test -d $(OBJDIR) || mkdir -p $(OBJDIR)
+	touch stamp-obj-$(TARGET)
 
 clean : 
 	-rm -f $(OBJDIR)/*
 	-rm -f $(BINDIR)/mao-$(TARGET)
-	-rm -f gen-opcodes-table.h
-	-rm -f gen-opcodes.h
-	-rm -f gen-defs.h
+
+allclean : 
+	-rm -rf ../obj-*
+	-rm -rf $(BINDIR)
 	-rm -f stamp-bin
+	-rm -f stamp-obj-*
 
 -include $(DEPS)
