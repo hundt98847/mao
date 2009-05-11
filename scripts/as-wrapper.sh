@@ -13,7 +13,7 @@ mao_args=( )
 invoke_mao=0
 output_file='a.out'
 input_files=()
-
+wrapper_help=0
 
 
 #######################################
@@ -39,6 +39,16 @@ function parse_args() {
     in
       '--save-temps')
         save_temps=1
+        shift 1
+      ;;
+
+      '--help')
+        wrapper_help=1
+        shift 1
+      ;;
+
+      '-h')
+        wrapper_help=1
         shift 1
       ;;
 
@@ -90,11 +100,16 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
   #short options used by as
   local as_short_opts="JKLMRWZa::Dfg::I:o:vwXt:kVQ:sqn"
 
-  #Abort if the real as does not exist
+  #Abort if mao or the real as does not exist
   if [[ ! -x "${as_bin}" ]]; then
     echo "$0: Unable to execute the assembler ${as_bin}"
     exit 1
   fi
+  if [[ ! -x "${mao_bin}" ]]; then
+    echo "$0: Unable to execute  ${mao_bin}"
+    exit 1
+  fi
+
   #Pre-process the arguments using getopt
   preprocessed_args="$(getopt  -u -a -o${as_short_opts} -l${as_long_opts} -- $@)"
   retval=$?;
@@ -111,16 +126,20 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
 
   parse_args ${preprocessed_args}
 
+  if [[ ${wrapper_help} = 1 ]]; then
+    echo -e "Mao usage :\n"
+    ${mao_bin} -mao:-h
+    echo -e "\nAssembler usage :\n"
+    ${as_bin} --help
+    exit 0
+  fi
+
   if [[ $output_file != "a.out" ]]; then
     mao_output_file=${output_file/%.o/.mao.s}
   fi
 
   if [[ ${invoke_mao} = 1 ]]; then
 
-    if [[ ! -x "${mao_bin}" ]]; then
-      echo "$0: Unable to execute  ${mao_bin}"
-      exit 1
-    fi
     ${mao_bin} ${mao_args[*]} ${input_files} -mao:-o${mao_output_file}
     if [[ $? != 0 ]]; then
       echo "$0: Execution of ${mao_bin} failed with error code $?"
