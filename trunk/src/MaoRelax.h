@@ -29,14 +29,12 @@
 
 class MaoRelaxer : public MaoPass {
  public:
-  typedef std::map<MaoEntry *, int> SizeMap;
-
   explicit MaoRelaxer(MaoUnit *mao_unit);
-  void RelaxSection(Section *section, SizeMap *size_map);
+  void RelaxSection(Section *section, MaoEntryIntMap *size_map);
 
   // Used when a pass needs the sizes for a given section.
   // Returns the sizemap, which holds entries for the whole section.
-  static SizeMap *GetSizeMap(MaoUnit *mao, Section *section);
+  static MaoEntryIntMap *GetSizeMap(MaoUnit *mao, Section *section);
   // Checks if a section has a sizemap computed.
   static bool HasSizeMap(Section *section);
   // Invalidates the sizemap for the section.
@@ -46,7 +44,7 @@ class MaoRelaxer : public MaoPass {
   typedef std::map<struct frag *, MaoEntry *> FragToEntryMap;
 
   static struct frag *BuildFragments(
-      MaoUnit *mao, Section *section, SizeMap *size_map,
+      MaoUnit *mao, Section *section, MaoEntryIntMap *size_map,
       FragToEntryMap *relax_map);
 
   static int SizeOfFloat(DirectiveEntry *entry);
@@ -66,11 +64,11 @@ class MaoRelaxer : public MaoPass {
 
   static struct frag *HandleSpace(
       DirectiveEntry *entry, int mult, struct frag *frag,
-      bool new_frag, SizeMap *size_map, FragToEntryMap *relax_map);
+      bool new_frag, MaoEntryIntMap *size_map, FragToEntryMap *relax_map);
 
   static void HandleString(
       DirectiveEntry *entry, int multiplier, bool null_terminate,
-      struct frag *frag, SizeMap *size_map);
+      struct frag *frag, MaoEntryIntMap *size_map);
 
   static int StringSize(
       DirectiveEntry *entry, int multiplier, bool null_terminate);
@@ -97,8 +95,8 @@ class MaoRelaxer : public MaoPass {
     }
   }
 
-  static int SectionSize(SizeMap *size_map);
-  static int FunctionSize(Function *function, SizeMap *size_map);
+  static int SectionSize(MaoEntryIntMap *size_map);
+  static int FunctionSize(Function *function, MaoEntryIntMap *size_map);
 
   // The functions below makes is possible to revert any changes
   // to the IR the relaxation does. The relaxer will change the
@@ -138,6 +136,6 @@ class MaoRelaxer : public MaoPass {
 };
 
 // External entry point
-void Relax(MaoUnit *mao, Section *section, MaoRelaxer::SizeMap *size_map);
+void Relax(MaoUnit *mao, Section *section, MaoEntryIntMap *size_map);
 
 #endif  // MAORELAX_H_

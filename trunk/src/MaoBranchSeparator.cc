@@ -41,7 +41,7 @@ class BranchSeparatorPass : public MaoPass {
   Function *function_;
   // This is the sizes of all the instructions in the section
   // as found by the relaxer.
-  MaoRelaxer::SizeMap *sizes_;
+  MaoEntryIntMap *sizes_;
   // Collect stat during the pass?
   bool collect_stat_;
   //Required distance between branches
@@ -51,7 +51,8 @@ class BranchSeparatorPass : public MaoPass {
 
   class BranchSeparatorStat : public Stat {
    public:
-    BranchSeparatorStat() : num_branches_(0), num_branches_realigned_(0), nops_inserted_(0) {
+    BranchSeparatorStat() : num_branches_(0), num_branches_realigned_(0),
+                            nops_inserted_(0) {
     }
 
     ~BranchSeparatorStat() {;}
@@ -99,9 +100,10 @@ MAO_OPTIONS_DEFINE(BRSEP, 3) {
                               "any two branches"),
   OPTION_BOOL("stat", false, "Collect and print(trace) "
                              "statistics about loops."),
-  OPTION_STR("function_list", "", "A comma separated list of mangled function names"
-                             " on which this pass is applied."
-                             " An empty string means the pass is applied on all functions"),
+  OPTION_STR("function_list", "",
+             "A comma separated list of mangled function names"
+             " on which this pass is applied."
+             " An empty string means the pass is applied on all functions"),
 };
 
 BranchSeparatorPass::BranchSeparatorPass(MaoUnit *mao, Function *function)
@@ -163,7 +165,7 @@ void BranchSeparatorPass::DoBranchSeparate() {
   if(change) {
     //Relaxation has to be performed again
     MaoRelaxer::InvalidateSizeMap(function_->GetSection());
-    //Align function begining based on min_branch_distance 
+    //Align function begining based on min_branch_distance
     AlignEntry(function_, *(function_->EntryBegin()));
   }
   return;
@@ -171,13 +173,12 @@ void BranchSeparatorPass::DoBranchSeparate() {
 
 //Use .p2align
 void BranchSeparatorPass::AlignEntry(Function *function, MaoEntry *entry) {
-  
   SubSection *ss = function_->GetSubSection();
   DirectiveEntry::OperandVector operands;
   int alignment = (int)(log2(min_branch_distance_));
   operands.push_back(new DirectiveEntry::Operand(alignment));
   operands.push_back(new DirectiveEntry::Operand());// Not used in relaxation
-  operands.push_back(new DirectiveEntry::Operand(min_branch_distance_-1)); 
+  operands.push_back(new DirectiveEntry::Operand(min_branch_distance_-1));
   DirectiveEntry *align_entry = mao_unit_->CreateDirective(
       DirectiveEntry::P2ALIGN, operands,
       function_, ss);
@@ -185,14 +186,15 @@ void BranchSeparatorPass::AlignEntry(Function *function, MaoEntry *entry) {
 
 }
 //Use .p2align
-void BranchSeparatorPass::InsertNopsBefore (Function *function, MaoEntry *entry, int num_nops) {
-  
+void BranchSeparatorPass::InsertNopsBefore (Function *function,
+                                            MaoEntry *entry, int num_nops) {
+
   SubSection *ss = function_->GetSubSection();
   DirectiveEntry::OperandVector operands;
   int alignment = (int)(log2(min_branch_distance_));
   operands.push_back(new DirectiveEntry::Operand(alignment));
   operands.push_back(new DirectiveEntry::Operand());// Not used in relaxation
-  operands.push_back(new DirectiveEntry::Operand(num_nops)); 
+  operands.push_back(new DirectiveEntry::Operand(num_nops));
   DirectiveEntry *align_entry = mao_unit_->CreateDirective(
       DirectiveEntry::P2ALIGN, operands,
       function_, ss);
@@ -231,7 +233,7 @@ bool BranchSeparatorPass::IsProfitable(Function *function){
           return true;
         function_list = comma_pos+1;
       }
-      //The function list might be just a single function name and so 
+      //The function list might be just a single function name and so
       //we need to compare the list against the given function name
       if( strcmp (function_list, func_name) == 0 )
         return true;
