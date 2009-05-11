@@ -7,6 +7,7 @@
 #
 
 save_temps=0
+mao_help=0
 as_args=( )
 mao_args=( )
 invoke_mao=0
@@ -44,6 +45,10 @@ function parse_args() {
       '--mao')
         mao_args[${#mao_args[*]}]="-mao:$2"
         invoke_mao=1
+	if [[ $2 = "-h" ]]; then
+	  mao_help=1
+	fi
+
         shift 2
       ;;
 
@@ -91,14 +96,15 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
     exit 1
   fi
   #Pre-process the arguments using getopt
-  local preprocessed_args="$(getopt  -u -a -o${as_short_opts} -l${as_long_opts} -- $@)"
-  if [[ $? = 1 ]]; then
+  preprocessed_args="$(getopt  -u -a -o${as_short_opts} -l${as_long_opts} -- $@)"
+  retval=$?;
+  if [[ ${retval} = 1 ]]; then
     echo "$0: Unable to parse options" >&2
     exit 1
-  elif [[ $? = 2 ]]; then
+  elif [[ ${retval} = 2 ]]; then
     echo "$0: getopt does not understand its own parameters" >&2
     exit 1
-  elif [[ $? = 3 ]]; then
+  elif [[ ${retval} = 3 ]]; then
     echo "$0: Internal error in getopt" >&2
     exit 1
   fi
@@ -119,6 +125,10 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
     if [[ $? != 0 ]]; then
       echo "$0: Execution of ${mao_bin} failed with error code $?"
       exit 1
+    fi
+    #If -mao:-h is called, as-orig should not be invoked
+    if [[ ${mao_help} = 1 ]]; then
+      exit 0
     fi
 
 
