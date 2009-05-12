@@ -38,7 +38,7 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
     (output, outputstderr) = child.communicate()
     err = child.wait()
     if err != 0:
-      raise RunError(err, command, None)
+      print "Error " + outputstderr
     return output + outputstderr
   except OSError, e:
     raise RunError(1, command, e)

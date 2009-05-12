@@ -1,4 +1,4 @@
-#Option: -mao:REDMOV=enable,trace
+#Option: -mao:REDMOV=trace
 #grep same 0
 
       	movq	(_ZTTSt19basic_ostringstreamIcSt11char_traitsIcESaIcEE@GOTPCREL)+0(%rip), %rdx	# id: 5324, l: 5328	
