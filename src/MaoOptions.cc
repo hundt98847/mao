@@ -22,6 +22,7 @@
 #include "MaoDebug.h"
 #include "MaoOptions.h"
 #include "MaoPasses.h"
+#include "MaoPlugin.h"
 
 // Maintain mapping between option array and pass name.
 //
@@ -72,6 +73,7 @@ void MaoOptions::ProvideHelp(bool always) {
           "-h          display this help text\n"
           "-v          verbose (set trace level to 3)\n"
           "-T          output timing information for passes\n"
+          "--plugin    load the specified plugin\n"
           "\n"
           "PASS=[phase-option][,phase-option]*\n"
           "\nwith PASS and 'phase-option' being:\n\n"
@@ -318,6 +320,12 @@ void MaoOptions::Parse(const char *arg, bool collect,
       } else if (arg[0] == 'T') {
         set_timer_print();
         ++arg;
+      } else if (!strncmp(arg, "-plugin", 7)) {
+        arg += 7;
+        GobbleGarbage(arg, &arg);
+        char *plugin = NextToken(arg, &arg, token_buff);
+        if (collect)
+          LoadPlugin(plugin);
       } else {
         fprintf(stderr, "Invalid Option starting with: %s\n", arg);
         ++arg;

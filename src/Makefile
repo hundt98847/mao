@@ -105,6 +105,7 @@ CCSRCS=						\
 	MaoOpcodes.cc				\
 	MaoOptions.cc				\
 	MaoPasses.cc				\
+	MaoPlugin.cc				\
 	MaoProfile.cc				\
 	MaoRedundantTestElim.cc			\
 	MaoRedundantMemMove.cc			\
@@ -114,13 +115,17 @@ CCSRCS=						\
 	MaoZee.cc				\
 	SymbolTable.cc
 
+PLUGIN_CCSRCS=					\
+	MaoTestPlugin.cc
 
-
+PLUGINS=MaoTestPlugin
 
 GAS_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_SRC)))
 GAS_CONFIG_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_CONFIG_SRC)))
 OPCODES_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(OPCODES_SRC)))
 BINUTILS_OBJS=$(GAS_OBJS) $(GAS_CONFIG_OBJS) $(OPCODES_OBJS)
+PLUGIN_OBJS=$(patsubst %.cc,$(OBJDIR)/%.o,$(PLUGIN_CCSRCS))
+PLUGIN_TARGETS=$(patsubst %,$(BINDIR)/%-$(TARGET).so,$(PLUGINS))
 
 OBJS=							\
 	$(BINUTILS_OBJS)				\
@@ -129,10 +134,12 @@ OBJS=							\
 
 CDEPS=$(patsubst %.c,$(OBJDIR)/%.d,$(CSRCS))
 CCDEPS=$(patsubst %.cc,$(OBJDIR)/%.d,$(CCSRCS))
-DEPS=$(CDEPS) $(CCDEPS)
+PLUGINDEPS=$(patsubst %.cc,$(OBJDIR)/%.d,$(PLUGIN_CCSRCS))
+DEPS=$(CDEPS) $(CCDEPS) $(PLUGINDEPS)
 
-all: mao-$(TARGET)
+all: mao-$(TARGET) $(PLUGIN_TARGETS)
 
+# C source rule
 $(OBJDIR)/%.o : %.c stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	@$(MAKEDEPEND) -MQ $@;					\
 	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
@@ -142,6 +149,7 @@ $(OBJDIR)/%.o : %.c stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	rm -f $(OBJDIR)/$*.P
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+# C++ source rule
 $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	@$(MAKEDEPEND) -MQ $@;					\
 	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
@@ -150,6 +158,16 @@ $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
             < $(OBJDIR)/$*.P >> $(OBJDIR)/$*.d;			\
 	rm -f $(OBJDIR)/$*.P
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Plugin source rule
+$(PLUGIN_OBJS) : $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
+	@$(MAKEDEPEND) -MQ $@;					\
+	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
+	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//'	\
+	    -e '/^$$/ d' -e 's/$$/ :/' -e 's/^ *//'		\
+            < $(OBJDIR)/$*.P >> $(OBJDIR)/$*.d;			\
+	rm -f $(OBJDIR)/$*.P
+	$(CC) $(CFLAGS) -fPIC -c -o $@ $<
 
 $(GAS_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -169,7 +187,10 @@ $(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes
 mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 
 $(BINDIR)/mao-$(TARGET): stamp-bin $(OBJDIR)/gen-opcodes.h $(OBJS)
-	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil
+	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -rdynamic -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil
+
+$(PLUGIN_TARGETS) : $(BINDIR)/%-$(TARGET).so : $(OBJDIR)/%.o stamp-bin
+	$(CC) $(CFLAGS) -fPIC -shared -o $@ $<
 
 .PHONY : clean allclean all mao-$(TARGET)
 
@@ -183,7 +204,7 @@ stamp-obj-$(TARGET):
 
 clean : 
 	-rm -f $(OBJDIR)/*
-	-rm -f $(BINDIR)/mao-$(TARGET)
+	-rm -f $(BINDIR)/mao-$(TARGET) $(PLUGIN_TARGETS)
 
 allclean : 
 	-rm -rf ../obj-*
