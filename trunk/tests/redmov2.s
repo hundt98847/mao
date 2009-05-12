@@ -1,4 +1,4 @@
-#Option: -mao:REDMOV=enable,trace
+#Option: -mao:REDMOV=trace	
 #grep same 2
 
         .type foo, @function
