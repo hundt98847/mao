@@ -1,4 +1,4 @@
-#Option:  -mao:LOOPALIGN=enable -mao:CFG=stat[1] -mao:-o/dev/null
+#Option:  --mao=LOOPALIGN --mao=CFG=stat[1] --mao=ASM=o[/dev/null]
 #grep table.patterns\:.* 1 1
 #
 # The following pattern should be identified as a jump table.

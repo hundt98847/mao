@@ -36,14 +36,14 @@
 int main(int argc, const char *argv[]) {
   MaoOptions mao_options;
 
-  // Parse any mao-specific command line flags (start with -mao:)
+  // Parse any mao-specific command line flags (start with --mao=)
   const char **new_argv = new const char*[argc];
   int    new_argc = 0;
 
   mao_options.Parse(getenv("MAOOPTS"));
   for (int i = 0; i < argc; i++) {
-    if (strncmp(argv[i], "-mao:", 5) == 0)
-      mao_options.Parse(&argv[i][5]);
+    if (strncmp(argv[i], "--mao=", 6) == 0)
+      mao_options.Parse(&argv[i][6]);
     else
       new_argv[new_argc++] = argv[i];
   }

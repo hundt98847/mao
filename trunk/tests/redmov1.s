@@ -1,4 +1,4 @@
-#Option: -mao:REDMOV=trace
+#Option: --mao=REDMOV=trace
 #grep REDMOV 0
         .type foo, @function
 foo:

@@ -53,7 +53,7 @@ function parse_args() {
       ;;
 
       '--mao')
-        mao_args[${#mao_args[*]}]="-mao:$2"
+        mao_args[${#mao_args[*]}]="--mao=$2"
         invoke_mao=1
 	if [[ $2 = "-h" ]]; then
 	  mao_help=1
@@ -128,7 +128,7 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
 
   if [[ ${wrapper_help} = 1 ]]; then
     echo -e "Mao usage :\n"
-    ${mao_bin} -mao:-h
+    ${mao_bin} --mao=-h
     echo -e "\nAssembler usage :\n"
     ${as_bin} --help
     exit 0
@@ -140,12 +140,12 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
 
   if [[ ${invoke_mao} = 1 ]]; then
 
-    ${mao_bin} ${mao_args[*]} ${input_files} -mao:ASM=o[${mao_output_file}]
+    ${mao_bin} ${mao_args[*]} ${input_files} --mao=ASM=o[${mao_output_file}]
     if [[ $? != 0 ]]; then
       echo "$0: Execution of ${mao_bin} failed with error code $?"
       exit 1
     fi
-    #If -mao:-h is called, as-orig should not be invoked
+    #If --mao=-h is called, as-orig should not be invoked
     if [[ ${mao_help} = 1 ]]; then
       exit 0
     fi

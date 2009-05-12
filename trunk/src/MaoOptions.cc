@@ -67,7 +67,7 @@ void MaoOptions::ProvideHelp(bool always) {
           "Mao %s\n",
           MAO_VERSION);
   fprintf(stderr,
-          "Usage: mao [-mao:mao-options]* "
+          "Usage: mao [--mao=mao-options]* "
           "[regular-assembler-options]* input-file \n"
           "\n'mao-options' are seperated by commas, and are:\n\n"
           "-h          display this help text\n"
