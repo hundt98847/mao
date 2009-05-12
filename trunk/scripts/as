@@ -114,7 +114,7 @@ def main(argv):
       mao_cmd[0] = os.path.join(os.path.dirname(argv[0]), "mao")
       if out_file_index != None:
         mao_cmd[out_file_index] = o_tempfile
-      mao_cmd.append("-mao:-o,%s" % s_tempfile)
+      mao_cmd.append("-mao:ASM=o[%s]" % s_tempfile)
       _RunCheck(mao_cmd)
     except RunError, e:
       if "MAO_DEBUG_DIR" in os.environ:
