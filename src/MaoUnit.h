@@ -944,6 +944,9 @@ class Section {
   // Return the last subsection in the section or NULL if section is empty.
   SubSection *GetLastSubSection() const;
 
+  // The next 4 methods are only to be used by MaoRelaxer.  Others
+  // should invoke the utility functions there to get access to the
+  // size and offset.
   MaoEntryIntMap *sizes() {return sizes_;}
   MaoEntryIntMap *offsets() {return offsets_;}
   void set_sizes(MaoEntryIntMap *sizes) {

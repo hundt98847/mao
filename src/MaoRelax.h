@@ -35,6 +35,9 @@ class MaoRelaxer : public MaoPass {
   // Used when a pass needs the sizes for a given section.
   // Returns the sizemap, which holds entries for the whole section.
   static MaoEntryIntMap *GetSizeMap(MaoUnit *mao, Section *section);
+  // Used when a pass needs the offsets for a given section.
+  // Returns the offsetmap, which holds entries for the whole section.
+  static MaoEntryIntMap *GetOffsetMap(MaoUnit *mao, Section *section);
   // Checks if a section has a sizemap computed.
   static bool HasSizeMap(Section *section);
   // Invalidates the sizemap for the section.
@@ -97,6 +100,8 @@ class MaoRelaxer : public MaoPass {
 
   static int SectionSize(MaoEntryIntMap *size_map);
   static int FunctionSize(Function *function, MaoEntryIntMap *size_map);
+
+  static void CacheSizeAndOffsetMap(MaoUnit *mao, Section *section);
 
   // The functions below makes is possible to revert any changes
   // to the IR the relaxation does. The relaxer will change the
