@@ -214,8 +214,8 @@ parse_error:
 class ProfileAnnotationPass : public MaoPass {
  public:
   ProfileAnnotationPass(MaoUnit *mao)
-      : MaoPass("PROFILE", mao->mao_options(), MAO_OPTIONS(PROFILE), false),
-        mao_(mao), sample_profile_(GetOptionString("sample_profile")) { }
+      : MaoPass("PROFILE", mao->mao_options(), MAO_OPTIONS(PROFILE), mao),
+        sample_profile_(GetOptionString("sample_profile")) { }
   virtual ~ProfileAnnotationPass();
   virtual bool Go();
 
@@ -224,7 +224,6 @@ class ProfileAnnotationPass : public MaoPass {
   const string *UpdateSourceFile(MaoEntry *entry,
                                  const string *current_source_file) const;
 
-  MaoUnit *mao_;
   const char *const sample_profile_;
   InstructionSampleMap samples_;
   std::vector<string> file_table_;
@@ -246,8 +245,8 @@ void ProfileAnnotationPass::BuildFileTable() {
   // The first entry of the file table should be empty.
   file_table_.push_back("");
 
-  for (ConstSectionIterator section = mao_->ConstSectionBegin();
-       section != mao_->ConstSectionEnd(); ++section) {
+  for (ConstSectionIterator section = unit_->ConstSectionBegin();
+       section != unit_->ConstSectionEnd(); ++section) {
     for (SectionEntryIterator entry = (*section)->EntryBegin();
          entry != (*section)->EntryEnd(); ++entry) {
       if (!(*entry)->IsDirective())
@@ -331,8 +330,8 @@ bool ProfileAnnotationPass::Go() {
   BuildFileTable();
   const string *current_source_file = &file_table_[0];
 
-  for (MaoUnit::FunctionIterator function_iter = mao_->FunctionBegin();
-       function_iter != mao_->FunctionEnd(); ++function_iter) {
+  for (MaoUnit::FunctionIterator function_iter = unit_->FunctionBegin();
+       function_iter != unit_->FunctionEnd(); ++function_iter) {
     // Get the samples for this function
     Function *function = *function_iter;
     InstructionSampleMap::iterator function_samples_iterator =
@@ -342,7 +341,7 @@ bool ProfileAnnotationPass::Go() {
 
     // Get the size map for this function
     Section *section = function->GetSection();
-    MaoEntryIntMap *sizes = MaoRelaxer::GetSizeMap(mao_, section);
+    MaoEntryIntMap *sizes = MaoRelaxer::GetSizeMap(unit_, section);
 
     // For each sample, attribute it to the corresponding instruction
     InstructionSampleSet *function_samples = function_samples_iterator->second;
@@ -387,10 +386,8 @@ bool ProfileAnnotationPass::Go() {
   return true;
 }
 
-void PerformProfileAnnotation(MaoUnit *mao_unit) {
-  ProfileAnnotationPass pass(mao_unit);
-  if (pass.enabled()) {
-    pass.set_timed();
-    pass.Go();
-  }
+void InitProfileAnnotation() {
+  RegisterUnitPass(
+      "PROFILE",
+      MaoPassManager::GenericPassCreator<ProfileAnnotationPass>);
 }

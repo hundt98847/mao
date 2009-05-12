@@ -44,7 +44,7 @@ MAO_OPTIONS_DEFINE(LOOP16, 2) {
 
 // Align Tiny Loops to 16 Bytes
 //
-class AlignTinyLoops16 : public MaoPass {
+class AlignTinyLoops16 : public MaoFunctionPass {
   class AlignCandidate {
    public:
     AlignCandidate(const SimpleLoop *loop,
@@ -62,8 +62,8 @@ class AlignTinyLoops16 : public MaoPass {
 
  public:
   AlignTinyLoops16(MaoUnit *mao, Function *function) :
-    MaoPass("LOOP16", mao->mao_options(), MAO_OPTIONS(LOOP16), false),
-    mao_(mao), function_(function) {
+    MaoFunctionPass("LOOP16", mao->mao_options(), MAO_OPTIONS(LOOP16),
+                    mao, function) {
     fetchline_size_  = GetOptionInt("fetch_line_size");
     max_fetch_lines_ = GetOptionInt("max_fetch_lines");
   }
@@ -140,8 +140,8 @@ class AlignTinyLoops16 : public MaoPass {
     MAO_ASSERT(function);
     MaoEntryIntMap *sizes, *offsets;
 
-    Relax(mao_, function->GetSection(),
-          MaoRelaxer::GetSizeMap(mao_, function_->GetSection()));
+    Relax(unit_, function->GetSection(),
+          MaoRelaxer::GetSizeMap(unit_, function_->GetSection()));
     sizes = function->GetSection()->sizes();
     offsets = function->GetSection()->offsets();
 
@@ -181,7 +181,7 @@ class AlignTinyLoops16 : public MaoPass {
           (*iter)->min_bb()->first_entry()->AlignTo(16);
 
           MaoRelaxer::InvalidateSizeMap(function_->GetSection());
-          MaoRelaxer::GetSizeMap(mao_, function_->GetSection()));
+          MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
 
           sizes = function->GetSection()->sizes();
           offsets = function->GetSection()->offsets();
@@ -191,18 +191,17 @@ class AlignTinyLoops16 : public MaoPass {
   }
 
 
-  void DoAlign() {
-    loop_graph_ =  LoopStructureGraph::GetLSG(mao_, function_);
+  bool Go() {
+    loop_graph_ =  LoopStructureGraph::GetLSG(unit_, function_);
     if (!loop_graph_ ||
-        !loop_graph_->NumberOfLoops()) return;
+        !loop_graph_->NumberOfLoops()) return true;
 
     AlignInner(loop_graph_->root(), function_);
+    return true;
   }
 
  private:
   LoopStructureGraph *loop_graph_;
-  MaoUnit  *mao_;
-  Function *function_;
   LoopList  candidates_;
   int       fetchline_size_;
   int       max_fetch_lines_;
@@ -210,10 +209,8 @@ class AlignTinyLoops16 : public MaoPass {
 
 // External Entry Point
 //
-void PerformAlignTinyLoops16(MaoUnit *mao, Function *function) {
-  AlignTinyLoops16 tiny(mao, function);
-  if ( tiny.enabled()) {
-    tiny.set_timed();
-    tiny.DoAlign();
-  }
+void InitAlignTinyLoops16() {
+  RegisterFunctionPass(
+      "LOOP16",
+      MaoFunctionPassManager::GenericPassCreator<AlignTinyLoops16>);
 }

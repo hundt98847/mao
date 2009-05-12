@@ -32,12 +32,6 @@
 #include "opcodes/i386-opc.h"
 #include "MaoDefs.h"
 
-struct ltstr {
-  bool operator()(const char* s1, const char* s2) const {
-    return strcmp(s1, s2) < 0;
-  }
-};
-
 static bool emit_warnings = false;
 
 // Note: The following few helper routines, as

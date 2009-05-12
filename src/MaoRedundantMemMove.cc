@@ -32,11 +32,11 @@ MAO_OPTIONS_DEFINE(REDMOV, 1) {
   OPTION_INT("lookahead", 6, "Look ahead limit for pattern matcher")
 };
 
-class RedMemMovElimPass : public MaoPass {
+class RedMemMovElimPass : public MaoFunctionPass {
  public:
-  RedMemMovElimPass(MaoUnit *mao, Function *function) :
-    MaoPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV), false),
-    mao_(mao), function_(function) {
+  RedMemMovElimPass(MaoUnit *mao, Function *function)
+      : MaoFunctionPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV),
+                        mao, function) {
     look_ahead_ = GetOptionInt("lookahead");
   }
 
@@ -46,10 +46,10 @@ class RedMemMovElimPass : public MaoPass {
   //  ... no def for that memory (check 'lookahead' instructions)
   //  movq    24(%rsp), %rcx
   //
-  void DoElim() {
-    set_cfg(CFG::GetCFG(mao_, function_));
+  bool Go() {
+    CFG *cfg = CFG::GetCFG(unit_, function_);
 
-    FORALL_CFG_BB(cfg(),it) {
+    FORALL_CFG_BB(cfg,it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
@@ -120,21 +120,18 @@ class RedMemMovElimPass : public MaoPass {
         }
       }
     }
+    return true;
   }
 
  private:
-  MaoUnit   *mao_;
-  Function  *function_;
   int        look_ahead_;
 };
 
 
 // External Entry Point
 //
-void PerformRedundantMemMoveElimination(MaoUnit *mao, Function *function) {
-  RedMemMovElimPass redmemmov(mao, function);
-  if (redmemmov.enabled()) {
-    redmemmov.set_timed();
-    redmemmov.DoElim();
-  }
+void InitRedundantMemMoveElimination() {
+  RegisterFunctionPass(
+      "REDMOV",
+      MaoFunctionPassManager::GenericPassCreator<RedMemMovElimPass>);
 }

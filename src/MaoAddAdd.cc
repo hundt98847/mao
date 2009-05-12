@@ -31,12 +31,11 @@
 MAO_OPTIONS_DEFINE(ADDADD, 0) {
 };
 
-class AddAddElimPass : public MaoPass {
+class AddAddElimPass : public MaoFunctionPass {
  public:
-  AddAddElimPass(MaoUnit *mao, Function *function) :
-    MaoPass("ADDADD", mao->mao_options(), MAO_OPTIONS(ADDADD), false),
-    mao_(mao), function_(function) {
-  }
+  AddAddElimPass(MaoUnit *mao, Function *function)
+      : MaoFunctionPass("ADDADD", mao->mao_options(), MAO_OPTIONS(ADDADD),
+                        mao, function) { }
 
   bool IsAddI(InstructionEntry *insn) {
     return ((insn->op() == OP_add || insn->op() == OP_sub)  &&
@@ -47,10 +46,10 @@ class AddAddElimPass : public MaoPass {
   // Add add  pattern finder:
   //     add/sub rX, IMM1
   //     add/sub rX, IMM2
-  void DoElim() {
-    set_cfg(CFG::GetCFG(mao_, function_));
+  bool Go() {
+    CFG *cfg = CFG::GetCFG(unit_, function_);
 
-    FORALL_CFG_BB(cfg(),it) {
+    FORALL_CFG_BB(cfg, it) {
       MaoEntry *first = (*it)->GetFirstInstruction();
       if (!first) continue;
 
@@ -99,20 +98,15 @@ class AddAddElimPass : public MaoPass {
         } // IsAdd()
       }  // Entries
     }  // BB
+    return true;
   }
-
- private:
-  MaoUnit   *mao_;
-  Function  *function_;
 };
 
 
 // External Entry Point
 //
-void PerformAddAddElimination(MaoUnit *mao, Function *function) {
-  AddAddElimPass addadd(mao, function);
-  if (addadd.enabled()) {
-    addadd.set_timed();
-    addadd.DoElim();
-  }
+void InitAddAddElimination() {
+  RegisterFunctionPass(
+      "ADDADD",
+      MaoFunctionPassManager::GenericPassCreator<AddAddElimPass>);
 }

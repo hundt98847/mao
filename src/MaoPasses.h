@@ -19,18 +19,18 @@
 
 #include <list>
 
-#include "MaoUnit.h"
 #include "MaoOptions.h"
 #include "mao.h"
 
+class MaoUnit;
+class Function;
 class CFG;
 
-// MaoPass
+// MaoAction
 //
-// Base class for every pass in MAO. All other pieces of functionality
-// should be derived from this base class, as it offers generic
-// functionality, such as tracing, enabling/disabling, various
-// dumping methods, and so on.
+// Abstract base class for MAO passes and MAO analyses.  It offers
+// generic functionality such as tracing, various dumping methods,
+// etc.
 //
 // tracing level
 //     0  - no dumping (don't use directly, this is the default)
@@ -38,20 +38,17 @@ class CFG;
 //     2  - medium level granularity
 //     3  - give me all you got.
 //
-class MaoPass {
+//
+class MaoAction {
  public:
-  MaoPass(const char *name, MaoOptions* mao_options, MaoOption *options,
-          bool enabled, const CFG *cfg = NULL);
-  virtual ~MaoPass();
+  MaoAction(const char *name, MaoOptions* mao_options, MaoOption *options);
+  virtual ~MaoAction();
 
   // regular Trace, adds newline to output
   virtual void Trace (unsigned int level, const char *fmt, ...) const;
 
   // Trace with Continuation, doesn't add newline
   virtual void TraceC(unsigned int level, const char *fmt, ...) const;
-
-  // Main invocation (depends on enabled())
-  virtual bool Go() { return true; }
 
   // Options
   MaoOption   *FindOptionEntry(const char *name);
@@ -65,31 +62,68 @@ class MaoPass {
 
   // Setters/Getters
   const char  *name() const { return name_; }
-  bool         enabled() const { return enabled_; }
   unsigned int tracing_level() const { return tracing_level_; }
   bool         tracing() { return tracing_level_ > 0; }
-  void        set_cfg(const CFG *cfg) { cfg_ = cfg; }
-  const CFG   *cfg() { return cfg_; }
 
-  void set_enabled(bool value) { enabled_ = value; }
   void set_tracing_level(unsigned int value) { tracing_level_ = value; }
-  void set_timed(void) { timed_ = true; TimerStart(); }
   void set_db(const char *str);
   void set_da(const char *str);
 
  private:
   const char   *name_;
   MaoOption    *options_;
-  bool          enabled_;
   unsigned int  tracing_level_;
   FILE         *trace_file_;
   MaoOptions   *mao_options_;
-  bool          timed_;
-  const CFG    *cfg_;
+
+ protected:
   bool          db_vcg_;
   bool          db_cfg_;
   bool          da_vcg_;
   bool          da_cfg_;
+};
+
+
+// MaoPass
+//
+// A MaoAction that (potentially) changes the IR.  A MAO pass cannot
+// return any values.  It can emit data (either via tracing or some
+// other means) to the user, or it can change the IR.
+//
+//
+class MaoPass : public MaoAction {
+ public:
+  MaoPass(const char *name, MaoOptions* mao_options, MaoOption *options,
+          MaoUnit *unit);
+  virtual ~MaoPass();
+
+  // Pass implementation
+  virtual bool Go() = 0;
+
+  //Main invocation
+  virtual bool Run();
+
+ protected:
+  MaoUnit *const unit_;
+};
+
+
+// MaoFunctionPass
+//
+// A MaoPass that operates function by function.
+//
+//
+class MaoFunctionPass : public MaoPass {
+ public:
+  MaoFunctionPass(const char *name, MaoOptions* mao_options, MaoOption *options,
+                  MaoUnit *unit, Function *function);
+  virtual ~MaoFunctionPass();
+
+  virtual bool Go() = 0;
+  virtual bool Run();
+
+ protected:
+  Function *const function_;
 };
 
 
@@ -102,62 +136,103 @@ class MaoPass {
 //
 class MaoPassManager {
  public:
-  MaoPassManager() {
+  typedef MaoPass *(*PassCreator)(MaoUnit *unit);
+
+  MaoPassManager(MaoUnit *unit) : unit_(unit) { }
+  ~MaoPassManager() {
+    for (std::list<MaoPass *>::iterator pass_iter = pass_list_.begin();
+         pass_iter != pass_list_.end(); ++pass_iter) {
+      MaoPass *pass = (*pass_iter);
+      delete pass;
+    }
   }
 
-  void AddNewPass(MaoPass *pass) {
+  // Because the destructor deallocates the member passes, *all*
+  // passes must be dynamically allocated with new.
+  void LinkPass(MaoPass *pass) {
     pass_list_.push_back(pass);
   }
 
-  MaoPass *FindPass(const char *name) {
-    for (std::list<MaoPass *>::iterator piter = pass_list_.begin();
-         piter != pass_list_.end(); ++piter) {
-      MaoPass *pass = (*piter);
-      if (!strcmp(pass->name(), name))
-        return pass;
-    }
-    return NULL;
-  }
-
-  void LinkPass(MaoPass *pass) {
-    MAO_ASSERT(pass_list_.size());
-    LinkPass(FindPass("END"), pass);
-  }
-
-  void LinkPass(MaoPass *here, MaoPass *new_pass, bool before = true) {
-    for (std::list<MaoPass *>::iterator piter = pass_list_.begin();
-         piter != pass_list_.end(); ++piter) {
-      MaoPass *pass = (*piter);
-      if (pass == here) {
-        if (before)
-          pass_list_.insert(piter, new_pass);
-        else
-          pass_list_.insert(++piter, new_pass);
-        return;
-      }
-    }
+  template <class Pass>
+  static MaoPass *GenericPassCreator(MaoUnit *unit) {
+    return new Pass(unit);
   }
 
   void Run() {
-    for (std::list<MaoPass *>::iterator piter = pass_list_.begin();
-         piter != pass_list_.end(); ++piter) {
-      MaoPass *pass = (*piter);
-      if (pass->enabled()) {
-        pass->TimerStart();
-        MAO_ASSERT(pass->Go());
-        pass->TimerStop();
-      }
+    for (std::list<MaoPass *>::iterator pass_iter = pass_list_.begin();
+         pass_iter != pass_list_.end(); ++pass_iter) {
+      MaoPass *pass = (*pass_iter);
+      pass->TimerStart();
+      MAO_ASSERT(pass->Run());
+      pass->TimerStop();
     }
   }
 
  private:
+  MaoUnit *unit_;
   std::list<MaoPass *> pass_list_;
 };
+
+
+// MaoFunctionPassManager
+//
+// The Mao Function Pass Manager.
+//
+// Allows linking of MaoFunctionPasses.  For each pass, a creator
+// function is linked.  When the pass manager executes, it calls the
+// create method for each pass on each function.  Then it executes the
+// pass and deletes the pass object.  MaoFunctionPassManager is a
+// MaoPass, so it can be linked to in a MaoPassManager.
+//
+class MaoFunctionPassManager : public MaoPass {
+ public:
+  typedef MaoFunctionPass *(*PassCreator)(MaoUnit *unit, Function *function);
+
+  MaoFunctionPassManager(MaoUnit *unit);
+
+  void LinkPass(PassCreator pass) {
+    MAO_ASSERT(pass);
+    pass_list_.push_back(pass);
+  }
+
+  template <class Pass>
+  static MaoFunctionPass *GenericPassCreator(MaoUnit *unit, Function *function) {
+    return new Pass(unit, function);
+  }
+
+  bool Go();
+
+ private:
+  std::list<PassCreator> pass_list_;
+};
+
+
+// Code to maintain the set of available passes
+void RegisterUnitPass(const char *name,
+                      MaoPassManager::PassCreator creator);
+void RegisterFunctionPass(const char *name,
+                          MaoFunctionPassManager::PassCreator creator);
+MaoPassManager::PassCreator         GetUnitPass(const char *name);
+MaoFunctionPassManager::PassCreator GetFunctionPass(const char *name);
 
 
 //
 // Standard Passes
 //
+
+// ReadInputPass
+//
+// Read/parse the input asm file and generate the IR
+//
+class ReadInputPass : public MaoPass {
+ public:
+  ReadInputPass(int argc, const char *argv[], MaoUnit *mao_unit);
+  bool Go();
+
+ private:
+  const int argc_;
+  const char **argv_;
+};
 
 // AssemblyPass
 //
@@ -165,17 +240,10 @@ class MaoPassManager {
 //
 class AssemblyPass : public MaoPass {
  public:
-  AssemblyPass(MaoOptions *mao_options, MaoUnit *mao_unit);
+  AssemblyPass(MaoUnit *mao_unit);
   void PrintAsmSymbolHeader(FILE *out);
   bool Go();
-
- private:
-  MaoUnit    *mao_unit_;
-  MaoOptions *mao_options_;
 };
-
-
-void ReadInput(int argc, const char *argv[], MaoUnit *mao_unit);
 
 
 // DumpIrPass
@@ -187,8 +255,6 @@ class DumpIrPass : public MaoPass {
  public:
   explicit DumpIrPass(MaoUnit *mao_unit);
   bool Go();
- private:
-  MaoUnit    *mao_unit_;
 };
 
 // DumpSymbolTablePass
@@ -200,8 +266,6 @@ class DumpSymbolTablePass : public MaoPass {
  public:
   explicit DumpSymbolTablePass(MaoUnit *mao_unit);
   bool Go();
- private:
-  MaoUnit    *mao_unit_;
 };
 
 // TestCFGPass
@@ -210,9 +274,10 @@ class DumpSymbolTablePass : public MaoPass {
 // A pass that runs the CFG, even though no pass needs it.
 // Useful for debugging
 //
-class TestCFGPass : public MaoPass {
+class TestCFGPass : public MaoFunctionPass {
  public:
   explicit TestCFGPass(MaoUnit *mao_unit, Function *function);
+  bool Go();
 };
 
 
@@ -222,10 +287,10 @@ class TestCFGPass : public MaoPass {
 // A pass that runs the relaxer, even though no pass needs it.
 // Useful for debugging
 //
-class TestRelaxPass : public MaoPass {
+class TestRelaxPass : public MaoFunctionPass {
  public:
   explicit TestRelaxPass(MaoUnit *mao_unit, Function *function);
- private:
+  bool Go();
 };
 
 
@@ -233,27 +298,30 @@ class TestRelaxPass : public MaoPass {
 // External Entry Points
 //
 
-// This function links together a begin pass (BEG) and end pass (END)
-// and return a pointer to the static pass manager object.
+// This function registers all the statically defined passes.  This
+// way the passes are accessible by name.
 //
-MaoPassManager *InitPasses(MaoOptions *opts);
+void InitPasses(MaoOptions *opts);
 
 
 // Find a pass for a given option set
-MaoPass *FindPass(MaoOption *arr);
+MaoAction *FindPass(MaoOption *arr);
 
 
-// Some Pass Entry Points.
-void PerformAddAddElimination(MaoUnit *mao, Function *function);
-void PerformZeroExtensionElimination(MaoUnit *mao, Function *function);
-void PerformRedundantTestElimination(MaoUnit *mao,  Function *function);
-void PerformRedundantMemMoveElimination(MaoUnit *mao, Function *function);
-void PerformDeadCodeElimination(MaoUnit *mao, Function *func);
-void PerformMissDispElimination(MaoUnit *mao, Function *func);
-void PerformNopKiller(MaoUnit *mao, const Function *func);
-void PerformNopinizer(MaoUnit *mao,       Function *func);
-void PerformLongInstructionSplit(MaoUnit *mao, Function *func);
-void PerformProfileAnnotation(MaoUnit *mao);
-void PerformAlignTinyLoops16(MaoUnit *mao, Function *func);
+// Pass Initialization Entry Points.
+void InitProfileAnnotation();
+
+void InitDCE();
+void InitNopKiller();
+void InitNopinizer();
+void InitZEE();
+void InitRedundantTestElimination();
+void InitRedundantMemMoveElimination();
+void InitMissDispElimination();
+void InitLongInstructionSplit();
+void InitLoopAlign();
+void InitBranchSeparate();
+void InitAddAddElimination();
+void InitAlignTinyLoops16();
 
 #endif   // MAP_PASSES_H_INCLUDED_

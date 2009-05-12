@@ -32,12 +32,11 @@
 MAO_OPTIONS_DEFINE(NOPKILL, 0) {
 };
 
-class NopKillerElimPass : public MaoPass {
+class NopKillerElimPass : public MaoFunctionPass {
  public:
-  NopKillerElimPass(MaoUnit *mao, const Function *func) :
-    MaoPass("NOPKILL", mao->mao_options(), MAO_OPTIONS(NOPKILL), false),
-    mao_(mao), func_(func) {
-  }
+  NopKillerElimPass(MaoUnit *mao, Function *func)
+      : MaoFunctionPass("NOPKILL", mao->mao_options(), MAO_OPTIONS(NOPKILL),
+                        mao, func) { }
 
   // Find these patterns in a function:
   //
@@ -50,10 +49,10 @@ class NopKillerElimPass : public MaoPass {
   //
   // and kill them all
   //
-  void DoElim() {
+  bool Go() {
     std::list<MaoEntry *> redundants;
 
-   FORALL_FUNC_ENTRY(func_,entry) {
+   FORALL_FUNC_ENTRY(function_, entry) {
       if (entry->IsInstruction()) {
         InstructionEntry *insn = entry->AsInstruction();
 
@@ -86,23 +85,18 @@ class NopKillerElimPass : public MaoPass {
       TraceC(1, "Remove: ");
       if (tracing_level() > 0)
         (*it)->PrintEntry(stderr);
-      mao_->DeleteEntry(*it);
+      unit_->DeleteEntry(*it);
     }
+    return true;
   }
-
- private:
-  MaoUnit        *mao_;
-  const Function *func_;
 };
 
 
 // External Entry Point
 //
 
-void PerformNopKiller(MaoUnit *mao, const Function *func) {
-  NopKillerElimPass nopkill(mao, func);
-  if (nopkill.enabled()) {
-    nopkill.set_timed();
-    nopkill.DoElim();
-  }
+void InitNopKiller() {
+  RegisterFunctionPass(
+      "NOPKILL",
+      MaoFunctionPassManager::GenericPassCreator<NopKillerElimPass>);
 }

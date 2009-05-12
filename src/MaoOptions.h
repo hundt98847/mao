@@ -21,6 +21,9 @@
 #include <unistd.h>
 #include <sys/times.h>
 
+class MaoUnit;
+class MaoPassManager;
+
 enum MaoOptionType {
   OPT_INT, OPT_STRING, OPT_BOOL
 };
@@ -112,21 +115,16 @@ class MaoOptionRegister {
 
 class MaoOptions {
  public:
-  MaoOptions() : write_assembly_(true),
-                 assembly_output_file_name_("<stdout>"),
-                 output_is_stdout_(true),
-                 output_is_stderr_(false),
-                 write_ir_(false),
-                 help_(false), verbose_(false),
+  MaoOptions() : help_(false), verbose_(false),
                  timer_print_(false),
-                 ir_output_file_name_(0),
                  mao_options_(NULL) {
   }
 
   ~MaoOptions() {}
 
-  void        Parse(const char *arg, bool collect = true);
-  void        Reparse();
+  void        Parse(const char *arg, bool collect = true,
+                    MaoUnit *unit = NULL, MaoPassManager *pass_man = NULL);
+  void        Reparse(MaoUnit *unit = NULL, MaoPassManager *pass_man = NULL);
   void        ProvideHelp(bool always = false);
   static void SetOption(const char *pass_name,
                         const char *option_name,
@@ -141,33 +139,19 @@ class MaoOptions {
   void        TimerStart(const char *pass_name);
   void        TimerStop(const char *pass_name);
   static void TimerPrint();
- 
+
   const bool help() const { return help_; }
   const bool timer_print() const { return timer_print_; }
   const bool verbose() const { return verbose_; }
-  const bool output_is_stdout() const { return output_is_stdout_; }
-  const bool output_is_stderr() const { return output_is_stderr_; }
 
-  const bool write_assembly() const {return write_assembly_;}
-  const bool write_ir() const {return write_ir_;}
-  const char *assembly_output_file_name();
-  const char *ir_output_file_name();
-  void set_assembly_output_file_name(const char *file_name);
-  void set_output_is_stderr() { output_is_stderr_ = true; }
   void set_verbose() { verbose_ = true; }
   void set_help() { help_ = true; }
   void set_timer_print() { timer_print_ = true; }
 
  private:
-  bool write_assembly_;
-  const char *assembly_output_file_name_;  // The default (NULL) means stdout.
-  bool output_is_stdout_;
-  bool output_is_stderr_;
-  bool write_ir_;
   bool help_;
   bool verbose_;
   bool timer_print_;
-  const char *ir_output_file_name_;  // The default (NULL) means stdout.
   char *mao_options_;
 };
 

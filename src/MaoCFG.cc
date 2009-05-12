@@ -45,6 +45,23 @@ void BasicBlock::AddEntry(MaoEntry *entry) {
   last_entry_ = entry;
 }
 
+bool BasicBlock::DirectlyPreceeds(const BasicBlock *basicblock) const {
+  // Make sure that if they are linked, both point correctly!
+  MAO_ASSERT(basicblock->last_entry()->next() == NULL ||
+             basicblock->last_entry()->next() != first_entry() ||
+             first_entry()->prev() == basicblock->last_entry());
+  return (basicblock->last_entry()->next() != NULL &&
+          basicblock->last_entry()->next() == first_entry());
+}
+
+bool BasicBlock::DirectlyFollows(const BasicBlock *basicblock) const {
+  // Make sure that if they are linked, both point correctly!
+  MAO_ASSERT(basicblock->first_entry()->prev() == NULL ||
+             basicblock->first_entry()->prev() != last_entry() ||
+             last_entry()->next() == basicblock->first_entry());
+  return (basicblock->first_entry()->prev() != NULL &&
+          basicblock->first_entry()->prev() == last_entry());
+}
 
 CFG *CFG::GetCFG(MaoUnit *mao, Function *function) {
   if (function->cfg() == NULL) {
@@ -57,6 +74,9 @@ CFG *CFG::GetCFG(MaoUnit *mao, Function *function) {
   return function->cfg();
 }
 
+CFG *CFG::GetCFGIfExists(const MaoUnit *mao, Function *function) {
+  return function->cfg();
+}
 
 void CFG::InvalidateCFG(Function *function) {
   // Memory is deallocated in the set_cfg routine.
@@ -126,26 +146,26 @@ MAO_OPTIONS_DEFINE(CFG, 3) {
 // --------------------------------------------------------------------
 CFGBuilder::CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
                        Function *function, CFG *CFG)
-  : MaoPass("CFG", mao_unit->mao_options(), MAO_OPTIONS(CFG), true),
-    mao_unit_(mao_unit), function_(function), CFG_(CFG),
-    next_id_(0) {
+    : MaoFunctionPass("CFG", mao_unit->mao_options(), MAO_OPTIONS(CFG),
+                      mao_unit, function),
+      CFG_(CFG), next_id_(0) {
   split_basic_blocks_ = GetOptionBool("callsplit");
   collect_stat_ = GetOptionBool("stat");
   dump_vcg_ = GetOptionBool("vcg");
   if (collect_stat_) {
     // check if a stat object already exists?
-    if (mao_unit_->GetStats()->HasStat("CFG")) {
-      cfg_stat_ = static_cast<CFGStat *>(mao_unit_->GetStats()->GetStat("CFG"));
+    if (unit_->GetStats()->HasStat("CFG")) {
+      cfg_stat_ = static_cast<CFGStat *>(unit_->GetStats()->GetStat("CFG"));
     } else {
       cfg_stat_ = new CFGStat();
-      mao_unit_->GetStats()->Add("CFG", cfg_stat_);
+      unit_->GetStats()->Add("CFG", cfg_stat_);
     }
   }
 }
 
 
 
-void CFGBuilder::Build() {
+bool CFGBuilder::Go() {
   // These basic blocks are not mapped in the CFG because the labels are fake
   BasicBlock *source = CreateBasicBlock("<SOURCE>");
   BasicBlock *sink = CreateBasicBlock("<SINK>");
@@ -243,12 +263,12 @@ void CFGBuilder::Build() {
               // Create a new basic block for the label found as a jump target.
               // Here we can check if this label is defined in this basic block
               // Check if the label_entry exists in MAO UNIT
-              LabelEntry *target_label = mao_unit_->GetLabelEntry(label);
+              LabelEntry *target_label = unit_->GetLabelEntry(label);
               if (target_label == NULL) {
                 CFG_->IncreaseNumExternalJumps();
               } else {
                 // Check if the label exists, but is in another function
-                if (mao_unit_->GetFunction(target_label) != function_) {
+                if (unit_->GetFunction(target_label) != function_) {
                   CFG_->IncreaseNumExternalJumps();
                 }
               }
@@ -259,7 +279,7 @@ void CFGBuilder::Build() {
               if (strcmp(label, target->label())) {
                 bool current_is_target = (target == current);
                 target = BreakUpBBAtLabel(target,
-                                          mao_unit_->GetLabelEntry(label));
+                                          unit_->GetLabelEntry(label));
                 MAO_ASSERT_MSG(target != NULL,
                                "Unable to find label: %s", label);
 
@@ -319,8 +339,34 @@ void CFGBuilder::Build() {
       CFG_->DumpVCG(filename);
     }
   }
+
+  return true;
 }
 
+bool CFGBuilder::BelongsInBasicBlock(const MaoEntry *entry) {
+  switch (entry->Type()) {
+    case MaoEntry::INSTRUCTION: return true;
+    case MaoEntry::LABEL: return true;
+    case MaoEntry::DIRECTIVE: return false;
+    case MaoEntry::UNDEFINED:
+    default:
+      MAO_ASSERT(false);
+      return false;
+  }
+}
+
+bool CFGBuilder::EndsBasicBlock(MaoEntry *entry) {
+  if (entry->IsInstruction()) {
+    InstructionEntry *insn = entry->AsInstruction();
+    bool has_fall_through = insn->HasFallThrough();
+    bool is_control_transfer = insn->IsControlTransfer();
+    bool is_call = insn->IsCall();
+
+    // TODO(nvachhar): Parameterize this to decide whether calls end BBs
+    return (is_control_transfer && !is_call) || !has_fall_through;
+  }
+  return false;
+}
 
 BasicBlock *CFGBuilder::BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label) {
   BasicBlock *new_bb = CreateBasicBlock(label->name());
@@ -424,7 +470,7 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
     label_name = entry->GetSymbolnameFromExpression(
         entry->instruction()->op[0].disps);
     if (label_name != NULL) {
-      *out_label = mao_unit_->GetLabelEntry(label_name);
+      *out_label = unit_->GetLabelEntry(label_name);
       MAO_ASSERT_MSG(*out_label != NULL,
                      "Unable to find label: %s", label_name);
       return true;
@@ -449,7 +495,7 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
        label_name = prev_inst->GetSymbolnameFromExpression(
            prev_inst->instruction()->op[0].disps);
        if (label_name) {
-         *out_label = mao_unit_->GetLabelEntry(label_name);
+         *out_label = unit_->GetLabelEntry(label_name);
          MAO_ASSERT_MSG(*out_label != NULL,
                         "Unable to find label: %s", label_name);
          return true;
@@ -558,7 +604,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
         *iter++ = (*p_iter)->prev()->AsLabel()->name();
       } else {
         // Add a label before p_iter if necessary
-        LabelEntry *l = mao_unit_->CreateLabel(
+        LabelEntry *l = unit_->CreateLabel(
             MaoUnit::BBNameGen::GetUniqueName());
         l->set_from_assembly(false);
         (*p_iter)->LinkBefore(l);
@@ -620,6 +666,5 @@ void BasicBlock::Print(FILE *f, MaoEntry *from, MaoEntry *to) {
 
 void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg) {
   CFGBuilder builder(mao_unit, mao_unit->mao_options(), function, cfg);
-  builder.set_timed();
-  builder.Build();
+  builder.Go();
 }

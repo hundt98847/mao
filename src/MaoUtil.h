@@ -18,6 +18,15 @@
 #ifndef MAOUTIL_H_
 #define MAOUTIL_H_
 
+#include <string.h>
+
+// Used by the STL-maps of sections and subsections.
+struct ltstr {
+  bool operator()(const char* s1, const char* s2) const {
+    return strcmp(s1, s2) < 0;
+  }
+};
+
 // BitString implementation, 256 bits
 //
 class BitString {

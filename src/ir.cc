@@ -331,7 +331,7 @@ void link_space_directive(expressionS *size, expressionS *fill, int mult) {
   link_directive_tail(opcode, operands);
 }
 
-void register_mao_unit(MaoUnit *maounit) {
+void RegisterMaoUnit(MaoUnit *maounit) {
   MAO_ASSERT(maounit);
   maounit_ = maounit;
 }
