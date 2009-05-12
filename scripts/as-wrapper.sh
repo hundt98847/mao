@@ -140,7 +140,7 @@ mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
 
   if [[ ${invoke_mao} = 1 ]]; then
 
-    ${mao_bin} ${mao_args[*]} ${input_files} -mao:-o${mao_output_file}
+    ${mao_bin} ${mao_args[*]} ${input_files} -mao:ASM=o[${mao_output_file}]
     if [[ $? != 0 ]]; then
       echo "$0: Execution of ${mao_bin} failed with error code $?"
       exit 1
