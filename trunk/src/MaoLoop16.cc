@@ -140,10 +140,8 @@ class AlignTinyLoops16 : public MaoFunctionPass {
     MAO_ASSERT(function);
     MaoEntryIntMap *sizes, *offsets;
 
-    Relax(unit_, function->GetSection(),
-          MaoRelaxer::GetSizeMap(unit_, function_->GetSection()));
-    sizes = function->GetSection()->sizes();
-    offsets = function->GetSection()->offsets();
+    sizes = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
+    offsets = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
 
     FindCandidates(loop, offsets, sizes);
 
@@ -181,10 +179,8 @@ class AlignTinyLoops16 : public MaoFunctionPass {
           (*iter)->min_bb()->first_entry()->AlignTo(16);
 
           MaoRelaxer::InvalidateSizeMap(function_->GetSection());
-          MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
-
-          sizes = function->GetSection()->sizes();
-          offsets = function->GetSection()->offsets();
+          sizes = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
+          offsets = MaoRelaxer::GetOffsetMap(unit_, function_->GetSection());
         }
       }
     }

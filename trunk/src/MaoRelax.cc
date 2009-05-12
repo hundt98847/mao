@@ -178,6 +178,16 @@ bool MaoRelaxer::Go() {
 
 
 MaoEntryIntMap *MaoRelaxer::GetSizeMap(MaoUnit *mao, Section *section) {
+  CacheSizeAndOffsetMap(mao, section);
+  return section->sizes();
+}
+
+MaoEntryIntMap *MaoRelaxer::GetOffsetMap(MaoUnit *mao, Section *section) {
+  CacheSizeAndOffsetMap(mao, section);
+  return section->offsets();
+}
+
+void MaoRelaxer::CacheSizeAndOffsetMap(MaoUnit *mao, Section *section) {
   MAO_ASSERT(section);
   MaoEntryIntMap *offsets, *sizes = section->sizes();
   if (sizes == NULL) {
@@ -195,8 +205,8 @@ MaoEntryIntMap *MaoRelaxer::GetSizeMap(MaoUnit *mao, Section *section) {
     section->set_sizes(sizes);
     section->set_offsets(offsets);
   }
-  return sizes;
 }
+
 
 bool MaoRelaxer::HasSizeMap(Section *section) {
   return (section->sizes() != NULL);
