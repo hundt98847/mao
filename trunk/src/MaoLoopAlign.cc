@@ -17,27 +17,28 @@
 //   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <stdio.h>
+#include <list>
+#include <vector>
 #include <map>
 
-
-#include "MaoLoopAlign.h"
-
+#include "MaoDebug.h"
+#include "MaoLoops.h"
+#include "MaoUnit.h"
+#include "MaoPasses.h"
+#include "MaoRelax.h"
 
 // Pass that finds paths in inner loops that fits in 4 16-byte lines
 // and alligns all (chains of) basicb locks within the paths.
-class LoopAlignPass : public MaoPass {
+class LoopAlignPass : public MaoFunctionPass {
  public:
   explicit LoopAlignPass(MaoUnit *mao, Function *function);
-  void DoLoopAlign();
+  bool Go();
 
  private:
   // Path is a list of basic blocks that form a way through the loop
 //   typedef std::vector<BasicBlock *> Path;
 //   typedef std::vector<Path *> Paths;
 
-  MaoUnit  *mao_unit_;
-
-  Function *function_;
   // This is the result found by the loop sequence detector.
   LoopStructureGraph *loop_graph_;
   // This is the sizes of all the instructions in the section
@@ -146,27 +147,27 @@ MAO_OPTIONS_DEFINE(LOOPALIGN, 2) {
 };
 
 LoopAlignPass::LoopAlignPass(MaoUnit *mao, Function *function)
-    : MaoPass("LOOPALIGN", mao->mao_options(), MAO_OPTIONS(LOOPALIGN), false),
-      mao_unit_(mao), function_(function), sizes_(NULL) {
+    : MaoFunctionPass("LOOPALIGN", mao->mao_options(), MAO_OPTIONS(LOOPALIGN),
+                      mao, function), sizes_(NULL) {
 
   maximum_loop_size_ = GetOptionInt("loop_size");
   collect_stat_      = GetOptionBool("stat");
 
   if (collect_stat_) {
     // check if a stat object already exists?
-    if (mao_unit_->GetStats()->HasStat("LOOPALIGN")) {
+    if (unit_->GetStats()->HasStat("LOOPALIGN")) {
       loop_align_stat_ = static_cast<LoopAlignStat *>(
-          mao_unit_->GetStats()->GetStat("LOOPALIGN"));
+          unit_->GetStats()->GetStat("LOOPALIGN"));
     } else {
       loop_align_stat_ = new LoopAlignStat();
-      mao_unit_->GetStats()->Add("LOOPALIGN", loop_align_stat_);
+      unit_->GetStats()->Add("LOOPALIGN", loop_align_stat_);
     }
   }
 }
 
-void LoopAlignPass::DoLoopAlign() {
-  sizes_ = MaoRelaxer::GetSizeMap(mao_unit_, function_->GetSection());
-  loop_graph_ =  LoopStructureGraph::GetLSG(mao_unit_, function_);
+bool LoopAlignPass::Go() {
+  sizes_ = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
+  loop_graph_ =  LoopStructureGraph::GetLSG(unit_, function_);
 
   Trace(2, "%d loop(s).", loop_graph_->NumberOfLoops()-1);
 
@@ -185,7 +186,7 @@ void LoopAlignPass::DoLoopAlign() {
     }
     FindInner(loop_graph_->root(),  &offsets);
   }
-  return;
+  return true;
 }
 
 
@@ -478,14 +479,8 @@ void LoopAlignPass::FindInner(const SimpleLoop *loop,
 }
 
 // External Entry Point
-void DoLoopAlign(MaoUnit *mao,
-                 Function *function) {
-  // Make sure the analysis have been run on this function
-  LoopAlignPass align(mao,
-                      function);
-  if (align.enabled()) {
-    align.set_timed();
-    align.DoLoopAlign();
-  }
-  return;
+void InitLoopAlign() {
+  RegisterFunctionPass(
+      "LOOPALIGN",
+      MaoFunctionPassManager::GenericPassCreator<LoopAlignPass>);
 }

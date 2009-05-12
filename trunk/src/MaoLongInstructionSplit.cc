@@ -33,12 +33,12 @@ MAO_OPTIONS_DEFINE(LISPLIT, 2) {
   OPTION_INT("fill", 1, "Fill in that many nops")
 };
 
-class LongInstructionsSplitPass : public MaoPass {
+class LongInstructionsSplitPass : public MaoFunctionPass {
  public:
   LongInstructionsSplitPass(MaoUnit *mao,
-                            Function *func) :
-    MaoPass("LISPLIT", mao->mao_options(), MAO_OPTIONS(LISPLIT), false),
-    mao_(mao), func_(func), sizes_(NULL) {
+                            Function *func)
+      : MaoFunctionPass("LISPLIT", mao->mao_options(), MAO_OPTIONS(LISPLIT),
+                        mao, func), sizes_(NULL) {
     length_ = GetOptionInt("length");
     fill_ = GetOptionInt("fill");
   }
@@ -51,11 +51,11 @@ class LongInstructionsSplitPass : public MaoPass {
   bool Go() {
     std::list<InstructionEntry *> split_points;
 
-    set_cfg(CFG::GetCFG(mao_, func_));
-    sizes_ = MaoRelaxer::GetSizeMap(mao_, func_->GetSection());
+    CFG *cfg = CFG::GetCFG(unit_, function_);
+    sizes_ = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
 
-    FORALL_CFG_BB(cfg(),it) {
-      FORALL_BB_ENTRY(it,entry) {
+    FORALL_CFG_BB(cfg, it) {
+      FORALL_BB_ENTRY(it, entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
 
@@ -78,7 +78,7 @@ class LongInstructionsSplitPass : public MaoPass {
     for (std::list<InstructionEntry *>::iterator it = split_points.begin();
          it != split_points.end(); ++it) {
       for (int i = 0; i < fill_; i++) {
-        InstructionEntry *nop = mao_->CreateNop();
+        InstructionEntry *nop = unit_->CreateNop();
         (*it)->LinkAfter(nop);
       }
     }
@@ -87,8 +87,6 @@ class LongInstructionsSplitPass : public MaoPass {
   }
 
  private:
-  MaoUnit   *mao_;
-  Function  *func_;
   MaoEntryIntMap *sizes_;
   int        length_;
   int        fill_;
@@ -97,11 +95,8 @@ class LongInstructionsSplitPass : public MaoPass {
 
 // External Entry Point
 //
-void PerformLongInstructionSplit(MaoUnit *mao, Function *function) {
-  LongInstructionsSplitPass lipass(mao,
-                                   function);
-  if (lipass.enabled()) {
-    lipass.set_timed();
-    lipass.Go();
-  }
+void InitLongInstructionSplit() {
+  RegisterFunctionPass(
+      "LISPLIT",
+      MaoFunctionPassManager::GenericPassCreator<LongInstructionsSplitPass>);
 }

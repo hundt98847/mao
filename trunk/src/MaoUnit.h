@@ -35,10 +35,10 @@ extern "C" {
 
 #include "MaoOptions.h"
 #include "MaoDebug.h"
+#include "MaoCFG.h"
+#include "MaoStats.h"
+#include "MaoLoops.h"
 #include "MaoDefs.h"
-
-class CFG;
-class LoopStructureGraph;
 
 class Section;
 #include "SymbolTable.h"
@@ -65,59 +65,6 @@ class SectionIterator;
 class SubSection;
 class Symbol;
 class SymbolTable;
-
-// Used by the STL-maps of sections and subsections.
-struct ltstr {
-  bool operator()(const char* s1, const char* s2) const {
-    return strcmp(s1, s2) < 0;
-  }
-};
-
-
-class Stat {
- public:
-  virtual ~Stat() {}
-  virtual void Print(FILE *out) = 0;
-  void Print() {Print(stdout);}
- private:
-};
-
-// Print all stats to the same file.
-class Stats {
- public:
-  Stats() {
-    stats_.clear();
-  }
-  ~Stats() {
-    for (std::map<const char *, Stat *, ltstr>::iterator iter = stats_.begin();
-        iter != stats_.end(); ++iter) {
-      delete iter->second;
-    }
-  }
-  void Add(const char *name, Stat *stat) {
-    MAO_ASSERT(!HasStat(name));
-    stats_[name] = stat;
-  }
-
-  bool HasStat(const char *name) const {
-    return stats_.find(name) != stats_.end();
-  }
-
-  Stat *GetStat(const char *name)  {
-    MAO_ASSERT(HasStat(name));
-    return stats_[name];
-  }
-
-  void Print(FILE *out) {
-    for (std::map<const char *, Stat *, ltstr>::iterator iter = stats_.begin();
-        iter != stats_.end(); ++iter) {
-      iter->second->Print(out);
-    }
-  }
-  void Print() {Print(stdout);}
- private:
-  std::map<const char *, Stat *, ltstr> stats_;
-};
 
 // Forward Decls
 class InstructionEntry;
@@ -915,12 +862,6 @@ class Function {
   SectionEntryIterator EntryBegin();
   SectionEntryIterator EntryEnd();
 
-  CFG *cfg() const {return cfg_;}
-  void set_cfg(CFG *cfg);
-
-  LoopStructureGraph *lsg() const {return lsg_;}
-  void set_lsg(LoopStructureGraph *lsg) {lsg_ = lsg;}
-
   void Print();
   void Print(FILE *out);
 
@@ -936,6 +877,20 @@ class Function {
 
 
  private:
+  // These methods are to be used by the respective analyses to cache
+  // analysis results.
+  CFG *cfg() const {return cfg_;}
+  void set_cfg(CFG *cfg);
+  friend CFG *CFG::GetCFG(MaoUnit *mao, Function *function);
+  friend CFG *CFG::GetCFGIfExists(const MaoUnit *mao, Function *function);
+  friend void CFG::InvalidateCFG(Function *function);
+
+  LoopStructureGraph *lsg() const {return lsg_;}
+  void set_lsg(LoopStructureGraph *lsg) {lsg_ = lsg;}
+  friend LoopStructureGraph *LoopStructureGraph::GetLSG(MaoUnit *mao,
+                                                        Function *function);
+
+
   // Name of the function, as given by the function symbol.
   const std::string name_;
 

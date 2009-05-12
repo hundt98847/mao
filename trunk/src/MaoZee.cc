@@ -31,12 +31,11 @@
 MAO_OPTIONS_DEFINE(ZEE, 0) {
 };
 
-class ZeroExtentElimPass : public MaoPass {
+class ZeroExtentElimPass : public MaoFunctionPass {
  public:
-  ZeroExtentElimPass(MaoUnit *mao, Function *function) :
-    MaoPass("ZEE", mao->mao_options(), MAO_OPTIONS(ZEE), false),
-    mao_(mao), function_(function) {
-  }
+  ZeroExtentElimPass(MaoUnit *mao, Function *function)
+      : MaoFunctionPass("ZEE", mao->mao_options(), MAO_OPTIONS(ZEE),
+                        mao, function) { }
 
   bool IsZeroExtent(InstructionEntry *insn) {
     if (insn->IsOpMov() &&
@@ -53,12 +52,12 @@ class ZeroExtentElimPass : public MaoPass {
   // then search in same basic block for a sign
   // extending def reg32
   //
-  void DoElim() {
-    set_cfg(CFG::GetCFG(mao_, function_));
+  bool Go() {
+    CFG *cfg = CFG::GetCFG(unit_, function_);
 
     std::list<InstructionEntry *> redundants;
 
-    FORALL_CFG_BB(cfg(),it) {
+    FORALL_CFG_BB(cfg,it) {
       MaoEntry *first = (*it)->GetFirstInstruction();
       if (!first) continue;
 
@@ -116,22 +115,18 @@ class ZeroExtentElimPass : public MaoPass {
     // Now delete all the redundant ones.
     for (std::list<InstructionEntry *>::iterator it = redundants.begin();
          it != redundants.end(); ++it) {
-      mao_->DeleteEntry(*it);
+      unit_->DeleteEntry(*it);
     }
-  }
 
- private:
-  MaoUnit   *mao_;
-  Function  *function_;
+    return true;
+  }
 };
 
 
 // External Entry Point
 //
-void PerformZeroExtensionElimination(MaoUnit *mao, Function *function) {
-  ZeroExtentElimPass zee(mao, function);
-  if (zee.enabled()) {
-    zee.set_timed();
-    zee.DoElim();
-  }
+void InitZEE() {
+  RegisterFunctionPass(
+      "ZEE",
+      MaoFunctionPassManager::GenericPassCreator<ZeroExtentElimPass>);
 }

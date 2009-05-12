@@ -26,10 +26,15 @@
 #include <vector>
 
 #include "MaoDebug.h"
-#include "MaoUnit.h"
 #include "MaoPasses.h"
+#include "MaoUtil.h"
+#include "MaoStats.h"
 
+class MaoEntry;
+class InstructionEntry;
+class SectionEntryIterator;
 class BasicBlock;
+class LabelEntry;
 
 //
 // CFG - Control Flow Graph
@@ -117,24 +122,10 @@ class BasicBlock {
   void AddEntry(MaoEntry *entry);
 
   // Is this basic block located directly before basicblock in the section.
-  bool DirectlyPreceeds(const BasicBlock *basicblock) const {
-    // Make sure that if they are linked, both point correctly!
-    MAO_ASSERT(basicblock->last_entry()->next() == NULL ||
-               basicblock->last_entry()->next() != first_entry() ||
-               first_entry()->prev() == basicblock->last_entry());
-    return (basicblock->last_entry()->next() != NULL &&
-            basicblock->last_entry()->next() == first_entry());
-  }
+  bool DirectlyPreceeds(const BasicBlock *basicblock) const;
 
   // Is this basic block located directly after basicblock in the section.
-  bool DirectlyFollows(const BasicBlock *basicblock) const {
-    // Make sure that if they are linked, both point correctly!
-    MAO_ASSERT(basicblock->first_entry()->prev() == NULL ||
-               basicblock->first_entry()->prev() != last_entry() ||
-               last_entry()->next() == basicblock->first_entry());
-    return (basicblock->first_entry()->prev() != NULL &&
-            basicblock->first_entry()->prev() == last_entry());
-  }
+  bool DirectlyFollows(const BasicBlock *basicblock) const;
 
   // Caution: This routine iterates through a bb to count entries
   int       NumEntries();
@@ -191,8 +182,8 @@ class CFG {
   typedef std::map<const char *, BasicBlock *, ltstr> LabelToBBMap;
 
   explicit CFG(MaoUnit *mao_unit) : mao_unit_(mao_unit),
-                                    num_external_jumps_(0),
-                                    num_unresolved_indirect_jumps_(0) {
+                                          num_external_jumps_(0),
+                                          num_unresolved_indirect_jumps_(0) {
     labels_to_jumptargets_.clear();
   }
   ~CFG() {
@@ -210,6 +201,7 @@ class CFG {
   // Get the CFG for the given function, build
   // if it necessary.
   static CFG *GetCFG(MaoUnit *mao, Function *function);
+  static CFG *GetCFGIfExists(const MaoUnit *mao, Function *function);
   static void InvalidateCFG(Function *function);
 
   int  GetNumOfNodes() const { return basic_blocks_.size(); }
@@ -280,7 +272,7 @@ class CFG {
   }
 
  private:
-  MaoUnit  *mao_unit_;
+  MaoUnit *mao_unit_;
   LabelToBBMap basic_block_map_;
   BBVector basic_blocks_;
 
@@ -304,11 +296,11 @@ class CFG {
     for (CFG::BBVector::const_iterator it = cfg->Begin(); \
            it != cfg->End(); ++it)
 
-class CFGBuilder : public MaoPass {
+class CFGBuilder : public MaoFunctionPass {
  public:
   CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
              Function *function, CFG *CFG);
-  void Build();
+  bool Go();
 
  private:
   BasicBlock *CreateBasicBlock(const char *label) {
@@ -318,30 +310,8 @@ class CFGBuilder : public MaoPass {
     return bb;
   }
 
-  static bool BelongsInBasicBlock(const MaoEntry *entry) {
-    switch (entry->Type()) {
-      case MaoEntry::INSTRUCTION: return true;
-      case MaoEntry::LABEL: return true;
-      case MaoEntry::DIRECTIVE: return false;
-      case MaoEntry::UNDEFINED:
-      default:
-        MAO_ASSERT(false);
-        return false;
-    }
-  }
-
-  bool EndsBasicBlock(MaoEntry *entry) {
-    if (entry->IsInstruction()) {
-      InstructionEntry *insn = entry->AsInstruction();
-      bool has_fall_through = insn->HasFallThrough();
-      bool is_control_transfer = insn->IsControlTransfer();
-      bool is_call = insn->IsCall();
-
-      // TODO(nvachhar): Parameterize this to decide whether calls end BBs
-      return (is_control_transfer && !is_call) || !has_fall_through;
-    }
-    return false;
-  }
+  static bool BelongsInBasicBlock(const MaoEntry *entry);
+  bool EndsBasicBlock(MaoEntry *entry);
 
   static BasicBlockEdge *Link(BasicBlock *source, BasicBlock *dest,
                               bool fallthrough) {
@@ -362,8 +332,6 @@ class CFGBuilder : public MaoPass {
                         std::vector<MaoEntry *> *pattern);
   bool IsTailCall(InstructionEntry *entry);
 
-  MaoUnit  *mao_unit_;
-  Function *function_;
   CFG      *CFG_;
   BasicBlockID  next_id_;
   CFG::LabelToBBMap label_to_bb_map_;

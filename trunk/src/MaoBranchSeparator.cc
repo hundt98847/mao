@@ -16,29 +16,31 @@
 //   Free Software Foundation Inc.,
 //   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#include <stdio.h>
-#include <map>
 #include <math.h>
+#include <stdio.h>
 
+#include <list>
+#include <map>
+#include <vector>
 
-#include "MaoBranchSeparator.h"
-
+#include "MaoDebug.h"
+#include "MaoLoops.h"
+#include "MaoUnit.h"
+#include "MaoPasses.h"
+#include "MaoRelax.h"
 
 // Pass that finds paths in inner loops that fits in 4 16-byte lines
 // and alligns all (chains of) basicb locks within the paths.
-class BranchSeparatorPass : public MaoPass {
+class BranchSeparatorPass : public MaoFunctionPass {
  public:
   explicit BranchSeparatorPass(MaoUnit *mao, Function *function);
-  void DoBranchSeparate();
+  bool Go();
 
  private:
   // Path is a list of basic blocks that form a way through the loop
 //   typedef std::vector<BasicBlock *> Path;
 //   typedef std::vector<Path *> Paths;
 
-  MaoUnit  *mao_unit_;
-
-  Function *function_;
   // This is the sizes of all the instructions in the section
   // as found by the relaxer.
   MaoEntryIntMap *sizes_;
@@ -107,8 +109,8 @@ MAO_OPTIONS_DEFINE(BRSEP, 3) {
 };
 
 BranchSeparatorPass::BranchSeparatorPass(MaoUnit *mao, Function *function)
-    : MaoPass("BRSEP", mao->mao_options(), MAO_OPTIONS(BRSEP), false),
-      mao_unit_(mao), function_(function), sizes_(NULL) {
+    : MaoFunctionPass("BRSEP", mao->mao_options(), MAO_OPTIONS(BRSEP),
+                      mao, function), sizes_(NULL) {
 
   collect_stat_      = GetOptionBool("stat");
   min_branch_distance_ = GetOptionInt("min_branch_distance");
@@ -117,20 +119,20 @@ BranchSeparatorPass::BranchSeparatorPass(MaoUnit *mao, Function *function)
 
   if (collect_stat_) {
     // check if a stat object already exists?
-    if (mao_unit_->GetStats()->HasStat("BRSEP")) {
+    if (unit_->GetStats()->HasStat("BRSEP")) {
       branch_separator_stat_ = static_cast<BranchSeparatorStat *>(
-          mao_unit_->GetStats()->GetStat("BRSEP"));
+          unit_->GetStats()->GetStat("BRSEP"));
     } else {
       branch_separator_stat_ = new BranchSeparatorStat();
-      mao_unit_->GetStats()->Add("BRSEP", branch_separator_stat_);
+      unit_->GetStats()->Add("BRSEP", branch_separator_stat_);
     }
   }
 }
 
-void BranchSeparatorPass::DoBranchSeparate() {
+bool BranchSeparatorPass::Go() {
   if(!profitable)
-    return;
-  sizes_ = MaoRelaxer::GetSizeMap(mao_unit_, function_->GetSection());
+    return false;
+  sizes_ = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
 
 
   MAO_ASSERT(function_->GetSection());
@@ -168,7 +170,7 @@ void BranchSeparatorPass::DoBranchSeparate() {
     //Align function begining based on min_branch_distance
     AlignEntry(function_, *(function_->EntryBegin()));
   }
-  return;
+  return true;
 }
 
 //Use .p2align
@@ -179,7 +181,7 @@ void BranchSeparatorPass::AlignEntry(Function *function, MaoEntry *entry) {
   operands.push_back(new DirectiveEntry::Operand(alignment));
   operands.push_back(new DirectiveEntry::Operand());// Not used in relaxation
   operands.push_back(new DirectiveEntry::Operand(min_branch_distance_-1));
-  DirectiveEntry *align_entry = mao_unit_->CreateDirective(
+  DirectiveEntry *align_entry = unit_->CreateDirective(
       DirectiveEntry::P2ALIGN, operands,
       function_, ss);
   entry->LinkBefore(align_entry);
@@ -195,26 +197,24 @@ void BranchSeparatorPass::InsertNopsBefore (Function *function,
   operands.push_back(new DirectiveEntry::Operand(alignment));
   operands.push_back(new DirectiveEntry::Operand());// Not used in relaxation
   operands.push_back(new DirectiveEntry::Operand(num_nops));
-  DirectiveEntry *align_entry = mao_unit_->CreateDirective(
+  DirectiveEntry *align_entry = unit_->CreateDirective(
       DirectiveEntry::P2ALIGN, operands,
       function_, ss);
   entry->LinkBefore(align_entry);
-
 }
+
 bool BranchSeparatorPass::IsBranch (MaoEntry *entry) {
   if (!entry->IsInstruction())
     return false;
   InstructionEntry *ins_entry = entry->AsInstruction();
   return ins_entry->HasTarget();
-
 }
-
 
 // Is the transformation profitable for this function
 // Right now it checks a list of function names passed as
 // a parameter to deciede if the function is profitable or
 // not
-bool BranchSeparatorPass::IsProfitable(Function *function){
+bool BranchSeparatorPass::IsProfitable(Function *function) {
   //List of comma separated functions to apply this pass
   const char *function_list;
   function_list = GetOptionString("function_list");
@@ -246,14 +246,8 @@ bool BranchSeparatorPass::IsProfitable(Function *function){
 }
 
 // External Entry Point
-void DoBranchSeparate(MaoUnit *mao,
-                 Function *function) {
-  // Make sure the analysis have been run on this function
-  BranchSeparatorPass separator(mao,
-                      function);
-  if (separator.enabled()) {
-    separator.set_timed();
-    separator.DoBranchSeparate();
-  }
-  return;
+void InitBranchSeparate() {
+  RegisterFunctionPass(
+      "BRSEP",
+      MaoFunctionPassManager::GenericPassCreator<BranchSeparatorPass>);
 }

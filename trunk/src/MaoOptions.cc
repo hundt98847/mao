@@ -23,22 +23,6 @@
 #include "MaoOptions.h"
 #include "MaoPasses.h"
 
-const char *MaoOptions::assembly_output_file_name() {
-  return assembly_output_file_name_;
-}
-
-const char *MaoOptions::ir_output_file_name() {
-  return ir_output_file_name_;
-}
-
-void MaoOptions::set_assembly_output_file_name(const char *file_name) {
-  MAO_ASSERT(file_name);
-  write_assembly_ = true;
-  output_is_stdout_ = false;
-  assembly_output_file_name_ = file_name;
-}
-
-
 // Maintain mapping between option array and pass name.
 //
 class MaoOptionArray {
@@ -87,14 +71,11 @@ void MaoOptions::ProvideHelp(bool always) {
           "\n'mao-options' are seperated by commas, and are:\n\n"
           "-h          display this help text\n"
           "-v          verbose (set trace level to 3)\n"
-          "-ofname     specify assembly output file (also -o,fname)\n"
           "-T          output timing information for passes\n"
           "\n"
           "PASS=[phase-option][,phase-option]*\n"
           "\nwith PASS and 'phase-option' being:\n\n"
           "Pass: ALL\n"
-          "  enable    : (bool)   Enable a pass  (also: on)\n"
-          "  disable   : (bool)   Disable a pass (also: off)\n"
           "  trace     : (int)    Set trace level to 'val' (0..3)\n"
           "  db[parm]  : (bool)   Dump before a pass\n"
           "  da[parm]  : (bool)   Dump after  a pass\n"
@@ -204,9 +185,7 @@ void MaoOptions::TimerStop(const char *pass_name) {
   entry->timer()->Stop();
 }
 
-static char *token_buff=NULL; //Allocated inside the Parse routine
-
-static char *NextToken(const char *arg, const char **next) {
+static char *NextToken(const char *arg, const char **next, char *token_buff) {
   int i = 0;
   const char *p = arg;
   if (*p == ',' || *p == ':' || *p == '=' || *p == '+')
@@ -235,12 +214,13 @@ static const char *GobbleGarbage(const char *arg, const char **next) {
 //    option(val)
 //    option[val]
 //
-static bool GetParam(const char *arg, const char **next, const char **param) {
+static bool GetParam(const char *arg, const char **next, const char **param,
+                     char *token_buff) {
   if (arg[0] == '(' || arg[0] == '[') {
     char  delim = arg[0];
 
     ++arg;
-    *param = NextToken(arg, &arg);
+    *param = NextToken(arg, &arg, token_buff);
 
     if (delim != ':') {
       MAO_ASSERT_MSG(arg[0] == ')' || arg[0] == ']',
@@ -261,42 +241,30 @@ static bool GetParam(const char *arg, const char **next, const char **param) {
 // array.
 //
 bool SetPassSpecificOptions(const char *option, const char *arg,
-                            const char **next,
+                            const char **next, char *token_buff,
                             MaoOptionArray *current_opts) {
-  if (!strcasecmp(option, "enable") || !strcasecmp(option, "on")) {
-    MaoPass *mao_pass = FindPass(current_opts->array());
-    if (mao_pass)
-      mao_pass->set_enabled(true);
-    return true;
-  }
-  if (!strcasecmp(option, "disable") || !strcasecmp(option, "off")) {
-    MaoPass *mao_pass = FindPass(current_opts->array());
-    if (mao_pass)
-      mao_pass->set_enabled(false);
-    return true;
-  }
   if (!strcasecmp(option, "trace")) {
     const char *param;
     int   level = 1;
-    if (GetParam(arg, next, &param))
+    if (GetParam(arg, next, &param, token_buff))
       level = atoi(param);
-    MaoPass *mao_pass = FindPass(current_opts->array());
+    MaoAction *mao_pass = FindPass(current_opts->array());
     if (mao_pass)
       mao_pass->set_tracing_level(level);
     return true;
   }
   if (!strcasecmp(option, "db")) {
     const char *param;
-    MaoPass *mao_pass = FindPass(current_opts->array());
-    GetParam(arg, next, &param);
+    MaoAction *mao_pass = FindPass(current_opts->array());
+    GetParam(arg, next, &param, token_buff);
     if (mao_pass && param)
       mao_pass->set_db(param);
     return true;
   }
   if (!strcasecmp(option, "da")) {
     const char *param;
-    MaoPass *mao_pass = FindPass(current_opts->array());
-    GetParam(arg, next, &param);
+    MaoAction *mao_pass = FindPass(current_opts->array());
+    GetParam(arg, next, &param, token_buff);
     if (mao_pass && param)
       mao_pass->set_da(param);
     return true;
@@ -308,11 +276,14 @@ bool SetPassSpecificOptions(const char *option, const char *arg,
 // that dynamically created passes are not visible at standard option
 // parsing time. We therefore reparse on pass creation.
 //
-void MaoOptions::Reparse() {
-  Parse(mao_options_, false);
+void MaoOptions::Reparse(MaoUnit *unit, MaoPassManager *pass_man) {
+  Parse(mao_options_, false, unit, pass_man);
 }
 
-void MaoOptions::Parse(const char *arg, bool collect) {
+void MaoOptions::Parse(const char *arg, bool collect,
+                       MaoUnit *unit, MaoPassManager *pass_man) {
+  MaoFunctionPassManager *func_pass_man = NULL;
+
   if (!arg) return;
 
   if (collect) {
@@ -329,7 +300,8 @@ void MaoOptions::Parse(const char *arg, bool collect) {
       mao_options_ = buf;
     }
   }
-  token_buff = new char[strlen(arg)+1];
+
+  char *token_buff = new char[strlen(arg)+1];
   while (arg && arg[0]) {
     GobbleGarbage(arg, &arg);
 
@@ -346,15 +318,6 @@ void MaoOptions::Parse(const char *arg, bool collect) {
       } else if (arg[0] == 'T') {
         set_timer_print();
         ++arg;
-      } else if (arg[0] == 'o') {
-        ++arg;
-        const char *filename = NextToken(arg, &arg);
-        if (!strcmp(filename, "stderr")) {
-          set_output_is_stderr();
-          set_assembly_output_file_name("<stderr>");
-        } else {
-          set_assembly_output_file_name(strdup(filename));
-        }
       } else {
         fprintf(stderr, "Invalid Option starting with: %s\n", arg);
         ++arg;
@@ -367,72 +330,95 @@ void MaoOptions::Parse(const char *arg, bool collect) {
     // are followed by either '=' or ':'.
     //
     if (isascii(arg[0])) {
-      char *pass = NextToken(arg, &arg);
+      char *pass_name = NextToken(arg, &arg, token_buff);
 
-      if (arg[0] == '=') {
-        MaoOptionArray *current_opts = FindOptionArray(pass);
-        MAO_ASSERT(current_opts);
-
-        char *option;
-        while (1) {
-          const char *old_arg = arg;
-          // should we start a new parse group?
-          if (arg[0] == ':')
-            break;
-
-          option = NextToken(arg, &arg);
-          if (!option || option[0] == '\0')
-            break;
-
-          // if the option is a passname, the next character will be a '='
-          // Then we need to exit the option parsing and process the next PASS
-          //
-          if (arg[0] == '=') {
-            arg = old_arg;
-            break;
-          }
-          if (SetPassSpecificOptions(option, arg, &arg, current_opts))
-            continue;
-
-          MaoOption *opt = current_opts->FindOption(option);
-          MAO_ASSERT_MSG(opt, "Could not find option: %s", option);
-
-          const char *param;
-          if (GetParam(arg, &arg, &param)) {
-            if (opt->type() == OPT_INT)
-              opt->ival_ = atoi(param);
-            else if (opt->type() == OPT_STRING)
-              opt->cval_ = strdup(param);
-            else if (opt->type() == OPT_BOOL) {
-              if (param[0] == '0' ||
-                  param[0] == 'n' || param[0] == 'N' ||
-                  param[0] == 'f' || param[0] == 'F' ||
-                  (param[0] == 'o' && param[1] == 'f'))
-                opt->bval_ = false; else
-              if (param[0] == '1' ||
-                  param[0] == 'y' || param[0] == 'Y' ||
-                  param[0] == 't' || param[0] == 'T' ||
-                  (param[0] == 'o' && param[1] == 'n'))
-                opt->bval_ = true;
-            }
+      if (pass_name[0] != '\0') {
+        if (pass_man) {
+          MaoPassManager::PassCreator unit_creator = GetUnitPass(pass_name);
+          if (unit_creator) {
+            pass_man->LinkPass(unit_creator(unit));
+            func_pass_man = NULL;
           } else {
-            if (opt->type() == OPT_BOOL)
-              opt->bval_ = true;
-            else
-              MAO_ASSERT_MSG(false, "non-boolean option %s used as boolean",
-                             option);
+            MaoFunctionPassManager::PassCreator func_creator =
+                GetFunctionPass(pass_name);
+            if (func_creator) {
+              if (!func_pass_man) {
+                func_pass_man = new MaoFunctionPassManager(unit);
+                pass_man->LinkPass(func_pass_man);
+              }
+              func_pass_man->LinkPass(func_creator);
+            } else {
+              MAO_ASSERT_MSG(false, "Can't find passname: %s", pass_name);
+            }
           }
-          if (arg[0] == '\0') break;
-          if (arg[0] == ':' || arg[0] == '|' || arg[0] == ';') {
-            ++arg;
-            break;
-          }
-          ++arg;
         }
-        GobbleGarbage(arg, &arg);
-      }
 
-      continue;
+        if (arg[0] == '=') {
+          MaoOptionArray *current_opts = FindOptionArray(pass_name);
+          MAO_ASSERT(current_opts);
+
+          char *option;
+          while (1) {
+            const char *old_arg = arg;
+            // should we start a new parse group?
+            if (arg[0] == ':')
+              break;
+
+            option = NextToken(arg, &arg, token_buff);
+            if (!option || option[0] == '\0')
+              break;
+
+            // if the option is a passname, the next character will be a '='
+            // Then we need to exit the option parsing and process the next PASS
+            //
+            if (arg[0] == '=') {
+              arg = old_arg;
+              break;
+            }
+            if (SetPassSpecificOptions(option, arg, &arg, token_buff,
+                                       current_opts))
+              continue;
+
+            MaoOption *opt = current_opts->FindOption(option);
+            MAO_ASSERT_MSG(opt, "Could not find option: %s", option);
+
+            const char *param;
+            if (GetParam(arg, &arg, &param, token_buff)) {
+              if (opt->type() == OPT_INT)
+                opt->ival_ = atoi(param);
+              else if (opt->type() == OPT_STRING)
+                opt->cval_ = strdup(param);
+              else if (opt->type() == OPT_BOOL) {
+                if (param[0] == '0' ||
+                    param[0] == 'n' || param[0] == 'N' ||
+                    param[0] == 'f' || param[0] == 'F' ||
+                    (param[0] == 'o' && param[1] == 'f'))
+                  opt->bval_ = false; else
+                  if (param[0] == '1' ||
+                      param[0] == 'y' || param[0] == 'Y' ||
+                      param[0] == 't' || param[0] == 'T' ||
+                      (param[0] == 'o' && param[1] == 'n'))
+                    opt->bval_ = true;
+              }
+            } else {
+              if (opt->type() == OPT_BOOL)
+                opt->bval_ = true;
+              else
+                MAO_ASSERT_MSG(false, "non-boolean option %s used as boolean",
+                               option);
+            }
+            if (arg[0] == '\0') break;
+            if (arg[0] == ':' || arg[0] == '|' || arg[0] == ';') {
+              ++arg;
+              break;
+            }
+            ++arg;
+          }
+          GobbleGarbage(arg, &arg);
+        }
+
+        continue;
+      }
     }
 
     fprintf(stderr, "Unknown input: %s\n", arg);

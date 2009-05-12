@@ -29,8 +29,8 @@
 
 class MaoRelaxer : public MaoPass {
  public:
-  explicit MaoRelaxer(MaoUnit *mao_unit);
-  void RelaxSection(Section *section, MaoEntryIntMap *size_map);
+  MaoRelaxer(MaoUnit *mao_unit, Section *section, MaoEntryIntMap *size_map);
+  bool Go();
 
   // Used when a pass needs the sizes for a given section.
   // Returns the sizemap, which holds entries for the whole section.
@@ -106,7 +106,9 @@ class MaoRelaxer : public MaoPass {
   void SaveState(const struct frag *fragments, FragState *state);
   void RestoreState(const struct frag *fragments, FragState *state);
 
-  MaoUnit *mao_unit_;
+  Section *section_;
+  MaoEntryIntMap *size_map_;
+
   bool collect_stat_;
   bool dump_sizemap_;
 

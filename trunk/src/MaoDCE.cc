@@ -55,24 +55,24 @@ static void Visit(BasicBlock *bb, BasicBlockMap *bbmap) {
 //
 // Every basic block that remains untouched, is dead code.
 //
-class DeadCodeElimPass : public MaoPass {
+class DeadCodeElimPass : public MaoFunctionPass {
  public:
-  DeadCodeElimPass(MaoUnit *mao, Function *function) :
-    MaoPass("DCE", mao->mao_options(), MAO_OPTIONS(DCE), false),
-    mao_(mao), function_(function) {
+  DeadCodeElimPass(MaoUnit *mao, Function *function)
+      : MaoFunctionPass("DCE", mao->mao_options(), MAO_OPTIONS(DCE), mao,
+                        function) {
   }
 
-  void DoElim() {
-    set_cfg(CFG::GetCFG(mao_, function_));
+  bool Go() {
+    CFG *cfg = CFG::GetCFG(unit_, function_);
 
     BasicBlockMap bbmap;
-    FORALL_CFG_BB(cfg(),it)
+    FORALL_CFG_BB(cfg, it)
       bbmap[(*it)] = false;
 
-    BasicBlock *root = (*cfg()->Begin());
+    BasicBlock *root = (*cfg->Begin());
     Visit(root, &bbmap);
 
-    FORALL_CFG_BB(cfg(),it)
+    FORALL_CFG_BB(cfg,it) {
       if (!bbmap[(*it)]) {
         BasicBlock *bb = *it;
         int num = bb->NumEntries();
@@ -93,20 +93,16 @@ class DeadCodeElimPass : public MaoPass {
           }
         }
       }
+    }
+    return true;
   }
-
- private:
-  MaoUnit   *mao_;
-  Function  *function_;
 };
 
 
 // External Entry Point
 //
-void PerformDeadCodeElimination(MaoUnit *mao, Function *function) {
-  DeadCodeElimPass dce(mao, function);
-  if ( dce.enabled()) {
-    dce.set_timed();
-    dce.DoElim();
-  }
+void InitDCE() {
+  RegisterFunctionPass(
+      "DCE",
+      MaoFunctionPassManager::GenericPassCreator<DeadCodeElimPass>);
 }

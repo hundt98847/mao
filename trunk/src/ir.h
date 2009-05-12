@@ -20,6 +20,6 @@
 
 #include "MaoUnit.h"
 
-void register_mao_unit(MaoUnit *);
+void RegisterMaoUnit(MaoUnit *);
 
 #endif  // IR_H_

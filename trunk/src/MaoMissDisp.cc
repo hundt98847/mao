@@ -32,12 +32,11 @@
 MAO_OPTIONS_DEFINE(MISSDISP, 0) {
 };
 
-class MissDispElimPass : public MaoPass {
+class MissDispElimPass : public MaoFunctionPass {
  public:
-  MissDispElimPass(MaoUnit *mao, Function *function) :
-    MaoPass("MISSDISP", mao->mao_options(), MAO_OPTIONS(MISSDISP), false),
-    mao_(mao), function_(function) {
-  }
+  MissDispElimPass(MaoUnit *mao, Function *function)
+      : MaoFunctionPass("MISSDISP", mao->mao_options(), MAO_OPTIONS(MISSDISP),
+                        mao, function) { }
 
   // Find these patterns in a single basic block:
   //    add    $0x8,%rax
@@ -47,10 +46,10 @@ class MissDispElimPass : public MaoPass {
   //
   //   mov    0x8(%rax),%rax
   //
-  void DoElim() {
-    set_cfg(CFG::GetCFG(mao_, function_));
+  bool Go() {
+    CFG *cfg = CFG::GetCFG(unit_, function_);
 
-    FORALL_CFG_BB(cfg(),it) {
+    FORALL_CFG_BB(cfg,it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
@@ -75,20 +74,15 @@ class MissDispElimPass : public MaoPass {
         }
       }
     }
+    return true;
   }
-
- private:
-  MaoUnit   *mao_;
-  Function  *function_;
 };
 
 
 // External Entry Point
 //
-void PerformMissDispElimination(MaoUnit *mao, Function *function) {
-  MissDispElimPass missdisp(mao, function);
-  if (missdisp.enabled()) {
-    missdisp.set_timed();
-    missdisp.DoElim();
-  }
+void InitMissDispElimination() {
+  RegisterFunctionPass(
+      "MISSDISP",
+      MaoFunctionPassManager::GenericPassCreator<MissDispElimPass>);
 }

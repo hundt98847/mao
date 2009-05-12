@@ -25,8 +25,6 @@
 #include "MaoUnit.h"
 #include "MaoPasses.h"
 #include "MaoCFG.h"
-#include "MaoLoopAlign.h"
-#include "MaoBranchSeparator.h"
 #include "MaoLoops.h"
 #include "MaoRelax.h"
 //#include "MaoDefs.h" // Problematic header since it uses "opcodes/i386-opc.h"
@@ -37,7 +35,6 @@
 //==================================
 int main(int argc, const char *argv[]) {
   MaoOptions mao_options;
-  MaoUnit    mao_unit(&mao_options);
 
   // Parse any mao-specific command line flags (start with -mao:)
   const char **new_argv = new const char*[argc];
@@ -54,49 +51,22 @@ int main(int argc, const char *argv[]) {
   // Static Initialization
   mao_options.ProvideHelp();
 
-  register_mao_unit(&mao_unit);
   InitRegisters();
-  MaoPassManager *mao_pass_man = InitPasses(&mao_options);
+  InitPasses(&mao_options);
 
-  // global init passes
-  ReadInput(new_argc, new_argv, &mao_unit);
-  PerformProfileAnnotation(&mao_unit);
+  MaoUnit mao_unit(&mao_options);
+  RegisterMaoUnit(&mao_unit);
 
-  // Run passes on functions.
-  for (MaoUnit::ConstFunctionIterator iter = mao_unit.ConstFunctionBegin();
-       iter != mao_unit.ConstFunctionEnd();
-       ++iter) {
-    Function *function = *iter;
+  MaoPassManager mao_pass_man(&mao_unit);
+  mao_pass_man.LinkPass(new ReadInputPass(new_argc, new_argv, &mao_unit));
 
-    // Optimization passes.
-    PerformDeadCodeElimination(&mao_unit, function);
-    PerformNopKiller(&mao_unit, function);
-    PerformNopinizer(&mao_unit, function);
-    PerformAddAddElimination(&mao_unit,
-                             function);
-    PerformZeroExtensionElimination(&mao_unit,
-                                    function);
-    PerformRedundantTestElimination(&mao_unit,
-                                    function);
-    PerformRedundantMemMoveElimination(&mao_unit,
-                                       function);
-    PerformMissDispElimination(&mao_unit,
-                               function);
-    PerformLongInstructionSplit(&mao_unit, function);
-    PerformAlignTinyLoops16(&mao_unit, function);
-    DoLoopAlign(&mao_unit, function);
-    DoBranchSeparate(&mao_unit, function);
-    TestCFGPass(&mao_unit, function);
-    TestRelaxPass(&mao_unit, function);
-  }
-
-  // global finalization passes
-  mao_pass_man->LinkPass(new AssemblyPass(&mao_options, &mao_unit));
-  mao_pass_man->LinkPass(new DumpIrPass(&mao_unit));
-  mao_pass_man->LinkPass(new DumpSymbolTablePass(&mao_unit));
+  // Reparse the arguments now that all the dynamic passes have been
+  // loaded.  This will initialize the pass manager with the desired
+  // passes for execution.
+  mao_options.Reparse(&mao_unit, &mao_pass_man);
 
   // run the passes
-  mao_pass_man->Run();
+  mao_pass_man.Run();
 
   mao_unit.GetStats()->Print(stdout);
   if (mao_options.timer_print())

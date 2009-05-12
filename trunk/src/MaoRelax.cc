@@ -54,18 +54,18 @@ MAO_OPTIONS_DEFINE(RELAX, 3) {
 
 
 
-MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit)
-    : MaoPass("RELAX",  mao_unit->mao_options(), MAO_OPTIONS(RELAX), true),
-      mao_unit_(mao_unit) {
+MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit, Section *section, MaoEntryIntMap *size_map)
+    : MaoPass("RELAX",  mao_unit->mao_options(), MAO_OPTIONS(RELAX), mao_unit),
+      section_(section), size_map_(size_map) {
   collect_stat_ = GetOptionBool("stat");
   dump_sizemap_ = GetOptionBool("dump_sizemap");
   if (collect_stat_) {
-    if (mao_unit_->GetStats()->HasStat("RELAX")) {
+    if (unit_->GetStats()->HasStat("RELAX")) {
       relax_stat_ =
-          static_cast<RelaxStat *>(mao_unit_->GetStats()->GetStat("RELAX"));
+          static_cast<RelaxStat *>(unit_->GetStats()->GetStat("RELAX"));
     } else {
       relax_stat_ = new RelaxStat();
-      mao_unit_->GetStats()->Add("RELAX", relax_stat_);
+      unit_->GetStats()->Add("RELAX", relax_stat_);
     }
   }
 }
@@ -91,7 +91,7 @@ void MaoRelaxer::RestoreState(const struct frag *fragments, FragState *state) {
   }
 }
 
-void MaoRelaxer::RelaxSection(Section *section, MaoEntryIntMap *size_map) {
+bool MaoRelaxer::Go() {
   // Build the fragments (and initial sizes)
   FragToEntryMap relax_map;
 
@@ -102,11 +102,11 @@ void MaoRelaxer::RelaxSection(Section *section, MaoEntryIntMap *size_map) {
   finalize_syms = 0;
 
   asection *bfd_section = bfd_get_section_by_name(stdoutput,
-                                                  section->name().c_str());
+                                                  section_->name().c_str());
   MAO_ASSERT(bfd_section);
 
   struct frag *fragments =
-      BuildFragments(mao_unit_, section, size_map, &relax_map);
+      BuildFragments(unit_, section_, size_map_, &relax_map);
 
   // The relaxer updates the instruction through the fragment. The opcode
   // will change. Since we want to be able to relax several times,
@@ -137,10 +137,10 @@ void MaoRelaxer::RelaxSection(Section *section, MaoEntryIntMap *size_map) {
     // fr_next is guaranteed to be non-null because frag was found in
     // the relax map.
     int var_size = frag->fr_next->fr_address - frag->fr_address - frag->fr_fix;
-    (*size_map)[entry->second] += var_size;
+    (*size_map_)[entry->second] += var_size;
     // Check if fr_fix have changed in relaxation:
     if (frag->fr_fix != old_fr_fix[frag_index]) {
-      (*size_map)[entry->second] += (frag->fr_fix - old_fr_fix[frag_index]);
+      (*size_map_)[entry->second] += (frag->fr_fix - old_fr_fix[frag_index]);
     }
     frag_index++;
   }
@@ -152,8 +152,8 @@ void MaoRelaxer::RelaxSection(Section *section, MaoEntryIntMap *size_map) {
   FreeFragments(fragments);
 
   if (dump_sizemap_) {
-    for (MaoEntryIntMap::const_iterator iter = size_map->begin();
-         iter != size_map->end();
+    for (MaoEntryIntMap::const_iterator iter = size_map_->begin();
+         iter != size_map_->end();
          ++iter) {
       fprintf(stderr, "%4x:  ", iter->second);
       iter->first->PrintIR(stderr);
@@ -162,16 +162,18 @@ void MaoRelaxer::RelaxSection(Section *section, MaoEntryIntMap *size_map) {
   }
 
   if (collect_stat_) {
-    for (MaoUnit::ConstFunctionIterator iter = mao_unit_->ConstFunctionBegin();
-         iter != mao_unit_->ConstFunctionEnd();
+    for (MaoUnit::ConstFunctionIterator iter = unit_->ConstFunctionBegin();
+         iter != unit_->ConstFunctionEnd();
          ++iter) {
       Function *function = *iter;
-      if (function->GetSection() == section) {
+      if (function->GetSection() == section_) {
         relax_stat_->AddFunction(function, FunctionSize(function,
-                                                        size_map));
+                                                        size_map_));
       }
     }
   }
+
+  return true;
 }
 
 
@@ -687,6 +689,6 @@ int MaoRelaxer::FunctionSize(Function *function, MaoEntryIntMap *size_map) {
 // External entry point
 // --------------------------------------------------------------------
 void Relax(MaoUnit *mao, Section *section, MaoEntryIntMap *size_map) {
-  MaoRelaxer relaxer(mao);
-  relaxer.RelaxSection(section, size_map);
+  MaoRelaxer relaxer(mao, section, size_map);
+  relaxer.Go();
 }

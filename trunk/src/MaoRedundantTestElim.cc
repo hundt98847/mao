@@ -32,13 +32,11 @@
 MAO_OPTIONS_DEFINE(REDTEST, 0) {
 };
 
-class RedTestElimPass : public MaoPass {
+class RedTestElimPass : public MaoFunctionPass {
  public:
-  RedTestElimPass(MaoUnit *mao, Function *function) :
-    MaoPass("REDTEST", mao->mao_options(), MAO_OPTIONS(REDTEST),
-            false),
-    mao_(mao), function_(function) {
-  }
+  RedTestElimPass(MaoUnit *mao, Function *function)
+      : MaoFunctionPass("REDTEST", mao->mao_options(), MAO_OPTIONS(REDTEST),
+                        mao, function) { }
 
   // Find patterns like these in a single basic block:
   //
@@ -53,12 +51,12 @@ class RedTestElimPass : public MaoPass {
   // subl/addl/others set all the flags that test is testing for.
   // The test instruction is therefore redundant
   //
-  void DoElim() {
-    set_cfg(CFG::GetCFG(mao_, function_));
+  bool Go() {
+    CFG *cfg = CFG::GetCFG(unit_, function_);
 
     std::list<InstructionEntry *> redundants;
 
-    FORALL_CFG_BB(cfg(),it) {
+    FORALL_CFG_BB(cfg,it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
@@ -105,22 +103,17 @@ class RedTestElimPass : public MaoPass {
     // Now delete all the redundant ones.
     for (std::list<InstructionEntry *>::iterator it = redundants.begin();
          it != redundants.end(); ++it) {
-      mao_->DeleteEntry(*it);
+      unit_->DeleteEntry(*it);
     }
+    return true;
   }
-
- private:
-  MaoUnit   *mao_;
-  Function  *function_;
 };
 
 
 // External Entry Point
 //
-void PerformRedundantTestElimination(MaoUnit *mao, Function *function) {
-  RedTestElimPass redtest(mao, function);
-  if (redtest.enabled()) {
-    redtest.set_timed();
-    redtest.DoElim();
-  }
+void InitRedundantTestElimination() {
+  RegisterFunctionPass(
+      "REDTEST",
+      MaoFunctionPassManager::GenericPassCreator<RedTestElimPass>);
 }

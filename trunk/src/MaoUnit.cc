@@ -204,16 +204,13 @@ void MaoUnit::PrintIR(FILE *out, bool print_entries, bool print_sections,
          iter != ConstFunctionEnd();
          ++iter) {
       Function *function = *iter;
+      CFG *cfg = CFG::GetCFGIfExists(this, function);
       fprintf(out, "[%3d] [%3d-%3d] [%c%c]: %s \n",
               function->id(),
               function->first_entry()->id(),
               function->last_entry()->id(),
-              function->cfg()?
-                (function->cfg()->HasUnresolvedIndirectJump()?'I':' ')
-                :'?',
-              function->cfg()?
-              (function->cfg()->HasExternalJump()?'E':' ')
-                :'?',
+              cfg ? (cfg->HasUnresolvedIndirectJump() ? 'I' : ' ') : '?',
+              cfg ? (cfg->HasExternalJump() ? 'E' : ' ') : '?',
               function->name().c_str());
     }
   }

@@ -444,39 +444,38 @@ MAO_OPTIONS_DEFINE(LFIND, 1) {
   OPTION_BOOL("lsg", false, "Dump LSG in text format"),
 };
 
-class LoopFinderPass : public MaoPass {
+class LoopFinderPass : public MaoFunctionPass {
  public:
-  LoopFinderPass(MaoUnit *mao, const CFG *cfg) :
-    MaoPass("LFIND", mao->mao_options(), MAO_OPTIONS(LFIND), true, cfg),
-    mao_(mao) {
+  LoopFinderPass(MaoUnit *mao, Function *function, LoopStructureGraph *LSG)
+      : MaoFunctionPass("LFIND", mao->mao_options(), MAO_OPTIONS(LFIND),
+                        mao, function), LSG_(LSG) {
     dump_lsg_ = GetOptionBool("lsg");
   }
 
-  LoopStructureGraph *DoTheHavlak() {
-    LoopStructureGraph *LSG = new LoopStructureGraph;
-    HavlakLoopFinder   Havlak(cfg(), LSG);
-
+  bool Go() {
+    CFG *cfg = CFG::GetCFG(unit_, function_);
+    MAO_ASSERT(cfg != NULL);
+    HavlakLoopFinder Havlak(cfg, LSG_);
     Havlak.FindLoops();
 
     if (dump_lsg_)
-      LSG->Dump();
-    return LSG;
+      LSG_->Dump();
+    return true;
   }
 
  private:
-  bool       dump_vcg_, dump_cfg_, dump_lsg_;
-  MaoUnit    *mao_;
+  LoopStructureGraph *LSG_;
+  bool                dump_lsg_;
 };
 
 LoopStructureGraph *LoopStructureGraph::GetLSG(MaoUnit *mao,
 					       Function *function) {
   MAO_ASSERT(function != NULL);
   if (function->lsg() == NULL) {
-    CFG *cfg = CFG::GetCFG(mao, function);
-    MAO_ASSERT(cfg != NULL);
-    LoopFinderPass finder(mao, cfg);
-    finder.set_timed();
-    function->set_lsg(finder.DoTheHavlak());
+    LoopStructureGraph *LSG = new LoopStructureGraph;
+    LoopFinderPass finder(mao, function, LSG);
+    finder.Go();
+    function->set_lsg(LSG);
   }
   MAO_ASSERT(function->lsg());
   return function->lsg();
@@ -487,9 +486,8 @@ LoopStructureGraph *LoopStructureGraph::GetLSG(MaoUnit *mao,
 //
 LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, Function *function) {
   MAO_ASSERT(function != NULL);
-  CFG *cfg = CFG::GetCFG(mao, function);
-  MAO_ASSERT(cfg != NULL);
-  LoopFinderPass finder(mao, cfg);
-  finder.set_timed();
-  return finder.DoTheHavlak();
+  LoopStructureGraph *LSG = new LoopStructureGraph;
+  LoopFinderPass finder(mao, function, LSG);
+  finder.Go();
+  return LSG;
 }
