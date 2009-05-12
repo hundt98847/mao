@@ -1148,6 +1148,13 @@ void LabelEntry::PrintEntry(FILE *out) const {
   MaoEntry::PrintSourceInfo(out);
 }
 
+
+std::string &LabelEntry::ToString(std::string *out) const {
+  out->append(name_);
+  return *out;
+}
+
+
 void LabelEntry::PrintIR(FILE *out) const {
   MAO_ASSERT(name_);
   fprintf(out, "%s", name_);
@@ -1221,6 +1228,15 @@ void DirectiveEntry::PrintEntry(::FILE *out) const {
           OperandsToString(&operands, GetOperandSeparator()).c_str());
 
   PrintSourceInfo(out);
+}
+
+std::string &DirectiveEntry::ToString(std::string *out) const {
+  std::ostringstream stream;
+  stream << GetOpcodeName()
+         << " "
+         << OperandsToString(out, GetOperandSeparator());
+  out->append(stream.str());
+  return *out;
 }
 
 void DirectiveEntry::PrintIR(::FILE *out) const {
@@ -1617,14 +1633,25 @@ InstructionEntry::~InstructionEntry() {
 }
 
 void InstructionEntry::PrintEntry(FILE *out) const {
-  PrintInstruction(out);
-  PrintProfile(out);
+  std::string s;
+  InstructionToString(&s);
+  ProfileToString(&s);
+  fprintf(out, "%s", s.c_str());
   PrintSourceInfo(out);
 }
 
+
+std::string &InstructionEntry::ToString(std::string *out) const {
+  InstructionToString(out);
+  return *out;
+}
+
+
 void InstructionEntry::PrintIR(FILE *out) const {
-  PrintInstruction(out);
-  PrintProfile(out);
+  std::string s;
+  InstructionToString(&s);
+  ProfileToString(&s);
+  fprintf(out, "%s", s.c_str());
 }
 
 MaoEntry::EntryType InstructionEntry::Type() const {
@@ -1722,25 +1749,26 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.regymm);
 }
 
-void InstructionEntry::PrintImmediateOperand(FILE *out,
-                                           const enum bfd_reloc_code_real reloc,
-                                           const expressionS *expr) const {
+std::string &InstructionEntry::ImmediateOperandToString(std::string *out,
+                                       const enum bfd_reloc_code_real reloc,
+                                       const expressionS *expr) const {
+  std::ostringstream string_stream;
   std::string reloc_string;
   switch (expr->X_op) {
-    case O_constant:
+    case O_constant: {
       /* X_add_number (a constant expression).  */
-      fprintf(out, "$%lld",
-              (long long)expr->X_add_number);
+      string_stream << "$" << expr->X_add_number;
       break;
+    }
     case O_symbol:
       /* X_add_symbol + X_add_number.  */
       if (expr->X_add_symbol) {
-        fprintf(out, "$%s%s+",
-                GetDotOrSymbol(expr->X_add_symbol).c_str(),
-                RelocToString(reloc, &reloc_string).c_str());
+        string_stream << "$"
+                      << GetDotOrSymbol(expr->X_add_symbol)
+                      << RelocToString(reloc, &reloc_string);
+        string_stream << "+";
       }
-      fprintf(out, "%lld",
-              (long long)expr->X_add_number);
+      string_stream << expr->X_add_number;
       break;
     case O_add:
     case O_subtract: {
@@ -1757,36 +1785,34 @@ void InstructionEntry::PrintImmediateOperand(FILE *out,
         default:
           MAO_ASSERT(false);
       }
-      fprintf(out, "$");
+      string_stream << "$";
       if (expr->X_add_symbol || expr->X_op_symbol) {
-        fprintf(out, "(");
+        string_stream << "(";
       }
       if (expr->X_add_symbol) {
-        fprintf(out, "%s%s",
-                GetDotOrSymbol(expr->X_add_symbol).c_str(),
-                RelocToString(reloc, &reloc_string).c_str());
+        string_stream << GetDotOrSymbol(expr->X_add_symbol)
+                      << RelocToString(reloc, &reloc_string).c_str();
       }
       if (expr->X_op_symbol) {
-        fprintf(out, "%s%s",
-                op,
-                GetDotOrSymbol(expr->X_op_symbol).c_str());
+        string_stream << op
+                      << GetDotOrSymbol(expr->X_op_symbol);
       }
       if (expr->X_add_symbol || expr->X_op_symbol) {
-        fprintf(out, ")");
+        string_stream << ")";
         if (expr->X_add_number) {
-          fprintf(out, "+");
+          string_stream << "+";
         }
       }
       if (expr->X_add_number) {
-        fprintf(out, "%lld)",
-                (long long)expr->X_add_number);
+        string_stream << expr->X_add_number;
       }
       break;
     }
     default:
       MAO_ASSERT_MSG(0, "Unable to print unsupported expression");
   }
-  return;
+  out->append(string_stream.str());
+  return *out;
 }
 
 void InstructionEntry::SetOperand(int op1,
@@ -1873,8 +1899,10 @@ bool InstructionEntry::CompareMemOperand(int op1,
 }
 
 // segment-override:signed-offset(base,index,scale)
-void InstructionEntry::PrintMemoryOperand(FILE *out,
-                                          int op_index) const {
+std::string &InstructionEntry::MemoryOperandToString(std::string *out,
+                                                     int op_index) const {
+  std::ostringstream string_stream;
+
   // Find out the correct segment index. The index is based on the number
   // of memory operands in the instruction.
   int seg_index = op_index;
@@ -1896,7 +1924,7 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
   int scale[] = { 1, 2, 4, 8 };
 
   if (jumpabsolute) {
-    fprintf(out, "*");
+    string_stream << "*";
   }
 
   // segment-override:
@@ -1905,9 +1933,11 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
     // incorrectly gives ds as the segement. We need to work
     // around this here. See tc-i386.c check_string() for details.
     if (instruction_->tm.operand_types[op_index].bitfield.esseg) {
-      fprintf(out, "%%es:");
+      string_stream << "%es:";
     } else {
-      fprintf(out, "%%%s:", segment_override);
+      string_stream << "%"
+                    << segment_override
+                    << ":";
     }
   }
 
@@ -1922,48 +1952,48 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
     switch (expr->X_op) {
       case O_constant:
         /* X_add_number (a constant expression).  */
-        fprintf(out, "(%lld)",
-                (long long)expr->X_add_number);
+        string_stream << "("
+                      << expr->X_add_number
+                      << ")";
         break;
       case O_symbol:
         if (expr->X_add_number)
-          fprintf(out, "(");
+          string_stream << "(";
         /* X_add_symbol + X_add_number.  */
         if (expr->X_add_symbol) {
-          fprintf(out, "%s%s",
-                  GetDotOrSymbol(expr->X_add_symbol).c_str(),
-                  RelocToString(reloc, &reloc_string).c_str());
+          string_stream << GetDotOrSymbol(expr->X_add_symbol)
+                        << RelocToString(reloc, &reloc_string);
         }
         if (expr->X_add_number) {
-          fprintf(out, "+%lld", (long long)expr->X_add_number);
-          fprintf(out, ")");
+          string_stream << "+"
+                        << expr->X_add_number;
+          string_stream << ")";
         }
         break;
         /* (X_add_symbol - X_op_symbol) + X_add_number.  */
       case O_subtract:
         if (expr->X_add_symbol || expr->X_op_symbol) {
-          fprintf(out, "(");
+          string_stream << "(";
         }
         if (expr->X_add_symbol) {
-          fprintf(out, "%s%s",
-                  GetDotOrSymbol(expr->X_add_symbol).c_str(),
-                  RelocToString(reloc, &reloc_string).c_str());
+          string_stream << GetDotOrSymbol(expr->X_add_symbol)
+                        << RelocToString(reloc, &reloc_string);
         }
         // When GOTPCREL is used, the second symbol is implicit and
         // should not be printed.
         if (reloc != BFD_RELOC_32_PCREL && reloc != BFD_RELOC_32) {
           if (expr->X_op_symbol) {
-            fprintf(out, "-%s",
-                    GetDotOrSymbol(expr->X_op_symbol).c_str());
+            string_stream << "-"
+                          << GetDotOrSymbol(expr->X_op_symbol);
           }
         }
         if (expr->X_add_symbol || expr->X_op_symbol) {
-          fprintf(out, ")");
+          string_stream << ")";
           if (expr->X_add_number)
-            fprintf(out, "+");
+            string_stream << "+";
         }
         if (expr->X_add_number) {
-          fprintf(out, "%lld", (long long)expr->X_add_number);
+          string_stream << expr->X_add_number;
         }
         break;
       default:
@@ -2015,17 +2045,21 @@ void InstructionEntry::PrintMemoryOperand(FILE *out,
 
 
   if (instruction_->base_reg || instruction_->index_reg)
-    fprintf(out, "(");
+    string_stream << "(";
   if (instruction_->base_reg)
-    fprintf(out, "%%%s", base_reg_name);
+    string_stream << "%"
+                  << base_reg_name;
   if (instruction_->index_reg)
-    fprintf(out, ",%%%s", instruction_->index_reg->reg_name);
+    string_stream << ",%"
+                  << instruction_->index_reg->reg_name;
   if (instruction_->log2_scale_factor)
-    fprintf(out, ",%d", scale[instruction_->log2_scale_factor]);
+    string_stream << ","
+                  << scale[instruction_->log2_scale_factor];
   if (instruction_->base_reg || instruction_->index_reg)
-    fprintf(out, ")");
+    string_stream << ")";
 
-  return;
+  out->append(string_stream.str());
+  return *out;
 }
 
 bool InstructionEntry::HasBaseRegister() const {
@@ -2186,8 +2220,8 @@ const std::string InstructionEntry::GetAssemblyInstructionName() const {
   return s;
 }
 
-
-void InstructionEntry::PrintRexPrefix(FILE *out, int prefix) const {
+std::string &InstructionEntry::PrintRexPrefix(std::string *out,
+                                              int prefix) const {
   const char *rex_arr[] = {"rex", "rexz", "rexy", "rexyz", "rexx",
                            "rexxz", "rexxy", "rexxyz", "rex64",
                            "rex64z", "rex64y", "rex64yz", "rex64x",
@@ -2197,7 +2231,9 @@ void InstructionEntry::PrintRexPrefix(FILE *out, int prefix) const {
                  prefix < REX_OPCODE+16,
                  "Error in REX prefix: %d\n", prefix);
 
-  fprintf(out, "%s ", rex_arr[prefix-REX_OPCODE]);
+  out->append(rex_arr[prefix-REX_OPCODE]);
+  out->append(" ");
+  return *out;
 }
 
 
@@ -2314,7 +2350,7 @@ int InstructionEntry::StripRexPrefix(int prefix) const {
 
 // Prints out the instruction.
 // Goal is to make it print instructions generated by gcc
-void InstructionEntry::PrintInstruction(FILE *out) const {
+std::string &InstructionEntry::InstructionToString(std::string *out) const {
   const MaoOpcode rep_ops[] = {OP_ins, OP_outs, OP_movs, OP_lods, OP_stos};
   const MaoOpcode repe_ops[]= {OP_cmps, OP_scas};
 
@@ -2324,7 +2360,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
                                        OP_montmul,   OP_xsha1,     OP_xsha256};
 
   // Prefixes
-  fprintf(out, "\t");
+  out->append("\t");
   if (instruction_->prefixes > 0) {
     for (unsigned int i = 0;
          i < sizeof(instruction_->prefix)/sizeof(unsigned char);
@@ -2352,7 +2388,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           // REPNE, REPNZ (repeat while not equal, not zero) ins: CMPS, SCAS
           case REPNE_PREFIX_OPCODE:
             if (IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
-              fprintf(out, "repne ");
+              out->append("repne ");
             } else if (IsInList(op(), rep_ops,
                                 sizeof(repe_ops)/sizeof(MaoOpcode))) {
               MAO_ASSERT_MSG(false,
@@ -2361,13 +2397,13 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             break;
           case REPE_PREFIX_OPCODE:
             if (IsInList(op(), repe_ops, sizeof(repe_ops)/sizeof(MaoOpcode))) {
-              fprintf(out, "repe ");
+              out->append("repe ");
             } else if (IsInList(op(), rep_ops,
                                 sizeof(rep_ops)/sizeof(MaoOpcode))) {
-              fprintf(out, "rep ");
+              out->append("rep ");
             } else if (IsInList(op(), via_padlock_ops,
                                 sizeof(via_padlock_ops)/sizeof(MaoOpcode))) {
-              fprintf(out, "rep ");
+              out->append("rep ");
             }
             break;
           // Rex prefixes are used for 64-bit extention
@@ -2412,10 +2448,10 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
               case  CODE_16BIT:
                 break;
               case  CODE_32BIT:
-                fprintf(out, "addr16  ");
+                out->append("addr16  ");
                 break;
               case  CODE_64BIT:
-                fprintf(out, "addr32  ");
+                out->append("addr32  ");
                 break;
               default:
                 MAO_ASSERT_MSG(false, "Fould illegal prefix.");
@@ -2428,7 +2464,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             // If an instruction has a control-register as operand,
             // the lock prefix should not be printed.
             if (!SuppressLockPrefix()) {
-              fprintf(out, "lock ");
+              out->append("lock ");
             }
             break;
           case FWAIT_OPCODE:
@@ -2444,7 +2480,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
 
   // Gets the name of the assembly instruction, including
   // suffixes.
-  fprintf(out, "%s\t", GetAssemblyInstructionName().c_str());
+  out->append(GetAssemblyInstructionName());
+  out->append("\t");
 
   // Loop over operands
   int num_operands = instruction_->operands;
@@ -2472,7 +2509,7 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
     }
 
     if (i > 0)
-      fprintf(out, ", ");
+      out->append(", ");
 
     // IMMEDIATE
     if (IsImmediateOperand(instruction_, i)) {
@@ -2492,32 +2529,32 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
           num_operands > 2 &&
           i == 0 &&
           IsImmediateOperand(instruction_, 1)) {
-        PrintImmediateOperand(out,
-                              instruction_->reloc[1],
-                              instruction_->op[1].imms);
+        ImmediateOperandToString(out,
+                                 instruction_->reloc[1],
+                                 instruction_->op[1].imms);
 
       } else if (instruction_->tm.cpu_flags.bitfield.cpusse4a &&
                  num_operands > 2 &&
                  i == 1 &&
                  IsImmediateOperand(instruction_, 0)) {
-        PrintImmediateOperand(out,
-                              instruction_->reloc[0],
-                              instruction_->op[0].imms);
+        ImmediateOperandToString(out,
+                                 instruction_->reloc[0],
+                                 instruction_->op[0].imms);
       } else {
-        PrintImmediateOperand(out,
-                              instruction_->reloc[i],
-                              instruction_->op[i].imms);
+        ImmediateOperandToString(out,
+                                 instruction_->reloc[i],
+                                 instruction_->op[i].imms);
       }
     }
 
     // MEMORY OPERANDS
     if (IsMemOperand(instruction_, i)) {
-      PrintMemoryOperand(out, i);
+      MemoryOperandToString(out, i);
     }
 
     // ACC register
     if (instruction_->types[i].bitfield.floatacc) {
-        fprintf(out, "%%st");
+      out->append("%st");
     }
 
     // REGISTERS
@@ -2534,7 +2571,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
            (i == 0 || i == 3)) ||
           (instruction_->tm.extension_opcode == 3 &&
            (i == 0 || i == 3))) {
-        fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+        out->append("%");
+        out->append(instruction_->op[i].regs->reg_name);
       }
     }
     if (instruction_->tm.opcode_modifier.drex &&
@@ -2547,7 +2585,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
            (i == 0 || i == 3)) ||
           (instruction_->tm.extension_opcode == 3 &&
            (i == 0 || i == 3))) {
-        fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+        out->append("%");
+        out->append(instruction_->op[i].regs->reg_name);
       }
     }
     if (instruction_->tm.opcode_modifier.drexc) {
@@ -2555,7 +2594,8 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
            (i == 3)) ||
           (instruction_->tm.extension_opcode == 65535 &&
            (i == 2))) {
-        fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+        out->append("%");
+        out->append(instruction_->op[i].regs->reg_name);
       }
     }
 
@@ -2569,27 +2609,33 @@ void InstructionEntry::PrintInstruction(FILE *out) const {
             instruction_->types[i].bitfield.reg16 ||
             instruction_->types[i].bitfield.reg32 ||
             instruction_->types[i].bitfield.reg64))) {
-        fprintf(out, "*");
+        out->append("*");
       }
-      fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+      out->append("%");
+      out->append(instruction_->op[i].regs->reg_name);
     }
 
     // Handle spacial case found in tc-i386.c:7326
     if (instruction_->types[i].bitfield.inoutportreg) {
       // its a register name!
-      fprintf(out, "(%%dx)");
+      out->append("(%dx)");
     }
 
     if (instruction_->types[i].bitfield.shiftcount) {
       // its a register name!
-      fprintf(out, "%%%s", instruction_->op[i].regs->reg_name);
+      out->append("%");
+      out->append(instruction_->op[i].regs->reg_name);
     }
   }
+  return *out;
 }
 
-void InstructionEntry::PrintProfile(FILE *out) const {
+std::string &InstructionEntry::ProfileToString(std::string *out) const {
+  std::ostringstream string_stream;
   if (execution_count_valid_)
-    fprintf(out, "\t# ecount=%ld", execution_count_);
+    string_stream << "\t# ecount=" << execution_count_;
+  out->append(string_stream.str());
+  return *out;
 }
 
 // From an instruction given by gas, allocate new memory and populate the

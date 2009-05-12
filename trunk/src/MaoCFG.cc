@@ -102,31 +102,37 @@ void CFG::DumpVCG(const char *fname) const {
           "node.textcolor: blue\n"
           "edge.arrowsize: 15\n");
 
-  for (BBVector::const_iterator biter = basic_blocks_.begin();
-       biter != basic_blocks_.end(); ++biter) {
+  FORALL_CFG_BB(this,it) {
     fprintf(f, "node: { title: \"bb%d\" label: \"bb%d: %s\" %s",
-            (*biter)->id(), (*biter)->id(), (*biter)->label(),
-            (*biter)->id() < 2 ? "color: red" : "");
+            (*it)->id(), (*it)->id(), (*it)->label(),
+            (*it)->id() < 2 ? "color: red" : "");
+    fprintf(f, " info1: \"");
 
-#if 0  // TODO(nvachhar): Fix this to properly escape characters
-    fprintf(f, "info1: \"");
-    for (MaoUnit::EntryIterator it = (*biter)->BeginEntries();
-         it != (*biter)->EndEntries(); ++it) {
-      if ( (*it)->Type() == MaoEntry::INSTRUCTION ||
-           (*it)->Type() == MaoEntry::LABEL)
-        (*it)->PrintEntry(f);
-      else
-        fprintf(f, "...\n");
-    }
-#endif
-    fprintf(f, "}\n");
+    FORALL_BB_ENTRY(it,entry) {
+      if ( (*entry)->Type() == MaoEntry::INSTRUCTION ||
+           (*entry)->Type() == MaoEntry::DIRECTIVE ||
+           (*entry)->Type() == MaoEntry::LABEL) {
+        std::string s;
+        (*entry)->ToString(&s);
+        // Escape strings for vcg.
+        std::string::size_type pos = 0;
+        while ((pos = s.find("\"", pos)) != std::string::npos) {
+          s.replace(pos, 1, "\\\"");
+          pos += 2;
+        }
+        fprintf(f, "%s", s.c_str());
+      }
+      fprintf(f, "\\n");
+    } // FORALL_BB_ENTRY
 
-    for (BasicBlock::ConstEdgeIterator eiter = (*biter)->BeginOutEdges();
-         eiter != (*biter)->EndOutEdges(); ++eiter) {
+    fprintf(f, "\"}\n");
+    for (BasicBlock::ConstEdgeIterator eiter = (*it)->BeginOutEdges();
+         eiter != (*it)->EndOutEdges(); ++eiter) {
       fprintf(f, "edge: { sourcename: \"bb%d\" targetname: \"bb%d\" }\n",
               (*eiter)->source()->id(), (*eiter)->dest()->id() );
     }
-  }
+  } // FORALL_CFG_BB
+
 
   fprintf(f, "}\n");
 
