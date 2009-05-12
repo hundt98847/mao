@@ -19,6 +19,8 @@
 
 #include <stdio.h>
 
+#include <string>
+
 #include "MaoUnit.h"
 #include "MaoCFG.h"
 #include "MaoDefs.h"
@@ -102,13 +104,13 @@ void CFG::DumpVCG(const char *fname) const {
           "node.textcolor: blue\n"
           "edge.arrowsize: 15\n");
 
-  FORALL_CFG_BB(this,it) {
+  FORALL_CFG_BB(this, it) {
     fprintf(f, "node: { title: \"bb%d\" label: \"bb%d: %s\" %s",
             (*it)->id(), (*it)->id(), (*it)->label(),
             (*it)->id() < 2 ? "color: red" : "");
     fprintf(f, " info1: \"");
 
-    FORALL_BB_ENTRY(it,entry) {
+    FORALL_BB_ENTRY(it, entry) {
       if ( (*entry)->Type() == MaoEntry::INSTRUCTION ||
            (*entry)->Type() == MaoEntry::DIRECTIVE ||
            (*entry)->Type() == MaoEntry::LABEL) {
@@ -123,7 +125,7 @@ void CFG::DumpVCG(const char *fname) const {
         fprintf(f, "%s", s.c_str());
       }
       fprintf(f, "\\n");
-    } // FORALL_BB_ENTRY
+    }  // FORALL_BB_ENTRY
 
     fprintf(f, "\"}\n");
     for (BasicBlock::ConstEdgeIterator eiter = (*it)->BeginOutEdges();
@@ -131,8 +133,7 @@ void CFG::DumpVCG(const char *fname) const {
       fprintf(f, "edge: { sourcename: \"bb%d\" targetname: \"bb%d\" }\n",
               (*eiter)->source()->id(), (*eiter)->dest()->id() );
     }
-  } // FORALL_CFG_BB
-
+  }  // FORALL_CFG_BB
 
   fprintf(f, "}\n");
 
