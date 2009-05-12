@@ -348,7 +348,8 @@ void MaoOptions::Parse(const char *arg, bool collect,
               }
               func_pass_man->LinkPass(func_creator);
             } else {
-              MAO_ASSERT_MSG(false, "Can't find passname: %s", pass_name);
+              // Not a pass, must be an analysis.  Just let the option
+              // parser keep going to set up options on analyses.
             }
           }
         }
