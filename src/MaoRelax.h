@@ -29,7 +29,8 @@
 
 class MaoRelaxer : public MaoPass {
  public:
-  MaoRelaxer(MaoUnit *mao_unit, Section *section, MaoEntryIntMap *size_map);
+  MaoRelaxer(MaoUnit *mao_unit, Section *section, MaoEntryIntMap *size_map,
+             MaoEntryIntMap *offset_map);
   bool Go();
 
   // Used when a pass needs the sizes for a given section.
@@ -113,9 +114,11 @@ class MaoRelaxer : public MaoPass {
 
   Section *section_;
   MaoEntryIntMap *size_map_;
+  MaoEntryIntMap *offset_map_;
 
   bool collect_stat_;
   bool dump_sizemap_;
+  bool dump_function_stat_;
 
   class RelaxStat : public Stat {
    public:
@@ -143,6 +146,7 @@ class MaoRelaxer : public MaoPass {
 };
 
 // External entry point
-void Relax(MaoUnit *mao, Section *section, MaoEntryIntMap *size_map);
+void Relax(MaoUnit *mao, Section *section, MaoEntryIntMap *size_map,
+           MaoEntryIntMap *offset_map);
 
 #endif  // MAORELAX_H_
