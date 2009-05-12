@@ -392,7 +392,7 @@ TestRelaxPass::TestRelaxPass(MaoUnit *mao_unit, Function *function)
                       MAO_OPTIONS(TESTRELAX), mao_unit, function) { }
 
 bool TestRelaxPass::Go() {
-  MaoRelaxer::InvalidateSizeMap(function_->GetSection());
+  //MaoRelaxer::InvalidateSizeMap(function_->GetSection());
   MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
   return true;
 }

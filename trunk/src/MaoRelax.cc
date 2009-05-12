@@ -50,15 +50,19 @@ extern "C" {
 MAO_OPTIONS_DEFINE(RELAX, 3) {
   OPTION_BOOL("stat", false, "Collect and print statistics about relaxer"),
   OPTION_BOOL("dump_sizemap", false, "Dump the sizemap to stderr"),
+  OPTION_BOOL("dump_function_stat", false, "Dump information about each function"
+              " to stderr"),
 };
 
 
 
-MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit, Section *section, MaoEntryIntMap *size_map)
+MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit, Section *section,
+                       MaoEntryIntMap *size_map, MaoEntryIntMap *offset_map)
     : MaoPass("RELAX",  mao_unit->mao_options(), MAO_OPTIONS(RELAX), mao_unit),
-      section_(section), size_map_(size_map) {
+      section_(section), size_map_(size_map), offset_map_(offset_map) {
   collect_stat_ = GetOptionBool("stat");
   dump_sizemap_ = GetOptionBool("dump_sizemap");
+  dump_function_stat_ = GetOptionBool("dump_function_stat");
   if (collect_stat_) {
     if (unit_->GetStats()->HasStat("RELAX")) {
       relax_stat_ =
@@ -145,6 +149,15 @@ bool MaoRelaxer::Go() {
     frag_index++;
   }
 
+  // calculate offset map
+  int offset = 0;
+  for (SectionEntryIterator iter = section_->EntryBegin();
+       iter != section_->EntryEnd(); ++iter) {
+    (*offset_map_)[*iter] = offset;
+    offset += (*size_map_)[*iter];
+  }
+
+
   // Restore fragments/instructions to the originial state.
   RestoreState(fragments, &fragment_state);
 
@@ -155,11 +168,31 @@ bool MaoRelaxer::Go() {
     for (MaoEntryIntMap::const_iterator iter = size_map_->begin();
          iter != size_map_->end();
          ++iter) {
+      fprintf(stderr, "%4x:  ", (*offset_map_)[iter->first]);
       fprintf(stderr, "%4x:  ", iter->second);
       iter->first->PrintIR(stderr);
       fprintf(stderr, "\n");
     }
   }
+
+  if (dump_function_stat_) {
+    fprintf(stderr, "Function information for section: %s",
+            section_->name().c_str());
+    fprintf(stderr, "%20s %10s %10s\n",
+            "Function:", "Offset", "Size");
+    for (MaoUnit::ConstFunctionIterator iter = unit_->ConstFunctionBegin();
+         iter != unit_->ConstFunctionEnd();
+         ++iter) {
+      Function *function = *iter;
+      if (function->GetSection() == section_) {
+        fprintf(stderr, "%20s %10x %10d\n",
+                function->name().c_str(),
+                (*offset_map_)[function->first_entry()],
+                FunctionSize(function, size_map_));
+      }
+    }
+  }
+
 
   if (collect_stat_) {
     for (MaoUnit::ConstFunctionIterator iter = unit_->ConstFunctionBegin();
@@ -194,13 +227,7 @@ void MaoRelaxer::CacheSizeAndOffsetMap(MaoUnit *mao, Section *section) {
     sizes   = new MaoEntryIntMap();
     offsets = new MaoEntryIntMap();
 
-    Relax(mao, section, sizes);
-    int offset = 0;
-    for (SectionEntryIterator iter = section->EntryBegin();
-         iter != section->EntryEnd(); ++iter) {
-      (*offsets)[*iter] = offset;
-      offset += (*sizes)[*iter];
-    }
+    Relax(mao, section, sizes, offsets);
 
     section->set_sizes(sizes);
     section->set_offsets(offsets);
@@ -698,7 +725,8 @@ int MaoRelaxer::FunctionSize(Function *function, MaoEntryIntMap *size_map) {
 // --------------------------------------------------------------------
 // External entry point
 // --------------------------------------------------------------------
-void Relax(MaoUnit *mao, Section *section, MaoEntryIntMap *size_map) {
-  MaoRelaxer relaxer(mao, section, size_map);
+void Relax(MaoUnit *mao, Section *section, MaoEntryIntMap *size_map,
+           MaoEntryIntMap *offset_map) {
+  MaoRelaxer relaxer(mao, section, size_map, offset_map);
   relaxer.Go();
 }
