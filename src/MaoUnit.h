@@ -87,6 +87,7 @@ class MaoEntry {
            MaoUnit *maounit);
   virtual ~MaoEntry();
 
+  virtual std::string &ToString(std::string *out) const = 0;
   virtual void PrintEntry(FILE *out) const = 0;
   void PrintSourceInfo(FILE *out) const;
   virtual void PrintIR(FILE *out) const = 0;
@@ -171,6 +172,7 @@ class LabelEntry : public MaoEntry {
         name_(strdup(name)), from_assembly_(true) { }
   ~LabelEntry() { delete name_; }
 
+  virtual std::string &ToString(std::string *out) const;
   virtual void PrintEntry(FILE *out) const;
   virtual void PrintIR(FILE *out) const;
   virtual EntryType Type() const { return LABEL; }
@@ -332,6 +334,7 @@ class DirectiveEntry : public MaoEntry {
   int NumOperands() const { return operands_.size(); }
   const Operand *GetOperand(int num) { return operands_[num]; }
 
+  virtual std::string &ToString(std::string *out) const;
   virtual void PrintEntry(::FILE *out) const;
   virtual void PrintIR(::FILE *out) const;
   virtual MaoEntry::EntryType  Type() const;
@@ -375,6 +378,7 @@ class InstructionEntry : public MaoEntry {
                    unsigned int line_number, const char* line_verbatim,
                    MaoUnit *maounit);
   ~InstructionEntry();
+  virtual std::string &ToString(std::string *out) const;
   virtual void PrintEntry(FILE *out) const;
   virtual void PrintIR(FILE *out) const;
   virtual MaoEntry::EntryType  Type() const;
@@ -385,8 +389,9 @@ class InstructionEntry : public MaoEntry {
   bool HasPrefix(char prefix) const;
   bool SuppressLockPrefix() const;
 
-  void PrintInstruction(FILE *out) const;
-  void PrintProfile(FILE *out) const;
+  std::string &InstructionToString(std::string *out) const;
+  std::string &ProfileToString(std::string *out) const;
+
 
   const char *op_str() const;
   MaoOpcode   op() const { return op_; }
@@ -534,15 +539,15 @@ class InstructionEntry : public MaoEntry {
   void FreeInstruction();
   bool IsInList(const MaoOpcode opcode, const MaoOpcode list[],
                 const unsigned int number_of_elements) const;
-  void PrintImmediateOperand(FILE *out,
-                             const enum bfd_reloc_code_real reloc,
-                             const expressionS *expr) const;
-  void PrintMemoryOperand(FILE *out,
-                          int op_index) const;
+  std::string &ImmediateOperandToString(std::string *out,
+                                        const enum bfd_reloc_code_real reloc,
+                                        const expressionS *expr) const;
+  std::string &MemoryOperandToString(std::string *out,
+                                     int op_index) const;
 
   int StripRexPrefix(int prefix) const;
 
-  void PrintRexPrefix(FILE *out, int prefix) const;
+  std::string &PrintRexPrefix(std::string *out, int prefix) const;
 
   /* Returns 0 if attempting to add a prefix where one from the same
      class already exists, 1 if non rep/repne added, 2 if rep/repne

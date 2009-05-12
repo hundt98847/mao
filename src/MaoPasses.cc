@@ -201,8 +201,8 @@ bool MaoFunctionPass::Run() {
   }
 
   if (db_vcg_) {
-    char buff[13 + strlen(name())];
-    sprintf(buff, "dump.db.%s.vcg", name());
+    char buff[13 + strlen(name()) + 1 + strlen(function_->name().c_str())];
+    sprintf(buff, "dump.db.%s.%s.vcg", name(), function_->name().c_str());
     CFG *cfg = CFG::GetCFG(unit_, function_);
     cfg->DumpVCG(buff);
   }
@@ -215,8 +215,8 @@ bool MaoFunctionPass::Run() {
   }
 
   if (da_vcg_) {
-    char buff[13 + strlen(name())];
-    sprintf(buff, "dump.da.%s.vcg", name());
+    char buff[13 + strlen(name()) + 1 + strlen(function_->name().c_str())];
+    sprintf(buff, "dump.da.%s.%s.vcg", name(), function_->name().c_str());
     CFG *cfg = CFG::GetCFG(unit_, function_);
     cfg->DumpVCG(buff);
   }
