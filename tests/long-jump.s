@@ -1,4 +1,4 @@
-#Option:  -mao:RELAX=stat[1] -mao:LOOPALIGN
+#Option:  --mao=RELAX=stat[1] --mao=LOOPALIGN
 #grep MaoRelax.*expr.*134 1
 #
 # On x86_64, the following code, the jump should be 5 bytes, since the offset

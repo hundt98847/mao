@@ -1,4 +1,4 @@
-#Option: -mao:ZEE=trace
+#Option: --mao=ZEE=trace
 #grep redundant 3
 
         # valid zero extent with subl       

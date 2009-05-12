@@ -13,7 +13,7 @@ Format for special comments in assembly file to be tested:
 #grep <Pattern> <Expected Number Of Matches>
 
 e.g.:
-#Option:  -mao:RELAX=stat[1]
+#Option:  --mao=RELAX=stat[1]
 #grep MaoRelax.*foo.*2 1
 """
 

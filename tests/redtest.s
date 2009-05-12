@@ -1,4 +1,4 @@
-#Option: -mao:REDTEST=trace[1]
+#Option: --mao=REDTEST=trace[1]
 #grep REDTEST 2
         
         subl     $1, %r15d

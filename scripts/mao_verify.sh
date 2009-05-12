@@ -138,15 +138,12 @@ echo "Processing: ${IN_FILE}"
 # Run it trough mao
 # Currently does not use gcc as a wrapper, since I dont have a good way to select
 # the target platform in gcc (yet).
-${MAO} -mao:ASM=o["${MAO_FILE}"] "${S_FILE}"
+${MAO} --mao=ASM=o["${MAO_FILE}"] "${S_FILE}"
 
 if [ $? -ne 0 ]; then
   echo "Error creating assembly";
   exit;
 fi
-
-#echo ${MAO} -mao:-o"${MAO_FILE}" "${S_FILE}"
-#exit
 
 # # Generate object files from both
 ${AS} -o "${S_FILE}.o"   "${S_FILE}" 

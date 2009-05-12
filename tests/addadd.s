@@ -1,4 +1,4 @@
-#Option: -mao:ADDADD=trace
+#Option: --mao=ADDADD=trace
 #grep \[ADDADD\].*Found two immediate adds 3
 #
 # Three patterns should match in this code
