@@ -34,11 +34,22 @@ void LoadPlugin(const char *path) {
   // Clear any pending dlerror messages
   dlerror();
 
+  // Load the version symbol from the plugin
+  PluginVersion *version;
+  version = (PluginVersion *)dlsym(lib_handle, "mao_plugin_version");
+  if ((error = dlerror()) != NULL)
+    MAO_ASSERT_MSG(false, error);
+
+  MAO_ASSERT_MSG(version->major == MAO_MAJOR_VERSION,
+                 "Plugin version %d.%d does not match MAO version %d.%d",
+                 version->major, version->minor,
+                 MAO_MAJOR_VERSION, MAO_MINOR_VERSION);
+
   // Load the init function from the plugin
   void (*init)();
 
   // See the dlopen man page for an explanation of the strange casting
-  *(void **)(&init) = dlsym(lib_handle, "Init");
+  *(void **)(&init) = dlsym(lib_handle, "MaoInit");
   if ((error = dlerror()) != NULL)
     MAO_ASSERT_MSG(false, error);
 
