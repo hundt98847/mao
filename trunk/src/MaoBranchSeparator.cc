@@ -33,7 +33,8 @@
 // and alligns all (chains of) basicb locks within the paths.
 class BranchSeparatorPass : public MaoFunctionPass {
  public:
-  explicit BranchSeparatorPass(MaoUnit *mao, Function *function);
+  explicit BranchSeparatorPass(MaoOptionMap *options, MaoUnit *mao,
+                               Function *function);
   bool Go();
 
  private:
@@ -108,9 +109,9 @@ MAO_OPTIONS_DEFINE(BRSEP, 3) {
              " An empty string means the pass is applied on all functions"),
 };
 
-BranchSeparatorPass::BranchSeparatorPass(MaoUnit *mao, Function *function)
-    : MaoFunctionPass("BRSEP", mao->mao_options(), MAO_OPTIONS(BRSEP),
-                      mao, function), sizes_(NULL) {
+BranchSeparatorPass::BranchSeparatorPass(MaoOptionMap *options, MaoUnit *mao,
+                                         Function *function)
+    : MaoFunctionPass("BRSEP", options, mao, function), sizes_(NULL) {
 
   collect_stat_      = GetOptionBool("stat");
   min_branch_distance_ = GetOptionInt("min_branch_distance");

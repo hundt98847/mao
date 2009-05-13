@@ -57,9 +57,8 @@ static void Visit(BasicBlock *bb, BasicBlockMap *bbmap) {
 //
 class DeadCodeElimPass : public MaoFunctionPass {
  public:
-  DeadCodeElimPass(MaoUnit *mao, Function *function)
-      : MaoFunctionPass("DCE", mao->mao_options(), MAO_OPTIONS(DCE), mao,
-                        function) {
+  DeadCodeElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
+      : MaoFunctionPass("DCE", options, mao, function) {
   }
 
   bool Go() {

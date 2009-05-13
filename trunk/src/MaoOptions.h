@@ -18,14 +18,24 @@
 #ifndef MAOOPTIONS_H_
 #define MAOOPTIONS_H_
 
+#include <map>
 #include <unistd.h>
 #include <sys/times.h>
 
-class MaoUnit;
+#include "MaoDebug.h"
+
+class MaoOption;
 class MaoPassManager;
+class MaoUnit;
 
 enum MaoOptionType {
   OPT_INT, OPT_STRING, OPT_BOOL
+};
+
+typedef union MaoOptionValue {
+  int         ival_;
+  const char *cval_;
+  bool        bval_;
 };
 
 typedef struct MaoOption {
@@ -35,12 +45,10 @@ typedef struct MaoOption {
   MaoOptionType   type_;
   const char     *name_;
   const char     *description_;
-  union {
-    int         ival_;
-    const char *cval_;
-    bool        bval_;
-  };
+  MaoOptionValue value;
 };
+
+typedef std::map<std::string, MaoOptionValue> MaoOptionMap;
 
 // Time for pass executions. There is one timer for each pass, if
 // a pass runs multiple times, the times are accumulated.
@@ -103,16 +111,43 @@ class MaoTimer {
                        &pass##_timer); \
             MaoOption pass##_opts[N] =
 
-
-// Provide option array name.
-#define MAO_OPTIONS(pass) pass##_opts
-
 class MaoOptionRegister {
  public:
   MaoOptionRegister(const char *name, MaoOption *array, int N,
                     MaoTimer *timer);
 };
 
+// Maintain mapping between option array and pass name.
+//
+class MaoOptionArray {
+ public:
+  MaoOptionArray(const char *name, MaoOption *array, int num_entries,
+                 MaoTimer *timer)
+    : name_(name), array_(array), num_entries_(num_entries),
+    timer_(timer){
+  }
+
+  MaoOption  *FindOption(const char *option_name) {
+    for (int i = 0; i < num_entries_; i++)
+      if (!strcasecmp(option_name, array_[i].name()))
+        return &array_[i];
+    MAO_ASSERT_MSG(false, "Option %s not found", option_name);
+    return NULL;
+  }
+
+  const char *name() const { return name_; }
+  MaoOption  *array() { return array_; }
+  int         num_entries() { return num_entries_; }
+  MaoTimer   *timer() { return timer_; }
+ private:
+  const char *name_;
+  MaoOption  *array_;
+  int         num_entries_;
+  MaoTimer   *timer_;
+};
+
+// MaoOptions - The option manager
+//
 class MaoOptions {
  public:
   MaoOptions() : help_(false), verbose_(false),
@@ -149,6 +184,8 @@ class MaoOptions {
   void set_timer_print() { timer_print_ = true; }
 
  private:
+  void InitializeOptionMap(MaoOptionMap *options, MaoOptionArray *pass_opts);
+
   bool help_;
   bool verbose_;
   bool timer_print_;

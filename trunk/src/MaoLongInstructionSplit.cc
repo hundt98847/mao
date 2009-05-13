@@ -35,10 +35,9 @@ MAO_OPTIONS_DEFINE(LISPLIT, 2) {
 
 class LongInstructionsSplitPass : public MaoFunctionPass {
  public:
-  LongInstructionsSplitPass(MaoUnit *mao,
+  LongInstructionsSplitPass(MaoOptionMap *options, MaoUnit *mao,
                             Function *func)
-      : MaoFunctionPass("LISPLIT", mao->mao_options(), MAO_OPTIONS(LISPLIT),
-                        mao, func), sizes_(NULL) {
+      : MaoFunctionPass("LISPLIT", options, mao, func), sizes_(NULL) {
     length_ = GetOptionInt("length");
     fill_ = GetOptionInt("fill");
   }

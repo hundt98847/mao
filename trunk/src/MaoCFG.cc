@@ -151,10 +151,8 @@ MAO_OPTIONS_DEFINE(CFG, 3) {
 
 
 // --------------------------------------------------------------------
-CFGBuilder::CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
-                       Function *function, CFG *CFG)
-    : MaoFunctionPass("CFG", mao_unit->mao_options(), MAO_OPTIONS(CFG),
-                      mao_unit, function),
+CFGBuilder::CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG)
+    : MaoFunctionPass("CFG", GetStaticOptionPass("CFG"), mao_unit, function),
       CFG_(CFG), next_id_(0) {
   split_basic_blocks_ = GetOptionBool("callsplit");
   collect_stat_ = GetOptionBool("stat");
@@ -672,6 +670,10 @@ void BasicBlock::Print(FILE *f, MaoEntry *from, MaoEntry *to) {
 }
 
 void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg) {
-  CFGBuilder builder(mao_unit, mao_unit->mao_options(), function, cfg);
+  CFGBuilder builder(mao_unit, function, cfg);
   builder.Go();
+}
+
+void InitCFG() {
+  RegisterStaticOptionPass("CFG", new MaoOptionMap);
 }

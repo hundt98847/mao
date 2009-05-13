@@ -213,8 +213,8 @@ parse_error:
 
 class ProfileAnnotationPass : public MaoPass {
  public:
-  ProfileAnnotationPass(MaoUnit *mao)
-      : MaoPass("PROFILE", mao->mao_options(), MAO_OPTIONS(PROFILE), mao),
+  ProfileAnnotationPass(MaoOptionMap *options, MaoUnit *mao)
+      : MaoPass("PROFILE", options, mao),
         sample_profile_(GetOptionString("sample_profile")) { }
   virtual ~ProfileAnnotationPass();
   virtual bool Go();

@@ -34,9 +34,8 @@ MAO_OPTIONS_DEFINE(NOPKILL, 0) {
 
 class NopKillerElimPass : public MaoFunctionPass {
  public:
-  NopKillerElimPass(MaoUnit *mao, Function *func)
-      : MaoFunctionPass("NOPKILL", mao->mao_options(), MAO_OPTIONS(NOPKILL),
-                        mao, func) { }
+  NopKillerElimPass(MaoOptionMap *options, MaoUnit *mao, Function *func)
+      : MaoFunctionPass("NOPKILL", options, mao, func) { }
 
   // Find these patterns in a function:
   //

@@ -33,9 +33,8 @@ MAO_OPTIONS_DEFINE(ZEE, 0) {
 
 class ZeroExtentElimPass : public MaoFunctionPass {
  public:
-  ZeroExtentElimPass(MaoUnit *mao, Function *function)
-      : MaoFunctionPass("ZEE", mao->mao_options(), MAO_OPTIONS(ZEE),
-                        mao, function) { }
+  ZeroExtentElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
+      : MaoFunctionPass("ZEE", options, mao, function) { }
 
   bool IsZeroExtent(InstructionEntry *insn) {
     if (insn->IsOpMov() &&

@@ -18,8 +18,11 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <list>
+#include <map>
+#include <utility>
 
 #include "MaoOptions.h"
+#include "MaoUtil.h"
 #include "mao.h"
 
 class MaoUnit;
@@ -41,7 +44,7 @@ class CFG;
 //
 class MaoAction {
  public:
-  MaoAction(const char *name, MaoOptions* mao_options, MaoOption *options);
+  MaoAction(const char *name, MaoOptionMap *options, MaoUnit *unit);
   virtual ~MaoAction();
 
   // regular Trace, adds newline to output
@@ -51,10 +54,10 @@ class MaoAction {
   virtual void TraceC(unsigned int level, const char *fmt, ...) const;
 
   // Options
-  MaoOption   *FindOptionEntry(const char *name);
-  bool         GetOptionBool(const char *name);
-  const char  *GetOptionString(const char *name);
-  int          GetOptionInt(const char *name);
+  MaoOptionValue FindOptionEntry(const char *name);
+  bool           GetOptionBool(const char *name);
+  const char    *GetOptionString(const char *name);
+  int            GetOptionInt(const char *name);
 
   // Timers
   void         TimerStart();
@@ -71,16 +74,16 @@ class MaoAction {
 
  private:
   const char   *name_;
-  MaoOption    *options_;
+  MaoOptionMap *options_;
   unsigned int  tracing_level_;
   FILE         *trace_file_;
-  MaoOptions   *mao_options_;
 
  protected:
-  bool          db_vcg_;
-  bool          db_cfg_;
-  bool          da_vcg_;
-  bool          da_cfg_;
+  MaoUnit *const unit_;
+  bool           db_vcg_;
+  bool           db_cfg_;
+  bool           da_vcg_;
+  bool           da_cfg_;
 };
 
 
@@ -93,8 +96,7 @@ class MaoAction {
 //
 class MaoPass : public MaoAction {
  public:
-  MaoPass(const char *name, MaoOptions* mao_options, MaoOption *options,
-          MaoUnit *unit);
+  MaoPass(const char *name, MaoOptionMap *options, MaoUnit *unit);
   virtual ~MaoPass();
 
   // Pass implementation
@@ -102,9 +104,6 @@ class MaoPass : public MaoAction {
 
   //Main invocation
   virtual bool Run();
-
- protected:
-  MaoUnit *const unit_;
 };
 
 
@@ -115,8 +114,8 @@ class MaoPass : public MaoAction {
 //
 class MaoFunctionPass : public MaoPass {
  public:
-  MaoFunctionPass(const char *name, MaoOptions* mao_options, MaoOption *options,
-                  MaoUnit *unit, Function *function);
+  MaoFunctionPass(const char *name, MaoOptionMap *options, MaoUnit *unit,
+                  Function *function);
   virtual ~MaoFunctionPass();
 
   virtual bool Go() = 0;
@@ -136,7 +135,7 @@ class MaoFunctionPass : public MaoPass {
 //
 class MaoPassManager {
  public:
-  typedef MaoPass *(*PassCreator)(MaoUnit *unit);
+  typedef MaoPass *(*PassCreator)(MaoOptionMap *options, MaoUnit *unit);
 
   MaoPassManager(MaoUnit *unit) : unit_(unit) { }
   ~MaoPassManager() {
@@ -154,8 +153,8 @@ class MaoPassManager {
   }
 
   template <class Pass>
-  static MaoPass *GenericPassCreator(MaoUnit *unit) {
-    return new Pass(unit);
+  static MaoPass *GenericPassCreator(MaoOptionMap *options, MaoUnit *unit) {
+    return new Pass(options, unit);
   }
 
   void Run() {
@@ -186,34 +185,50 @@ class MaoPassManager {
 //
 class MaoFunctionPassManager : public MaoPass {
  public:
-  typedef MaoFunctionPass *(*PassCreator)(MaoUnit *unit, Function *function);
+  typedef MaoFunctionPass *(*PassCreator)(MaoOptionMap *options, MaoUnit *unit,
+                                          Function *function);
+  typedef std::pair<PassCreator, MaoOptionMap *> ConfiguredPass;
 
-  MaoFunctionPassManager(MaoUnit *unit);
+  MaoFunctionPassManager(MaoOptionMap *options, MaoUnit *unit);
 
-  void LinkPass(PassCreator pass) {
-    MAO_ASSERT(pass);
+  void LinkPass(ConfiguredPass pass) {
+    MAO_ASSERT(pass.first);
+    MAO_ASSERT(pass.second);
     pass_list_.push_back(pass);
   }
 
   template <class Pass>
-  static MaoFunctionPass *GenericPassCreator(MaoUnit *unit, Function *function) {
-    return new Pass(unit, function);
+  static MaoFunctionPass *GenericPassCreator(
+      MaoOptionMap *options, MaoUnit *unit, Function *function) {
+    return new Pass(options, unit, function);
   }
 
   bool Go();
 
  private:
-  std::list<PassCreator> pass_list_;
+  std::list<ConfiguredPass> pass_list_;
 };
 
 
 // Code to maintain the set of available passes
+typedef std::map<const char *,
+                 MaoFunctionPassManager::PassCreator,
+                 ltstr> RegisteredFunctionPassesMap;
+typedef std::map<const char *,
+                 MaoPassManager::PassCreator,
+                 ltstr> RegisteredUnitPassesMap;
+typedef std::map<const char *, MaoOptionMap *,
+                 ltstr> RegisteredStaticOptionPassMap;
+
 void RegisterUnitPass(const char *name,
                       MaoPassManager::PassCreator creator);
 void RegisterFunctionPass(const char *name,
                           MaoFunctionPassManager::PassCreator creator);
-MaoPassManager::PassCreator         GetUnitPass(const char *name);
-MaoFunctionPassManager::PassCreator GetFunctionPass(const char *name);
+void RegisterStaticOptionPass(const char *name, MaoOptionMap *options);
+MaoPassManager::PassCreator          GetUnitPass(const char *name);
+MaoFunctionPassManager::PassCreator  GetFunctionPass(const char *name);
+MaoOptionMap *                       GetStaticOptionPass(const char *name);
+const RegisteredStaticOptionPassMap &GetStaticOptionPasses();
 
 
 //
@@ -226,7 +241,8 @@ MaoFunctionPassManager::PassCreator GetFunctionPass(const char *name);
 //
 class ReadInputPass : public MaoPass {
  public:
-  ReadInputPass(int argc, const char *argv[], MaoUnit *mao_unit);
+  ReadInputPass(int argc, const char *argv[], MaoOptionMap *options,
+                MaoUnit *mao_unit);
   bool Go();
 
  private:
@@ -240,7 +256,7 @@ class ReadInputPass : public MaoPass {
 //
 class AssemblyPass : public MaoPass {
  public:
-  AssemblyPass(MaoUnit *mao_unit);
+  AssemblyPass(MaoOptionMap *options, MaoUnit *mao_unit);
   void PrintAsmSymbolHeader(FILE *out);
   bool Go();
 };
@@ -253,7 +269,7 @@ class AssemblyPass : public MaoPass {
 //
 class DumpIrPass : public MaoPass {
  public:
-  explicit DumpIrPass(MaoUnit *mao_unit);
+  explicit DumpIrPass(MaoOptionMap *options, MaoUnit *mao_unit);
   bool Go();
 };
 
@@ -264,7 +280,7 @@ class DumpIrPass : public MaoPass {
 //
 class DumpSymbolTablePass : public MaoPass {
  public:
-  explicit DumpSymbolTablePass(MaoUnit *mao_unit);
+  explicit DumpSymbolTablePass(MaoOptionMap *options, MaoUnit *mao_unit);
   bool Go();
 };
 
@@ -276,7 +292,8 @@ class DumpSymbolTablePass : public MaoPass {
 //
 class TestCFGPass : public MaoFunctionPass {
  public:
-  explicit TestCFGPass(MaoUnit *mao_unit, Function *function);
+  explicit TestCFGPass(MaoOptionMap *options, MaoUnit *mao_unit,
+                       Function *function);
   bool Go();
 };
 
@@ -289,7 +306,8 @@ class TestCFGPass : public MaoFunctionPass {
 //
 class TestRelaxPass : public MaoFunctionPass {
  public:
-  explicit TestRelaxPass(MaoUnit *mao_unit, Function *function);
+  explicit TestRelaxPass(MaoOptionMap *options, MaoUnit *mao_unit,
+                         Function *function);
   bool Go();
 };
 
@@ -301,12 +319,7 @@ class TestRelaxPass : public MaoFunctionPass {
 // This function registers all the statically defined passes.  This
 // way the passes are accessible by name.
 //
-void InitPasses(MaoOptions *opts);
-
-
-// Find a pass for a given option set
-MaoAction *FindPass(MaoOption *arr);
-
+void InitPasses();
 
 // Pass Initialization Entry Points.
 void InitProfileAnnotation();
@@ -324,4 +337,7 @@ void InitBranchSeparate();
 void InitAddAddElimination();
 void InitAlignTinyLoops16();
 
+void InitCFG();
+void InitRelax();
+void InitLoops();
 #endif   // MAP_PASSES_H_INCLUDED_

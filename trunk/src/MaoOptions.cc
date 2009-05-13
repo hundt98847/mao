@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
+
 #include <list>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <stdio.h>
@@ -23,35 +26,6 @@
 #include "MaoOptions.h"
 #include "MaoPasses.h"
 #include "MaoPlugin.h"
-
-// Maintain mapping between option array and pass name.
-//
-class MaoOptionArray {
- public:
-  MaoOptionArray(const char *name, MaoOption *array, int num_entries,
-                 MaoTimer *timer)
-    : name_(name), array_(array), num_entries_(num_entries),
-    timer_(timer){
-  }
-
-  MaoOption  *FindOption(const char *option_name) {
-    for (int i = 0; i < num_entries_; i++)
-      if (!strcasecmp(option_name, array_[i].name()))
-        return &array_[i];
-    MAO_ASSERT_MSG(false, "Option %s not found", option_name);
-    return NULL;
-  }
-
-  const char *name() const { return name_; }
-  MaoOption  *array() { return array_; }
-  int         num_entries() { return num_entries_; }
-  MaoTimer   *timer() { return timer_; }
- private:
-  const char *name_;
-  MaoOption  *array_;
-  int         num_entries_;
-  MaoTimer   *timer_;
-};
 
 // Maintain static list of all option arrays.
 typedef std::vector<MaoOptionArray *> OptionVector;
@@ -154,7 +128,7 @@ void MaoOptions::SetOption(const char *pass_name,
   MaoOption      *option = entry->FindOption(option_name);
   MAO_ASSERT(option->type() == OPT_INT);
 
-  option->ival_ = value;
+  option->value.ival_ = value;
 }
 
 void MaoOptions::SetOption(const char *pass_name,
@@ -164,7 +138,7 @@ void MaoOptions::SetOption(const char *pass_name,
   MaoOption      *option = entry->FindOption(option_name);
   MAO_ASSERT(option->type() == OPT_BOOL);
 
-  option->bval_ = value;
+  option->value.bval_ = value;
 }
 
 void MaoOptions::SetOption(const char *pass_name,
@@ -174,7 +148,7 @@ void MaoOptions::SetOption(const char *pass_name,
   MaoOption      *option = entry->FindOption(option_name);
   MAO_ASSERT(option->type_ == OPT_STRING);
 
-  option->cval_ = value;
+  option->value.cval_ = value;
 }
 
 void MaoOptions::TimerStart(const char *pass_name) {
@@ -244,34 +218,45 @@ static bool GetParam(const char *arg, const char **next, const char **param,
 //
 bool SetPassSpecificOptions(const char *option, const char *arg,
                             const char **next, char *token_buff,
-                            MaoOptionArray *current_opts) {
+                            MaoOptionMap *options) {
+  MaoOptionValue value;
+
   if (!strcasecmp(option, "trace")) {
     const char *param;
-    int   level = 1;
+    value.ival_ = 1;
     if (GetParam(arg, next, &param, token_buff))
-      level = atoi(param);
-    MaoAction *mao_pass = FindPass(current_opts->array());
-    if (mao_pass)
-      mao_pass->set_tracing_level(level);
+      value.ival_ = atoi(param);
+    (*options)["trace"] = value;
     return true;
   }
-  if (!strcasecmp(option, "db")) {
+  if (!strcasecmp(option, "db") ||
+      !strcasecmp(option, "da")) {
     const char *param;
-    MaoAction *mao_pass = FindPass(current_opts->array());
     GetParam(arg, next, &param, token_buff);
-    if (mao_pass && param)
-      mao_pass->set_db(param);
-    return true;
-  }
-  if (!strcasecmp(option, "da")) {
-    const char *param;
-    MaoAction *mao_pass = FindPass(current_opts->array());
-    GetParam(arg, next, &param, token_buff);
-    if (mao_pass && param)
-      mao_pass->set_da(param);
+    if (param) {
+      std::string full_option = option;
+      full_option.append("[").append(param).append("]");
+      value.bval_ = true;
+      (*options)[full_option] = value;
+    }
     return true;
   }
   return false;
+}
+
+void MaoOptions::InitializeOptionMap(MaoOptionMap *options,
+                                     MaoOptionArray *pass_opts) {
+  // Initialize builtin options
+  (*options)["trace"].ival_ = verbose() ? 3 : 0;
+  (*options)["da[vcg]"].bval_ = 0;
+  (*options)["db[vcg]"].bval_ = 0;
+  (*options)["da[cfg]"].bval_ = 0;
+  (*options)["db[cfg]"].bval_ = 0;
+
+  // Initialize the options with default values
+  for (int i = 0; i < pass_opts->num_entries(); i++) {
+    (*options)[pass_opts->array()[i].name()] = pass_opts->array()[i].value;
+  }
 }
 
 // Reparse the accumulated option strings. The reason for reparsing is
@@ -285,6 +270,15 @@ void MaoOptions::Reparse(MaoUnit *unit, MaoPassManager *pass_man) {
 void MaoOptions::Parse(const char *arg, bool collect,
                        MaoUnit *unit, MaoPassManager *pass_man) {
   MaoFunctionPassManager *func_pass_man = NULL;
+
+  // Initialize the options for all static option passes
+  for (RegisteredStaticOptionPassMap::const_iterator pass =
+           GetStaticOptionPasses().begin();
+       pass != GetStaticOptionPasses().end(); ++pass) {
+    MaoOptionArray *current_opts = FindOptionArray(pass->first);
+    MAO_ASSERT(current_opts);
+    InitializeOptionMap(pass->second, current_opts);
+  }
 
   if (!arg) return;
 
@@ -338,34 +332,20 @@ void MaoOptions::Parse(const char *arg, bool collect,
     // are followed by either '=' or ':'.
     //
     if (isascii(arg[0])) {
-      char *pass_name = NextToken(arg, &arg, token_buff);
+      std::string pass_name(NextToken(arg, &arg, token_buff));
+      if (pass_name.size() != 0) {
+        MaoOptionArray *current_opts = FindOptionArray(pass_name.c_str());
+        MAO_ASSERT(current_opts);
 
-      if (pass_name[0] != '\0') {
-        if (pass_man) {
-          MaoPassManager::PassCreator unit_creator = GetUnitPass(pass_name);
-          if (unit_creator) {
-            pass_man->LinkPass(unit_creator(unit));
-            func_pass_man = NULL;
-          } else {
-            MaoFunctionPassManager::PassCreator func_creator =
-                GetFunctionPass(pass_name);
-            if (func_creator) {
-              if (!func_pass_man) {
-                func_pass_man = new MaoFunctionPassManager(unit);
-                pass_man->LinkPass(func_pass_man);
-              }
-              func_pass_man->LinkPass(func_creator);
-            } else {
-              // Not a pass, must be an analysis.  Just let the option
-              // parser keep going to set up options on analyses.
-            }
-          }
+        bool static_option_pass = true;
+        MaoOptionMap *options = GetStaticOptionPass(pass_name.c_str());
+        if (!options) {
+          options = new MaoOptionMap;
+          InitializeOptionMap(options, current_opts);
+          static_option_pass = false;
         }
 
         if (arg[0] == '=') {
-          MaoOptionArray *current_opts = FindOptionArray(pass_name);
-          MAO_ASSERT(current_opts);
-
           char *option;
           while (1) {
             const char *old_arg = arg;
@@ -384,8 +364,7 @@ void MaoOptions::Parse(const char *arg, bool collect,
               arg = old_arg;
               break;
             }
-            if (SetPassSpecificOptions(option, arg, &arg, token_buff,
-                                       current_opts))
+            if (SetPassSpecificOptions(option, arg, &arg, token_buff, options))
               continue;
 
             MaoOption *opt = current_opts->FindOption(option);
@@ -394,24 +373,24 @@ void MaoOptions::Parse(const char *arg, bool collect,
             const char *param;
             if (GetParam(arg, &arg, &param, token_buff)) {
               if (opt->type() == OPT_INT)
-                opt->ival_ = atoi(param);
+                (*options)[opt->name()].ival_ = atoi(param);
               else if (opt->type() == OPT_STRING)
-                opt->cval_ = strdup(param);
+                (*options)[opt->name()].cval_ = strdup(param);
               else if (opt->type() == OPT_BOOL) {
                 if (param[0] == '0' ||
                     param[0] == 'n' || param[0] == 'N' ||
                     param[0] == 'f' || param[0] == 'F' ||
                     (param[0] == 'o' && param[1] == 'f'))
-                  opt->bval_ = false; else
-                  if (param[0] == '1' ||
-                      param[0] == 'y' || param[0] == 'Y' ||
-                      param[0] == 't' || param[0] == 'T' ||
-                      (param[0] == 'o' && param[1] == 'n'))
-                    opt->bval_ = true;
+                  (*options)[opt->name()].bval_ = false;
+                else if (param[0] == '1' ||
+                         param[0] == 'y' || param[0] == 'Y' ||
+                         param[0] == 't' || param[0] == 'T' ||
+                         (param[0] == 'o' && param[1] == 'n'))
+                  (*options)[opt->name()].bval_ = true;
               }
             } else {
               if (opt->type() == OPT_BOOL)
-                opt->bval_ = true;
+                (*options)[opt->name()].bval_ = true;
               else
                 MAO_ASSERT_MSG(false, "non-boolean option %s used as boolean",
                                option);
@@ -424,6 +403,37 @@ void MaoOptions::Parse(const char *arg, bool collect,
             ++arg;
           }
           GobbleGarbage(arg, &arg);
+        }
+
+        if (pass_man) {
+          MaoPassManager::PassCreator unit_creator =
+              GetUnitPass(pass_name.c_str());
+          if (unit_creator) {
+            pass_man->LinkPass(unit_creator(options, unit));
+            func_pass_man = NULL;
+          } else {
+            MaoFunctionPassManager::PassCreator func_creator =
+                GetFunctionPass(pass_name.c_str());
+            if (func_creator) {
+              if (!func_pass_man) {
+                MaoOptionMap *func_options = new MaoOptionMap;
+                InitializeOptionMap(func_options, FindOptionArray("PASSMAN"));
+                func_pass_man = new MaoFunctionPassManager(func_options, unit);
+                pass_man->LinkPass(func_pass_man);
+              }
+              func_pass_man->LinkPass(std::make_pair(func_creator, options));
+            } else if (static_option_pass) {
+              // Nothing to do for static option passes
+            } else {
+              delete options;
+              MAO_ASSERT_MSG(false, "Options for non-pass found: %s",
+                             pass_name.c_str());
+            }
+          }
+        } else if (!static_option_pass) {
+          // We're not constructing passes now, so just discard the
+          // options.
+          delete options;
         }
 
         continue;

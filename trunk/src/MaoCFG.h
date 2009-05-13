@@ -298,8 +298,7 @@ class CFG {
 
 class CFGBuilder : public MaoFunctionPass {
  public:
-  CFGBuilder(MaoUnit *mao_unit, MaoOptions *mao_options,
-             Function *function, CFG *CFG);
+  CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG);
   bool Go();
 
  private:

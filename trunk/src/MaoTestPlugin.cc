@@ -34,9 +34,8 @@ MAO_OPTIONS_DEFINE(TESTPLUG, 1) {
 
 class TestPlugin : public MaoFunctionPass {
  public:
-  TestPlugin(MaoUnit *mao, Function *function)
-      : MaoFunctionPass("TESTPLUG", mao->mao_options(), MAO_OPTIONS(TESTPLUG),
-                        mao, function) { }
+  TestPlugin(MaoOptionMap *options, MaoUnit *mao, Function *function)
+      : MaoFunctionPass("TESTPLUG", options, mao, function) { }
 
   bool Go() {
     printf("%s: %s\n", GetOptionString("prefix"), function_->name().c_str());

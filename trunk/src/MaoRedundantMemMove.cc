@@ -34,9 +34,8 @@ MAO_OPTIONS_DEFINE(REDMOV, 1) {
 
 class RedMemMovElimPass : public MaoFunctionPass {
  public:
-  RedMemMovElimPass(MaoUnit *mao, Function *function)
-      : MaoFunctionPass("REDMOV", mao->mao_options(), MAO_OPTIONS(REDMOV),
-                        mao, function) {
+  RedMemMovElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
+      : MaoFunctionPass("REDMOV", options, mao, function) {
     look_ahead_ = GetOptionInt("lookahead");
   }
 

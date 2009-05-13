@@ -34,9 +34,8 @@ MAO_OPTIONS_DEFINE(MISSDISP, 0) {
 
 class MissDispElimPass : public MaoFunctionPass {
  public:
-  MissDispElimPass(MaoUnit *mao, Function *function)
-      : MaoFunctionPass("MISSDISP", mao->mao_options(), MAO_OPTIONS(MISSDISP),
-                        mao, function) { }
+  MissDispElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
+      : MaoFunctionPass("MISSDISP", options, mao, function) { }
 
   // Find these patterns in a single basic block:
   //    add    $0x8,%rax

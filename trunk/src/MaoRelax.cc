@@ -58,7 +58,7 @@ MAO_OPTIONS_DEFINE(RELAX, 3) {
 
 MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit, Section *section,
                        MaoEntryIntMap *size_map, MaoEntryIntMap *offset_map)
-    : MaoPass("RELAX",  mao_unit->mao_options(), MAO_OPTIONS(RELAX), mao_unit),
+    : MaoPass("RELAX",  GetStaticOptionPass("RELAX"), mao_unit),
       section_(section), size_map_(size_map), offset_map_(offset_map) {
   collect_stat_ = GetOptionBool("stat");
   dump_sizemap_ = GetOptionBool("dump_sizemap");
@@ -729,4 +729,8 @@ void Relax(MaoUnit *mao, Section *section, MaoEntryIntMap *size_map,
            MaoEntryIntMap *offset_map) {
   MaoRelaxer relaxer(mao, section, size_map, offset_map);
   relaxer.Go();
+}
+
+void InitRelax() {
+  RegisterStaticOptionPass("RELAX", new MaoOptionMap);
 }
