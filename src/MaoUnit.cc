@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #include "mao.h"
 #include "MaoCFG.h"
@@ -1040,13 +1041,17 @@ void MaoEntry::Spaces(unsigned int n, FILE *outfile) const {
   }
 }
 
-void MaoEntry::PrintSourceInfo(FILE *out) const {
-  fprintf(out, "\t# id: %d, l: %d\t", id(), line_number());
-
+std::string &MaoEntry::SourceInfoToString(std::string *out) const {
+  std::ostringstream stream;
+  stream << "\t# id: "
+         << id()
+         << ", l: "
+         << line_number()
+         << "\t";
   if (0 && line_verbatim())  // TODO(rhundt): Invent option for this
-    fprintf(out, "%s\n", line_verbatim());
-  else
-    fprintf(out, "\n");
+    stream << line_verbatim();
+  out->append(stream.str());
+  return *out;
 }
 
 void MaoEntry::LinkBefore(MaoEntry *entry) {
@@ -1144,8 +1149,11 @@ const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
 
 void LabelEntry::PrintEntry(FILE *out) const {
   MAO_ASSERT(name_);
-  fprintf(out, "%s:", name_);
-  MaoEntry::PrintSourceInfo(out);
+  std::string s;
+  s.append(name_);
+  s.append(":");
+  MaoEntry::SourceInfoToString(&s);
+  fprintf(out, "%s\n", s.c_str());
 }
 
 
@@ -1223,11 +1231,13 @@ const char *DirectiveEntry::GetOperandSeparator() const {
 }
 
 void DirectiveEntry::PrintEntry(::FILE *out) const {
-  std::string operands;
-  fprintf(out, "\t%s\t%s", GetOpcodeName(),
-          OperandsToString(&operands, GetOperandSeparator()).c_str());
-
-  PrintSourceInfo(out);
+  std::string s;
+  s.append("\t");
+  s.append(GetOpcodeName());
+  s.append("\t");
+  OperandsToString(&s, GetOperandSeparator());
+  SourceInfoToString(&s);
+  fprintf(out, "%s\n", s.c_str());
 }
 
 std::string &DirectiveEntry::ToString(std::string *out) const {
@@ -1254,7 +1264,6 @@ const std::string &DirectiveEntry::OperandsToString(
       out->append(separator);
     OperandToString(**iter, out);
   }
-
   return *out;
 }
 
@@ -1437,7 +1446,7 @@ const std::string &DirectiveEntry::OperandToString(const Operand &operand,
     case NO_OPERAND:
       break;
     case STRING:
-      out->append(*operand.data.str);
+      out->append(operand.data.str->c_str());
       break;
     case INT: {
       std::ostringstream int_string;
@@ -1636,8 +1645,8 @@ void InstructionEntry::PrintEntry(FILE *out) const {
   std::string s;
   InstructionToString(&s);
   ProfileToString(&s);
-  fprintf(out, "%s", s.c_str());
-  PrintSourceInfo(out);
+  SourceInfoToString(&s);
+  fprintf(out, "%s\n", s.c_str());
 }
 
 

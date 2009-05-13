@@ -92,7 +92,7 @@ class MaoEntry {
 
   virtual std::string &ToString(std::string *out) const = 0;
   virtual void PrintEntry(FILE *out) const = 0;
-  void PrintSourceInfo(FILE *out) const;
+  std::string &SourceInfoToString(std::string *out) const;
   virtual void PrintIR(FILE *out) const = 0;
   virtual char GetDescriptiveChar() const = 0;
   virtual EntryType Type() const = 0;
