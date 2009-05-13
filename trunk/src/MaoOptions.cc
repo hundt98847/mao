@@ -178,7 +178,7 @@ static char *NextToken(const char *arg, const char **next, char *token_buff) {
 
 static const char *GobbleGarbage(const char *arg, const char **next) {
   const char *p = arg;
-  if (*p == ',' || *p == ':' || *p == '=')
+  if (*p == ',' || *p == ':' || *p == '=' || *p == '+')
     ++p;
   *next = p;
   return p;
