@@ -73,8 +73,8 @@ def main(argv):
   (fd, mao_tempfile) = tempfile.mkstemp(suffix=".mao")
   os.close(fd)
   generated_files.append(mao_tempfile)
-  cmd = [os.path.join(basedir, "../bin/mao-" + target), "-mao:-o" + \
-         str(mao_tempfile), in_file]
+  cmd = [os.path.join(basedir, "../bin/mao-" + target), "--mao=ASM=o[" + \
+         str(mao_tempfile) + "]", in_file]
   mao_result = _Run(cmd)
 
   if mao_result != 0:
