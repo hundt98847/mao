@@ -20,9 +20,12 @@
 #include "MaoDebug.h"
 #include "MaoUnit.h"
 #include "MaoPasses.h"
+#include "MaoPlugin.h"
+
+PLUGIN_VERSION
 
 extern "C" {
-  void Init();
+  void MaoInit();
 }
 
 // --------------------------------------------------------------------
@@ -46,7 +49,7 @@ class TestPlugin : public MaoFunctionPass {
 
 // External Entry Point
 //
-void Init() {
+void MaoInit() {
   RegisterFunctionPass(
       "TESTPLUG",
       MaoFunctionPassManager::GenericPassCreator<TestPlugin>);

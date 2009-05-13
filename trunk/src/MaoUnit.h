@@ -43,6 +43,9 @@ extern "C" {
 class Section;
 #include "SymbolTable.h"
 
+#define MAO_MAJOR_VERSION 0
+#define MAO_MINOR_VERSION 1
+
 #define DEFAULT_SECTION_NAME ".text"
 
 typedef int ID;

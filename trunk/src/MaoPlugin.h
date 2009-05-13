@@ -19,6 +19,18 @@
 #ifndef MAOPLUGIN_H_
 #define MAOPLUGIN_H_
 
+#include "MaoUnit.h"
+
+struct PluginVersion {
+  unsigned int major;
+  unsigned int minor;
+};
+
+#define PLUGIN_VERSION                                                  \
+  extern "C" {                                                          \
+    PluginVersion mao_plugin_version = {MAO_MAJOR_VERSION, MAO_MINOR_VERSION}; \
+  }
+
 void LoadPlugin(const char *path);
 
 #endif  // MAOPLUGIN_H_
