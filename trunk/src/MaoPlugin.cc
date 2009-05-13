@@ -36,7 +36,7 @@ void LoadPlugin(const char *path) {
 
   // Load the version symbol from the plugin
   PluginVersion *version;
-  version = (PluginVersion *)dlsym(lib_handle, "mao_plugin_version");
+  version = static_cast<PluginVersion *>(dlsym(lib_handle, "mao_plugin_version"));
   if ((error = dlerror()) != NULL)
     MAO_ASSERT_MSG(false, error);
 
@@ -49,7 +49,7 @@ void LoadPlugin(const char *path) {
   void (*init)();
 
   // See the dlopen man page for an explanation of the strange casting
-  *(void **)(&init) = dlsym(lib_handle, "MaoInit");
+  init = (void (*)())dlsym(lib_handle, "MaoInit");
   if ((error = dlerror()) != NULL)
     MAO_ASSERT_MSG(false, error);
 

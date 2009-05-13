@@ -103,7 +103,7 @@ bool ProfileReader::ReadLine() {
     if (ptr[strlen(ptr) - 1] != '\n' && !feof(data_file_)) {
       // The buffer must not have been large enough, so let's grow it.
       buffer_size_ += kBufferSizeIncrement;
-      char *buffer_ = static_cast<char *>(xrealloc(buffer_, buffer_size_));
+      buffer_ = static_cast<char *>(xrealloc(buffer_, buffer_size_));
 
       ptr += len;
       amt += (kBufferSizeIncrement - len);

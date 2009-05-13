@@ -180,9 +180,9 @@ void link_type(symbolS *symbol, SymbolType symbol_type,
     case NOTYPE_SYMBOL: type_name = "@notype"; break;
     case TLS_SYMBOL: type_name = "@tls_object"; break;
     case COMMON_SYMBOL: type_name = "@common"; break;
-    case FILE_SYMBOL: MAO_ASSERT(false); break;
-    case SECTION_SYMBOL: MAO_ASSERT(false); break;
-    default: MAO_ASSERT(false); break;
+    case FILE_SYMBOL: MAO_ASSERT(false); return;
+    case SECTION_SYMBOL: MAO_ASSERT(false); return;
+    default: MAO_ASSERT(false); return;
   }
   operands.push_back(new DirectiveEntry::Operand(type_name));
 
@@ -255,7 +255,7 @@ void link_dc_directive(int size, int rva, expressionS *expr) {
       case 2: opcode = DirectiveEntry::WORD; break;
       case 4: opcode = DirectiveEntry::LONG; break;
       case 8: opcode = DirectiveEntry::QUAD; break;
-      default: MAO_ASSERT(false);
+      default: MAO_ASSERT(false); return;
     }
   }
   link_directive_tail(opcode, operands);
@@ -278,7 +278,7 @@ void link_string_directive(int bitsize, int append_zero,
       case 16: opcode = DirectiveEntry::STRING16; break;
       case 32: opcode = DirectiveEntry::STRING32; break;
       case 64: opcode = DirectiveEntry::STRING64; break;
-      default: MAO_ASSERT(false);
+      default: MAO_ASSERT(false); return;
     }
   }
   link_directive_tail(opcode, operands);
@@ -300,7 +300,7 @@ void link_align_directive(int align, int fill_len, int fill, int max) {
     case 1: opcode = DirectiveEntry::P2ALIGN; break;
     case 2: opcode = DirectiveEntry::P2ALIGNW; break;
     case 4: opcode = DirectiveEntry::P2ALIGNL; break;
-    default: MAO_ASSERT(false);
+    default: MAO_ASSERT(false); return;
   }
 
   DirectiveEntry::OperandVector operands;
@@ -322,7 +322,7 @@ void link_space_directive(expressionS *size, expressionS *fill, int mult) {
     case  4: opcode = DirectiveEntry::DS_L; break;
     case  8: opcode = DirectiveEntry::DS_D; break;
     case 12: opcode = DirectiveEntry::DS_X; break;
-    default: MAO_ASSERT(false);
+    default: MAO_ASSERT(false); return;
   }
 
   DirectiveEntry::OperandVector operands;
@@ -422,7 +422,7 @@ void link_float_directive(int float_type, struct MaoStringPiece value) {
     case 'd': opcode = DirectiveEntry::DC_D; break;
     case 'f': opcode = DirectiveEntry::DC_S; break;
     case 'x': opcode = DirectiveEntry::DC_X; break;
-    default: MAO_ASSERT(false);
+    default: MAO_ASSERT(false); return;
   }
   link_directive_tail(opcode, operands);
 }

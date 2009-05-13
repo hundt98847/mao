@@ -328,6 +328,7 @@ InstructionEntry *MaoUnit::CreateInstruction(const char *opcode) {
       break;
     default:
       MAO_ASSERT_MSG(false, "Unable to match code flag to architecture");
+      return NULL; // Quells a warning about flag used without being defined
   }
 
   InstructionEntry *e = new InstructionEntry(&insn, flag, 0, NULL, this);
@@ -1783,7 +1784,7 @@ std::string &InstructionEntry::ImmediateOperandToString(std::string *out,
     case O_subtract: {
       /* (X_add_symbol + X_op_symbol) + X_add_number.  */
       /* (X_add_symbol - X_op_symbol) + X_add_number.  */
-      const char *op;
+      const char *op = "";
       switch (expr->X_op) {
         case O_add:
           op = "+";

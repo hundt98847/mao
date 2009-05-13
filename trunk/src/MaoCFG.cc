@@ -175,7 +175,7 @@ bool CFGBuilder::Go() {
   BasicBlock *source = CreateBasicBlock("<SOURCE>");
   BasicBlock *sink = CreateBasicBlock("<SINK>");
   BasicBlock *current, *previous;
-  MaoEntry *last_entry;
+  MaoEntry *last_entry = NULL;
   bool create_fall_through;
 
   // Induction variables for the loop
