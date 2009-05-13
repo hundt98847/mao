@@ -19,8 +19,11 @@
 #define MAOOPTIONS_H_
 
 #include <map>
+#include <string>
+
 #include <unistd.h>
 #include <sys/times.h>
+#include <strings.h>
 
 #include "MaoDebug.h"
 
@@ -32,13 +35,13 @@ enum MaoOptionType {
   OPT_INT, OPT_STRING, OPT_BOOL
 };
 
-typedef union MaoOptionValue {
+union MaoOptionValue {
   int         ival_;
   const char *cval_;
   bool        bval_;
 };
 
-typedef struct MaoOption {
+struct MaoOption {
   MaoOptionType   type() const { return type_; }
   const char     *name() const { return name_; }
   const char     *description() const { return description_; }

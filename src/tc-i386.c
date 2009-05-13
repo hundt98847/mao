@@ -172,9 +172,12 @@ static int finalize_imm (void);
 static void process_drex (void);
 static int process_operands (void);
 static const seg_entry *build_modrm_byte (void);
+// FIXME(nvachhar): If we don't need these function, we should just remove them.
+#if 0
 static void output_insn (void);
 static void output_imm (fragS *, offsetT);
 static void output_disp (fragS *, offsetT);
+#endif
 #ifndef I386COFF
 static void s_bss (int);
 #endif
@@ -1563,6 +1566,8 @@ smallest_imm_type (offsetT num)
   return t;
 }
 
+// FIXME(nvachhar): If we don't need this function, we should just remove it.
+#if 0
 static offsetT
 offset_in_range (offsetT val, int size)
 {
@@ -1594,6 +1599,7 @@ offset_in_range (offsetT val, int size)
     }
   return val & mask;
 }
+#endif
 
 /* Returns 0 if attempting to add a prefix where one from the same
    class already exists, 1 if non rep/repne added, 2 if rep/repne
@@ -5539,6 +5545,8 @@ build_modrm_byte (void)
   return default_seg;
 }
 
+// FIXME(nvachhar): If we don't need these function, we should just remove them.
+#if 0
 static void
 output_branch (void)
 {
@@ -5747,7 +5755,6 @@ output_interseg_jump (void)
   md_number_to_chars (p + size, (valueT) i.op[0].imms->X_add_number, 2);
 }
 
-static void
 output_insn (void)
 {
   fragS *insn_start_frag;
@@ -6176,6 +6183,7 @@ output_imm (fragS *insn_start_frag, offsetT insn_start_off)
 	}
     }
 }
+#endif
 
 /* x86_cons_fix_new is called via the expression parsing code when a
    reloc is needed.  We use this hook to get the correct .got reloc.  */

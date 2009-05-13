@@ -35,7 +35,7 @@
 #define  DEF_OP_ALL (DEF_OP0 | DEF_OP1 | DEF_OP2 | DEF_OP3 | DEF_OP4 | DEF_OP5)
 
 // more are possible...
-typedef struct DefEntry {
+struct DefEntry {
   int           opcode;      // matches table gen-opcodes.h
   unsigned int  op_mask;     // if insn defs operand(s)
   BitString     reg_mask;    // if insn defs register(s)

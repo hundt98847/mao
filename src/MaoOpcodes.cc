@@ -17,14 +17,9 @@
 
 #include "gen-opcodes-table.h"
 #include "MaoDebug.h"
+#include "MaoUtil.h"
 
 #include <map>
-
-struct ltstr {
-  bool operator()(const char* s1, const char* s2) const {
-    return strcmp(s1, s2) < 0;
-  }
-};
 
 static bool initialized = false;
 static std::map<const char*, MaoOpcode, ltstr> name_hash;
