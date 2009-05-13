@@ -34,6 +34,8 @@
 // MAO Main Entry
 //==================================
 int main(int argc, const char *argv[]) {
+  InitPasses();
+
   MaoOptions mao_options;
 
   // Parse any mao-specific command line flags (start with --mao=)
@@ -52,13 +54,14 @@ int main(int argc, const char *argv[]) {
   mao_options.ProvideHelp();
 
   InitRegisters();
-  InitPasses(&mao_options);
 
   MaoUnit mao_unit(&mao_options);
   RegisterMaoUnit(&mao_unit);
 
   MaoPassManager mao_pass_man(&mao_unit);
-  mao_pass_man.LinkPass(new ReadInputPass(new_argc, new_argv, &mao_unit));
+  mao_pass_man.LinkPass(new ReadInputPass(new_argc, new_argv,
+                                          GetStaticOptionPass("READ"),
+                                          &mao_unit));
 
   // Reparse the arguments now that all the dynamic passes have been
   // loaded.  This will initialize the pass manager with the desired

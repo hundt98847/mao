@@ -61,9 +61,8 @@ class AlignTinyLoops16 : public MaoFunctionPass {
   typedef std::list<AlignCandidate *> LoopList;
 
  public:
-  AlignTinyLoops16(MaoUnit *mao, Function *function) :
-    MaoFunctionPass("LOOP16", mao->mao_options(), MAO_OPTIONS(LOOP16),
-                    mao, function) {
+  AlignTinyLoops16(MaoOptionMap *options, MaoUnit *mao, Function *function)
+      : MaoFunctionPass("LOOP16", options, mao, function) {
     fetchline_size_  = GetOptionInt("fetch_line_size");
     max_fetch_lines_ = GetOptionInt("max_fetch_lines");
   }

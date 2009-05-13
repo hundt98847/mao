@@ -447,8 +447,8 @@ MAO_OPTIONS_DEFINE(LFIND, 1) {
 class LoopFinderPass : public MaoFunctionPass {
  public:
   LoopFinderPass(MaoUnit *mao, Function *function, LoopStructureGraph *LSG)
-      : MaoFunctionPass("LFIND", mao->mao_options(), MAO_OPTIONS(LFIND),
-                        mao, function), LSG_(LSG) {
+      : MaoFunctionPass("LFIND", GetStaticOptionPass("LFIND"), mao, function),
+        LSG_(LSG) {
     dump_lsg_ = GetOptionBool("lsg");
   }
 
@@ -490,4 +490,8 @@ LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, Function *function) {
   LoopFinderPass finder(mao, function, LSG);
   finder.Go();
   return LSG;
+}
+
+void InitLoops() {
+  RegisterStaticOptionPass("LFIND", new MaoOptionMap);
 }

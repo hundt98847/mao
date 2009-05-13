@@ -37,9 +37,8 @@ MAO_OPTIONS_DEFINE(NOPIN, 3) {
 
 class NopInizerPass : public MaoFunctionPass {
  public:
-  NopInizerPass(MaoUnit *mao, Function *func)
-      : MaoFunctionPass("NOPIN", mao->mao_options(), MAO_OPTIONS(NOPIN),
-                        mao, func) {
+  NopInizerPass(MaoOptionMap *options, MaoUnit *mao, Function *func)
+      : MaoFunctionPass("NOPIN", options, mao, func) {
     seed_ = GetOptionInt("seed");
     density_ = GetOptionInt("density");
     thick_ = GetOptionInt("thick");

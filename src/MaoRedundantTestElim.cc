@@ -34,9 +34,8 @@ MAO_OPTIONS_DEFINE(REDTEST, 0) {
 
 class RedTestElimPass : public MaoFunctionPass {
  public:
-  RedTestElimPass(MaoUnit *mao, Function *function)
-      : MaoFunctionPass("REDTEST", mao->mao_options(), MAO_OPTIONS(REDTEST),
-                        mao, function) { }
+  RedTestElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
+      : MaoFunctionPass("REDTEST", options, mao, function) { }
 
   // Find patterns like these in a single basic block:
   //

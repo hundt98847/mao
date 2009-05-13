@@ -33,9 +33,8 @@ MAO_OPTIONS_DEFINE(ADDADD, 0) {
 
 class AddAddElimPass : public MaoFunctionPass {
  public:
-  AddAddElimPass(MaoUnit *mao, Function *function)
-      : MaoFunctionPass("ADDADD", mao->mao_options(), MAO_OPTIONS(ADDADD),
-                        mao, function) { }
+  AddAddElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
+      : MaoFunctionPass("ADDADD", options, mao, function) { }
 
   bool IsAddI(InstructionEntry *insn) {
     return ((insn->op() == OP_add || insn->op() == OP_sub)  &&

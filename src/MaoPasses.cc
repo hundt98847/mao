@@ -23,47 +23,27 @@
 #include <algorithm>
 
 #include "MaoDebug.h"
-#include "MaoPasses.h"
 #include "MaoCFG.h"
+#include "MaoOptions.h"
+#include "MaoPasses.h"
 #include "MaoRelax.h"
-
-//Option Management
-//
-static std::map<MaoOption *, MaoAction *> option_to_pass_map;
-
-MaoAction *FindPass(MaoOption *arr) {
-  MAO_ASSERT(arr);
-
-  std::map<MaoOption *, MaoAction *>::iterator it = option_to_pass_map.find(arr);
-  if (it == option_to_pass_map.end())
-    return NULL;
-  return (*it).second;
-}
-
 
 // MaoAction
 //
-MaoAction::MaoAction(const char *name, MaoOptions *mao_options,
-                     MaoOption *options)
-    : name_(name), options_(options),
-      tracing_level_(mao_options ? (mao_options->verbose() ? 3 : 0) : 0),
-      trace_file_(stderr), mao_options_(mao_options),
-      db_vcg_(false), db_cfg_(false), da_vcg_(false), da_cfg_(false) {
+MaoAction::MaoAction(const char *name, MaoOptionMap *options, MaoUnit *unit)
+    : name_(name), options_(options), trace_file_(stderr), unit_(unit) {
   MAO_ASSERT_MSG(options,
-                 "Option array is required for action constuction "
+                 "Option map is required for action constuction "
                  "(action: %s)", name);
-  MAO_ASSERT_MSG(mao_options,
-                 "Options manager required for each action "
-                 "(action: %s)", name);
-  option_to_pass_map[options_] = this;
 
-  if (mao_options_)
-    mao_options_->Reparse();
+  tracing_level_ = GetOptionInt("trace");
+  da_vcg_ = GetOptionInt("da[vcg]");
+  db_vcg_ = GetOptionInt("db[vcg]");
+  da_cfg_ = GetOptionInt("da[cfg]");
+  db_cfg_ = GetOptionInt("db[cfg]");
 }
 
-MaoAction::~MaoAction() {
-  option_to_pass_map[options_] = NULL;
-}
+MaoAction::~MaoAction() { }
 
 void MaoAction::Trace(unsigned int level, const char *fmt, ...) const {
   if (level > tracing_level()) return;
@@ -91,44 +71,34 @@ void MaoAction::TraceC(unsigned int level, const char *fmt, ...) const {
   fflush(stderr);
 }
 
-MaoOption *MaoAction::FindOptionEntry(const char *name) {
+MaoOptionValue MaoAction::FindOptionEntry(const char *name) {
   MAO_ASSERT(options_);
-
-  int index = 0;
-  while (options_[index].name()) {
-    if (!strcasecmp(name, options_[index].name()))
-      return &options_[index];
-    ++index;
-  }
-
-  MAO_ASSERT_MSG(false, "Invalid options name: %s", name);
-  return NULL;
+  MaoOptionMap::const_iterator iter = options_->find(std::string(name));
+  MAO_ASSERT_MSG(iter != options_->end(), "Invalid options name: %s", name);
+  return iter->second;
 }
 
-
 bool MaoAction::GetOptionBool(const char *name) {
-  MaoOption *opt = FindOptionEntry(name);
-  return opt->bval_;
+  MaoOptionValue value = FindOptionEntry(name);
+  return value.bval_;
 }
 
 const char *MaoAction::GetOptionString(const char *name) {
-  MaoOption *opt = FindOptionEntry(name);
-  return opt->cval_;
+  MaoOptionValue value = FindOptionEntry(name);
+  return value.cval_;
 }
 
 int MaoAction::GetOptionInt(const char *name) {
-  MaoOption *opt = FindOptionEntry(name);
-  return opt->ival_;
+  MaoOptionValue value = FindOptionEntry(name);
+  return value.ival_;
 }
 
 void MaoAction::TimerStart() {
-  if (mao_options_)
-    mao_options_->TimerStart(name_);
+  unit_->mao_options()->TimerStart(name_);
 }
 
 void MaoAction::TimerStop() {
-  if (mao_options_)
-    mao_options_->TimerStop(name_);
+  unit_->mao_options()->TimerStop(name_);
 }
 
 void MaoAction::set_db(const char *str) {
@@ -170,9 +140,8 @@ static PassDebugAction *pass_debug_action = NULL;
 
 // MaoPass
 //
-MaoPass::MaoPass(const char *name, MaoOptions *mao_options, MaoOption *options,
-                 MaoUnit *unit)
-    : MaoAction(name, mao_options, options), unit_(unit) { }
+MaoPass::MaoPass(const char *name, MaoOptionMap *options, MaoUnit *unit)
+    : MaoAction(name, options, unit) { }
 
 MaoPass::~MaoPass() { }
 
@@ -187,10 +156,9 @@ bool MaoPass::Run() {
 
 // MaoFunctionPass
 //
-MaoFunctionPass::MaoFunctionPass(const char *pname, MaoOptions *mao_options,
-                                 MaoOption *options, MaoUnit *unit,
-                                 Function *function)
-    : MaoPass(pname, mao_options, options, unit), function_(function) { }
+MaoFunctionPass::MaoFunctionPass(const char *pname, MaoOptionMap *options,
+                                 MaoUnit *unit, Function *function)
+    : MaoPass(pname, options, unit), function_(function) { }
 
 MaoFunctionPass::~MaoFunctionPass() { }
 
@@ -250,8 +218,9 @@ class SourceDebugAction : public MaoDebugAction {
   }
 };
 
-ReadInputPass::ReadInputPass(int argc, const char *argv[], MaoUnit *mao_unit)
-    : MaoPass("READ", mao_unit->mao_options(), MAO_OPTIONS(READ), mao_unit),
+ReadInputPass::ReadInputPass(int argc, const char *argv[], MaoOptionMap *options,
+                             MaoUnit *mao_unit)
+    : MaoPass("READ", options, mao_unit),
       argc_(argc), argv_(argv) { }
 
 bool ReadInputPass::Go() {
@@ -273,8 +242,8 @@ MAO_OPTIONS_DEFINE(ASM, 1) {
   OPTION_STR("o", "/dev/stdout", "Filename to output assembly to."),
 };
 
-AssemblyPass::AssemblyPass(MaoUnit *mao_unit)
-    : MaoPass("ASM", mao_unit->mao_options(), MAO_OPTIONS(ASM), mao_unit) { }
+AssemblyPass::AssemblyPass(MaoOptionMap *options, MaoUnit *mao_unit)
+    : MaoPass("ASM", options, mao_unit) { }
 
 bool AssemblyPass::Go() {
   const char *output_file_name = GetOptionString("o");
@@ -319,8 +288,8 @@ MAO_OPTIONS_DEFINE(IR, 1) {
   OPTION_STR("o", "/dev/stdout", "Filename to dump IR to."),
 };
 
-DumpIrPass::DumpIrPass(MaoUnit *mao_unit)
-    : MaoPass("IR", mao_unit->mao_options(), MAO_OPTIONS(IR), mao_unit) { }
+DumpIrPass::DumpIrPass(MaoOptionMap *options, MaoUnit *mao_unit)
+    : MaoPass("IR", options, mao_unit) { }
 
 bool DumpIrPass::Go() {
   const char *ir_output_filename = GetOptionString("o");
@@ -344,9 +313,9 @@ MAO_OPTIONS_DEFINE(SYMBOLTABLE, 1) {
   OPTION_STR("o", "/dev/stdout", "Filename to dump symboltable to."),
 };
 
-DumpSymbolTablePass::DumpSymbolTablePass(MaoUnit *mao_unit)
-    : MaoPass("SYMBOLTABLE", mao_unit->mao_options(),
-              MAO_OPTIONS(SYMBOLTABLE), mao_unit) { }
+DumpSymbolTablePass::DumpSymbolTablePass(MaoOptionMap *options,
+                                         MaoUnit *mao_unit)
+    : MaoPass("SYMBOLTABLE", options, mao_unit) { }
 
 bool DumpSymbolTablePass::Go() {
   const char *symboltable_output_filename = GetOptionString("o");
@@ -370,9 +339,9 @@ bool DumpSymbolTablePass::Go() {
 MAO_OPTIONS_DEFINE(TESTCFG, 0) {
 };
 
-TestCFGPass::TestCFGPass(MaoUnit *mao_unit, Function *function)
-    : MaoFunctionPass("TESTCFG", mao_unit->mao_options(), MAO_OPTIONS(TESTCFG),
-                      mao_unit, function) { }
+TestCFGPass::TestCFGPass(MaoOptionMap *options, MaoUnit *mao_unit,
+                         Function *function)
+    : MaoFunctionPass("TESTCFG", options, mao_unit, function) { }
 
 bool TestCFGPass::Go() {
   CFG::GetCFG(unit_, function_);
@@ -387,9 +356,9 @@ bool TestCFGPass::Go() {
 MAO_OPTIONS_DEFINE(TESTRELAX, 0) {
 };
 
-TestRelaxPass::TestRelaxPass(MaoUnit *mao_unit, Function *function)
-    : MaoFunctionPass("TESTRELAX", mao_unit->mao_options(),
-                      MAO_OPTIONS(TESTRELAX), mao_unit, function) { }
+TestRelaxPass::TestRelaxPass(MaoOptionMap *options, MaoUnit *mao_unit,
+                             Function *function)
+    : MaoFunctionPass("TESTRELAX", options, mao_unit, function) { }
 
 bool TestRelaxPass::Go() {
   //MaoRelaxer::InvalidateSizeMap(function_->GetSection());
@@ -405,18 +374,21 @@ bool TestRelaxPass::Go() {
 MAO_OPTIONS_DEFINE(PASSMAN, 0) {
 };
 
-MaoFunctionPassManager::MaoFunctionPassManager(MaoUnit *unit)
-    : MaoPass("PASSMAN", unit->mao_options(), MAO_OPTIONS(PASSMAN), unit) { }
+MaoFunctionPassManager::MaoFunctionPassManager(MaoOptionMap *options,
+                                               MaoUnit *unit)
+    : MaoPass("PASSMAN", options, unit) { }
 
 bool MaoFunctionPassManager::Go() {
   // Run passes on functions.
   for (MaoUnit::ConstFunctionIterator func_iter = unit_->ConstFunctionBegin();
        func_iter != unit_->ConstFunctionEnd(); ++func_iter) {
     Function *function = *func_iter;
-    for (std::list<PassCreator>::iterator pass_iter = pass_list_.begin();
+    for (std::list<MaoFunctionPassManager::ConfiguredPass>::iterator pass_iter =
+             pass_list_.begin();
          pass_iter != pass_list_.end(); ++pass_iter) {
-      PassCreator creator = (*pass_iter);
-      MaoFunctionPass *pass = creator(unit_, function);
+      PassCreator creator = pass_iter->first;
+      MaoOptionMap *options = pass_iter->second;
+      MaoFunctionPass *pass = creator(options, unit_, function);
       pass->TimerStart();
       MAO_ASSERT(pass->Run());
       pass->TimerStop();
@@ -430,10 +402,15 @@ bool MaoFunctionPassManager::Go() {
 //
 
 // Assemble base pass ordering
-void InitPasses(MaoOptions *opts) {
+void InitPasses() {
+  // Static Option Passes
+  RegisterStaticOptionPass("READ", new MaoOptionMap);
+  InitCFG();
+  InitRelax();
+  InitLoops();
+
   // Unit passes
   InitProfileAnnotation();
-
   RegisterUnitPass("ASM", MaoPassManager::GenericPassCreator<AssemblyPass>);
   RegisterUnitPass("IR", MaoPassManager::GenericPassCreator<DumpIrPass>);
   RegisterUnitPass("SYMBOLTABLE",
@@ -461,14 +438,9 @@ void InitPasses(MaoOptions *opts) {
 }
 
 // Code to maintain the set of available passes
-typedef std::map<const char *,
-                 MaoFunctionPassManager::PassCreator,
-                 ltstr> RegisteredFunctionPassesMap;
-typedef std::map<const char *,
-                 MaoPassManager::PassCreator,
-                 ltstr> RegisteredUnitPassesMap;
-static RegisteredUnitPassesMap     registered_unit_passes;
-static RegisteredFunctionPassesMap registered_function_passes;
+static RegisteredUnitPassesMap       registered_unit_passes;
+static RegisteredFunctionPassesMap   registered_function_passes;
+static RegisteredStaticOptionPassMap registered_static_option_passes;
 
 void RegisterUnitPass(const char *name,
                       MaoPassManager::PassCreator creator) {
@@ -478,6 +450,10 @@ void RegisterUnitPass(const char *name,
 void RegisterFunctionPass(const char *name,
                           MaoFunctionPassManager::PassCreator creator) {
   registered_function_passes[name] = creator;
+}
+
+void RegisterStaticOptionPass(const char *name, MaoOptionMap *options) {
+  registered_static_option_passes[name] = options;
 }
 
 MaoPassManager::PassCreator GetUnitPass(const char *name) {
@@ -494,4 +470,16 @@ MaoFunctionPassManager::PassCreator GetFunctionPass(const char *name) {
   if (iter == registered_function_passes.end())
     return NULL;
   return iter->second;
+}
+
+MaoOptionMap *GetStaticOptionPass(const char *name) {
+  RegisteredStaticOptionPassMap::iterator iter =
+      registered_static_option_passes.find(name);
+  if (iter == registered_static_option_passes.end())
+    return NULL;
+  return iter->second;
+}
+
+const RegisteredStaticOptionPassMap &GetStaticOptionPasses() {
+  return registered_static_option_passes;
 }

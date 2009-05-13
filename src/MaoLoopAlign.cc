@@ -31,7 +31,7 @@
 // and alligns all (chains of) basicb locks within the paths.
 class LoopAlignPass : public MaoFunctionPass {
  public:
-  explicit LoopAlignPass(MaoUnit *mao, Function *function);
+  LoopAlignPass(MaoOptionMap *options, MaoUnit *mao, Function *function);
   bool Go();
 
  private:
@@ -146,9 +146,9 @@ MAO_OPTIONS_DEFINE(LOOPALIGN, 2) {
                              "statistics about loops."),
 };
 
-LoopAlignPass::LoopAlignPass(MaoUnit *mao, Function *function)
-    : MaoFunctionPass("LOOPALIGN", mao->mao_options(), MAO_OPTIONS(LOOPALIGN),
-                      mao, function), sizes_(NULL) {
+LoopAlignPass::LoopAlignPass(MaoOptionMap *options, MaoUnit *mao,
+                             Function *function)
+    : MaoFunctionPass("LOOPALIGN", options, mao, function), sizes_(NULL) {
 
   maximum_loop_size_ = GetOptionInt("loop_size");
   collect_stat_      = GetOptionBool("stat");
