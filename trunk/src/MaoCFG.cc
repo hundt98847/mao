@@ -623,6 +623,12 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
   if (insn_entry->IsIndirectJump() && !processed) {
     CFG_->IncreaseNumExternalJumps();
     Trace(2, "Unable to find targets for indirect jump.");
+    // Print out info so we can locate the problem:
+    std::string s;
+    insn_entry->InstructionToString(&s);
+    insn_entry->ProfileToString(&s);
+    insn_entry->SourceInfoToString(&s);
+    Trace(2, "%s", s.c_str());
   }
 }
 
