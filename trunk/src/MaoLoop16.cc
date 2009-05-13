@@ -54,6 +54,7 @@ class AlignTinyLoops16 : public MaoFunctionPass {
 
     const BasicBlock *min_bb() { return min_bb_; }
     const BasicBlock *max_bb() { return max_bb_; }
+    const SimpleLoop *loop()   { return loop_; }
    protected:
     const SimpleLoop *loop_;
     const BasicBlock *min_bb_, *max_bb_;
@@ -112,6 +113,7 @@ class AlignTinyLoops16 : public MaoFunctionPass {
           if ((*offsets)[(*iter)->min_bb()->first_entry()] > start_off) {
             candidates_.insert(iter, new AlignCandidate(loop, min_bb, max_bb));
             linked_in = true;
+            break;
           }
         }
         if (!linked_in)
@@ -151,18 +153,20 @@ class AlignTinyLoops16 : public MaoFunctionPass {
       int start_off   = (*offsets)[(*iter)->min_bb()->first_entry()];
       int size = end_off - start_off;
 
-      int start_fetch = start_off / 16;
-      int start_used  = 16 - start_off % 16;
-      int end_fetch   = end_off / 16;
-      int end_used    = end_off % 16;
+      int start_fetch = start_off / fetchline_size_;
+      int start_used  = fetchline_size_ - start_off % fetchline_size_;
+      int end_fetch   = end_off / fetchline_size_;
+      int end_used    = end_off % fetchline_size_;
       int lines       = end_fetch - start_fetch + 1;
 
-      Trace(0, "Loop, size: %d, start: %d, end: %d, %d fetch lines",
+      Trace(0, "func-%d, loop-%d, size: %d, start: %d, end: %d, %d fetch lines",
+            function_->id(),
+            (*iter)->loop()->counter(),
             size, start_off, end_off, lines);
       Trace(0, "  Fetch line %d bytes used, end: %d bytes used",
             start_used, end_used);
 
-      if (lines > 1 && start_used < (16 - end_used)) {
+      if (lines > 1 && start_used < (fetchline_size_ - end_used)) {
         Trace(0, "  -> Alignment possible, up %d bytes, save 1/%d fetch lines",
               start_used,
               end_fetch - start_fetch + 1);
@@ -175,7 +179,7 @@ class AlignTinyLoops16 : public MaoFunctionPass {
             (lines == 7 && start_used < 9)  ||
             (lines  > 7 && start_used < 5)) {
           Trace(0, "  -> Alignment DONE");
-          (*iter)->min_bb()->first_entry()->AlignTo(16);
+          (*iter)->min_bb()->first_entry()->AlignTo(4,0,15);
 
           MaoRelaxer::InvalidateSizeMap(function_->GetSection());
           sizes = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
