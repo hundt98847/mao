@@ -38,7 +38,7 @@ SymbolTable::~SymbolTable() {
   // when added, they are allocated with new!
   for (std::map<const char*, Symbol *, ltstr>::iterator iter = table_.begin();
       iter != table_.end(); ++iter) {
-    free(iter->second);
+    delete iter->second;
   }
 }
 

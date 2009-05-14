@@ -54,11 +54,13 @@ class BranchSeparatorPass : public MaoFunctionPass {
 
   class BranchSeparatorStat : public Stat {
    public:
-    BranchSeparatorStat() : num_branches_(0), num_branches_realigned_(0),
-                            nops_inserted_(0) {
+    BranchSeparatorStat(int distance) : num_branches_(0), num_branches_realigned_(0),
+                             relaxations_(0), distance_(distance) {
+      nop_counts_ = new int[distance];
+      memset (nop_counts_, 0, sizeof(int)*distance_);
     }
 
-    ~BranchSeparatorStat() {;}
+    ~BranchSeparatorStat() {delete [] nop_counts_;}
 
     void FoundBranch() {
       num_branches_++;
@@ -69,17 +71,25 @@ class BranchSeparatorPass : public MaoFunctionPass {
 
     void RealigningBranch(int nops) {
       num_branches_realigned_++;
-      nops_inserted_+=nops;
+      nop_counts_[nops]++;
     }
 
     virtual void Print(FILE *out) {
+      int bytes=0;
       fprintf(out, "Branch Separator stats\n");
       fprintf(out, "  # Branches: %d\n",
               num_branches_);
       fprintf(out, "  # Branches realigned : %d\n",
               num_branches_realigned_);
-      fprintf(out, "  # Nops inserted : %d\n",
-              nops_inserted_);
+      for(int i=0; i<distance_; i++) {
+        if (nop_counts_[i] != 0) {
+          fprintf(out, "  # %d byte nops inserted: %d\n",
+                i, nop_counts_[i]);
+          bytes += i*nop_counts_[i];
+        }
+      }
+      fprintf(out, "  # additional bytes: %d\n",
+              bytes);
       fprintf(out, "  # Relaxations: %d\n",
               relaxations_);
     }
@@ -87,8 +97,9 @@ class BranchSeparatorPass : public MaoFunctionPass {
    private:
     int                num_branches_;
     int                num_branches_realigned_;
-    int                nops_inserted_;
     int                relaxations_;
+    int                *nop_counts_;
+    int                distance_;
   };
 
   BranchSeparatorStat *branch_separator_stat_;
@@ -130,7 +141,7 @@ BranchSeparatorPass::BranchSeparatorPass(MaoOptionMap *options, MaoUnit *mao,
       branch_separator_stat_ = static_cast<BranchSeparatorStat *>(
           unit_->GetStats()->GetStat("BRSEP"));
     } else {
-      branch_separator_stat_ = new BranchSeparatorStat();
+      branch_separator_stat_ = new BranchSeparatorStat(min_branch_distance_);
       unit_->GetStats()->Add("BRSEP", branch_separator_stat_);
     }
   }
@@ -138,7 +149,7 @@ BranchSeparatorPass::BranchSeparatorPass(MaoOptionMap *options, MaoUnit *mao,
 
 bool BranchSeparatorPass::Go() {
   if(!profitable)
-    return false;
+    return true;
   sizes_ = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
 
 
@@ -188,8 +199,9 @@ bool BranchSeparatorPass::Go() {
     offset += (*sizes_)[*iter];
   }
   if(change) {
-    //Relaxation has to be performed again
-    MaoRelaxer::InvalidateSizeMap(function_->GetSection());
+    if(rerelax)
+      //Relaxation has to be performed again
+      MaoRelaxer::InvalidateSizeMap(function_->GetSection());
     //Align function begining based on min_branch_distance
     AlignEntry(function_, *(function_->EntryBegin()));
     if (collect_stat_)
