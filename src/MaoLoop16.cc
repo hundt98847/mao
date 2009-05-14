@@ -19,8 +19,8 @@
 
 // Align tiny loops to 16 byte boundaries to avoid
 // having to fetch two instruction lines for every
-// iteration. These seems to cause an 9% degradation
-// on SPEC 2000 252.eon.
+// iteration. This seems to cause an 9% degradation
+// on SPEC 2000 252.eon with gcc 4.4 over gcc 4.2.1
 //
 #include "MaoDebug.h"
 #include "MaoUnit.h"
@@ -35,16 +35,19 @@
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(LOOP16, 2) {
+MAO_OPTIONS_DEFINE(LOOP16, 3) {
   OPTION_INT("max_fetch_lines",  10,
              "Seek to align loops with size < max_fetch_lines*fetchline_size"),
-
-  OPTION_INT("fetch_line_size", 16, "Fetchline size")
+  OPTION_INT("fetch_line_size", 16, "Fetchline size"),
+  OPTION_INT("limit", -1, "Limit tranformation invocations")
 };
 
 // Align Tiny Loops to 16 Bytes
 //
 class AlignTinyLoops16 : public MaoFunctionPass {
+
+  // Helper data structure to maintain candidate loops
+  //
   class AlignCandidate {
    public:
     AlignCandidate(const SimpleLoop *loop,
@@ -66,10 +69,21 @@ class AlignTinyLoops16 : public MaoFunctionPass {
       : MaoFunctionPass("LOOP16", options, mao, function) {
     fetchline_size_  = GetOptionInt("fetch_line_size");
     max_fetch_lines_ = GetOptionInt("max_fetch_lines");
+    limit_ = GetOptionInt("limit");
   }
 
   // Find Candidates for loop alignment. Candidates are all
   // very short loops, basically all loops with size < max_loop_size
+  //
+  // Candidates are maintained in a sorted list, sorted by increasing
+  // address. Later we iterate over this list from top to bottom,
+  // knowing that re-relaxation should only affect lower loops.
+  //
+  // This is actually an oversimplification. If we would actually
+  // insert bytes, we would have to rerun the whole process over and
+  // over again until it reaches a fixed points. However, we're
+  // not inserting bytes, but .p2align directives, which should ensure
+  // that the candidate inner loops remain - at least - aligned.
   //
   void FindCandidates(const SimpleLoop  *loop,
                       MaoEntryIntMap    *offsets,
@@ -77,15 +91,17 @@ class AlignTinyLoops16 : public MaoFunctionPass {
     MAO_ASSERT(offsets);
     MAO_ASSERT(sizes);
 
+    // Find inner loops only
+    //
     if (!loop->nesting_level() &&   // Leaf node = Inner loop
         !loop->is_root()) {         // not root
-      // Found an inner loop
       MAO_ASSERT(loop->NumberOfChildren() == 0);
-
-      // Currently we see if there any paths in the inner loops that are
-      // candiates for alignment!
       MAO_ASSERT(loop->bottom());
 
+      // Determine basic block with lowest and highest addresses.
+      // CFGs and loops can have the weirdest shapes, so we have
+      // to do this explicit search.
+      //
       BasicBlock *min_bb = loop->header(), *max_bb = loop->bottom();
       for (SimpleLoop::BasicBlockSet::const_iterator iter =
              loop->ConstBasicBlockBegin();
@@ -98,13 +114,15 @@ class AlignTinyLoops16 : public MaoFunctionPass {
           max_bb = (*iter);
       }
 
+      // Compute start and end address of loop
+      //
       int end_off = (*offsets)[max_bb->last_entry()] +
                     (*sizes)[max_bb->last_entry()];
       int start_off   = (*offsets)[min_bb->first_entry()];
       int size = end_off - start_off;
 
-      // add this loop to list of candidates, sorted by
-      // starting offset.
+      // Add this loop to list of candidates if it passes the
+      // filter. Sort by starting offset.
       //
       if (size < max_fetch_lines_*fetchline_size_) {
         bool linked_in = false;
@@ -122,7 +140,8 @@ class AlignTinyLoops16 : public MaoFunctionPass {
       return;
     }
 
-    // Recursive call in order to find all
+    // Recursively find inner loops
+    //
     for (SimpleLoop::LoopSet::const_iterator liter = loop->ConstChildrenBegin();
          liter != loop->ConstChildrenEnd(); ++liter) {
       FindCandidates(*liter, offsets, sizes);
@@ -141,11 +160,20 @@ class AlignTinyLoops16 : public MaoFunctionPass {
     MAO_ASSERT(function);
     MaoEntryIntMap *sizes, *offsets;
 
+    // Initial relaxation
+    //
     sizes = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
     offsets = MaoRelaxer::GetOffsetMap(unit_, function_->GetSection());
 
+    // Find candidates, inner loops
+    //
     FindCandidates(loop, offsets, sizes);
 
+    // Iterate the sorted list of loop candidates.
+    // If a loop is re-aligned, we have to re-relax and
+    // check for opportunities at loops with higher
+    // addresses.
+    //
     for (LoopList::iterator iter = candidates_.begin();
          iter != candidates_.end(); ++iter) {
       int end_off = (*offsets)[(*iter)->max_bb()->last_entry()] +
@@ -159,19 +187,38 @@ class AlignTinyLoops16 : public MaoFunctionPass {
       int end_used    = end_off % fetchline_size_;
       int lines       = end_fetch - start_fetch + 1;
 
-      Trace(0, "func-%d, loop-%d, size: %d, start: %d, end: %d, %d fetch lines",
+      // Report on all inner loops
+      //
+      Trace(2, "func-%d, loop-%d, size: %d, start: %d, end: %d, %d fetch lines",
             function_->id(),
             (*iter)->loop()->counter(),
             size, start_off, end_off, lines);
-      Trace(0, "  Fetch line %d bytes used, end: %d bytes used",
+      Trace(2, "  Fetch line %d bytes used, end: %d bytes used",
             start_used, end_used);
 
+      // Found an inner loop where alignment would save a
+      // fetchline. For this, there must be more bytes available
+      // at the end of the bottom fetchline then there are used
+      // in the top fetchline.
+      //
+      //   |0123456789012345|
+      //   |.........BBBBBBB|   these bytes are used by loop
+      //   |XXXXXXXXXXXXXXXX|*  any number of filled lines
+      //   |EEEEEEE---------|   there need to be more -'s than B's
+      //
       if (lines > 1 && start_used < (fetchline_size_ - end_used)) {
-        Trace(0, "  -> Alignment possible, up %d bytes, save 1/%d fetch lines",
+        Trace(2, "  -> Alignment possible, up %d bytes, save 1/%d fetch lines",
               start_used,
               end_fetch - start_fetch + 1);
 
-        // These are the heuristics
+        // These are the simplistic heuristics.
+        //
+        // It is expected that for loops that are longer than
+        // 1 fetchline, the instruction decoding will no longer
+        // be the bottleneck, as some of the instructions in the
+        // loop will have some latency.
+        //
+        // Subject to further tuning.
         //
         if ((lines <= 4) ||
             (lines == 5 && start_used < 13) ||
@@ -179,8 +226,12 @@ class AlignTinyLoops16 : public MaoFunctionPass {
             (lines == 7 && start_used < 9)  ||
             (lines  > 7 && start_used < 5)) {
           Trace(0, "  -> Alignment DONE");
-          (*iter)->min_bb()->first_entry()->AlignTo(4,0,15);
+          (*iter)->min_bb()->first_entry()->AlignTo(4,-1,15);
 
+          // After alignment, we have to re-relax in order to
+          // check how alignment changed for loops at higher
+          // addresses (after this current loop in the list)
+          //
           MaoRelaxer::InvalidateSizeMap(function_->GetSection());
           sizes = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
           offsets = MaoRelaxer::GetOffsetMap(unit_, function_->GetSection());
@@ -190,6 +241,8 @@ class AlignTinyLoops16 : public MaoFunctionPass {
   }
 
 
+  // Main entry point
+  //
   bool Go() {
     loop_graph_ =  LoopStructureGraph::GetLSG(unit_, function_);
     if (!loop_graph_ ||
@@ -204,6 +257,7 @@ class AlignTinyLoops16 : public MaoFunctionPass {
   LoopList  candidates_;
   int       fetchline_size_;
   int       max_fetch_lines_;
+  int       limit_;
 };
 
 // External Entry Point
