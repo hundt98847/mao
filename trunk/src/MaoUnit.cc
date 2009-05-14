@@ -1151,8 +1151,7 @@ const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
 void LabelEntry::PrintEntry(FILE *out) const {
   MAO_ASSERT(name_);
   std::string s;
-  s.append(name_);
-  s.append(":");
+  ToString(&s);
   MaoEntry::SourceInfoToString(&s);
   fprintf(out, "%s\n", s.c_str());
 }
@@ -1160,6 +1159,7 @@ void LabelEntry::PrintEntry(FILE *out) const {
 
 std::string &LabelEntry::ToString(std::string *out) const {
   out->append(name_);
+  out->append(":");
   return *out;
 }
 
@@ -1242,11 +1242,10 @@ void DirectiveEntry::PrintEntry(::FILE *out) const {
 }
 
 std::string &DirectiveEntry::ToString(std::string *out) const {
-  std::ostringstream stream;
-  stream << GetOpcodeName()
-         << " "
-         << OperandsToString(out, GetOperandSeparator());
-  out->append(stream.str());
+  //  std::ostringstream stream;
+  out->append(GetOpcodeName());
+  out->append(" ");
+  OperandsToString(out, GetOperandSeparator());
   return *out;
 }
 
