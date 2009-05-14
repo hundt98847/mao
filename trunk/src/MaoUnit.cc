@@ -1871,7 +1871,12 @@ bool InstructionEntry::CompareMemOperand(int op1,
       i1->types[op1].bitfield.disp16 ||
       i1->types[op1].bitfield.disp32 ||
       i1->types[op1].bitfield.disp32s ||
-      i1->types[op1].bitfield.disp64) {
+      i1->types[op1].bitfield.disp64 ||
+      i2->types[op2].bitfield.disp8 ||
+      i2->types[op2].bitfield.disp16 ||
+      i2->types[op2].bitfield.disp32 ||
+      i2->types[op2].bitfield.disp32s ||
+      i2->types[op2].bitfield.disp64) {
     const expressionS *disp1 = i1->op[op1].disps;
     const expressionS *disp2 = i2->op[op2].disps;
     if (disp1 && !disp2) return false;
@@ -1887,7 +1892,6 @@ bool InstructionEntry::CompareMemOperand(int op1,
         return false;
       // TODO: Check RelocString
       if (disp1->X_op == O_symbol &&
-          disp1->X_add_number &&
           disp1->X_add_number != disp2->X_add_number)
         return false;
       if (disp1->X_op == O_subtract) {
@@ -1898,8 +1902,7 @@ bool InstructionEntry::CompareMemOperand(int op1,
             strcmp(S_GET_NAME(disp1->X_op_symbol),
                    S_GET_NAME(disp2->X_op_symbol)))
           return false;
-        if (disp1->X_add_number &&
-            disp1->X_add_number != disp2->X_add_number)
+        if (disp1->X_add_number != disp2->X_add_number)
           return false;
       }
     }
