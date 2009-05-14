@@ -63,6 +63,9 @@ class BranchSeparatorPass : public MaoFunctionPass {
     void FoundBranch() {
       num_branches_++;
     }
+    void Relaxed() {
+      relaxations_++;
+    }
 
     void RealigningBranch(int nops) {
       num_branches_realigned_++;
@@ -77,17 +80,20 @@ class BranchSeparatorPass : public MaoFunctionPass {
               num_branches_realigned_);
       fprintf(out, "  # Nops inserted : %d\n",
               nops_inserted_);
+      fprintf(out, "  # Relaxations: %d\n",
+              relaxations_);
     }
 
    private:
     int                num_branches_;
     int                num_branches_realigned_;
     int                nops_inserted_;
+    int                relaxations_;
   };
 
   BranchSeparatorStat *branch_separator_stat_;
 
-  bool IsBranch (MaoEntry *);
+  bool IsCondBranch (MaoEntry *);
   void InsertNopsBefore (Function *, MaoEntry *, int n);
   void AlignEntry(Function *, MaoEntry *);
   bool IsProfitable (Function *);
@@ -99,7 +105,7 @@ class BranchSeparatorPass : public MaoFunctionPass {
 // Options
 // --------------------------------------------------------------------
 MAO_OPTIONS_DEFINE(BRSEP, 3) {
-  OPTION_INT("min_branch_distance", 32, "Minimum distance required between "
+  OPTION_INT("min_branch_distance", 16, "Minimum distance required between "
                               "any two branches"),
   OPTION_BOOL("stat", false, "Collect and print(trace) "
                              "statistics about loops."),
@@ -143,16 +149,19 @@ bool BranchSeparatorPass::Go() {
   int offset = 0;
   int prev_branch_offset;
   prev_branch_offset = -1*min_branch_distance_;
-  bool change = false;
+  bool change = false, rerelax=false;
+  int alignment = (int)(log2(min_branch_distance_));
 
   for (SectionEntryIterator iter = function_->EntryBegin();
        iter != function_->EntryEnd();
        ++iter) {
-    if (IsBranch(*iter)) {
-      if(collect_stat_)
+    if (IsCondBranch(*iter)) {
+      if (collect_stat_)
         branch_separator_stat_->FoundBranch();
-      Trace(2, "Found branch  " );
-      if(offset - prev_branch_offset < min_branch_distance_) {
+      std::string op_str;
+      (*iter)->ToString(&op_str);
+      Trace(2, "Found branch  : %s", op_str.c_str() );
+      if((offset>>alignment) == (prev_branch_offset>>alignment) ) {
         int num_nops = min_branch_distance_ - (offset - prev_branch_offset);
         if(collect_stat_)
           branch_separator_stat_->RealigningBranch(num_nops);
@@ -160,8 +169,21 @@ bool BranchSeparatorPass::Go() {
         AlignEntry(function_, *iter);
         offset += num_nops;
         change = true;
+        rerelax = true;
       }
       prev_branch_offset = offset;
+    }
+    else if ((*iter)->IsDirective()) {
+      //If we have separated a branch and then we see a directive,
+      //we need to re-relax 
+      if (rerelax) {
+        MaoRelaxer::InvalidateSizeMap(function_->GetSection());
+        sizes_ = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
+        Trace (2, "Re-relaxing");
+        rerelax=false;
+        if (collect_stat_)
+          branch_separator_stat_->Relaxed();
+      }
     }
     offset += (*sizes_)[*iter];
   }
@@ -170,6 +192,8 @@ bool BranchSeparatorPass::Go() {
     MaoRelaxer::InvalidateSizeMap(function_->GetSection());
     //Align function begining based on min_branch_distance
     AlignEntry(function_, *(function_->EntryBegin()));
+    if (collect_stat_)
+      branch_separator_stat_->Relaxed();
   }
   return true;
 }
@@ -204,11 +228,11 @@ void BranchSeparatorPass::InsertNopsBefore (Function *function,
   entry->LinkBefore(align_entry);
 }
 
-bool BranchSeparatorPass::IsBranch (MaoEntry *entry) {
+bool BranchSeparatorPass::IsCondBranch (MaoEntry *entry) {
   if (!entry->IsInstruction())
     return false;
   InstructionEntry *ins_entry = entry->AsInstruction();
-  return ins_entry->HasTarget();
+  return ins_entry->IsCondJump();
 }
 
 // Is the transformation profitable for this function
@@ -224,7 +248,6 @@ bool BranchSeparatorPass::IsProfitable(Function *function) {
   const char *comma_pos;
 
 
-  Trace(2, "Function list = %s\n", function_list);
   if(strcmp (function_list, ""))
     {
       while ( (comma_pos = strchr (function_list, ',')) != NULL) {
