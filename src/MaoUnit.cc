@@ -1111,7 +1111,10 @@ void MaoEntry::AlignTo(int power_of_2_alignment,
 
   DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(power_of_2_alignment));
-  operands.push_back(new DirectiveEntry::Operand(fill_value));
+  if (fill_value == -1)
+    operands.push_back(new DirectiveEntry::Operand());
+  else
+    operands.push_back(new DirectiveEntry::Operand(fill_value));
   operands.push_back(new DirectiveEntry::Operand(max_bytes_to_skip));
   DirectiveEntry *align_entry = maounit_->CreateDirective(
     DirectiveEntry::P2ALIGN, operands,
