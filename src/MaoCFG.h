@@ -248,12 +248,12 @@ class CFG {
   // External jumps            - Jump to labels not found in the current
   //                             function.
 
-  // True if function have unresolved jumps
+  // True if function has unresolved jumps
   bool HasUnresolvedIndirectJump() const {
     return false;
   }
 
-  // True if functuion have external jumps
+  // True if functuion has external jumps
   bool HasExternalJump() const {
     return num_external_jumps_ > 0;
   }
