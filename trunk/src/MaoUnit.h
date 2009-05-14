@@ -123,7 +123,7 @@ class MaoEntry {
 
   // Align an entry via .p2align
   void AlignTo(int power_of_2_alignment, // 0: 1, 1: 2, 2: 4, 3: 8, 4: 16, 5: 32
-               int fill_value = 0,
+               int fill_value = -1,      // -1: no parameter, leave empty in .p2align
                int max_bytes_to_skip = 0);
 
   unsigned int line_number() const { return line_number_; }
