@@ -161,11 +161,29 @@ void MaoOptions::TimerStop(const char *pass_name) {
   entry->timer()->Stop();
 }
 
+static char *NextStringToken(const char *arg, const char **next, char *token_buff) {
+  const char *p = arg;
+  int i = 0;
+  while (*p != '"') {
+    if (*p == '\\') //Handle escape sequences
+      p++;
+    token_buff[i++] = *p++;
+  }
+  //Consume the last '"'
+  p++;
+  token_buff[i]='\0';
+  *next = p;
+  return token_buff;
+}
+
 static char *NextToken(const char *arg, const char **next, char *token_buff) {
   int i = 0;
   const char *p = arg;
+  if (*p == '"') //Handle quoted strings separately
+    return NextStringToken(arg+1, next, token_buff);
   if (*p == ',' || *p == ':' || *p == '=' || *p == '+')
     ++p;
+
   while (isalnum(*p) || (*p == '_') ||
          (*p == '/') ||
          (*p == '.') || (*p == '-'))
