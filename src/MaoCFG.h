@@ -236,9 +236,11 @@ class CFG {
   typedef std::set<LabelEntry *> JumpTableTargets;
   typedef std::map<LabelEntry *, JumpTableTargets *> LabelsToJumpTableTargets;
 
-  // Returns the target found in the jump table that starts
-  // with the jump_table label.
-  CFG::JumpTableTargets *GetJumptableTargets(LabelEntry *jump_table);
+  // Given a label, return all the targets found in the corresponing
+  // jump table. The function return True all entries could be understood,
+  // and False otherwise. The results are stored in out_targets.
+  bool GetJumptableTargets(LabelEntry *jump_table,
+                           CFG::JumpTableTargets **out_targets);
 
 
   // Unresolved indirect jumps - Indirect jumps in the function where the
