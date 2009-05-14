@@ -244,6 +244,9 @@ class AlignTinyLoops16 : public MaoFunctionPass {
   // Main entry point
   //
   bool Go() {
+    CFG *cfg = CFG::GetCFG(unit_, function_);
+    if (!cfg->IsWellFormed()) return true;
+
     loop_graph_ =  LoopStructureGraph::GetLSG(unit_, function_);
     if (!loop_graph_ ||
         !loop_graph_->NumberOfLoops()) return true;
