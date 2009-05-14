@@ -399,7 +399,8 @@ BasicBlock *CFGBuilder::BreakUpBBAtLabel(BasicBlock *bb, LabelEntry *label) {
 
 // Given a label at the start of a jump-table, return the targets found
 // in this jumptable.
-CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table) {
+bool CFG::GetJumptableTargets(LabelEntry *jump_table,
+                              CFG::JumpTableTargets **out_targets) {
   JumpTableTargets *targets = NULL;
   // We have two possibilities. 1. it is already processed and stored in the
   // map. 2. We have to manually go through the jump-table, and then add it to
@@ -432,6 +433,13 @@ CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table) {
 
       // Now we need to extract the target from the jumptable entry.
       LabelEntry *target_label = de->GetJumpTableTarget();
+      // Did we find a valid target?
+      if (target_label == NULL) {
+        // Nope, deallocate memory and return
+        delete found_targets;
+        *out_targets = NULL;
+        return false;
+      }
       found_targets->insert(target_label);
       ++e_iter;
     }
@@ -440,7 +448,8 @@ CFG::JumpTableTargets *CFG::GetJumptableTargets(LabelEntry *jump_table) {
     labels_to_jumptargets_[jump_table] = found_targets;
     targets = found_targets;
   }
-  return targets;
+  *out_targets = targets;
+  return true;
 }
 
 
@@ -491,8 +500,8 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
         prev->AsInstruction():NULL;
      if (entry->IsRegisterOperand(0) &&
         prev_inst &&
-        prev_inst->IsOpMov() &&    // Is previous instruction a move?
-        prev_inst->NumOperands() == 2 &&   // target register matches the jump
+        prev_inst->IsOpMov() &&             // Is previous instruction a move?
+        prev_inst->NumOperands() == 2 &&    // target register matches the jump
         prev_inst->IsRegisterOperand(1) &&  // register?
         prev_inst->IsMemOperand(0) &&
         prev_inst->GetRegisterOperand(1) == entry->GetRegisterOperand(0)) {
@@ -584,13 +593,20 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
     MAO_ASSERT(label_entry != NULL);
     // Given the start of the jump-table, get the list of possible targets
     // in this jump table.
-    CFG::JumpTableTargets *targets = CFG_->GetJumptableTargets(label_entry);
-    // Iterate over the targets and put them in the output iterator
-    for (CFG::JumpTableTargets::const_iterator t_iter = targets->begin();
-         t_iter != targets->end();
-         ++t_iter) {
-      *iter++ = (*t_iter)->name();
-      processed = true;
+    CFG::JumpTableTargets *targets;
+    if (CFG_->GetJumptableTargets(label_entry, &targets)) {
+      MAO_ASSERT(targets);
+      // Iterate over the targets and put them in the output iterator
+      for (CFG::JumpTableTargets::const_iterator t_iter = targets->begin();
+           t_iter != targets->end();
+           ++t_iter) {
+        *iter++ = (*t_iter)->name();
+        processed = true;
+      }
+    } else {
+      // We were unable to fully understand the target! Dont flag
+      // if as processed..
+      Trace(2, "Unable to identify the targets in jump table");
     }
     if (collect_stat_ && processed) cfg_stat_->FoundJumpTablePattern();
   }
@@ -629,6 +645,20 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
     insn_entry->ProfileToString(&s);
     insn_entry->SourceInfoToString(&s);
     Trace(2, "%s", s.c_str());
+
+//     // Dump the program!
+//     for (std::vector<SubSection *>::const_iterator iter = unit_->sub_sections_.begin();
+//          iter != unit_->sub_sections_.end(); ++iter) {
+//       SubSection *ss = *iter;
+//       for (SectionEntryIterator e_iter = ss->EntryBegin();
+//            e_iter != ss->EntryEnd();
+//            ++e_iter) {
+//         MaoEntry *e = *e_iter;
+//         std::string s;
+//         e->ToString(&s);
+//         Trace(2, "%s", s.c_str());
+//       }
+//     }
   }
 }
 

@@ -1141,8 +1141,8 @@ const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
       label_name = S_GET_NAME(expr->X_add_symbol);
       break;
     default:
-      MAO_ASSERT_MSG(false, "Expression not supported: %d.", expr->X_op);
-      //      return NULL;
+      // Expression not supported
+      return NULL;
   }
   return label_name;
 }
@@ -1494,29 +1494,36 @@ bool DirectiveEntry::IsJumpTableEntry() const {
   }
 }
 
+
+// Return label entry found, or NULL if unknown
 LabelEntry *DirectiveEntry::GetJumpTableTarget() {
+  LabelEntry *le = NULL;
   const char *label_name = NULL;
   MAO_ASSERT(IsJumpTableEntry());
-  MAO_ASSERT(NumOperands() == 1);
-  // Get the operand!
-  const Operand *op = GetOperand(0);
-  switch (op->type) {
-    case STRING:
-      label_name = op->data.str->c_str();
-      break;
-    case EXPRESSION:
-      // Get the label from expression
-      label_name = GetSymbolnameFromExpression(op->data.expr);
-      break;
-    default:
-      MAO_ASSERT_MSG(false, "Operand type not supported in jump-table.");
+
+  if (NumOperands() == 1) {
+    // Get the operand!
+    const Operand *op = GetOperand(0);
+    switch (op->type) {
+      case STRING:
+        label_name = op->data.str->c_str();
+        break;
+      case EXPRESSION:
+        // Get the label from expression
+        label_name = GetSymbolnameFromExpression(op->data.expr);
+        break;
+      default:
+        // Operand type (%d) not supported in jump-table.
+        return NULL;
+    }
+    // if we found a label, find the corresponding entry
+    if (label_name == NULL) {
+      // Unable to find label in jump table
+      return NULL;
+    }
+    // GetLabelEntry returns NULL if it cant find the entry.
+    le = maounit_->GetLabelEntry(label_name);
   }
-  // if we found a label, find the corresponding entry
-  if (label_name == NULL) {
-    MAO_ASSERT_MSG(false, "Unable to find label for jump-table.");
-  }
-  LabelEntry *le = maounit_->GetLabelEntry(label_name);
-  MAO_ASSERT_MSG(le != NULL, "Unable to find label: %s", label_name);
   return le;
 }
 
