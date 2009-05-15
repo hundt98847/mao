@@ -211,17 +211,30 @@ static const char *GobbleGarbage(const char *arg, const char **next) {
 static bool GetParam(const char *arg, const char **next, const char **param,
                      char *token_buff) {
   if (arg[0] == '(' || arg[0] == '[') {
-    char  delim = arg[0];
+    char left = arg[0];
+    char right;
+    if (arg[0] == '(') right = ')';
+    if (arg[0] == '[') right = ']';
 
-    ++arg;
-    *param = NextToken(arg, &arg, token_buff);
-
-    if (delim != ':') {
-      MAO_ASSERT_MSG(arg[0] == ')' || arg[0] == ']',
-                     "Ill formatted parameter to option: %s", arg);
-      ++arg;  // skip closing bracket
+    const char *p = ++arg;  // used for iteration
+    int count = 1;          // count open brackets
+    int i = 0;              // index into result token_buff
+    while (p && *p && count) {
+      if (*p == '\\') ++p;
+      if (*p == left) ++count;
+      if (*p == right) {
+        if (!--count)
+          break;
+      }
+      token_buff[i++] = *p;
+      ++p;
     }
-    *next = arg;
+    if (count)
+      MAO_ASSERT_MSG(false,
+                     "Ill-formatted parameter (paranthesis missing?): %s", arg);
+    token_buff[i]='\0';
+    *next = p;
+    *param = token_buff;
     return true;
   } else {
     *next = arg;
