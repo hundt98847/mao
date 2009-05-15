@@ -262,7 +262,7 @@ bool BranchSeparatorPass::IsProfitable(Function *function) {
 
   if(strcmp (function_list, ""))
     {
-      while ( (comma_pos = strchr (function_list, ',')) != NULL) {
+      while ( (comma_pos = strchr (function_list, ';')) != NULL) {
         Trace(2, "Function list = %s\n", function_list);
         int len = comma_pos - function_list;
         if(strncmp(func_name, function_list, len) == 0)
