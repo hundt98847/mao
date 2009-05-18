@@ -233,7 +233,7 @@ static bool GetParam(const char *arg, const char **next, const char **param,
       MAO_ASSERT_MSG(false,
                      "Ill-formatted parameter (paranthesis missing?): %s", arg);
     token_buff[i]='\0';
-    *next = p;
+    *next = ++p;  // Skip closing bracket
     *param = token_buff;
     return true;
   } else {
