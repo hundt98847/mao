@@ -411,6 +411,7 @@ class InstructionEntry : public MaoEntry {
   bool IsJump() const;
   bool IsCall() const;
   bool IsReturn() const;
+  bool IsAdd() const;
   bool IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
   bool IsPredicated() const;
 

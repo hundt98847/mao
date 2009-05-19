@@ -516,6 +516,88 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
        }
      }
   }
+
+
+
+  // This pattern appears in PIC code for x86_64
+  // TODO(martint): Check if it applies on other targets
+  // leaq LBL(%rip), %R_B         # inst3
+  // movl %R_D, %R_B_small        # inst2
+  // movslq (%R_B, %R_I, 4), %R_I # inst1
+  // addq   %R_B, %R_I            # inst0
+  // jump *%R_I                   #
+  if (entry->IsIndirectJump() && entry->IsRegisterOperand(0)) {
+    const reg_entry *r_ri = entry->GetRegisterOperand(0);
+    const reg_entry *r_rb = NULL;
+
+    // get the five instructions:
+    MaoEntry *prev_iter = entry->prev();
+    // insts will be populated with the 5 previous instructions,
+    // if they are instructions. Otherwise they will be set to null.
+    // This makes it easy to check for the above mentioned pattern.
+    InstructionEntry *insts[4] = {NULL, NULL, NULL, NULL};
+    bool good_so_far = true;
+    for (int i = 0; i < 4; ++i) {
+      if (prev_iter && prev_iter->IsInstruction()) {
+        insts[i] = prev_iter->AsInstruction();
+        prev_iter = prev_iter->prev();
+      } else {
+        break;
+      }
+    }
+    // Make sure they are all instructions
+    good_so_far = good_so_far &&
+        insts[0] != NULL &&
+        insts[1] != NULL &&
+        insts[2] != NULL &&
+        insts[3] != NULL;
+
+    // Check inst0
+    good_so_far = good_so_far &&
+        insts[0]->IsAdd() &&
+        insts[0]->NumOperands() == 2 &&
+        insts[0]->IsRegisterOperand(0) &&
+        insts[0]->IsRegisterOperand(1) &&
+        insts[0]->GetRegisterOperand(1) == r_ri;
+
+    if (good_so_far) {
+      r_rb = insts[0]->GetRegisterOperand(0);
+    }
+
+    // Check inst1
+    good_so_far = good_so_far &&
+        insts[1]->op() == OP_movslq &&
+        insts[1]->NumOperands() == 2 &&
+        insts[1]->IsRegisterOperand(1) &&
+        insts[1]->GetRegisterOperand(1) == r_ri;
+
+    // Check inst2
+    // TODO(martint): check the destination register using use/defs
+    good_so_far = good_so_far &&
+        insts[2]->IsOpMov() &&
+        insts[2]->NumOperands() == 2 &&
+        insts[2]->IsRegisterOperand(1) &&
+        insts[2]->GetRegisterOperand(1) != r_rb;
+
+    // Check inst 3
+    good_so_far = good_so_far &&
+        insts[3]->op() == OP_lea &&
+        insts[3]->NumOperands() == 2 &&
+        insts[3]->IsRegisterOperand(1) &&
+        insts[3]->GetRegisterOperand(1) == r_rb;
+
+    if (good_so_far) {
+      // get the label from the instruction
+      label_name = insts[3]->GetSymbolnameFromExpression(
+          insts[3]->instruction()->op[0].disps);
+      if (label_name) {
+        *out_label = unit_->GetLabelEntry(label_name);
+        MAO_ASSERT_MSG(*out_label != NULL,
+                       "Unable to find label: %s", label_name);
+        return true;
+      }
+    }
+  }
   return false;
 }
 
