@@ -1140,6 +1140,9 @@ const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
     case O_add:
       label_name = S_GET_NAME(expr->X_add_symbol);
       break;
+    case O_subtract:
+      label_name = S_GET_NAME(expr->X_add_symbol);
+      break;
     default:
       // Expression not supported
       return NULL;
@@ -1496,11 +1499,12 @@ bool DirectiveEntry::IsJumpTableEntry() const {
 
 
 // Return label entry found, or NULL if unknown
+// For PIC-code, the expression might be a subtraction. Then the symbol
+// needed to find the target is the first symbol.
 LabelEntry *DirectiveEntry::GetJumpTableTarget() {
   LabelEntry *le = NULL;
   const char *label_name = NULL;
   MAO_ASSERT(IsJumpTableEntry());
-
   if (NumOperands() == 1) {
     // Get the operand!
     const Operand *op = GetOperand(0);
@@ -2796,6 +2800,11 @@ bool InstructionEntry::IsReturn() const {
   };
   return IsInList(op(), rets, sizeof(rets)/sizeof(MaoOpcode));
 }
+
+bool InstructionEntry::IsAdd() const {
+  return op() == OP_add;;
+}
+
 
 //
 // Class: SubSection
