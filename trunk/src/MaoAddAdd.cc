@@ -74,6 +74,14 @@ class AddAddElimPass : public MaoFunctionPass {
       return true;
     }
 
+    if (imm1->X_op == O_symbol && imm2->X_op == O_symbol) {
+      imm2->X_op = O_add;
+      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
+      imm2->X_op_symbol  = imm1->X_add_symbol;
+      return true;
+    }
+
+
     if (imm1->X_op == O_constant && imm2->X_op == O_symbol) {
       imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
       return true;
