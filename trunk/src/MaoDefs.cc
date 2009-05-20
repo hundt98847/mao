@@ -109,6 +109,7 @@ void ReadRegisterTable() {
     if (!strcmp("eip", i386_regtab[i].reg_name))
       eip_props = r;
 
+    // SSE flag register
     if (!strcmp("mxcsr", i386_regtab[i].reg_name))
       break;
   }
@@ -172,6 +173,7 @@ void AddSubRegs(const char *r64, const char *r32,
 //
 void FillSubRegs(BitString *mask) {
   if (mask->IsNonNull() && !mask->IsUndef()) {
+    // Loop over bitstring (4 * 64 = 256 bits)
     for (int i = 0; i < 4; i++)
       if (mask->GetWord(i))
         for (int j = 0; j < 64; j++) {
@@ -273,7 +275,7 @@ BitString GetMaskForRegister(const char *reg) {
   return rprops->sub_regs();
 }
 
-// For an instruction, check def masks, chec
+// For an instruction, check def masks, check
 // operands and if they define a register, add
 // the masks to the results.
 //
@@ -285,7 +287,7 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
 
   // check 1st operand. If it is 8/16/32/64 bit operand, see whether
   // there are special register masks stored for insn.
-  if (insn->NumOperands()) {
+  if (insn->NumOperands() > 0) {
     if (insn->IsRegister8Operand(0) || insn->IsMem8Operand(0))
       mask = mask | e->reg_mask8;
     if (insn->IsRegister16Operand(0) || insn->IsMem16Operand(0))
