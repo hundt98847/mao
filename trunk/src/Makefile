@@ -9,8 +9,12 @@ PYTHONINCL=/usr/local/include/python2.5
 
 ifeq ($(OS),Linux)
  PYTHONLDOPTS=-Xlinker -export-dynamic 
+ DYNFLAGS=-fPIC -shared
+ DYNLIBEXT=so
 else
  PYTHONLDOPTS=
+ DYNFLAGS=-fPIC -dynamiclib -undefined dynamic_lookup
+ DYNLIBEXT=dylib
 endif
 
 # disable PYTHON integration for now
@@ -125,7 +129,7 @@ GAS_CONFIG_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_CONFIG_SRC)))
 OPCODES_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(OPCODES_SRC)))
 BINUTILS_OBJS=$(GAS_OBJS) $(GAS_CONFIG_OBJS) $(OPCODES_OBJS)
 PLUGIN_OBJS=$(patsubst %.cc,$(OBJDIR)/%.o,$(PLUGIN_CCSRCS))
-PLUGIN_TARGETS=$(patsubst %,$(BINDIR)/%-$(TARGET).so,$(PLUGINS))
+PLUGIN_TARGETS=$(patsubst %,$(BINDIR)/%-$(TARGET).$(DYNLIBEXT),$(PLUGINS))
 
 OBJS=							\
 	$(BINUTILS_OBJS)				\
@@ -189,8 +193,8 @@ mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
 $(BINDIR)/mao-$(TARGET): stamp-bin $(OBJDIR)/gen-opcodes.h $(OBJS)
 	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -rdynamic -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil
 
-$(PLUGIN_TARGETS) : $(BINDIR)/%-$(TARGET).so : $(OBJDIR)/%.o stamp-bin
-	$(CC) $(CFLAGS) -fPIC -shared -o $@ $<
+$(PLUGIN_TARGETS) : $(BINDIR)/%-$(TARGET).$(DYNLIBEXT) : $(OBJDIR)/%.o stamp-bin
+	$(CC) $(CFLAGS) $(DYNFLAGS) -o $@ $<
 
 .PHONY : clean allclean all mao-$(TARGET)
 
