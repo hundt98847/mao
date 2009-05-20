@@ -313,10 +313,12 @@ static struct insn_template FindTemplate(const char *opcode,
   return i386_optab[0];  // Should never happen;
 }
 
-InstructionEntry *MaoUnit::CreateInstruction(const char *opcode) {
+InstructionEntry *MaoUnit::CreateInstruction(const char *opcode_str,
+                                             unsigned int base_opcode,
+                                             Function *function) {
   i386_insn insn;
   memset(&insn, 0, sizeof(i386_insn));
-  insn.tm = FindTemplate("nop", 0x90);
+  insn.tm = FindTemplate(opcode_str, base_opcode);
 
   enum flag_code flag;
   switch (arch_) {
@@ -332,11 +334,18 @@ InstructionEntry *MaoUnit::CreateInstruction(const char *opcode) {
   }
 
   InstructionEntry *e = new InstructionEntry(&insn, flag, 0, NULL, this);
+  SubSection *subsection = function->GetSubSection();
+  if (function) {
+    entry_to_function_[e] = function;
+  }
+  if (subsection) {
+    entry_to_subsection_[e] = subsection;
+  }
   return e;
 }
 
-InstructionEntry *MaoUnit::CreateNop() {
-  InstructionEntry *e = CreateInstruction("nop");
+InstructionEntry *MaoUnit::CreateNop(Function *function) {
+  InstructionEntry *e = CreateInstruction("nop", 0x90, function);
 
   // next free ID for the entry
   EntryID entry_index = entry_vector_.size();
@@ -349,7 +358,47 @@ InstructionEntry *MaoUnit::CreateNop() {
   return e;
 }
 
-LabelEntry *MaoUnit::CreateLabel(const char *labelname) {
+InstructionEntry *MaoUnit::CreateUncondJump(LabelEntry *label, Function *function) {
+  InstructionEntry *e = CreateInstruction("jmp", 0xeb, function);
+  expressionS *disp_expression = (expressionS *)xmalloc(sizeof(expressionS));
+  symbolS *symbolP;
+
+  i386_insn *insn = e->instruction();
+  insn->operands = 1;
+  insn->disp_operands = 1;
+  insn->mem_operands = 1;
+
+  //Set the displacement fileds
+  insn->types[0].bitfield.disp32 = 1;
+  insn->types[0].bitfield.disp32s = 1;
+
+  for (int j = 0; j < MAX_OPERANDS; j++)
+    insn->reloc[j] = NO_RELOC;
+
+  symbolP = symbol_find_or_make (label->name());
+
+  disp_expression->X_op = O_symbol;
+  disp_expression->X_add_symbol = symbolP;
+  disp_expression->X_add_number = 0;
+
+  insn->op[0].disps = disp_expression;
+
+
+
+  // next free ID for the entry
+  EntryID entry_index = entry_vector_.size();
+  e->set_id(entry_index);
+
+  e->set_op(OP_jmp);
+
+  // Add the entry to the compilation unit
+  entry_vector_.push_back(e);
+  return e;
+}
+
+LabelEntry *MaoUnit::CreateLabel(const char *labelname,
+                                 Function *function,
+                                 SubSection *subsection) {
   LabelEntry *l = new LabelEntry(labelname, 0, NULL, this);
 
   // next free ID for the entry
@@ -358,6 +407,14 @@ LabelEntry *MaoUnit::CreateLabel(const char *labelname) {
 
   // Add the entry to the compilation unit
   entry_vector_.push_back(l);
+
+  if (function) {
+    entry_to_function_[l] = function;
+  }
+  if (subsection) {
+    entry_to_subsection_[l] = subsection;
+  }
+
   return l;
 }
 
@@ -1058,11 +1115,13 @@ std::string &MaoEntry::SourceInfoToString(std::string *out) const {
 void MaoEntry::LinkBefore(MaoEntry *entry) {
   entry->set_next(this);
   entry->set_prev(prev());
+
   if (prev()) {
     prev()->set_next(entry);
   } else {
     // TODO(rhundt): Set "first" pointer of everything to entry
   }
+  this->set_prev(entry);
 
   // Do we need to update the function?
   Function *function = maounit_->GetFunction(this);

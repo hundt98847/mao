@@ -77,7 +77,7 @@ class LongInstructionsSplitPass : public MaoFunctionPass {
     for (std::list<InstructionEntry *>::iterator it = split_points.begin();
          it != split_points.end(); ++it) {
       for (int i = 0; i < fill_; i++) {
-        InstructionEntry *nop = unit_->CreateNop();
+        InstructionEntry *nop = unit_->CreateNop(function_);
         (*it)->LinkAfter(nop);
       }
     }
