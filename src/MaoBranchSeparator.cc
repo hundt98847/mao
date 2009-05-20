@@ -29,6 +29,8 @@
 #include "MaoPasses.h"
 #include "MaoRelax.h"
 
+#define FETCH_LINE_SIZE 16
+
 // Pass that finds paths in inner loops that fits in 4 16-byte lines
 // and alligns all (chains of) basicb locks within the paths.
 class BranchSeparatorPass : public MaoFunctionPass {
@@ -50,7 +52,9 @@ class BranchSeparatorPass : public MaoFunctionPass {
   //Required distance between branches
   int min_branch_distance_;
 
+  bool last_byte_;
   bool profitable;
+
 
   class BranchSeparatorStat : public Stat {
    public:
@@ -106,7 +110,7 @@ class BranchSeparatorPass : public MaoFunctionPass {
 
   bool IsCondBranch (MaoEntry *);
   void InsertNopsBefore (Function *, MaoEntry *, int n);
-  void AlignEntry(Function *, MaoEntry *);
+  void AlignEntry(Function *, MaoEntry *, bool);
   bool IsProfitable (Function *);
 
 };
@@ -115,11 +119,13 @@ class BranchSeparatorPass : public MaoFunctionPass {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(BRSEP, 3) {
+MAO_OPTIONS_DEFINE(BRSEP, 4) {
   OPTION_INT("min_branch_distance", 16, "Minimum distance required between "
                               "any two branches"),
   OPTION_BOOL("stat", false, "Collect and print(trace) "
                              "statistics about loops."),
+  OPTION_BOOL("last_byte", false, "Align based on the "
+                             "last byte of the branch"),
   OPTION_STR("function_list", "",
              "A comma separated list of mangled function names"
              " on which this pass is applied."
@@ -131,6 +137,7 @@ BranchSeparatorPass::BranchSeparatorPass(MaoOptionMap *options, MaoUnit *mao,
     : MaoFunctionPass("BRSEP", options, mao, function), sizes_(NULL) {
 
   collect_stat_      = GetOptionBool("stat");
+  last_byte_= GetOptionBool("last_byte");
   min_branch_distance_ = GetOptionInt("min_branch_distance");
   profitable = IsProfitable (function);
   Trace(2, "Mao branch separator");
@@ -162,27 +169,35 @@ bool BranchSeparatorPass::Go() {
   prev_branch_offset = -1*min_branch_distance_;
   bool change = false, rerelax=false;
   int alignment = (int)(log2(min_branch_distance_));
+  char prev_branch_str[1024];
 
   for (SectionEntryIterator iter = function_->EntryBegin();
        iter != function_->EntryEnd();
        ++iter) {
+    int size = (*sizes_)[*iter];
+
     if (IsCondBranch(*iter)) {
       if (collect_stat_)
         branch_separator_stat_->FoundBranch();
       std::string op_str;
       (*iter)->ToString(&op_str);
       Trace(2, "Found branch  : %s", op_str.c_str() );
-      if((offset>>alignment) == (prev_branch_offset>>alignment) ) {
+      if( (!last_byte_ && (offset>>alignment) == (prev_branch_offset>>alignment)) ||
+          (last_byte_ && ((offset+size-1)>>alignment == (prev_branch_offset>>alignment)))) {
         int num_nops = min_branch_distance_ - (offset - prev_branch_offset);
         if(collect_stat_)
           branch_separator_stat_->RealigningBranch(num_nops);
-        Trace(2, "Inserting %d nops ", num_nops );
-        AlignEntry(function_, *iter);
+        Trace(2, "Inserting %d nops between \"%s\" and \"%s\"", num_nops,  prev_branch_str, op_str.c_str());
+        bool insert_jump = num_nops >= (FETCH_LINE_SIZE + 2);
+        AlignEntry(function_, *iter, insert_jump);
         offset += num_nops;
         change = true;
         rerelax = true;
       }
       prev_branch_offset = offset;
+      strcpy (prev_branch_str, op_str.c_str());
+      if (last_byte_)
+        prev_branch_offset += size-1;
     }
     else if ((*iter)->IsDirective()) {
       //If we have separated a branch and then we see a directive,
@@ -196,14 +211,14 @@ bool BranchSeparatorPass::Go() {
           branch_separator_stat_->Relaxed();
       }
     }
-    offset += (*sizes_)[*iter];
+    offset += size;
   }
   if(change) {
     if(rerelax)
       //Relaxation has to be performed again
       MaoRelaxer::InvalidateSizeMap(function_->GetSection());
     //Align function begining based on min_branch_distance
-    AlignEntry(function_, *(function_->EntryBegin()));
+    AlignEntry(function_, *(function_->EntryBegin()), false);
     if (collect_stat_)
       branch_separator_stat_->Relaxed();
   }
@@ -211,8 +226,8 @@ bool BranchSeparatorPass::Go() {
 }
 
 //Use .p2align
-void BranchSeparatorPass::AlignEntry(Function *function, MaoEntry *entry) {
-  SubSection *ss = function_->GetSubSection();
+void BranchSeparatorPass::AlignEntry(Function *function, MaoEntry *entry, bool insert_jump=false) {
+  SubSection *ss = function->GetSubSection();
   DirectiveEntry::OperandVector operands;
   int alignment = (int)(log2(min_branch_distance_));
   operands.push_back(new DirectiveEntry::Operand(alignment));
@@ -220,8 +235,27 @@ void BranchSeparatorPass::AlignEntry(Function *function, MaoEntry *entry) {
   operands.push_back(new DirectiveEntry::Operand(min_branch_distance_-1));
   DirectiveEntry *align_entry = unit_->CreateDirective(
       DirectiveEntry::P2ALIGN, operands,
-      function_, ss);
-  entry->LinkBefore(align_entry);
+      function, ss);
+  if (insert_jump) {
+    //Create a new label
+    
+    LabelEntry *label_entry = unit_->CreateLabel(
+            MaoUnit::BBNameGen::GetUniqueName(),
+            function,
+            ss
+            );
+    Trace (2, "Created new label: %s\n", label_entry->name());
+    InstructionEntry *jump_entry = unit_->CreateUncondJump(label_entry, function);
+    std::string op_str;
+    jump_entry->ToString(&op_str);
+    Trace (2, "Created new jump instruction: %s\n", op_str.c_str());
+
+    entry->LinkBefore(label_entry);
+    label_entry->LinkBefore(jump_entry);
+    label_entry->LinkBefore(align_entry);
+  }
+  else
+    entry->LinkBefore(align_entry);
 
 }
 //Use .p2align
@@ -263,7 +297,6 @@ bool BranchSeparatorPass::IsProfitable(Function *function) {
   if(strcmp (function_list, ""))
     {
       while ( (comma_pos = strchr (function_list, ';')) != NULL) {
-        Trace(2, "Function list = %s\n", function_list);
         int len = comma_pos - function_list;
         if(strncmp(func_name, function_list, len) == 0)
           return true;

@@ -615,9 +615,13 @@ class MaoUnit {
   LabelEntry *GetLabelEntry(const char *label_name) const;
 
   // Instruction Creators
-  InstructionEntry *CreateInstruction(const char *opcode);
-  InstructionEntry *CreateNop();
-  LabelEntry *CreateLabel(const char *labelname);
+  InstructionEntry *CreateInstruction(const char *opcode,
+                                      unsigned int base_opcode,
+                                      Function *function);
+  InstructionEntry *CreateNop(Function *function);
+  InstructionEntry *CreateUncondJump(LabelEntry *l, Function *function);
+
+  LabelEntry *CreateLabel(const char *labelname, Function* function, SubSection* ss);
   DirectiveEntry *CreateDirective(DirectiveEntry::Opcode op,
                                   const DirectiveEntry::OperandVector &operands,
                                   Function *function,

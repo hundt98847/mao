@@ -62,7 +62,7 @@ class NopInizerPass : public MaoFunctionPass {
       } else {
         int num = (int) (1.0 * thick_ * (rand() / (RAND_MAX + 1.0)));
         for (int i = 0; i < num; i++) {
-          InstructionEntry *nop = unit_->CreateNop();
+          InstructionEntry *nop = unit_->CreateNop(function_);
           entry->LinkBefore(nop);
         }
         count_down = (int) (1.0 * density_ * (rand() / (RAND_MAX + 1.0)));

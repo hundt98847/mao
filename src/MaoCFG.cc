@@ -708,7 +708,9 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
       } else {
         // Add a label before p_iter if necessary
         LabelEntry *l = unit_->CreateLabel(
-            MaoUnit::BBNameGen::GetUniqueName());
+            MaoUnit::BBNameGen::GetUniqueName(),
+            function_,
+            function_->GetSubSection());
         l->set_from_assembly(false);
         (*p_iter)->LinkBefore(l);
         *iter++ = l->name();
