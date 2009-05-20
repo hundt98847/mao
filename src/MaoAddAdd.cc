@@ -36,28 +36,83 @@ class AddAddElimPass : public MaoFunctionPass {
   AddAddElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
       : MaoFunctionPass("ADDADD", options, mao, function) { }
 
-  bool IsAddI(InstructionEntry *insn) {
+  bool IsAddIOrSubI(InstructionEntry *insn) {
     return ((insn->op() == OP_add || insn->op() == OP_sub)  &&
+            insn->NumOperands() == 2 &&
             insn->IsImmediateOperand(0) &&
             insn->IsRegisterOperand(1));
   }
 
+  // Update the imm value in inst2 to the hold the sum of inst1 and inst2
+  // Currently only handles simple immediate values. If the update was done
+  // return True, otherwise False.
+  // TODO(martint): Support more types of immediate values
+  // TODO(martint): Use the MaoDefs to find out possible op for immedate
+  //                values instead of always using index 0.
+  bool UpdateImmediate(InstructionEntry *inst1, InstructionEntry *inst2) {
+    if (inst1->NumOperands() < 1 || inst2->NumOperands() < 1) {
+      return false;
+    }
+    if (!(inst1->IsImmediateOperand(0) && inst2->IsImmediateOperand(0))) {
+      return false;
+    }
+
+    // Now get the immediate value
+    expressionS *imm1 = inst1->instruction()->op[0].imms;
+    expressionS *imm2 = inst2->instruction()->op[0].imms;
+
+    // supported variants:
+    if (imm1->X_op == O_constant && imm2->X_op == O_constant) {
+      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
+      return true;
+    }
+
+    if (imm1->X_op == O_symbol && imm2->X_op == O_constant) {
+      imm2->X_op = O_symbol;
+      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
+      imm2->X_add_symbol = imm1->X_add_symbol;
+      return true;
+    }
+
+    if (imm1->X_op == O_constant && imm2->X_op == O_symbol) {
+      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
+      return true;
+    }
+
+    return false;
+  }
+
   // Add add  pattern finder:
   //     add/sub rX, IMM1
+  //     ()*
   //     add/sub rX, IMM2
   bool Go() {
     CFG *cfg = CFG::GetCFG(unit_, function_);
 
+    Trace(3, "Iterate over all basic blocks in function %s",
+          function_->name().c_str());
     FORALL_CFG_BB(cfg, it) {
       MaoEntry *first = (*it)->GetFirstInstruction();
       if (!first) continue;
 
-      FORALL_BB_ENTRY(it,entry) {
+      // The algorithm used is to identify an addi/subi instruction
+      // and then move upwards (using prev()) until we either
+      // find a new redundant addi/subi instruction, or
+      // an instruction that breaks the pattern.
+      FORALL_BB_ENTRY(it, entry) {
+        // Only check instructions
         if (!(*entry)->IsInstruction()) continue;
+
         InstructionEntry *insn = (*entry)->AsInstruction();
+
+        // The first instruction can be the last instruction of
+        // the pattern we are looking for.
         if (first == insn) continue;
 
-        if (IsAddI(insn)) {
+        // This is possibly the end of the pattern. Start looking
+        // at previuos entries.
+        if (IsAddIOrSubI(insn)) {
+          // Get the def mask of the instructions
           BitString imask = GetRegisterDefMask(insn);
 
           InstructionEntry *prev = insn->prevInstruction();
@@ -66,35 +121,55 @@ class AddAddElimPass : public MaoFunctionPass {
             if (pmask.IsUndef()) {  // insn with unknown side effects, break
               break;
             }
-
-            // if this is an add and the same registers..
-            // then we can fix this.
-            if (IsAddI(prev)) {
+            // Check if the this instruction ends the pattern
+            if (IsAddIOrSubI(prev)) {
               if (insn->GetRegisterOperand(1) == prev->GetRegisterOperand(1)) {
-                Trace(1, "Found two immediate adds");
-                if (tracing_level() >= 1) {
+                Trace(2, "Addi/Subi pattern identified.");
+                if (tracing_level() >= 2) {
                   (*it)->Print(stderr, prev, insn);
+                }
+                // Solve the trivial case when there is no instruction between
+                // the adds/subs, and both of the expressions are constant
+                // numbers.
+                if (insn->prev() == prev) {
+                  if (!UpdateImmediate(prev, insn)) {
+                    MAO_ASSERT_MSG(false,
+                                   "Unable to update immediate value.");
+                  }
+                  unit_->DeleteEntry(prev);
+                  Trace(2, "Removed redundant add/sub instruction and updated "
+                        "immediate value.");
                 }
                 break;
               }
             }
+            // The instruction did not end the pattern, now check if
+            // we should continue looking up or not.
 
-            // Make sure there is no def conflict
+            // There is a conflict in the defs
             if (!(pmask & imask).IsNull()) {
               break;
             }
 
+            // The register is used here. In order to remove any of the add/sub
+            // instruction, this will probably need to be updated. The simple
+            // solution is to stop check here and look for another pattern
+            // TODO(martint): Check if there is any use of the register here!
+
+            // Check for instruction we dont handle.
             if (prev->IsPredicated() ||  // bail on cmoves...
                 prev->op() == OP_bswap ||
                 prev->op() == OP_call  ||
-                prev->op() == OP_lcall) { // bail on these, don't understand em
+                prev->op() == OP_lcall) {  // bail on these, don't understand em
               break;
             }
-            if (prev == first)  // reached top of basic block
+
+            // Stop at the top of the bsic block.
+            if (prev == first)
               break;
             prev = prev->prevInstruction();
-          } // prev
-        } // IsAdd()
+          }  // prev
+        }  // IsAddIOrSubI()
       }  // Entries
     }  // BB
     return true;
