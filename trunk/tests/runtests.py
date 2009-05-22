@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 # -*- mode: python -*-
 
 """Verification script used to test MAO. The script takes assembly file as input
