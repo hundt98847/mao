@@ -51,6 +51,9 @@ class InstructionEntry;
 
 void InitRegisters();
 BitString  GetRegisterDefMask(InstructionEntry *insn);
+
+BitString  GetCallingConventionDefMask();
+
 void       PrintRegisterDefMask(FILE *f, BitString mask,
                                 const char *title = NULL);
 BitString  GetMaskForRegister(const char *reg);
