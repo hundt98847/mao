@@ -1,5 +1,5 @@
-#Option: --mao=ADDADD=trace
-#grep \[ADDADD\].*Found two immediate adds 3
+#Option: --mao=ADDADD=trace[2]
+#grep \[ADDADD\].*Addi/Subi pattern identified 3
 #
 # Three patterns should match in this code
 # 
