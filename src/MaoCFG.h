@@ -327,11 +327,19 @@ class CFGBuilder : public MaoFunctionPass {
   template <class OutputIterator>
   void GetTargets(MaoEntry *entry, OutputIterator iter, bool *va_arg_targets);
 
+  bool IsTablePattern1(InstructionEntry *entry,
+                       LabelEntry **out_label) const;
+  bool IsTablePattern2(InstructionEntry *entry,
+                       LabelEntry **out_label) const;
+  bool IsTablePattern3(InstructionEntry *entry,
+                       LabelEntry **out_label) const;
+  bool IsTablePattern4(InstructionEntry *entry,
+                       LabelEntry **out_label) const;
   bool IsTableBasedJump(InstructionEntry *entry,
-                        LabelEntry **out_label);
+                        LabelEntry **out_label) const;
   bool IsVaargBasedJump(InstructionEntry *entry,
-                        std::vector<MaoEntry *> *pattern);
-  bool IsTailCall(InstructionEntry *entry);
+                        std::vector<MaoEntry *> *pattern) const;
+  bool IsTailCall(InstructionEntry *entry) const;
 
   CFG      *CFG_;
   BasicBlockID  next_id_;

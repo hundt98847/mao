@@ -309,6 +309,23 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
   return mask;
 }
 
+// Returns a mask for the live in registers.
+// TODO(martint): Take the ABI into considerations
+BitString GetCallingConventionDefMask() {
+  BitString mask;
+  const char *amd64_abi_input_regs[] = {
+    "rdi", "rsi", "rdx", "rcx", "r8", "r9", "xmm0", "xmm1", "xmm2",
+    "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"};
+  for (unsigned int i = 0;
+       i < sizeof(amd64_abi_input_regs)/sizeof(const char *);
+       ++i) {
+    MAO_ASSERT(!(mask == (mask | GetMaskForRegister(amd64_abi_input_regs[i]))));
+    mask = mask | GetMaskForRegister(amd64_abi_input_regs[i]);
+  }
+  return mask;
+}
+
+
 // Print register mask. Caution: Pretty slow implementation
 //
 void PrintRegisterDefMask(FILE *f, BitString mask, const char *title) {

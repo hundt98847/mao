@@ -455,7 +455,7 @@ bool CFG::GetJumptableTargets(LabelEntry *jump_table,
 
 // A tail call is here defined as a indirect jump
 // direcly after a leave instruction.
-bool CFGBuilder::IsTailCall(InstructionEntry *entry) {
+bool CFGBuilder::IsTailCall(InstructionEntry *entry) const {
   MaoEntry *prev = entry->prev();
   return (entry->IsIndirectJump() &&
           prev &&
@@ -463,23 +463,14 @@ bool CFGBuilder::IsTailCall(InstructionEntry *entry) {
           prev->AsInstruction()->op() == OP_leave);
 }
 
-// Does this entry jump based on a jumptable? If so, return true and return the
-// label identifying the jump table in out_label. Otherwise return false and
-// return NULL in out_label.
-// e.g.:
+// Identifies the pattern below. If it is found, it returns
+// true and puts the label LBL in out_label.
+//
 //  jmp  .L112(,%rax,8)
-// or:
-//  movq .L112(,%rax,8), %REG
-//  jmp  *%REG
-bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
-                                  LabelEntry **out_label) {
-  *out_label = NULL;
-  if (!entry->IsIndirectJump()) return false;
-
-  const char *label_name = NULL;
-
-  //  jmp  .L112(,%rax,8)
+bool CFGBuilder::IsTablePattern1(InstructionEntry *entry,
+                                 LabelEntry **out_label) const {
   if (entry->IsMemOperand(0)) {
+    const char *label_name = NULL;
     // Get the name of the label from the expression
     label_name = entry->GetSymbolnameFromExpression(
         entry->instruction()->op[0].disps);
@@ -490,9 +481,16 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
       return true;
     }
   }
+  return false;
+}
 
-  //  movq .L112(,%rax,8), %REG
-  //  jmp  *%REG
+// Identifies the pattern below. If it is found, it returns
+// true and puts the label LBL in out_label.
+//
+//  movq .L112(,%rax,8), %REG
+//  jmp  *%REG
+bool CFGBuilder::IsTablePattern2(InstructionEntry *entry,
+                                 LabelEntry **out_label) const {
   if (entry->IsIndirectJump() && entry->IsRegisterOperand(0)) {
     // Get the name of the label from the expression
     MaoEntry *prev = entry->prev();
@@ -506,6 +504,7 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
         prev_inst->IsMemOperand(0) &&
         prev_inst->GetRegisterOperand(1) == entry->GetRegisterOperand(0)) {
        // Now get the label from the expression, if we found any!
+       const char *label_name = NULL;
        label_name = prev_inst->GetSymbolnameFromExpression(
            prev_inst->instruction()->op[0].disps);
        if (label_name) {
@@ -516,16 +515,20 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
        }
      }
   }
+  return false;
+}
 
-
-
-  // This pattern appears in PIC code for x86_64
-  // TODO(martint): Check if it applies on other targets
-  // leaq LBL(%rip), %R_B         # inst3
-  // movl %R_D, %R_B_small        # inst2
-  // movslq (%R_B, %R_I, 4), %R_I # inst1
-  // addq   %R_B, %R_I            # inst0
-  // jump *%R_I                   #
+// Identifies the pattern below. If it is found, it returns
+// true and puts the label LBL in out_label.
+//
+// This pattern appears in PIC code for x86_64
+// leaq LBL(%rip), %R_B         #
+// (movl   %R_D, %R_B_small)/(movzbl %R_D, %R_B_small) # inst2 * optional
+// movslq (%R_B, %R_I, 4), %R_I # inst1
+// addq   %R_B, %R_I            # inst0
+// jump *%R_I                   #
+bool CFGBuilder::IsTablePattern3(InstructionEntry *entry,
+                                 LabelEntry **out_label) const {
   if (entry->IsIndirectJump() && entry->IsRegisterOperand(0)) {
     const reg_entry *r_ri = entry->GetRegisterOperand(0);
     const reg_entry *r_rb = NULL;
@@ -571,25 +574,29 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
         insts[1]->IsRegisterOperand(1) &&
         insts[1]->GetRegisterOperand(1) == r_ri;
 
-    // Check inst2
-    // TODO(martint): check the destination register using use/defs
-    good_so_far = good_so_far &&
-        insts[2]->IsOpMov() &&
-        insts[2]->NumOperands() == 2 &&
-        insts[2]->IsRegisterOperand(1) &&
-        insts[2]->GetRegisterOperand(1) != r_rb;
+    // check for the optional mov instructino
+    int current_inst = 2;
+    if (good_so_far) {
+      if ((insts[2]->IsOpMov() ||
+           insts[2]->op() == OP_movzbl) &&
+          insts[2]->NumOperands() == 2 &&
+          insts[2]->IsRegisterOperand(1) &&
+          insts[2]->GetRegisterOperand(1) != r_rb) {
+        current_inst = 3;
+      }
+    }
 
-    // Check inst 3
     good_so_far = good_so_far &&
-        insts[3]->op() == OP_lea &&
-        insts[3]->NumOperands() == 2 &&
-        insts[3]->IsRegisterOperand(1) &&
-        insts[3]->GetRegisterOperand(1) == r_rb;
+        insts[current_inst]->op() == OP_lea &&
+        insts[current_inst]->NumOperands() == 2 &&
+        insts[current_inst]->IsRegisterOperand(1) &&
+        insts[current_inst]->GetRegisterOperand(1) == r_rb;
 
     if (good_so_far) {
+      const char *label_name = NULL;
       // get the label from the instruction
-      label_name = insts[3]->GetSymbolnameFromExpression(
-          insts[3]->instruction()->op[0].disps);
+      label_name = insts[current_inst]->GetSymbolnameFromExpression(
+          insts[current_inst]->instruction()->op[0].disps);
       if (label_name) {
         *out_label = unit_->GetLabelEntry(label_name);
         MAO_ASSERT_MSG(*out_label != NULL,
@@ -597,6 +604,131 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
         return true;
       }
     }
+  }
+  return false;
+}
+
+// Identifies the pattern below. If it is found, it returns
+// true and puts the label LBL in out_label.
+// *
+// leaq LBL(%rip), %R_B         # ????
+// *
+// movslq (%R_B, %R_I, 4), %R_I # inst1
+// addq   %R_B, %R_I            # inst0
+// jump *%R_I                   #
+// - Looks up until the end of the function for the leaq instruction.
+// - makes sure that leaq is the only instruction the defines R_B
+// - make sure that R_B is not live in. We want to be sure that
+//   the leaq is the only way the value can get defined.
+bool CFGBuilder::IsTablePattern4(InstructionEntry *entry,
+                                 LabelEntry **out_label) const {
+  if (entry->IsIndirectJump() && entry->IsRegisterOperand(0)) {
+    const reg_entry *r_ri = entry->GetRegisterOperand(0);
+    const reg_entry *r_rb = NULL;
+    BitString rmask;
+
+    // get the two instructions
+    MaoEntry *prev_iter = entry->prev();
+    // insts will be populated with the 5 previous instructions,
+    // if they are instructions. Otherwise they will be set to null.
+    // This makes it easy to check for the above mentioned pattern.
+    InstructionEntry *insts[2] = {NULL, NULL};
+    for (int i = 0; i < 2; ++i) {
+      if (prev_iter && prev_iter->IsInstruction()) {
+        insts[i] = prev_iter->AsInstruction();
+        prev_iter = prev_iter->prev();
+      } else {
+        break;
+      }
+    }
+
+    bool pattern_match =
+        insts[0] != NULL &&
+        insts[1] != NULL &&
+        insts[0]->IsAdd() &&
+        insts[0]->NumOperands() == 2 &&
+        insts[0]->IsRegisterOperand(0) &&
+        insts[0]->IsRegisterOperand(1) &&
+        insts[0]->GetRegisterOperand(1) == r_ri;
+
+    if (pattern_match) {
+      r_rb = insts[0]->GetRegisterOperand(0);
+      // Make sure that r_rb is not an input-register
+      // according to the ABI.
+      // The AMD64 ABI convertion used on Linux uses the following registers
+      // %rdi, %rsi, %rdx, %rcv, %r8 and %r9 (and also their subregisters)
+      BitString abi_calling_convention_mask = GetCallingConventionDefMask();
+      const char *reg = r_rb->reg_name;
+      rmask = GetMaskForRegister(reg);
+      if (!(abi_calling_convention_mask & rmask).IsNull()) {
+        Trace(3, "Found a conflict between input paramter register and r_rb");
+        return false;
+      }
+    }
+    // Check inst1
+    pattern_match = pattern_match &&
+        insts[1]->op() == OP_movslq &&
+        insts[1]->NumOperands() == 2 &&
+        insts[1]->IsRegisterOperand(1) &&
+        insts[1]->GetRegisterOperand(1) == r_ri;
+
+    // Loop through the function to look for any definitions of
+    // r_b. If there is one, this is our jump table!
+
+    if (pattern_match) {
+      MaoEntry *e_iter;
+      // TODO(martint): move through the whole function, not just up.
+      e_iter = entry;
+      Function *current_function = unit_->GetFunction(entry);
+      InstructionEntry *def_inst = NULL;
+      int num_def_inst = 0;
+      while (e_iter != NULL && current_function == unit_->GetFunction(e_iter)) {
+        // Check if instruction is defining register r_b
+        if (e_iter->IsInstruction()) {
+          InstructionEntry *i_entry = e_iter->AsInstruction();
+          BitString imask = GetRegisterDefMask(i_entry);
+          if (imask.IsUndef()) {
+            return false;
+          }
+          // Now get the bitmask for register..
+          if (!(imask & rmask).IsNull()) {
+            // Conflict!
+            def_inst = i_entry;
+            ++num_def_inst;
+          }
+        }
+        e_iter = e_iter->prev();
+      }
+      if (num_def_inst == 1) {
+        MAO_ASSERT(def_inst != NULL);
+        const char *label_name = NULL;
+        label_name = def_inst->GetSymbolnameFromExpression(
+            def_inst->instruction()->op[0].disps);
+        if (label_name) {
+          *out_label = unit_->GetLabelEntry(label_name);
+          MAO_ASSERT_MSG(*out_label != NULL,
+                         "Unable to find label: %s", label_name);
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// Does this entry jump based on a jumptable? If so, return true and return the
+// label identifying the jump table in out_label. Otherwise return false and
+// return NULL in out_label.
+bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
+                                  LabelEntry **out_label) const {
+  *out_label = NULL;
+  if (!entry->IsIndirectJump()) return false;
+
+  if (IsTablePattern1(entry, out_label) ||
+      IsTablePattern2(entry, out_label) ||
+      IsTablePattern3(entry, out_label) ||
+      IsTablePattern4(entry, out_label)) {
+    return true;
   }
   return false;
 }
@@ -613,7 +745,7 @@ bool CFGBuilder::IsTableBasedJump(InstructionEntry *entry,
 //      ....
 // If so, return true and put the movaps instruction in the pattern variable.
 bool CFGBuilder::IsVaargBasedJump(InstructionEntry *entry,
-                                  std::vector<MaoEntry *> *pattern) {
+                                  std::vector<MaoEntry *> *pattern) const {
   pattern->clear();
   if (!entry->IsIndirectJump()) return false;
   if (!entry->IsRegisterOperand(0)) return false;
