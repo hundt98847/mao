@@ -62,7 +62,7 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
 def GetMaoSizes(inputfile, basedir):
   # Run mao and get the sizes from the report
   cmd = [os.path.join(basedir, "mao"), "--mao:ASM=o[/dev/null]", \
-         "--mao=TESTRELAX", "--mao=RELAX=stat[1]", inputfile]
+           "--mao=TEST=relax[1],cfg[0],lsg[0]", "--mao=RELAX=stat[1]", inputfile]
   output = _RunCheck(cmd, stdout=subprocess.PIPE)
   mao_function_sizes = {}
   for outputline in output.split('\n'):

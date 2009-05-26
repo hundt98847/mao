@@ -284,33 +284,22 @@ class DumpSymbolTablePass : public MaoPass {
   bool Go();
 };
 
-// TestCFGPass
+// TestPass
 
 //
-// A pass that runs the CFG, even though no pass needs it.
+// A pass that (optionally) runs CFG, LSD and the Relaxer
 // Useful for debugging
 //
-class TestCFGPass : public MaoFunctionPass {
+class TestPass : public MaoFunctionPass {
  public:
-  explicit TestCFGPass(MaoOptionMap *options, MaoUnit *mao_unit,
-                       Function *function);
+  explicit TestPass(MaoOptionMap *options, MaoUnit *mao_unit,
+		    Function *function);
   bool Go();
+ private:
+  bool cfg_;
+  bool lsg_;
+  bool relax_;
 };
-
-
-// TestRelaxPass
-
-//
-// A pass that runs the relaxer, even though no pass needs it.
-// Useful for debugging
-//
-class TestRelaxPass : public MaoFunctionPass {
- public:
-  explicit TestRelaxPass(MaoOptionMap *options, MaoUnit *mao_unit,
-                         Function *function);
-  bool Go();
-};
-
 
 //
 // External Entry Points

@@ -331,41 +331,39 @@ bool DumpSymbolTablePass::Go() {
   return true;
 }
 
-// TestCFGPass
+// TestPass
 //
-// A pass that runs the CFG, even though no pass needs it.
-// Useful for debugging.
+// A pass that can (optionally) run CFG, LSG, Relaxer. Useful
+// for testing
 //
-MAO_OPTIONS_DEFINE(TESTCFG, 0) {
+MAO_OPTIONS_DEFINE(TEST, 3) {
+  OPTION_BOOL("cfg", false, "Run CFG pass (note that CFG runs automatically "
+	                    "in the Relaxer and the LSG pass.)"),
+  OPTION_BOOL("lsg", true, "Run LSG pass."),
+  OPTION_BOOL("relax", true, "Run Relaxer pass."),
 };
 
-TestCFGPass::TestCFGPass(MaoOptionMap *options, MaoUnit *mao_unit,
-                         Function *function)
-    : MaoFunctionPass("TESTCFG", options, mao_unit, function) { }
-
-bool TestCFGPass::Go() {
-  CFG::GetCFG(unit_, function_);
-  return true;
+TestPass::TestPass(MaoOptionMap *options, MaoUnit *mao_unit,
+		   Function *function)
+  : MaoFunctionPass("TEST", options, mao_unit, function),
+    cfg_(GetOptionBool("cfg")),
+    lsg_(GetOptionBool("lsg")),
+    relax_(GetOptionBool("relax")) { 
 }
 
-// TestRelaxPass
-//
-// A pass that runs the Relax, even though no pass needs it.
-// Useful for debugging.
-//
-MAO_OPTIONS_DEFINE(TESTRELAX, 0) {
-};
+bool TestPass::Go() {
+  Trace(3, "Running TEST on function \"%s\" with options cfg=%d lsg=%d relax=%d"
+	,function_->name().c_str(), cfg_, lsg_, relax_);
 
-TestRelaxPass::TestRelaxPass(MaoOptionMap *options, MaoUnit *mao_unit,
-                             Function *function)
-    : MaoFunctionPass("TESTRELAX", options, mao_unit, function) { }
+  if (cfg_) 
+    CFG::GetCFG(unit_, function_);
+  if (lsg_)
+    LoopStructureGraph::GetLSG(unit_, function_);
+  if (relax_)
+    MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
 
-bool TestRelaxPass::Go() {
-  //MaoRelaxer::InvalidateSizeMap(function_->GetSection());
-  MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
   return true;
 }
-
 
 // MaoFunctionPassManager
 //
@@ -432,9 +430,7 @@ void InitPasses() {
   InitAlignTinyLoops16();
 
   RegisterFunctionPass(
-      "TESTCFG", MaoFunctionPassManager::GenericPassCreator<TestCFGPass>);
-  RegisterFunctionPass(
-      "TESTRELAX", MaoFunctionPassManager::GenericPassCreator<TestRelaxPass>);
+      "TEST", MaoFunctionPassManager::GenericPassCreator<TestPass>);
 }
 
 // Code to maintain the set of available passes
