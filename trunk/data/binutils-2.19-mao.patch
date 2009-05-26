@@ -1,6 +1,6 @@
-diff -rupN binutils-2.19-orig/bfd/elf-bfd.h binutils-2.19/bfd/elf-bfd.h
---- binutils-2.19-orig/bfd/elf-bfd.h	2008-08-20 16:28:58.000000000 -0700
-+++ binutils-2.19/bfd/elf-bfd.h	2009-04-29 10:35:22.189340000 -0700
+diff -upr binutils-2.19-vanilla/bfd/elf-bfd.h binutils-2.19/bfd/elf-bfd.h
+--- binutils-2.19-vanilla/bfd/elf-bfd.h	2008-08-20 16:28:58.000000000 -0700
++++ binutils-2.19/bfd/elf-bfd.h	2009-05-07 09:53:45.719905000 -0700
 @@ -81,6 +81,14 @@ struct elf_strtab_hash;
  struct got_entry;
  struct plt_entry;
@@ -31,9 +31,9 @@ diff -rupN binutils-2.19-orig/bfd/elf-bfd.h binutils-2.19/bfd/elf-bfd.h
  
    /* Same, but tracks a procedure linkage table entry.  */
    union gotplt_union plt;
-diff -rupN binutils-2.19-orig/gas/app.c binutils-2.19/gas/app.c
---- binutils-2.19-orig/gas/app.c	2008-10-02 01:07:17.000000000 -0700
-+++ binutils-2.19/gas/app.c	2009-04-29 11:15:32.607327000 -0700
+diff -upr binutils-2.19-vanilla/gas/app.c binutils-2.19/gas/app.c
+--- binutils-2.19-vanilla/gas/app.c	2008-10-02 01:07:17.000000000 -0700
++++ binutils-2.19/gas/app.c	2009-05-07 09:53:45.725953000 -0700
 @@ -294,7 +294,7 @@ app_pop (char *arg)
      saved_input = NULL;
    else
@@ -43,9 +43,9 @@ diff -rupN binutils-2.19-orig/gas/app.c binutils-2.19/gas/app.c
        memcpy (input_buffer, saved->saved_input, saved->saved_input_len);
        saved_input = input_buffer;
        saved_input_len = saved->saved_input_len;
-diff -rupN binutils-2.19-orig/gas/as.c binutils-2.19/gas/as.c
---- binutils-2.19-orig/gas/as.c	2008-08-12 16:39:30.000000000 -0700
-+++ binutils-2.19/gas/as.c	2009-04-29 11:18:12.064143000 -0700
+diff -upr binutils-2.19-vanilla/gas/as.c binutils-2.19/gas/as.c
+--- binutils-2.19-vanilla/gas/as.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/as.c	2009-05-07 11:44:34.204051000 -0700
 @@ -1154,7 +1154,7 @@ main (int argc, char ** argv)
    PROGRESS (1);
  
@@ -55,9 +55,10 @@ diff -rupN binutils-2.19-orig/gas/as.c binutils-2.19/gas/as.c
  
  #ifdef tc_init_after_args
    tc_init_after_args ();
-diff -rupN binutils-2.19-orig/gas/as.h binutils-2.19/gas/as.h
---- binutils-2.19-orig/gas/as.h	2008-08-12 16:39:30.000000000 -0700
-+++ binutils-2.19/gas/as.h	2009-04-30 09:51:22.530936000 -0700
+Only in binutils-2.19/gas: as.c~
+diff -upr binutils-2.19-vanilla/gas/as.h binutils-2.19/gas/as.h
+--- binutils-2.19-vanilla/gas/as.h	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/as.h	2009-05-07 09:53:45.740939000 -0700
 @@ -137,7 +137,7 @@ typedef int * va_list;
  #if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 6)
  #define __PRETTY_FUNCTION__  ((char*)0)
@@ -67,9 +68,9 @@ diff -rupN binutils-2.19-orig/gas/as.h binutils-2.19/gas/as.h
    ((void) ((P) ? 0 : (as_assert (__FILE__, __LINE__, __PRETTY_FUNCTION__), 0)))
  #undef abort
  #define abort()		as_abort (__FILE__, __LINE__, __PRETTY_FUNCTION__)
-diff -rupN binutils-2.19-orig/gas/atof-generic.c binutils-2.19/gas/atof-generic.c
---- binutils-2.19-orig/gas/atof-generic.c	2007-07-03 04:01:02.000000000 -0700
-+++ binutils-2.19/gas/atof-generic.c	2009-04-29 11:18:11.538317000 -0700
+diff -upr binutils-2.19-vanilla/gas/atof-generic.c binutils-2.19/gas/atof-generic.c
+--- binutils-2.19-vanilla/gas/atof-generic.c	2007-07-03 04:01:02.000000000 -0700
++++ binutils-2.19/gas/atof-generic.c	2009-05-07 09:53:45.749963000 -0700
 @@ -101,7 +101,7 @@ atof_generic (/* return pointer to just 
    int seen_significant_digit;
  
@@ -79,9 +80,27 @@ diff -rupN binutils-2.19-orig/gas/atof-generic.c binutils-2.19/gas/atof-generic.
  	  && string_of_decimal_marks[1] == 0);
  #define IS_DECIMAL_MARK(c)	((c) == '.')
  #else
-diff -rupN binutils-2.19-orig/gas/config/atof-ieee.c binutils-2.19/gas/config/atof-ieee.c
---- binutils-2.19-orig/gas/config/atof-ieee.c	2007-10-17 09:45:54.000000000 -0700
-+++ binutils-2.19/gas/config/atof-ieee.c	2009-04-29 11:21:45.326300000 -0700
+diff -upr binutils-2.19-vanilla/gas/cgen.c binutils-2.19/gas/cgen.c
+--- binutils-2.19-vanilla/gas/cgen.c	2007-07-03 04:01:02.000000000 -0700
++++ binutils-2.19/gas/cgen.c	2009-05-19 09:32:44.423183000 -0700
+@@ -1034,7 +1034,7 @@ gas_cgen_tc_gen_reloc (section, fixP)
+       return NULL;
+     }
+ 
+-  assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
++  gas_assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
+ 
+   reloc->sym_ptr_ptr = (asymbol **) xmalloc (sizeof (asymbol *));
+   *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixP->fx_addsy);
+@@ -1061,4 +1061,3 @@ gas_cgen_begin ()
+   else
+     cgen_clear_signed_overflow_ok (gas_cgen_cpu_desc);
+ }
+-
+Only in binutils-2.19/gas: cgen.c~
+diff -upr binutils-2.19-vanilla/gas/config/atof-ieee.c binutils-2.19/gas/config/atof-ieee.c
+--- binutils-2.19-vanilla/gas/config/atof-ieee.c	2007-10-17 09:45:54.000000000 -0700
++++ binutils-2.19/gas/config/atof-ieee.c	2009-05-07 09:53:45.759939000 -0700
 @@ -784,7 +784,7 @@ ieee_md_atof (int type,
        return _("Unrecognized or unsupported floating point constant");
      }
@@ -91,9 +110,95 @@ diff -rupN binutils-2.19-orig/gas/config/atof-ieee.c binutils-2.19/gas/config/at
  
    t = atof_ieee (input_line_pointer, type, words);
    if (t)
-diff -rupN binutils-2.19-orig/gas/config/obj-elf.c binutils-2.19/gas/config/obj-elf.c
---- binutils-2.19-orig/gas/config/obj-elf.c	2008-04-23 06:54:56.000000000 -0700
-+++ binutils-2.19/gas/config/obj-elf.c	2009-04-29 11:21:47.651998000 -0700
+diff -upr binutils-2.19-vanilla/gas/config/obj-aout.c binutils-2.19/gas/config/obj-aout.c
+--- binutils-2.19-vanilla/gas/config/obj-aout.c	2007-07-03 04:01:03.000000000 -0700
++++ binutils-2.19/gas/config/obj-aout.c	2009-05-13 17:20:21.154241000 -0700
+@@ -132,7 +132,7 @@ obj_aout_frob_file_before_fix (void)
+     x = bfd_set_section_contents (stdoutput, data_section, &b, (file_ptr) 0,
+ 				  (bfd_size_type) 1);
+ 
+-  assert (x);
++  gas_assert (x);
+ }
+ 
+ static void
+Only in binutils-2.19/gas/config: obj-aout.c~
+diff -upr binutils-2.19-vanilla/gas/config/obj-coff.c binutils-2.19/gas/config/obj-coff.c
+--- binutils-2.19-vanilla/gas/config/obj-coff.c	2007-10-04 10:05:37.000000000 -0700
++++ binutils-2.19/gas/config/obj-coff.c	2009-05-13 17:18:56.068579000 -0700
+@@ -183,7 +183,7 @@ fetch_coff_debug_section (void)
+       const asymbol *s;
+ 
+       s = bfd_make_debug_symbol (stdoutput, NULL, 0);
+-      assert (s != 0);
++      gas_assert (s != 0);
+       debug_section = s->section;
+     }
+   return debug_section;
+@@ -1033,7 +1033,7 @@ weak_altname2name (const char * name)
+   char * weak_name;
+   char * dot;
+ 
+-  assert (weak_is_altname (name));
++  gas_assert (weak_is_altname (name));
+ 
+   weak_name = xstrdup (name + 6);
+   if ((dot = strchr (weak_name, '.')))
+@@ -1054,7 +1054,7 @@ weak_uniquify (const char * name)
+   if (an_external_name != NULL)
+     unique = an_external_name;
+ #endif
+-  assert (weak_is_altname (name));
++  gas_assert (weak_is_altname (name));
+ 
+   if (strchr (name + sizeof (weak_altprefix), '.'))
+     return name;
+@@ -1184,8 +1184,8 @@ coff_frob_symbol (symbolS *symp, int *pu
+       symbolS *weakp = symbol_find_noref (weak_altname2name
+ 					  (S_GET_NAME (symp)), 1);
+ 
+-      assert (weakp);
+-      assert (S_GET_NUMBER_AUXILIARY (weakp) == 1);
++      gas_assert (weakp);
++      gas_assert (S_GET_NUMBER_AUXILIARY (weakp) == 1);
+ 
+       if (! S_IS_WEAK (weakp))
+ 	{
+@@ -1267,7 +1267,7 @@ coff_frob_symbol (symbolS *symp, int *pu
+ 
+       if (!S_IS_DEFINED (symp) && !SF_GET_LOCAL (symp))
+ 	{
+-	  assert (S_GET_VALUE (symp) == 0);
++	  gas_assert (S_GET_VALUE (symp) == 0);
+ 	  if (S_IS_WEAKREFD (symp))
+ 	    *punt = 1;
+ 	  else
+@@ -1719,7 +1719,7 @@ coff_frob_section (segT sec)
+   fragp = seg_info (sec)->frchainP->frch_root;
+   while (fragp && fragp->fr_fix == 0)
+     fragp = fragp->fr_next;
+-  assert (fragp != 0 && fragp->fr_fix >= 12);
++  gas_assert (fragp != 0 && fragp->fr_fix >= 12);
+ 
+   /* Store the values.  */
+   p = fragp->fr_literal;
+Only in binutils-2.19/gas/config: obj-coff.c~
+diff -upr binutils-2.19-vanilla/gas/config/obj-ecoff.c binutils-2.19/gas/config/obj-ecoff.c
+--- binutils-2.19-vanilla/gas/config/obj-ecoff.c	2007-07-03 04:01:04.000000000 -0700
++++ binutils-2.19/gas/config/obj-ecoff.c	2009-05-13 17:20:20.013371000 -0700
+@@ -146,7 +146,7 @@ ecoff_frob_file (void)
+   char *set;
+ 
+   /* Build the ECOFF debugging information.  */
+-  assert (ecoff_data (stdoutput) != 0);
++  gas_assert (ecoff_data (stdoutput) != 0);
+   hdr = &ecoff_data (stdoutput)->debug_info.symbolic_header;
+   ecoff_build_debug (hdr, &buf, debug_swap);
+ 
+Only in binutils-2.19/gas/config: obj-ecoff.c~
+diff -upr binutils-2.19-vanilla/gas/config/obj-elf.c binutils-2.19/gas/config/obj-elf.c
+--- binutils-2.19-vanilla/gas/config/obj-elf.c	2008-04-23 06:54:56.000000000 -0700
++++ binutils-2.19/gas/config/obj-elf.c	2009-05-07 09:53:45.773972000 -0700
 @@ -459,7 +459,7 @@ obj_elf_visibility (int visibility)
        bfdsym = symbol_get_bfdsym (symbolP);
        elfsym = elf_symbol_from (bfd_asymbol_bfd (bfdsym), bfdsym);
@@ -130,9 +235,699 @@ diff -rupN binutils-2.19-orig/gas/config/obj-elf.c binutils-2.19/gas/config/obj-
  
        know (!stdoutput->output_has_begun);
  
-diff -rupN binutils-2.19-orig/gas/config/tc-i386.c binutils-2.19/gas/config/tc-i386.c
---- binutils-2.19-orig/gas/config/tc-i386.c	2008-10-16 05:52:15.000000000 -0700
-+++ binutils-2.19/gas/config/tc-i386.c	2009-04-29 14:40:33.293513000 -0700
+diff -upr binutils-2.19-vanilla/gas/config/obj-som.c binutils-2.19/gas/config/obj-som.c
+--- binutils-2.19-vanilla/gas/config/obj-som.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/config/obj-som.c	2009-05-13 17:20:18.374644000 -0700
+@@ -280,7 +280,7 @@ adjust_stab_sections (bfd *abfd, asectio
+   nsyms = bfd_section_size (abfd, sec) / 12 - 1;
+ 
+   p = seg_info (sec)->stabu.p;
+-  assert (p != 0);
++  gas_assert (p != 0);
+ 
+   bfd_h_put_16 (abfd, (bfd_vma) nsyms, (bfd_byte *) p + 6);
+   bfd_h_put_32 (abfd, (bfd_vma) strsz, (bfd_byte *) p + 8);
+Only in binutils-2.19/gas/config: obj-som.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-alpha.c binutils-2.19/gas/config/tc-alpha.c
+--- binutils-2.19-vanilla/gas/config/tc-alpha.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/config/tc-alpha.c	2009-05-13 17:17:53.634627000 -0700
+@@ -1227,7 +1227,7 @@ load_expression (int targreg,
+ 
+ 	assemble_tokens_to_insn ("ldq", newtok, 3, &insn);
+ 
+-	assert (insn.nfixups == 1);
++	gas_assert (insn.nfixups == 1);
+ 	insn.fixups[0].reloc = BFD_RELOC_ALPHA_LITERAL;
+ 	insn.sequence = emit_lituse = next_sequence_num--;
+ #endif /* OBJ_ECOFF */
+@@ -1263,7 +1263,7 @@ load_expression (int targreg,
+ 
+ 	assemble_tokens_to_insn ("ldq", newtok, 3, &insn);
+ 
+-	assert (insn.nfixups == 1);
++	gas_assert (insn.nfixups == 1);
+ 	insn.fixups[0].reloc = BFD_RELOC_ALPHA_ELF_LITERAL;
+ 	insn.sequence = emit_lituse = next_sequence_num--;
+ #endif /* OBJ_ELF */
+@@ -1412,7 +1412,7 @@ load_expression (int targreg,
+ 
+       assemble_tokens_to_insn ("ldq", newtok, 3, &insn);
+ 
+-      assert (insn.nfixups == 1);
++      gas_assert (insn.nfixups == 1);
+ #ifdef OBJ_ECOFF
+       insn.fixups[0].reloc = BFD_RELOC_ALPHA_LITERAL;
+ #endif
+@@ -1430,7 +1430,7 @@ load_expression (int targreg,
+ 
+       assemble_tokens_to_insn ("ldq", newtok, 3, &insn);
+ 
+-      assert (insn.nfixups < MAX_INSN_FIXUPS);
++      gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+       insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_BASE;
+       insn.fixups[insn.nfixups].exp.X_op = O_absent;
+       insn.nfixups++;
+@@ -1633,10 +1633,10 @@ emit_insn (struct alpha_insn *insn)
+ 	{
+ 	  reloc_howto_type *reloc_howto
+ 	    = bfd_reloc_type_lookup (stdoutput, fixup->reloc);
+-	  assert (reloc_howto);
++	  gas_assert (reloc_howto);
+ 
+ 	  size = bfd_get_reloc_size (reloc_howto);
+-	  assert (size >= 1 && size <= 4);
++	  gas_assert (size >= 1 && size <= 4);
+ 
+ 	  pcrel = reloc_howto->pc_relative;
+ 	}
+@@ -1904,7 +1904,7 @@ assemble_insn (const struct alpha_opcode
+ 
+ 	case O_constant:
+ 	  image = insert_operand (image, operand, t->X_add_number, NULL, 0);
+-	  assert (reloc_operand == NULL);
++	  gas_assert (reloc_operand == NULL);
+ 	  reloc_operand = operand;
+ 	  reloc_exp = t;
+ 	  break;
+@@ -1934,7 +1934,7 @@ assemble_insn (const struct alpha_opcode
+ 	      if (reloc == BFD_RELOC_UNUSED)
+ 		reloc = operand->default_reloc;
+ 
+-	      assert (reloc_operand == NULL);
++	      gas_assert (reloc_operand == NULL);
+ 	      reloc_operand = operand;
+ 	      reloc_exp = t;
+ 	    }
+@@ -2016,7 +2016,7 @@ emit_ir_load (const expressionS *tok,
+ 
+   if (lituse)
+     {
+-      assert (insn.nfixups < MAX_INSN_FIXUPS);
++      gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+       insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_BASE;
+       insn.fixups[insn.nfixups].exp.X_op = O_absent;
+       insn.nfixups++;
+@@ -2064,7 +2064,7 @@ emit_loadstore (const expressionS *tok,
+ 
+   if (lituse)
+     {
+-      assert (insn.nfixups < MAX_INSN_FIXUPS);
++      gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+       insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_BASE;
+       insn.fixups[insn.nfixups].exp.X_op = O_absent;
+       insn.nfixups++;
+@@ -2110,7 +2110,7 @@ emit_ldXu (const expressionS *tok,
+ 
+       if (lituse)
+ 	{
+-	  assert (insn.nfixups < MAX_INSN_FIXUPS);
++	  gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+ 	  insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_BASE;
+ 	  insn.fixups[insn.nfixups].exp.X_op = O_absent;
+ 	  insn.nfixups++;
+@@ -2126,7 +2126,7 @@ emit_ldXu (const expressionS *tok,
+ 
+       if (lituse)
+ 	{
+-	  assert (insn.nfixups < MAX_INSN_FIXUPS);
++	  gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+ 	  insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_BYTOFF;
+ 	  insn.fixups[insn.nfixups].exp.X_op = O_absent;
+ 	  insn.nfixups++;
+@@ -2262,7 +2262,7 @@ emit_stX (const expressionS *tok,
+ 
+       if (lituse)
+ 	{
+-	  assert (insn.nfixups < MAX_INSN_FIXUPS);
++	  gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+ 	  insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_BASE;
+ 	  insn.fixups[insn.nfixups].exp.X_op = O_absent;
+ 	  insn.nfixups++;
+@@ -2279,7 +2279,7 @@ emit_stX (const expressionS *tok,
+ 
+       if (lituse)
+ 	{
+-	  assert (insn.nfixups < MAX_INSN_FIXUPS);
++	  gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+ 	  insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_BYTOFF;
+ 	  insn.fixups[insn.nfixups].exp.X_op = O_absent;
+ 	  insn.nfixups++;
+@@ -2295,7 +2295,7 @@ emit_stX (const expressionS *tok,
+ 
+       if (lituse)
+ 	{
+-	  assert (insn.nfixups < MAX_INSN_FIXUPS);
++	  gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+ 	  insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_BYTOFF;
+ 	  insn.fixups[insn.nfixups].exp.X_op = O_absent;
+ 	  insn.nfixups++;
+@@ -2315,7 +2315,7 @@ emit_stX (const expressionS *tok,
+ 
+       if (lituse)
+ 	{
+-	  assert (insn.nfixups < MAX_INSN_FIXUPS);
++	  gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+ 	  insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_BASE;
+ 	  insn.fixups[insn.nfixups].exp.X_op = O_absent;
+ 	  insn.nfixups++;
+@@ -2681,7 +2681,7 @@ emit_jsrjmp (const expressionS *tok,
+ 
+   if (lituse)
+     {
+-      assert (insn.nfixups < MAX_INSN_FIXUPS);
++      gas_assert (insn.nfixups < MAX_INSN_FIXUPS);
+       insn.fixups[insn.nfixups].reloc = DUMMY_RELOC_LITUSE_JSR;
+       insn.fixups[insn.nfixups].exp.X_op = O_absent;
+       insn.nfixups++;
+@@ -3734,7 +3734,7 @@ s_alpha_coff_wrapper (int which)
+     ecoff_directive_val,
+   };
+ 
+-  assert (which >= 0 && which < (int) (sizeof (fns)/sizeof (*fns)));
++  gas_assert (which >= 0 && which < (int) (sizeof (fns)/sizeof (*fns)));
+ 
+   if (ECOFF_DEBUGGING)
+     (*fns[which]) (0);
+@@ -4755,7 +4755,7 @@ maybe_set_gp (asection *sec)
+ static void
+ select_gp_value (void)
+ {
+-  assert (alpha_gp_value == 0);
++  gas_assert (alpha_gp_value == 0);
+ 
+   /* Get minus-one in whatever width...  */
+   alpha_gp_value = 0;
+@@ -4862,7 +4862,7 @@ md_begin (void)
+     expressionS e;
+ 
+     e.X_op = O_max;
+-    assert (e.X_op == O_max);
++    gas_assert (e.X_op == O_max);
+   }
+ 
+   /* Create the opcode hash table.  */
+@@ -5233,7 +5233,7 @@ md_apply_fix (fixS *fixP, valueT * valP,
+ 
+ #ifdef OBJ_ECOFF
+     case BFD_RELOC_GPREL32:
+-      assert (fixP->fx_subsy == alpha_gp_symbol);
++      gas_assert (fixP->fx_subsy == alpha_gp_symbol);
+       fixP->fx_subsy = 0;
+       /* FIXME: inherited this obliviousness of `value' -- why?  */
+       md_number_to_chars (fixpos, -alpha_gp_value, 4);
+@@ -5306,7 +5306,7 @@ md_apply_fix (fixS *fixP, valueT * valP,
+ 	  as_fatal (_("unhandled relocation type %s"),
+ 		    bfd_get_reloc_code_name (fixP->fx_r_type));
+ 
+-	assert (-(int) fixP->fx_r_type < (int) alpha_num_operands);
++	gas_assert (-(int) fixP->fx_r_type < (int) alpha_num_operands);
+ 	operand = &alpha_operands[-(int) fixP->fx_r_type];
+ 
+ 	/* The rest of these fixups only exist internally during symbol
+@@ -5577,7 +5577,7 @@ tc_gen_reloc (asection *sec ATTRIBUTE_UN
+ 
+   /* Make sure none of our internal relocations make it this far.
+      They'd better have been fully resolved by this point.  */
+-  assert ((int) fixp->fx_r_type > 0);
++  gas_assert ((int) fixp->fx_r_type > 0);
+ 
+   reloc->howto = bfd_reloc_type_lookup (stdoutput, fixp->fx_r_type);
+   if (reloc->howto == NULL)
+@@ -5592,7 +5592,7 @@ tc_gen_reloc (asection *sec ATTRIBUTE_UN
+     as_fatal (_("internal error? cannot generate `%s' relocation"),
+ 	      bfd_get_reloc_code_name (fixp->fx_r_type));
+ 
+-  assert (!fixp->fx_pcrel == !reloc->howto->pc_relative);
++  gas_assert (!fixp->fx_pcrel == !reloc->howto->pc_relative);
+ 
+ #ifdef OBJ_ECOFF
+   if (fixp->fx_r_type == BFD_RELOC_ALPHA_LITERAL)
+Only in binutils-2.19/gas/config: tc-alpha.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-arc.c binutils-2.19/gas/config/tc-arc.c
+--- binutils-2.19-vanilla/gas/config/tc-arc.c	2007-10-18 06:03:12.000000000 -0700
++++ binutils-2.19/gas/config/tc-arc.c	2009-05-13 17:23:27.978169000 -0700
+@@ -889,7 +889,7 @@ arc_common (int localScope)
+       as_warn (_("length of symbol \"%s\" already %ld, ignoring %d"),
+ 	       S_GET_NAME (symbolP), (long) S_GET_VALUE (symbolP), size);
+     }
+-  assert (symbolP->sy_frag == &zero_address_frag);
++  gas_assert (symbolP->sy_frag == &zero_address_frag);
+ 
+   /* Now parse the alignment field.  This field is optional for
+      local and global symbols. Default alignment is zero.  */
+@@ -1283,21 +1283,21 @@ md_apply_fix (fixS *fixP, valueT * valP,
+ 	 limm values.  */
+       if (operand->fmt == 'B')
+ 	{
+-	  assert ((operand->flags & ARC_OPERAND_RELATIVE_BRANCH) != 0
++	  gas_assert ((operand->flags & ARC_OPERAND_RELATIVE_BRANCH) != 0
+ 		  && operand->bits == 20
+ 		  && operand->shift == 7);
+ 	  fixP->fx_r_type = BFD_RELOC_ARC_B22_PCREL;
+ 	}
+       else if (operand->fmt == 'J')
+ 	{
+-	  assert ((operand->flags & ARC_OPERAND_ABSOLUTE_BRANCH) != 0
++	  gas_assert ((operand->flags & ARC_OPERAND_ABSOLUTE_BRANCH) != 0
+ 		  && operand->bits == 24
+ 		  && operand->shift == 32);
+ 	  fixP->fx_r_type = BFD_RELOC_ARC_B26;
+ 	}
+       else if (operand->fmt == 'L')
+ 	{
+-	  assert ((operand->flags & ARC_OPERAND_LIMM) != 0
++	  gas_assert ((operand->flags & ARC_OPERAND_LIMM) != 0
+ 		  && operand->bits == 32
+ 		  && operand->shift == 32);
+ 	  fixP->fx_r_type = BFD_RELOC_32;
+@@ -1365,7 +1365,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+       return NULL;
+     }
+ 
+-  assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
++  gas_assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
+ 
+   /* Set addend to account for PC being advanced one insn before the
+      target address is computed.  */
+Only in binutils-2.19/gas/config: tc-arc.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-arm.c binutils-2.19/gas/config/tc-arm.c
+--- binutils-2.19-vanilla/gas/config/tc-arm.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/config/tc-arm.c	2009-05-13 17:12:30.475438000 -0700
+@@ -3390,7 +3390,7 @@ s_arm_unwind_save_vfp_armv6 (void)
+ 
+   /* Generate opcode for registers numbered in the range 0 .. 15.  */
+   num_regs_below_16 = num_vfpv3_regs > 0 ? 16 - (int) start : count;
+-  assert (num_regs_below_16 + num_vfpv3_regs == count);
++  gas_assert (num_regs_below_16 + num_vfpv3_regs == count);
+   if (num_regs_below_16 > 0)
+     {
+       op = 0xc900 | (start << 4) | (num_regs_below_16 - 1);
+@@ -4044,7 +4044,7 @@ parse_big_immediate (char **str, int i)
+       /* Bignums have their least significant bits in
+          generic_bignum[0]. Make sure we put 32 bits in imm and
+          32 bits in reg,  in a (hopefully) portable way.  */
+-      assert (parts != 0);
++      gas_assert (parts != 0);
+       inst.operands[i].imm = 0;
+       for (j = 0; j < parts; j++, idx++)
+         inst.operands[i].imm |= generic_bignum[idx]
+@@ -4562,7 +4562,7 @@ parse_shifter_operand_group_reloc (char 
+ 
+       /* Record the relocation type (always the ALU variant here).  */
+       inst.reloc.type = entry->alu_code;
+-      assert (inst.reloc.type != 0);
++      gas_assert (inst.reloc.type != 0);
+ 
+       return PARSE_OPERAND_SUCCESS;
+     }
+@@ -4721,7 +4721,7 @@ parse_address_main (char **str, int i, i
+                     break;
+ 
+                   default:
+-                    assert (0);
++                    gas_assert (0);
+                 }
+ 
+               if (inst.reloc.type == 0)
+@@ -5573,7 +5573,7 @@ parse_operands (char *str, const unsigne
+       if (upat[i] >= OP_FIRST_OPTIONAL)
+ 	{
+ 	  /* Remember where we are in case we need to backtrack.  */
+-	  assert (!backtrack_pos);
++	  gas_assert (!backtrack_pos);
+ 	  backtrack_pos = str;
+ 	  backtrack_error = inst.error;
+ 	  backtrack_index = i;
+@@ -6255,7 +6255,7 @@ encode_arm_shifter_operand (int i)
+ static void
+ encode_arm_addr_mode_common (int i, bfd_boolean is_t)
+ {
+-  assert (inst.operands[i].isreg);
++  gas_assert (inst.operands[i].isreg);
+   inst.instruction |= inst.operands[i].reg << 16;
+ 
+   if (inst.operands[i].preind)
+@@ -6272,7 +6272,7 @@ encode_arm_addr_mode_common (int i, bfd_
+     }
+   else if (inst.operands[i].postind)
+     {
+-      assert (inst.operands[i].writeback);
++      gas_assert (inst.operands[i].writeback);
+       if (is_t)
+ 	inst.instruction |= WRITE_BACK;
+     }
+@@ -6366,11 +6366,11 @@ encode_arm_cp_address (int i, int wb_ok,
+ {
+   inst.instruction |= inst.operands[i].reg << 16;
+ 
+-  assert (!(inst.operands[i].preind && inst.operands[i].postind));
++  gas_assert (!(inst.operands[i].preind && inst.operands[i].postind));
+ 
+   if (!inst.operands[i].preind && !inst.operands[i].postind) /* unindexed */
+     {
+-      assert (!inst.operands[i].writeback);
++      gas_assert (!inst.operands[i].writeback);
+       if (!unind_ok)
+ 	{
+ 	  inst.error = _("instruction does not support unindexed addressing");
+@@ -8261,7 +8261,7 @@ encode_thumb32_addr_mode (int i, bfd_boo
+     }
+   else if (inst.operands[i].postind)
+     {
+-      assert (inst.operands[i].writeback);
++      gas_assert (inst.operands[i].writeback);
+       constraint (is_pc, _("cannot use post-indexing with PC-relative addressing"));
+       constraint (is_t, _("cannot use post-indexing with this instruction"));
+ 
+@@ -8917,7 +8917,7 @@ do_t_branch (void)
+ 	inst.reloc.type = BFD_RELOC_THUMB_PCREL_BRANCH25;
+       else
+ 	{
+-	  assert (cond != 0xF);
++	  gas_assert (cond != 0xF);
+ 	  inst.instruction |= cond << 22;
+ 	  inst.reloc.type = BFD_RELOC_THUMB_PCREL_BRANCH20;
+ 	}
+@@ -10866,7 +10866,7 @@ neon_type_promote (struct neon_type_el *
+ {
+   struct neon_type_el dest = *key;
+ 
+-  assert ((thisarg & N_EQK) != 0);
++  gas_assert ((thisarg & N_EQK) != 0);
+ 
+   neon_modify_type_size (thisarg, &dest.type, &dest.size);
+ 
+@@ -12999,7 +12999,7 @@ do_neon_rev (void)
+      extract it here to check the elements to be reversed are smaller.
+      Otherwise we'd get a reserved instruction.  */
+   unsigned elsize = (op == 2) ? 16 : (op == 1) ? 32 : (op == 0) ? 64 : 0;
+-  assert (elsize != 0);
++  gas_assert (elsize != 0);
+   constraint (et.size >= elsize,
+               _("elements must be smaller than reversal region"));
+   neon_two_same (neon_quad (rs), 1, et.size);
+@@ -13705,7 +13705,7 @@ do_neon_ld_dup (void)
+   switch ((inst.instruction >> 8) & 3)
+     {
+     case 0:  /* VLD1.  */
+-      assert (NEON_REG_STRIDE (inst.operands[0].imm) != 2);
++      gas_assert (NEON_REG_STRIDE (inst.operands[0].imm) != 2);
+       align_good = neon_alignment_bit (et.size, inst.operands[1].imm >> 8,
+                                        &do_align, 16, 16, 32, 32, -1);
+       if (align_good == FAIL)
+@@ -13916,12 +13916,12 @@ output_inst (const char * str)
+ 
+   if (thumb_mode && (inst.size > THUMB_SIZE))
+     {
+-      assert (inst.size == (2 * THUMB_SIZE));
++      gas_assert (inst.size == (2 * THUMB_SIZE));
+       put_thumb32_insn (to, inst.instruction);
+     }
+   else if (inst.size > INSN_SIZE)
+     {
+-      assert (inst.size == (2 * INSN_SIZE));
++      gas_assert (inst.size == (2 * INSN_SIZE));
+       md_number_to_chars (to, inst.instruction, INSN_SIZE);
+       md_number_to_chars (to + INSN_SIZE, inst.instruction, INSN_SIZE);
+     }
+@@ -14089,7 +14089,7 @@ opcode_lookup (char **str)
+ 	as_warn (_("conditional infixes are deprecated in unified syntax"));
+       affix = base + (opcode->tag - OT_odd_infix_0);
+       cond = hash_find_n (arm_cond_hsh, affix, 2);
+-      assert (cond);
++      gas_assert (cond);
+ 
+       inst.cond = cond->value;
+       return opcode;
+@@ -14282,7 +14282,7 @@ md_assemble (char *str)
+ 
+       if (!(inst.error || inst.relax))
+ 	{
+-	  assert (inst.instruction < 0xe800 || inst.instruction > 0xffff);
++	  gas_assert (inst.instruction < 0xe800 || inst.instruction > 0xffff);
+ 	  inst.size = (inst.instruction > 0xffff ? 4 : 2);
+ 	  if (inst.size_req && inst.size_req != inst.size)
+ 	    {
+@@ -14293,7 +14293,7 @@ md_assemble (char *str)
+ 
+       /* Something has gone badly wrong if we try to relax a fixed size
+          instruction.  */
+-      assert (inst.size_req == 0 || !inst.relax);
++      gas_assert (inst.size_req == 0 || !inst.relax);
+ 
+       ARM_MERGE_FEATURE_SETS (thumb_arch_used, thumb_arch_used,
+ 			      *opcode->tvariant);
+@@ -17720,7 +17720,7 @@ validate_immediate_twopart (unsigned int
+ 	  }
+ 	else
+ 	  {
+-	    assert (a & 0xff000000);
++	    gas_assert (a & 0xff000000);
+ 	    * highpart = (a >> 24) | ((i + 8) << 7);
+ 	  }
+ 
+@@ -17949,7 +17949,7 @@ md_apply_fix (fixS *	fixP,
+   int		 sign;
+   char *	 buf = fixP->fx_where + fixP->fx_frag->fr_literal;
+ 
+-  assert (fixP->fx_r_type <= BFD_RELOC_UNUSED);
++  gas_assert (fixP->fx_r_type <= BFD_RELOC_UNUSED);
+ 
+   /* Note whether this will delete the relocation.  */
+ 
+@@ -18862,7 +18862,7 @@ md_apply_fix (fixS *	fixP,
+    case BFD_RELOC_ARM_ALU_SB_G1_NC:
+    case BFD_RELOC_ARM_ALU_SB_G1:
+    case BFD_RELOC_ARM_ALU_SB_G2:
+-     assert (!fixP->fx_done);
++     gas_assert (!fixP->fx_done);
+      if (!seg->use_rela_p)
+        {
+          bfd_vma insn;
+@@ -18904,7 +18904,7 @@ md_apply_fix (fixS *	fixP,
+     case BFD_RELOC_ARM_LDR_SB_G0:
+     case BFD_RELOC_ARM_LDR_SB_G1:
+     case BFD_RELOC_ARM_LDR_SB_G2:
+-      assert (!fixP->fx_done);
++      gas_assert (!fixP->fx_done);
+       if (!seg->use_rela_p)
+         {
+           bfd_vma insn;
+@@ -18943,7 +18943,7 @@ md_apply_fix (fixS *	fixP,
+     case BFD_RELOC_ARM_LDRS_SB_G0:
+     case BFD_RELOC_ARM_LDRS_SB_G1:
+     case BFD_RELOC_ARM_LDRS_SB_G2:
+-      assert (!fixP->fx_done);
++      gas_assert (!fixP->fx_done);
+       if (!seg->use_rela_p)
+         {
+           bfd_vma insn;
+@@ -18983,7 +18983,7 @@ md_apply_fix (fixS *	fixP,
+     case BFD_RELOC_ARM_LDC_SB_G0:
+     case BFD_RELOC_ARM_LDC_SB_G1:
+     case BFD_RELOC_ARM_LDC_SB_G2:
+-      assert (!fixP->fx_done);
++      gas_assert (!fixP->fx_done);
+       if (!seg->use_rela_p)
+         {
+           bfd_vma insn;
+Only in binutils-2.19/gas/config: tc-arm.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-bfin.c binutils-2.19/gas/config/tc-bfin.c
+--- binutils-2.19-vanilla/gas/config/tc-bfin.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/config/tc-bfin.c	2009-05-13 17:25:27.661834000 -0700
+@@ -933,7 +933,7 @@ INSTR_T
+ note_reloc (INSTR_T code, Expr_Node * symbol, int reloc, int pcrel)
+ {
+   /* Assert that the symbol is not an operator.  */
+-  assert (symbol->type == Expr_Node_Reloc);
++  assert ( (symbol->type == Expr_Node_Reloc);
+ 
+   return note_reloc1 (code, symbol->value.s_value, reloc, pcrel);
+ 
+Only in binutils-2.19/gas/config: tc-bfin.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-cr16.c binutils-2.19/gas/config/tc-cr16.c
+--- binutils-2.19-vanilla/gas/config/tc-cr16.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-cr16.c	2009-05-13 17:23:27.105310000 -0700
+@@ -563,7 +563,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+         }
+     }
+ 
+-  assert ((int) fixP->fx_r_type > 0);
++  gas_assert ((int) fixP->fx_r_type > 0);
+   reloc->howto = bfd_reloc_type_lookup (stdoutput, fixP->fx_r_type);
+ 
+   if (reloc->howto == NULL)
+@@ -574,7 +574,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+                     bfd_get_reloc_code_name (fixP->fx_r_type));
+       return NULL;
+     }
+-  assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
++  gas_assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
+ 
+   return reloc;
+ }
+Only in binutils-2.19/gas/config: tc-cr16.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-cris.c binutils-2.19/gas/config/tc-cris.c
+--- binutils-2.19-vanilla/gas/config/tc-cris.c	2007-07-03 04:01:04.000000000 -0700
++++ binutils-2.19/gas/config/tc-cris.c	2009-05-13 17:23:26.608310000 -0700
+@@ -3879,7 +3879,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+     }
+ 
+   relP = (arelent *) xmalloc (sizeof (arelent));
+-  assert (relP != 0);
++  gas_assert (relP != 0);
+   relP->sym_ptr_ptr = (asymbol **) xmalloc (sizeof (asymbol *));
+   *relP->sym_ptr_ptr = symbol_get_bfdsym (fixP->fx_addsy);
+   relP->address = fixP->fx_frag->fr_address + fixP->fx_where;
+Only in binutils-2.19/gas/config: tc-cris.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-crx.c binutils-2.19/gas/config/tc-crx.c
+--- binutils-2.19-vanilla/gas/config/tc-crx.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/config/tc-crx.c	2009-05-13 17:23:26.339442000 -0700
+@@ -351,7 +351,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ 	}
+     }
+ 
+-  assert ((int) fixP->fx_r_type > 0);
++  gas_assert ((int) fixP->fx_r_type > 0);
+   reloc->howto = bfd_reloc_type_lookup (stdoutput, fixP->fx_r_type);
+ 
+   if (reloc->howto == (reloc_howto_type *) NULL)
+@@ -362,7 +362,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ 		    bfd_get_reloc_code_name (fixP->fx_r_type));
+       return NULL;
+     }
+-  assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
++  gas_assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
+ 
+   return reloc;
+ }
+Only in binutils-2.19/gas/config: tc-crx.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-d30v.c binutils-2.19/gas/config/tc-d30v.c
+--- binutils-2.19-vanilla/gas/config/tc-d30v.c	2008-02-12 00:37:08.000000000 -0800
++++ binutils-2.19/gas/config/tc-d30v.c	2009-05-13 17:23:26.084419000 -0700
+@@ -1516,7 +1516,7 @@ d30v_align (int n, char *pfill, symbolS 
+       valueT       old_value;
+       valueT       new_value;
+ 
+-      assert (S_GET_SEGMENT (label) == now_seg);
++      gas_assert (S_GET_SEGMENT (label) == now_seg);
+ 
+       old_frag  = symbol_get_frag (label);
+       old_value = S_GET_VALUE (label);
+@@ -2113,4 +2113,3 @@ const pseudo_typeS md_pseudo_table[] =
+   { "sect.s", s_d30v_section, 0 },
+   { NULL, NULL, 0 }
+ };
+-
+Only in binutils-2.19/gas/config: tc-d30v.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-dlx.c binutils-2.19/gas/config/tc-dlx.c
+--- binutils-2.19-vanilla/gas/config/tc-dlx.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-dlx.c	2009-05-13 17:23:25.760399000 -0700
+@@ -1203,7 +1203,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+       return NULL;
+     }
+ 
+-  assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
++  gas_assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
+ 
+   reloc->sym_ptr_ptr = xmalloc (sizeof (asymbol *));
+   *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixP->fx_addsy);
+@@ -1235,4 +1235,3 @@ dlx_pop_insert (void)
+   pop_insert (dlx_pseudo_table);
+   return ;
+ }
+-
+Only in binutils-2.19/gas/config: tc-dlx.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-hppa.c binutils-2.19/gas/config/tc-hppa.c
+--- binutils-2.19-vanilla/gas/config/tc-hppa.c	2008-08-27 19:33:45.000000000 -0700
++++ binutils-2.19/gas/config/tc-hppa.c	2009-05-13 17:19:05.596098000 -0700
+@@ -1375,8 +1375,8 @@ tc_gen_reloc (asection *section, fixS *f
+   if (fixp->fx_addsy == 0)
+     return &no_relocs;
+ 
+-  assert (hppa_fixp != 0);
+-  assert (section != 0);
++  gas_assert (hppa_fixp != 0);
++  gas_assert (section != 0);
+ 
+   reloc = xmalloc (sizeof (arelent));
+ 
+@@ -1421,7 +1421,7 @@ tc_gen_reloc (asection *section, fixS *f
+   switch (fixp->fx_r_type)
+     {
+     default:
+-      assert (n_relocs == 1);
++      gas_assert (n_relocs == 1);
+ 
+       code = *codes[0];
+ 
+@@ -1475,7 +1475,7 @@ tc_gen_reloc (asection *section, fixS *f
+ 					    (bfd_reloc_code_real_type) code);
+       reloc->address = fixp->fx_frag->fr_address + fixp->fx_where;
+ 
+-      assert (reloc->howto && (unsigned int) code == reloc->howto->type);
++      gas_assert (reloc->howto && (unsigned int) code == reloc->howto->type);
+       break;
+     }
+ #else /* OBJ_SOM */
+@@ -1498,7 +1498,7 @@ tc_gen_reloc (asection *section, fixS *f
+ 	  /* The only time we ever use a R_COMP2 fixup is for the difference
+ 	     of two symbols.  With that in mind we fill in all four
+ 	     relocs now and break out of the loop.  */
+-	  assert (i == 1);
++	  gas_assert (i == 1);
+ 	  relocs[0]->sym_ptr_ptr
+ 	    = (asymbol **) bfd_abs_section_ptr->symbol_ptr_ptr;
+ 	  relocs[0]->howto
+@@ -5697,7 +5697,7 @@ md_assemble (char *str)
+   char *to;
+ 
+   /* The had better be something to assemble.  */
+-  assert (str);
++  gas_assert (str);
+ 
+   /* If we are within a procedure definition, make sure we've
+      defined a label for the procedure; handle case where the
+@@ -6402,7 +6402,7 @@ hppa_elf_mark_end_of_function (void)
+ 	  symbolP = symbol_new (name, now_seg, (valueT) (frag_now_fix () - 4),
+ 				frag_now);
+ 
+-	  assert (symbolP);
++	  gas_assert (symbolP);
+ 	  S_CLEAR_EXTERNAL (symbolP);
+ 	  symbol_table_insert (symbolP);
+ 	}
+@@ -8434,7 +8434,7 @@ hppa_force_relocation (struct fix *fixp)
+     return 1;
+ #endif
+ 
+-  assert (fixp->fx_addsy != NULL);
++  gas_assert (fixp->fx_addsy != NULL);
+ 
+   /* Ensure we emit a relocation for global symbols so that dynamic
+      linking works.  */
+Only in binutils-2.19/gas/config: tc-hppa.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-i370.c binutils-2.19/gas/config/tc-i370.c
+--- binutils-2.19-vanilla/gas/config/tc-i370.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-i370.c	2009-05-13 17:23:25.557498000 -0700
+@@ -1923,7 +1923,7 @@ md_assemble (char *str)
+     {
+       const struct i370_macro *macro;
+ 
+-      assert (i370_macro_hash);
++      gas_assert (i370_macro_hash);
+       macro = (const struct i370_macro *) hash_find (i370_macro_hash, str);
+       if (macro == (const struct i370_macro *) NULL)
+         as_bad ("Unrecognized opcode: `%s'", str);
+@@ -2668,4 +2668,3 @@ const pseudo_typeS md_pseudo_table[] =
+ 
+   { NULL,       NULL,		0 }
+ };
+-
+Only in binutils-2.19/gas/config: tc-i370.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-i386.c binutils-2.19/gas/config/tc-i386.c
+--- binutils-2.19-vanilla/gas/config/tc-i386.c	2008-10-16 05:52:15.000000000 -0700
++++ binutils-2.19/gas/config/tc-i386.c	2009-05-07 09:53:45.794968000 -0700
 @@ -97,23 +97,11 @@
    */
  typedef struct
@@ -617,9 +1412,9 @@ diff -rupN binutils-2.19-orig/gas/config/tc-i386.c binutils-2.19/gas/config/tc-i
        sp_regno[flag_code >> 1] = exp.X_add_number;
        input_line_pointer = saved_input;
      }
-diff -rupN binutils-2.19-orig/gas/config/tc-i386.h binutils-2.19/gas/config/tc-i386.h
---- binutils-2.19-orig/gas/config/tc-i386.h	2008-10-16 05:52:21.000000000 -0700
-+++ binutils-2.19/gas/config/tc-i386.h	2009-04-29 11:40:39.511001000 -0700
+diff -upr binutils-2.19-vanilla/gas/config/tc-i386.h binutils-2.19/gas/config/tc-i386.h
+--- binutils-2.19-vanilla/gas/config/tc-i386.h	2008-10-16 05:52:21.000000000 -0700
++++ binutils-2.19/gas/config/tc-i386.h	2009-05-07 09:53:45.804920000 -0700
 @@ -232,4 +232,135 @@ void tc_pe_dwarf2_emit_offset (symbolS *
  
  #endif /* TE_PE */
@@ -756,9 +1551,2529 @@ diff -rupN binutils-2.19-orig/gas/config/tc-i386.h binutils-2.19/gas/config/tc-i
 +
 +
  #endif /* TC_I386 */
-diff -rupN binutils-2.19-orig/gas/dw2gencfi.c binutils-2.19/gas/dw2gencfi.c
---- binutils-2.19-orig/gas/dw2gencfi.c	2008-10-16 05:52:09.000000000 -0700
-+++ binutils-2.19/gas/dw2gencfi.c	2009-04-29 11:18:10.569493000 -0700
+diff -upr binutils-2.19-vanilla/gas/config/tc-i860.c binutils-2.19/gas/config/tc-i860.c
+--- binutils-2.19-vanilla/gas/config/tc-i860.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/config/tc-i860.c	2009-05-13 17:23:25.279560000 -0700
+@@ -261,7 +261,7 @@ md_assemble (char *str)
+   int i;
+   struct i860_it pseudo[3];
+ 
+-  assert (str);
++  gas_assert (str);
+   fc = 0;
+ 
+   /* Assemble the instruction.  */
+@@ -1489,4 +1489,3 @@ i860_check_label (symbolS *labelsym)
+       input_line_pointer++;
+     }
+ }
+-
+Only in binutils-2.19/gas/config: tc-i860.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-i960.c binutils-2.19/gas/config/tc-i960.c
+--- binutils-2.19-vanilla/gas/config/tc-i960.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-i960.c	2009-05-13 17:23:25.050537000 -0700
+@@ -2644,7 +2644,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+       return NULL;
+     }
+ 
+-  assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
++  gas_assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
+ 
+   reloc->sym_ptr_ptr = xmalloc (sizeof (asymbol *));
+   *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixP->fx_addsy);
+Only in binutils-2.19/gas/config: tc-i960.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-ia64.c binutils-2.19/gas/config/tc-ia64.c
+--- binutils-2.19-vanilla/gas/config/tc-ia64.c	2008-08-28 07:07:49.000000000 -0700
++++ binutils-2.19/gas/config/tc-ia64.c	2009-05-13 17:23:24.822542000 -0700
+@@ -2809,7 +2809,7 @@ ia64_estimate_size_before_relax (fragS *
+ 
+   /* fr_var carries the max_chars that we created the fragment with.
+      We must, of course, have allocated enough memory earlier.  */
+-  assert (frag->fr_var >= size);
++  gas_assert (frag->fr_var >= size);
+ 
+   return frag->fr_fix + size;
+ }
+@@ -2840,7 +2840,7 @@ ia64_convert_frag (fragS *frag)
+ 
+   /* fr_var carries the max_chars that we created the fragment with.
+      We must, of course, have allocated enough memory earlier.  */
+-  assert (frag->fr_var >= size);
++  gas_assert (frag->fr_var >= size);
+ 
+   /* Initialize the header area. fr_offset is initialized with
+      unwind.personality_routine.  */
+@@ -5878,7 +5878,7 @@ parse_operands (struct ia64_opcode *ides
+   char *first_arg = 0, *end, *saved_input_pointer;
+   unsigned int sof;
+ 
+-  assert (strlen (idesc->name) <= 128);
++  gas_assert (strlen (idesc->name) <= 128);
+ 
+   strcpy (mnemonic, idesc->name);
+   if (idesc->operands[2] == IA64_OPND_SOF
+@@ -6202,7 +6202,7 @@ build_insn (struct slot *slot, bfd_vma *
+       else if (slot->opnd[i].X_op == O_big)
+ 	{
+ 	  /* This must be the value 0x10000000000000000.  */
+-	  assert (idesc->operands[i] == IA64_OPND_IMM8M1U8);
++	  gas_assert (idesc->operands[i] == IA64_OPND_IMM8M1U8);
+ 	  val = 0;
+ 	}
+       else
+Only in binutils-2.19/gas/config: tc-ia64.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-iq2000.c binutils-2.19/gas/config/tc-iq2000.c
+--- binutils-2.19-vanilla/gas/config/tc-iq2000.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-iq2000.c	2009-05-13 17:18:41.254723000 -0700
+@@ -534,7 +534,7 @@ iq2000_record_hi16 (int    reloc_type,
+ {
+   struct iq2000_hi_fixup * hi_fixup;
+ 
+-  assert (reloc_type == BFD_RELOC_HI16);
++  gas_assert (reloc_type == BFD_RELOC_HI16);
+ 
+   hi_fixup = xmalloc (sizeof * hi_fixup);
+   hi_fixup->fixp = fixP;
+@@ -587,7 +587,7 @@ iq2000_frob_file (void)
+       segment_info_type * seginfo;
+       int                 pass;
+ 
+-      assert (FX_OPINFO_R_TYPE (l->fixp) == BFD_RELOC_HI16
++      gas_assert (FX_OPINFO_R_TYPE (l->fixp) == BFD_RELOC_HI16
+ 	      || FX_OPINFO_R_TYPE (l->fixp) == BFD_RELOC_LO16);
+ 
+       /* Check quickly whether the next fixup happens to be a matching low.  */
+@@ -627,7 +627,7 @@ iq2000_frob_file (void)
+ 		  for (pf = &seginfo->fix_root;
+ 		       * pf != l->fixp;
+ 		       pf = & (* pf)->fx_next)
+-		    assert (* pf != NULL);
++		    gas_assert (* pf != NULL);
+ 
+ 		  * pf = l->fixp->fx_next;
+ 
+@@ -837,7 +837,7 @@ s_iq2000_end (int x ATTRIBUTE_UNUSED)
+ 
+   if (p != NULL)
+     {
+-      assert (S_GET_NAME (p));
++      gas_assert (S_GET_NAME (p));
+       if (strcmp (S_GET_NAME (p), S_GET_NAME (cur_proc_ptr->isym)))
+ 	as_warn (_(".end symbol does not match .ent symbol."));
+     }
+Only in binutils-2.19/gas/config: tc-iq2000.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-m32c.c binutils-2.19/gas/config/tc-m32c.c
+--- binutils-2.19-vanilla/gas/config/tc-m32c.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/config/tc-m32c.c	2009-05-13 17:23:24.530662000 -0700
+@@ -910,7 +910,7 @@ md_convert_frag (bfd *   abfd ATTRIBUTE_
+ 			 && operand != M32C_OPERAND_LAB32_JMP_S)))
+     {
+       fixS *fixP;
+-      assert (fragP->fr_cgen.insn != 0);
++      gas_assert (fragP->fr_cgen.insn != 0);
+       fixP = gas_cgen_record_fixup (fragP,
+ 				    where,
+ 				    fragP->fr_cgen.insn,
+Only in binutils-2.19/gas/config: tc-m32c.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-m32r.c binutils-2.19/gas/config/tc-m32r.c
+--- binutils-2.19-vanilla/gas/config/tc-m32r.c	2007-12-10 15:33:46.000000000 -0800
++++ binutils-2.19/gas/config/tc-m32r.c	2009-05-13 17:18:29.485360000 -0700
+@@ -1809,8 +1809,8 @@ md_convert_frag (bfd *abfd ATTRIBUTE_UNU
+     {
+       fixS *fixP;
+ 
+-      assert (fragP->fr_subtype != 1);
+-      assert (fragP->fr_cgen.insn != 0);
++      gas_assert (fragP->fr_subtype != 1);
++      gas_assert (fragP->fr_cgen.insn != 0);
+ 
+       fixP = gas_cgen_record_fixup (fragP,
+ 				    /* Offset of branch insn in frag.  */
+@@ -1900,7 +1900,7 @@ m32r_record_hi16 (int reloc_type,
+ {
+   struct m32r_hi_fixup *hi_fixup;
+ 
+-  assert (reloc_type == BFD_RELOC_M32R_HI16_SLO
++  gas_assert (reloc_type == BFD_RELOC_M32R_HI16_SLO
+ 	  || reloc_type == BFD_RELOC_M32R_HI16_ULO);
+ 
+   hi_fixup = xmalloc (sizeof (* hi_fixup));
+@@ -2008,7 +2008,7 @@ m32r_frob_file (void)
+       segment_info_type *seginfo;
+       int pass;
+ 
+-      assert (FX_OPINFO_R_TYPE (l->fixp) == BFD_RELOC_M32R_HI16_SLO
++      gas_assert (FX_OPINFO_R_TYPE (l->fixp) == BFD_RELOC_M32R_HI16_SLO
+ 	      || FX_OPINFO_R_TYPE (l->fixp) == BFD_RELOC_M32R_HI16_ULO);
+ 
+       /* Check quickly whether the next fixup happens to be a matching low.  */
+@@ -2049,7 +2049,7 @@ m32r_frob_file (void)
+ 		  for (pf = &seginfo->fix_root;
+ 		       *pf != l->fixp;
+ 		       pf = & (*pf)->fx_next)
+-		    assert (*pf != NULL);
++		    gas_assert (*pf != NULL);
+ 
+ 		  *pf = l->fixp->fx_next;
+ 
+Only in binutils-2.19/gas/config: tc-m32r.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-m68hc11.c binutils-2.19/gas/config/tc-m68hc11.c
+--- binutils-2.19-vanilla/gas/config/tc-m68hc11.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-m68hc11.c	2009-05-13 17:18:15.269444000 -0700
+@@ -1522,9 +1522,9 @@ build_jump_insn (struct m68hc11_opcode *
+ 
+   /* The relative branch conversion is not supported for
+      brclr and brset.  */
+-  assert ((opcode->format & M6811_OP_BITMASK) == 0);
+-  assert (nb_operands == 1);
+-  assert (operands[0].reg1 == REG_NONE && operands[0].reg2 == REG_NONE);
++  gas_assert ((opcode->format & M6811_OP_BITMASK) == 0);
++  gas_assert (nb_operands == 1);
++  gas_assert (operands[0].reg1 == REG_NONE && operands[0].reg2 == REG_NONE);
+ 
+   code = opcode->opcode;
+ 
+@@ -1672,9 +1672,9 @@ build_dbranch_insn (struct m68hc11_opcod
+ 
+   /* The relative branch conversion is not supported for
+      brclr and brset.  */
+-  assert ((opcode->format & M6811_OP_BITMASK) == 0);
+-  assert (nb_operands == 2);
+-  assert (operands[0].reg1 != REG_NONE);
++  gas_assert ((opcode->format & M6811_OP_BITMASK) == 0);
++  gas_assert (nb_operands == 2);
++  gas_assert (operands[0].reg1 != REG_NONE);
+ 
+   code = opcode->opcode & 0x0FF;
+ 
+@@ -2618,7 +2618,7 @@ s_m68hc11_mark_symbol (int mark)
+       bfdsym = symbol_get_bfdsym (symbolP);
+       elfsym = elf_symbol_from (bfd_asymbol_bfd (bfdsym), bfdsym);
+ 
+-      assert (elfsym);
++      gas_assert (elfsym);
+ 
+       /* Mark the symbol far (using rtc for function return).  */
+       elfsym->internal_elf_sym.st_other |= mark;
+@@ -2823,7 +2823,7 @@ md_convert_frag (bfd *abfd ATTRIBUTE_UNU
+ 
+     case ENCODE_RELAX (STATE_PC_RELATIVE, STATE_WORD):
+       /* This relax is only for bsr and bra.  */
+-      assert (IS_OPCODE (fragP->fr_opcode[0], M6811_BSR)
++      gas_assert (IS_OPCODE (fragP->fr_opcode[0], M6811_BSR)
+ 	      || IS_OPCODE (fragP->fr_opcode[0], M6811_BRA)
+ 	      || IS_OPCODE (fragP->fr_opcode[0], M6812_BSR));
+ 
+@@ -2964,7 +2964,7 @@ md_estimate_size_before_relax (fragS *fr
+ 	    case STATE_PC_RELATIVE:
+ 
+ 	      /* This relax is only for bsr and bra.  */
+-	      assert (IS_OPCODE (fragP->fr_opcode[0], M6811_BSR)
++	      gas_assert (IS_OPCODE (fragP->fr_opcode[0], M6811_BSR)
+ 		      || IS_OPCODE (fragP->fr_opcode[0], M6811_BRA)
+ 		      || IS_OPCODE (fragP->fr_opcode[0], M6812_BSR));
+ 
+@@ -2984,7 +2984,7 @@ md_estimate_size_before_relax (fragS *fr
+ 	      break;
+ 
+ 	    case STATE_CONDITIONAL_BRANCH:
+-	      assert (current_architecture & cpu6811);
++	      gas_assert (current_architecture & cpu6811);
+ 
+ 	      fragP->fr_opcode[0] ^= 1;	/* Reverse sense of branch.  */
+ 	      fragP->fr_opcode[1] = 3;	/* Skip next jmp insn (3 bytes).  */
+@@ -3000,7 +3000,7 @@ md_estimate_size_before_relax (fragS *fr
+ 	      break;
+ 
+ 	    case STATE_INDEXED_OFFSET:
+-	      assert (current_architecture & cpu6812);
++	      gas_assert (current_architecture & cpu6812);
+ 
+               if (fragP->fr_symbol
+                   && S_GET_SEGMENT (fragP->fr_symbol) == absolute_section)
+@@ -3022,7 +3022,7 @@ md_estimate_size_before_relax (fragS *fr
+ 	      break;
+ 
+ 	    case STATE_INDEXED_PCREL:
+-	      assert (current_architecture & cpu6812);
++	      gas_assert (current_architecture & cpu6812);
+ 
+               if (fragP->fr_symbol
+                   && S_GET_SEGMENT (fragP->fr_symbol) == absolute_section)
+@@ -3045,7 +3045,7 @@ md_estimate_size_before_relax (fragS *fr
+ 	      break;
+ 
+ 	    case STATE_XBCC_BRANCH:
+-	      assert (current_architecture & cpu6812);
++	      gas_assert (current_architecture & cpu6812);
+ 
+ 	      fragP->fr_opcode[0] ^= 0x20;	/* Reverse sense of branch.  */
+ 	      fragP->fr_opcode[1] = 3;	/* Skip next jmp insn (3 bytes).  */
+@@ -3061,7 +3061,7 @@ md_estimate_size_before_relax (fragS *fr
+ 	      break;
+ 
+ 	    case STATE_CONDITIONAL_BRANCH_6812:
+-	      assert (current_architecture & cpu6812);
++	      gas_assert (current_architecture & cpu6812);
+ 
+ 	      /* Translate into a lbcc branch.  */
+ 	      fragP->fr_opcode[1] = fragP->fr_opcode[0];
+@@ -3086,7 +3086,7 @@ md_estimate_size_before_relax (fragS *fr
+ 	{
+ 	case STATE_PC_RELATIVE:
+ 	  /* This relax is only for bsr and bra.  */
+-	  assert (IS_OPCODE (fragP->fr_opcode[0], M6811_BSR)
++	  gas_assert (IS_OPCODE (fragP->fr_opcode[0], M6811_BSR)
+ 		  || IS_OPCODE (fragP->fr_opcode[0], M6811_BRA)
+ 		  || IS_OPCODE (fragP->fr_opcode[0], M6812_BSR));
+ 
+@@ -3094,34 +3094,34 @@ md_estimate_size_before_relax (fragS *fr
+ 	  break;
+ 
+ 	case STATE_CONDITIONAL_BRANCH:
+-	  assert (current_architecture & cpu6811);
++	  gas_assert (current_architecture & cpu6811);
+ 
+ 	  fragP->fr_subtype = ENCODE_RELAX (STATE_CONDITIONAL_BRANCH,
+ 					    STATE_BYTE);
+ 	  break;
+ 
+ 	case STATE_INDEXED_OFFSET:
+-	  assert (current_architecture & cpu6812);
++	  gas_assert (current_architecture & cpu6812);
+ 
+ 	  fragP->fr_subtype = ENCODE_RELAX (STATE_INDEXED_OFFSET,
+ 					    STATE_BITS5);
+ 	  break;
+ 
+ 	case STATE_INDEXED_PCREL:
+-	  assert (current_architecture & cpu6812);
++	  gas_assert (current_architecture & cpu6812);
+ 
+ 	  fragP->fr_subtype = ENCODE_RELAX (STATE_INDEXED_PCREL,
+ 					    STATE_BITS5);
+ 	  break;
+ 
+ 	case STATE_XBCC_BRANCH:
+-	  assert (current_architecture & cpu6812);
++	  gas_assert (current_architecture & cpu6812);
+ 
+ 	  fragP->fr_subtype = ENCODE_RELAX (STATE_XBCC_BRANCH, STATE_BYTE);
+ 	  break;
+ 
+ 	case STATE_CONDITIONAL_BRANCH_6812:
+-	  assert (current_architecture & cpu6812);
++	  gas_assert (current_architecture & cpu6812);
+ 
+ 	  fragP->fr_subtype = ENCODE_RELAX (STATE_CONDITIONAL_BRANCH_6812,
+ 					    STATE_BYTE);
+Only in binutils-2.19/gas/config: tc-m68hc11.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-m68k.c binutils-2.19/gas/config/tc-m68k.c
+--- binutils-2.19-vanilla/gas/config/tc-m68k.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/config/tc-m68k.c	2009-05-13 17:17:22.020185000 -0700
+@@ -1206,7 +1206,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ #endif
+ 
+   reloc->howto = bfd_reloc_type_lookup (stdoutput, code);
+-  assert (reloc->howto != 0);
++  gas_assert (reloc->howto != 0);
+ 
+   return reloc;
+ }
+@@ -1359,7 +1359,7 @@ m68k_ip (char *instring)
+ 
+ 	  /* Make a copy of the operands of this insn so that
+ 	     we can modify them safely, should we want to.  */
+-	  assert (opsfound <= (int) ARRAY_SIZE (operands_backup));
++	  gas_assert (opsfound <= (int) ARRAY_SIZE (operands_backup));
+ 	  for (i = 0; i < opsfound; i++)
+ 	    operands_backup[i] = the_ins.operands[i];
+ 
+@@ -5004,14 +5004,14 @@ md_convert_frag_1 (fragS *fragP)
+       fragP->fr_fix += 4;
+       break;
+     case TAB (PCINDEX, BYTE):
+-      assert (fragP->fr_fix >= 2);
++      gas_assert (fragP->fr_fix >= 2);
+       buffer_address[-2] &= ~1;
+       fixP = fix_new (fragP, fragP->fr_fix - 1, 1, fragP->fr_symbol,
+ 		      fragP->fr_offset, 1, RELAX_RELOC_PC8);
+       fixP->fx_pcrel_adjust = 1;
+       break;
+     case TAB (PCINDEX, SHORT):
+-      assert (fragP->fr_fix >= 2);
++      gas_assert (fragP->fr_fix >= 2);
+       buffer_address[-2] |= 0x1;
+       buffer_address[-1] = 0x20;
+       fixP = fix_new (fragP, (int) (fragP->fr_fix), 2, fragP->fr_symbol,
+@@ -5020,7 +5020,7 @@ md_convert_frag_1 (fragS *fragP)
+       fragP->fr_fix += 2;
+       break;
+     case TAB (PCINDEX, LONG):
+-      assert (fragP->fr_fix >= 2);
++      gas_assert (fragP->fr_fix >= 2);
+       buffer_address[-2] |= 0x1;
+       buffer_address[-1] = 0x30;
+       fixP = fix_new (fragP, (int) (fragP->fr_fix), 4, fragP->fr_symbol,
+Only in binutils-2.19/gas/config: tc-m68k.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-maxq.c binutils-2.19/gas/config/tc-maxq.c
+--- binutils-2.19-vanilla/gas/config/tc-maxq.c	2008-08-12 16:39:30.000000000 -0700
++++ binutils-2.19/gas/config/tc-maxq.c	2009-05-13 17:23:24.255696000 -0700
+@@ -276,7 +276,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ 
+       /* Set howto to a garbage value so that we can keep going.  */
+       rel->howto = bfd_reloc_type_lookup (stdoutput, BFD_RELOC_32);
+-      assert (rel->howto != NULL);
++      gas_assert (rel->howto != NULL);
+     }
+ 
+   return rel;
+Only in binutils-2.19/gas/config: tc-maxq.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-mcore.c binutils-2.19/gas/config/tc-mcore.c
+--- binutils-2.19-vanilla/gas/config/tc-mcore.c	2008-08-22 10:05:40.000000000 -0700
++++ binutils-2.19/gas/config/tc-mcore.c	2009-05-13 17:26:48.524125000 -0700
+@@ -2135,7 +2135,7 @@ md_pcrel_from_section (fixS * fixp, segT
+ 	  || (S_GET_SEGMENT (fixp->fx_addsy) != sec)))
+ 
+   {
+-    assert (fixp->fx_size == 2);	/* must be an insn */
++    gas_assert (fixp->fx_size == 2);	/* must be an insn */
+     return fixp->fx_size;
+   }
+ #endif
+@@ -2201,7 +2201,7 @@ tc_gen_reloc (asection * section ATTRIBU
+ 
+       /* Set howto to a garbage value so that we can keep going.  */
+       rel->howto = bfd_reloc_type_lookup (stdoutput, BFD_RELOC_32);
+-      assert (rel->howto != NULL);
++      gas_assert (rel->howto != NULL);
+     }
+ 
+   return rel;
+Only in binutils-2.19/gas/config: tc-mcore.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-mep.c binutils-2.19/gas/config/tc-mep.c
+--- binutils-2.19-vanilla/gas/config/tc-mep.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-mep.c	2009-05-13 17:16:56.341843000 -0700
+@@ -1411,7 +1411,7 @@ md_convert_frag (bfd *abfd  ATTRIBUTE_UN
+   if (S_GET_SEGMENT (fragP->fr_symbol) != sec
+       || operand == MEP_OPERAND_PCABS24A2)
+     {
+-      assert (fragP->fr_cgen.insn != 0);
++      gas_assert (fragP->fr_cgen.insn != 0);
+       gas_cgen_record_fixup (fragP,
+ 			     where,
+ 			     fragP->fr_cgen.insn,
+@@ -1583,7 +1583,7 @@ mep_frob_file ()
+       segment_info_type * seginfo;
+       int pass;
+ 
+-      assert (FX_OPINFO_R_TYPE (l->fixp) == BFD_RELOC_HI16
++      gas_assert (FX_OPINFO_R_TYPE (l->fixp) == BFD_RELOC_HI16
+ 	      || FX_OPINFO_R_TYPE (l->fixp) == BFD_RELOC_LO16);
+ 
+       /* Check quickly whether the next fixup happens to be a matching low.  */
+@@ -1623,7 +1623,7 @@ mep_frob_file ()
+ 		  for (pf = &seginfo->fix_root;
+ 		       * pf != l->fixp;
+ 		       pf = & (* pf)->fx_next)
+-		    assert (* pf != NULL);
++		    gas_assert (* pf != NULL);
+ 
+ 		  * pf = l->fixp->fx_next;
+ 
+Only in binutils-2.19/gas/config: tc-mep.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-mips.c binutils-2.19/gas/config/tc-mips.c
+--- binutils-2.19-vanilla/gas/config/tc-mips.c	2008-08-08 12:24:49.000000000 -0700
++++ binutils-2.19/gas/config/tc-mips.c	2009-05-13 17:15:11.037222000 -0700
+@@ -2213,7 +2213,7 @@ insn_uses_reg (const struct mips_cl_insn
+ {
+   if (class == MIPS16_REG)
+     {
+-      assert (mips_opts.mips16);
++      gas_assert (mips_opts.mips16);
+       reg = mips16_to_32_reg_map[reg];
+       class = MIPS_GR_REG;
+     }
+@@ -2224,7 +2224,7 @@ insn_uses_reg (const struct mips_cl_insn
+ 
+   if (class == MIPS_FP_REG)
+     {
+-      assert (! mips_opts.mips16);
++      gas_assert (! mips_opts.mips16);
+       /* If we are called with either $f0 or $f1, we must check $f0.
+ 	 This is not optimal, because it will introduce an unnecessary
+ 	 NOP between "lwc1 $f0" and "swc1 $f1".  To fix this we would
+@@ -2313,7 +2313,7 @@ mips_move_labels (void)
+ 
+   for (l = si->label_list; l != NULL; l = l->next)
+     {
+-      assert (S_GET_SEGMENT (l->label) == now_seg);
++      gas_assert (S_GET_SEGMENT (l->label) == now_seg);
+       symbol_set_frag (l->label, frag_now);
+       val = (valueT) frag_now_fix ();
+       /* mips16 text labels are stored as odd.  */
+@@ -2403,7 +2403,7 @@ relax_close_frag (void)
+ static void
+ relax_start (symbolS *symbol)
+ {
+-  assert (mips_relax.sequence == 0);
++  gas_assert (mips_relax.sequence == 0);
+   mips_relax.sequence = 1;
+   mips_relax.symbol = symbol;
+ }
+@@ -2414,7 +2414,7 @@ relax_start (symbolS *symbol)
+ static void
+ relax_switch (void)
+ {
+-  assert (mips_relax.sequence == 1);
++  gas_assert (mips_relax.sequence == 1);
+   mips_relax.sequence = 2;
+ }
+ 
+@@ -2423,7 +2423,7 @@ relax_switch (void)
+ static void
+ relax_end (void)
+ {
+-  assert (mips_relax.sequence == 2);
++  gas_assert (mips_relax.sequence == 2);
+   relax_close_frag ();
+   mips_relax.sequence = 0;
+ }
+@@ -2764,7 +2764,7 @@ append_insn (struct mips_cl_insn *ip, ex
+     {
+       /* Work out how many nops in prev_nop_frag are needed by IP.  */
+       int nops = nops_for_insn_or_target (history, ip);
+-      assert (nops <= prev_nop_frag_holds);
++      gas_assert (nops <= prev_nop_frag_holds);
+ 
+       /* Enforce NOPS as a minimum.  */
+       if (nops > prev_nop_frag_required)
+@@ -2831,7 +2831,7 @@ append_insn (struct mips_cl_insn *ip, ex
+   else if (*reloc_type > BFD_RELOC_UNUSED)
+     {
+       /* We need to set up a variant frag.  */
+-      assert (mips_opts.mips16 && address_expr != NULL);
++      gas_assert (mips_opts.mips16 && address_expr != NULL);
+       add_relaxed_insn (ip, 4, 0,
+ 			RELAX_MIPS16_ENCODE
+ 			(*reloc_type - BFD_RELOC_UNUSED,
+@@ -3512,8 +3512,8 @@ macro_build (expressionS *ep, const char
+   r[1] = BFD_RELOC_UNUSED;
+   r[2] = BFD_RELOC_UNUSED;
+   mo = (struct mips_opcode *) hash_find (op_hash, name);
+-  assert (mo);
+-  assert (strcmp (name, mo->name) == 0);
++  gas_assert (mo);
++  gas_assert (strcmp (name, mo->name) == 0);
+ 
+   while (1)
+     {
+@@ -3525,8 +3525,8 @@ macro_build (expressionS *ep, const char
+ 	break;
+ 
+       ++mo;
+-      assert (mo->name);
+-      assert (strcmp (name, mo->name) == 0);
++      gas_assert (mo->name);
++      gas_assert (strcmp (name, mo->name) == 0);
+     }
+ 
+   create_insn (&insn, mo);
+@@ -3651,7 +3651,7 @@ macro_build (expressionS *ep, const char
+ 	case 'j':
+ 	case 'o':
+ 	  macro_read_relocs (&args, r);
+-	  assert (*r == BFD_RELOC_GPREL16
++	  gas_assert (*r == BFD_RELOC_GPREL16
+ 		  || *r == BFD_RELOC_MIPS_LITERAL
+ 		  || *r == BFD_RELOC_MIPS_HIGHER
+ 		  || *r == BFD_RELOC_HI16_S
+@@ -3667,7 +3667,7 @@ macro_build (expressionS *ep, const char
+ 
+ 	case 'u':
+ 	  macro_read_relocs (&args, r);
+-	  assert (ep != NULL
++	  gas_assert (ep != NULL
+ 		  && (ep->X_op == O_constant
+ 		      || (ep->X_op == O_symbol
+ 			  && (*r == BFD_RELOC_MIPS_HIGHEST
+@@ -3679,7 +3679,7 @@ macro_build (expressionS *ep, const char
+ 	  continue;
+ 
+ 	case 'p':
+-	  assert (ep != NULL);
++	  gas_assert (ep != NULL);
+ 
+ 	  /*
+ 	   * This allows macro() to pass an immediate expression for
+@@ -3704,7 +3704,7 @@ macro_build (expressionS *ep, const char
+ 	  continue;
+ 
+ 	case 'a':
+-	  assert (ep != NULL);
++	  gas_assert (ep != NULL);
+ 	  *r = BFD_RELOC_MIPS_JMP;
+ 	  continue;
+ 
+@@ -3722,7 +3722,7 @@ macro_build (expressionS *ep, const char
+       break;
+     }
+   va_end (args);
+-  assert (*r == BFD_RELOC_UNUSED ? ep == NULL : ep != NULL);
++  gas_assert (*r == BFD_RELOC_UNUSED ? ep == NULL : ep != NULL);
+ 
+   append_insn (&insn, ep, r);
+ }
+@@ -3737,14 +3737,14 @@ mips16_macro_build (expressionS *ep, con
+     = {BFD_RELOC_UNUSED, BFD_RELOC_UNUSED, BFD_RELOC_UNUSED};
+ 
+   mo = (struct mips_opcode *) hash_find (mips16_op_hash, name);
+-  assert (mo);
+-  assert (strcmp (name, mo->name) == 0);
++  gas_assert (mo);
++  gas_assert (strcmp (name, mo->name) == 0);
+ 
+   while (strcmp (fmt, mo->args) != 0 || mo->pinfo == INSN_MACRO)
+     {
+       ++mo;
+-      assert (mo->name);
+-      assert (strcmp (name, mo->name) == 0);
++      gas_assert (mo->name);
++      gas_assert (strcmp (name, mo->name) == 0);
+     }
+ 
+   create_insn (&insn, mo);
+@@ -3818,7 +3818,7 @@ mips16_macro_build (expressionS *ep, con
+ 	case 'p':
+ 	case 'q':
+ 	  {
+-	    assert (ep != NULL);
++	    gas_assert (ep != NULL);
+ 
+ 	    if (ep->X_op != O_constant)
+ 	      *r = (int) BFD_RELOC_UNUSED + c;
+@@ -3841,7 +3841,7 @@ mips16_macro_build (expressionS *ep, con
+       break;
+     }
+ 
+-  assert (*r == BFD_RELOC_UNUSED ? ep == NULL : ep != NULL);
++  gas_assert (*r == BFD_RELOC_UNUSED ? ep == NULL : ep != NULL);
+ 
+   append_insn (&insn, ep, r);
+ }
+@@ -3907,7 +3907,7 @@ macro_build_lui (expressionS *ep, int re
+   const char *name = "lui";
+   const char *fmt = "t,u";
+ 
+-  assert (! mips_opts.mips16);
++  gas_assert (! mips_opts.mips16);
+ 
+   high_expr = *ep;
+ 
+@@ -3920,10 +3920,10 @@ macro_build_lui (expressionS *ep, int re
+     }
+   else
+     {
+-      assert (ep->X_op == O_symbol);
++      gas_assert (ep->X_op == O_symbol);
+       /* _gp_disp is a special case, used from s_cpload.
+ 	 __gnu_local_gp is used if mips_no_shared.  */
+-      assert (mips_pic == NO_PIC
++      gas_assert (mips_pic == NO_PIC
+ 	      || (! HAVE_NEWABI
+ 		  && strcmp (S_GET_NAME (ep->X_add_symbol), "_gp_disp") == 0)
+ 	      || (! mips_in_shared
+@@ -3933,8 +3933,8 @@ macro_build_lui (expressionS *ep, int re
+     }
+ 
+   mo = hash_find (op_hash, name);
+-  assert (strcmp (name, mo->name) == 0);
+-  assert (strcmp (fmt, mo->args) == 0);
++  gas_assert (strcmp (name, mo->name) == 0);
++  gas_assert (strcmp (fmt, mo->args) == 0);
+   create_insn (&insn, mo);
+ 
+   insn.insn_opcode = insn.insn_mo->match;
+@@ -3955,7 +3955,7 @@ static void
+ macro_build_ldst_constoffset (expressionS *ep, const char *op,
+ 			      int treg, int breg, int dbl)
+ {
+-  assert (ep->X_op == O_constant);
++  gas_assert (ep->X_op == O_constant);
+ 
+   /* Sign-extending 32-bit constants makes their handling easier.  */
+   if (!dbl)
+@@ -4108,7 +4108,7 @@ load_register (int reg, expressionS *ep,
+ 
+   if (ep->X_op != O_big)
+     {
+-      assert (ep->X_op == O_constant);
++      gas_assert (ep->X_op == O_constant);
+ 
+       /* Sign-extending 32-bit constants makes their handling easier.  */
+       if (!dbl)
+@@ -4162,7 +4162,7 @@ load_register (int reg, expressionS *ep,
+     }
+   else
+     {
+-      assert (ep->X_add_number > 2);
++      gas_assert (ep->X_add_number > 2);
+       if (ep->X_add_number == 3)
+ 	generic_bignum[3] = 0;
+       else if (ep->X_add_number > 4)
+@@ -4709,7 +4709,7 @@ macro (struct mips_cl_insn *ip)
+   bfd_reloc_code_real_type r;
+   int hold_mips_optimize;
+ 
+-  assert (! mips_opts.mips16);
++  gas_assert (! mips_opts.mips16);
+ 
+   treg = (ip->insn_opcode >> 16) & 0x1f;
+   dreg = (ip->insn_opcode >> 11) & 0x1f;
+@@ -5715,7 +5715,7 @@ macro (struct mips_cl_insn *ip)
+ 		    dreg = tempreg;
+ 		  else
+ 		    {
+-		      assert (tempreg == AT);
++		      gas_assert (tempreg == AT);
+ 		      macro_build (NULL, ADDRESS_ADD_INSN, "d,v,t",
+ 				   treg, AT, breg);
+ 		      dreg = treg;
+@@ -5856,7 +5856,7 @@ macro (struct mips_cl_insn *ip)
+ 		dreg = tempreg;
+ 	      else
+ 		{
+-		  assert (tempreg == AT);
++		  gas_assert (tempreg == AT);
+ 		  load_delay_nop ();
+ 		  macro_build (NULL, ADDRESS_ADD_INSN, "d,v,t",
+ 			       treg, AT, breg);
+@@ -5899,7 +5899,7 @@ macro (struct mips_cl_insn *ip)
+ 		{
+ 		  /* We must add in the base register now, as in the
+ 		     external symbol case.  */
+-		  assert (tempreg == AT);
++		  gas_assert (tempreg == AT);
+ 		  load_delay_nop ();
+ 		  macro_build (NULL, ADDRESS_ADD_INSN, "d,v,t",
+ 			       treg, AT, breg);
+@@ -5995,7 +5995,7 @@ macro (struct mips_cl_insn *ip)
+ 		dreg = tempreg;
+ 	      else
+ 		{
+-		  assert (tempreg == AT);
++		  gas_assert (tempreg == AT);
+ 		  macro_build (NULL, ADDRESS_ADD_INSN, "d,v,t",
+ 			       treg, AT, breg);
+ 		  dreg = treg;
+@@ -6608,7 +6608,7 @@ macro (struct mips_cl_insn *ip)
+ 	     16 bits, because we have no way to load the upper 16 bits
+ 	     (actually, we could handle them for the subset of cases
+ 	     in which we are not using $at).  */
+-	  assert (offset_expr.X_op == O_symbol);
++	  gas_assert (offset_expr.X_op == O_symbol);
+ 	  if (HAVE_NEWABI)
+ 	    {
+ 	      macro_build (&offset_expr, ADDRESS_LOAD_INSN, "t,o(b)", tempreg,
+@@ -6658,7 +6658,7 @@ macro (struct mips_cl_insn *ip)
+ 	     16 bits, because we have no way to load the upper 16 bits
+ 	     (actually, we could handle them for the subset of cases
+ 	     in which we are not using $at).  */
+-	  assert (offset_expr.X_op == O_symbol);
++	  gas_assert (offset_expr.X_op == O_symbol);
+ 	  expr1.X_add_number = offset_expr.X_add_number;
+ 	  offset_expr.X_add_number = 0;
+ 	  if (expr1.X_add_number < -0x8000
+@@ -6697,7 +6697,7 @@ macro (struct mips_cl_insn *ip)
+ 	     Otherwise, for local symbols, we want:
+ 	       lw	$tempreg,<sym>($gp)	(BFD_RELOC_MIPS_GOT_PAGE)
+ 	       <op>	$treg,<sym>($tempreg)   (BFD_RELOC_MIPS_GOT_OFST)  */
+-	  assert (offset_expr.X_op == O_symbol);
++	  gas_assert (offset_expr.X_op == O_symbol);
+ 	  expr1.X_add_number = offset_expr.X_add_number;
+ 	  offset_expr.X_add_number = 0;
+ 	  if (expr1.X_add_number < -0x8000
+@@ -6750,7 +6750,7 @@ macro (struct mips_cl_insn *ip)
+ 	}
+       else
+ 	{
+-	  assert (offset_expr.X_op == O_symbol
++	  gas_assert (offset_expr.X_op == O_symbol
+ 		  && strcmp (segment_name (S_GET_SEGMENT
+ 					   (offset_expr.X_add_symbol)),
+ 			     ".lit4") == 0
+@@ -6792,7 +6792,7 @@ macro (struct mips_cl_insn *ip)
+ 		    move_register (lreg, 0);
+ 		  else
+ 		    {
+-		      assert (offset_expr.X_op == O_constant);
++		      gas_assert (offset_expr.X_op == O_constant);
+ 		      load_register (lreg, &offset_expr, 0);
+ 		    }
+ 		}
+@@ -6847,7 +6847,7 @@ macro (struct mips_cl_insn *ip)
+ 	  load_register (AT, &imm_expr, HAVE_64BIT_FPRS);
+ 	  if (HAVE_64BIT_FPRS)
+ 	    {
+-	      assert (HAVE_64BIT_GPRS);
++	      gas_assert (HAVE_64BIT_GPRS);
+ 	      macro_build (NULL, "dmtc1", "t,S", AT, treg);
+ 	    }
+ 	  else
+@@ -6857,7 +6857,7 @@ macro (struct mips_cl_insn *ip)
+ 		macro_build (NULL, "mtc1", "t,G", 0, treg);
+ 	      else
+ 		{
+-		  assert (offset_expr.X_op == O_constant);
++		  gas_assert (offset_expr.X_op == O_constant);
+ 		  load_register (AT, &offset_expr, 0);
+ 		  macro_build (NULL, "mtc1", "t,G", AT, treg);
+ 		}
+@@ -6865,7 +6865,7 @@ macro (struct mips_cl_insn *ip)
+ 	  break;
+ 	}
+ 
+-      assert (offset_expr.X_op == O_symbol
++      gas_assert (offset_expr.X_op == O_symbol
+ 	      && offset_expr.X_add_number == 0);
+       s = segment_name (S_GET_SEGMENT (offset_expr.X_add_symbol));
+       if (strcmp (s, ".lit8") == 0)
+@@ -6882,7 +6882,7 @@ macro (struct mips_cl_insn *ip)
+ 	}
+       else
+ 	{
+-	  assert (strcmp (s, RDATA_SECTION_NAME) == 0);
++	  gas_assert (strcmp (s, RDATA_SECTION_NAME) == 0);
+ 	  used_at = 1;
+ 	  if (mips_pic != NO_PIC)
+ 	    macro_build (&offset_expr, ADDRESS_LOAD_INSN, "t,o(b)", AT,
+@@ -6909,7 +6909,7 @@ macro (struct mips_cl_insn *ip)
+ 	 to adjust when loading from memory.  */
+       r = BFD_RELOC_LO16;
+     dob:
+-      assert (mips_opts.isa == ISA_MIPS1);
++      gas_assert (mips_opts.isa == ISA_MIPS1);
+       macro_build (&offset_expr, "lwc1", "T,o(b)",
+ 		   target_big_endian ? treg + 1 : treg, r, breg);
+       /* FIXME: A possible overflow which I don't know how to deal
+@@ -7220,7 +7220,7 @@ macro (struct mips_cl_insn *ip)
+     case M_SD_OB:
+       s = "sw";
+     sd_ob:
+-      assert (HAVE_32BIT_ADDRESSES);
++      gas_assert (HAVE_32BIT_ADDRESSES);
+       macro_build (&offset_expr, s, "t,o(b)", treg, BFD_RELOC_LO16, breg);
+       offset_expr.X_add_number += 4;
+       macro_build (&offset_expr, s, "t,o(b)", treg + 1, BFD_RELOC_LO16, breg);
+@@ -7596,7 +7596,7 @@ macro2 (struct mips_cl_insn *ip)
+       break;
+ 
+     case M_S_DOB:
+-      assert (mips_opts.isa == ISA_MIPS1);
++      gas_assert (mips_opts.isa == ISA_MIPS1);
+       /* Even on a big endian machine $fn comes before $fn+1.  We have
+ 	 to adjust when storing to memory.  */
+       macro_build (&offset_expr, "swc1", "T,o(b)",
+@@ -7890,7 +7890,7 @@ macro2 (struct mips_cl_insn *ip)
+ 
+     case M_TRUNCWS:
+     case M_TRUNCWD:
+-      assert (mips_opts.isa == ISA_MIPS1);
++      gas_assert (mips_opts.isa == ISA_MIPS1);
+       used_at = 1;
+       sreg = (ip->insn_opcode >> 11) & 0x1f;	/* floating reg */
+       dreg = (ip->insn_opcode >> 06) & 0x1f;	/* floating reg */
+@@ -8623,7 +8623,7 @@ mips_ip (char *str, struct mips_cl_insn 
+     {
+       bfd_boolean ok;
+ 
+-      assert (strcmp (insn->name, str) == 0);
++      gas_assert (strcmp (insn->name, str) == 0);
+ 
+       ok = is_opcode_valid (insn, FALSE);
+       if (! ok)
+@@ -8918,7 +8918,7 @@ mips_ip (char *str, struct mips_cl_insn 
+ 		 we must have a left paren.  */
+ 	      /* This is dependent on the next operand specifier
+ 		 is a base register specification.  */
+-	      assert (args[1] == 'b' || args[1] == '5'
++	      gas_assert (args[1] == 'b' || args[1] == '5'
+ 		      || args[1] == '-' || args[1] == '4');
+ 	      if (*s == '\0')
+ 		return;
+@@ -9680,7 +9680,7 @@ do_msbd:
+ 		    length = f64 ? 8 : 4;
+ 		  }
+ 
+-		assert (length == (unsigned) (f64 ? 8 : 4));
++		gas_assert (length == (unsigned) (f64 ? 8 : 4));
+ 
+ 		if (*args == 'f'
+ 		    || (*args == 'l'
+@@ -9778,7 +9778,7 @@ do_msbd:
+ 			newname = RDATA_SECTION_NAME;
+ 			break;
+ 		      case 'l':
+-			assert (g_switch_value >= 4);
++			gas_assert (g_switch_value >= 4);
+ 			newname = ".lit4";
+ 			break;
+ 		      }
+@@ -10081,7 +10081,7 @@ mips16_ip (char *str, struct mips_cl_ins
+     {
+       bfd_boolean ok;
+ 
+-      assert (strcmp (insn->name, str) == 0);
++      gas_assert (strcmp (insn->name, str) == 0);
+ 
+       ok = is_opcode_valid_16 (insn);
+       if (! ok)
+@@ -10780,7 +10780,7 @@ mips16_immed (char *file, unsigned int l
+   while (op->type != type)
+     {
+       ++op;
+-      assert (op < mips16_immed_operands + MIPS16_NUM_IMMED);
++      gas_assert (op < mips16_immed_operands + MIPS16_NUM_IMMED);
+     }
+ 
+   if (op->unsp)
+@@ -12011,7 +12011,7 @@ mips_frob_file (void)
+       bfd_boolean matched_lo_p;
+       fixS **hi_pos, **lo_pos, **pos;
+ 
+-      assert (reloc_needs_lo_p (l->fixp->fx_r_type));
++      gas_assert (reloc_needs_lo_p (l->fixp->fx_r_type));
+ 
+       /* If a GOT16 relocation turns out to be against a global symbol,
+ 	 there isn't supposed to be a matching LO.  */
+@@ -12107,7 +12107,7 @@ md_apply_fix (fixS *fixP, valueT *valP, 
+   if (! howto)
+     return;
+ 
+-  assert (fixP->fx_size == 4
++  gas_assert (fixP->fx_size == 4
+ 	  || fixP->fx_r_type == BFD_RELOC_16
+ 	  || fixP->fx_r_type == BFD_RELOC_64
+ 	  || fixP->fx_r_type == BFD_RELOC_CTOR
+@@ -12118,7 +12118,7 @@ md_apply_fix (fixS *fixP, valueT *valP, 
+ 
+   buf = (bfd_byte *) (fixP->fx_frag->fr_literal + fixP->fx_where);
+ 
+-  assert (!fixP->fx_pcrel || fixP->fx_r_type == BFD_RELOC_16_PCREL_S2);
++  gas_assert (!fixP->fx_pcrel || fixP->fx_r_type == BFD_RELOC_16_PCREL_S2);
+ 
+   /* Don't treat parts of a composite relocation as done.  There are two
+      reasons for this:
+@@ -12340,7 +12340,7 @@ mips_align (int to, int *fill, symbolS *
+   record_alignment (now_seg, to);
+   if (label != NULL)
+     {
+-      assert (S_GET_SEGMENT (label) == now_seg);
++      gas_assert (S_GET_SEGMENT (label) == now_seg);
+       symbol_set_frag (label, frag_now);
+       S_SET_VALUE (label, (valueT) frag_now_fix ());
+     }
+@@ -13599,7 +13599,7 @@ nopic_need_relax (symbolS *sym, int befo
+ 	  const char *segname;
+ 
+ 	  segname = segment_name (S_GET_SEGMENT (sym));
+-	  assert (strcmp (segname, ".lit8") != 0
++	  gas_assert (strcmp (segname, ".lit8") != 0
+ 		  && strcmp (segname, ".lit4") != 0);
+ 	  change = (strcmp (segname, ".sdata") != 0
+ 		    && strcmp (segname, ".sbss") != 0
+@@ -13676,7 +13676,7 @@ mips16_extended_frag (fragS *fragp, asec
+   while (op->type != type)
+     {
+       ++op;
+-      assert (op < mips16_immed_operands + MIPS16_NUM_IMMED);
++      gas_assert (op < mips16_immed_operands + MIPS16_NUM_IMMED);
+     }
+ 
+   if (op->unsp)
+@@ -14059,7 +14059,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ 
+   if (fixp->fx_pcrel)
+     {
+-      assert (fixp->fx_r_type == BFD_RELOC_16_PCREL_S2);
++      gas_assert (fixp->fx_r_type == BFD_RELOC_16_PCREL_S2);
+ 
+       /* At this point, fx_addnumber is "symbol offset - pcrel address".
+ 	 Relocations want only the symbol offset.  */
+@@ -14189,14 +14189,14 @@ md_convert_frag (bfd *abfd ATTRIBUTE_UNU
+ 		  /* bc[0-3][tf]l? and bc1any[24][ft] instructions can
+ 		     have the condition reversed by tweaking a single
+ 		     bit, and their opcodes all have 0x4???????.  */
+-		  assert ((insn & 0xf1000000) == 0x41000000);
++		  gas_assert ((insn & 0xf1000000) == 0x41000000);
+ 		  insn ^= 0x00010000;
+ 		  break;
+ 
+ 		case 0:
+ 		  /* bltz	0x04000000	bgez	0x04010000
+ 		     bltzal	0x04100000	bgezal	0x04110000  */
+-		  assert ((insn & 0xfc0e0000) == 0x04000000);
++		  gas_assert ((insn & 0xfc0e0000) == 0x04000000);
+ 		  insn ^= 0x00010000;
+ 		  break;
+ 
+@@ -14214,7 +14214,7 @@ md_convert_frag (bfd *abfd ATTRIBUTE_UNU
+ 	  if (RELAX_BRANCH_LINK (fragp->fr_subtype))
+ 	    {
+ 	      /* Clear the and-link bit.  */
+-	      assert ((insn & 0xfc1c0000) == 0x04100000);
++	      gas_assert ((insn & 0xfc1c0000) == 0x04100000);
+ 
+ 	      /* bltzal		0x04100000	bgezal	0x04110000
+ 		 bltzall	0x04120000	bgezall	0x04130000  */
+@@ -14338,7 +14338,7 @@ md_convert_frag (bfd *abfd ATTRIBUTE_UNU
+ 	    }
+ 	}
+ 
+-      assert (buf == (bfd_byte *)fragp->fr_literal
++      gas_assert (buf == (bfd_byte *)fragp->fr_literal
+ 	      + fragp->fr_fix + fragp->fr_var);
+ 
+       fragp->fr_fix += fragp->fr_var;
+@@ -14836,7 +14836,7 @@ s_mips_end (int x ATTRIBUTE_UNUSED)
+ 
+   if (p != NULL)
+     {
+-      assert (S_GET_NAME (p));
++      gas_assert (S_GET_NAME (p));
+       if (strcmp (S_GET_NAME (p), S_GET_NAME (cur_proc_ptr->func_sym)))
+ 	as_warn (_(".end symbol does not match .ent symbol."));
+ 
+@@ -14878,7 +14878,7 @@ s_mips_end (int x ATTRIBUTE_UNUSED)
+       md_flush_pending_output ();
+ #endif
+ 
+-      assert (pdr_seg);
++      gas_assert (pdr_seg);
+       subseg_set (pdr_seg, 0);
+ 
+       /* Write the symbol.  */
+Only in binutils-2.19/gas/config: tc-mips.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-mmix.c binutils-2.19/gas/config/tc-mmix.c
+--- binutils-2.19-vanilla/gas/config/tc-mmix.c	2008-09-17 02:00:45.000000000 -0700
++++ binutils-2.19/gas/config/tc-mmix.c	2009-05-13 17:17:09.269980000 -0700
+@@ -2842,7 +2842,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+     }
+ 
+   relP = (arelent *) xmalloc (sizeof (arelent));
+-  assert (relP != 0);
++  gas_assert (relP != 0);
+   relP->sym_ptr_ptr = (asymbol **) xmalloc (sizeof (asymbol *));
+   *relP->sym_ptr_ptr = baddsy;
+   relP->address = fixP->fx_frag->fr_address + fixP->fx_where;
+Only in binutils-2.19/gas/config: tc-mmix.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-mn10300.c binutils-2.19/gas/config/tc-mn10300.c
+--- binutils-2.19-vanilla/gas/config/tc-mn10300.c	2008-02-18 02:03:06.000000000 -0800
++++ binutils-2.19/gas/config/tc-mn10300.c	2009-05-13 17:23:24.001703000 -0700
+@@ -2322,7 +2322,7 @@ md_apply_fix (fixS * fixP, valueT * valP
+   int size = 0;
+   int value = (int) * valP;
+ 
+-  assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
++  gas_assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
+ 
+   /* This should never happen.  */
+   if (seg->flags & SEC_ALLOC)
+Only in binutils-2.19/gas/config: tc-mn10300.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-ns32k.c binutils-2.19/gas/config/tc-ns32k.c
+--- binutils-2.19-vanilla/gas/config/tc-ns32k.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-ns32k.c	2009-05-20 11:23:57.765795000 -0700
+@@ -712,7 +712,7 @@ get_addr_mode (char *ptr, addr_modeS *ad
+       addr_modeP->am_size += 1;
+     }
+ 
+-  assert (addr_modeP->mode >= 0); 
++  gas_assert (addr_modeP->mode >= 0); 
+   if (disp_test[(unsigned int) addr_modeP->mode])
+     {
+       char c;
+@@ -725,7 +725,7 @@ get_addr_mode (char *ptr, addr_modeS *ad
+       /* There was a displacement, probe for length  specifying suffix.  */
+       addr_modeP->pcrel = 0;
+ 
+-      assert(addr_modeP->mode >= 0);
++      gas_assert (addr_modeP->mode >= 0);
+       if (disp_test[(unsigned int) addr_modeP->mode])
+ 	{
+ 	  /* There is a displacement.  */
+Only in binutils-2.19/gas/config: tc-ns32k.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-pj.c binutils-2.19/gas/config/tc-pj.c
+--- binutils-2.19-vanilla/gas/config/tc-pj.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-pj.c	2009-05-13 17:23:23.589744000 -0700
+@@ -490,7 +490,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ 		    bfd_get_reloc_code_name (r_type));
+       /* Set howto to a garbage value so that we can keep going.  */
+       rel->howto = bfd_reloc_type_lookup (stdoutput, BFD_RELOC_32);
+-      assert (rel->howto != NULL);
++      gas_assert (rel->howto != NULL);
+     }
+ 
+   return rel;
+Only in binutils-2.19/gas/config: tc-pj.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-ppc.c binutils-2.19/gas/config/tc-ppc.c
+--- binutils-2.19-vanilla/gas/config/tc-ppc.c	2008-08-01 21:38:50.000000000 -0700
++++ binutils-2.19/gas/config/tc-ppc.c	2009-05-13 17:16:43.542684000 -0700
+@@ -2475,7 +2475,7 @@ md_assemble (char *str)
+ 		 explain.  */
+ 	      if (ex.X_op == O_symbol)
+ 		{
+-		  assert (ex.X_add_symbol != NULL);
++		  gas_assert (ex.X_add_symbol != NULL);
+ 		  if (symbol_get_bfdsym (ex.X_add_symbol)->section
+ 		      != tocdata_section)
+ 		    {
+@@ -5711,7 +5711,7 @@ md_apply_fix (fixS *fixP, valueT *valP, 
+ 	/* Nothing else to do here.  */
+ 	return;
+ 
+-      assert (fixP->fx_addsy != NULL);
++      gas_assert (fixP->fx_addsy != NULL);
+ 
+       /* Determine a BFD reloc value based on the operand information.
+ 	 We are only prepared to turn a few of the operands into
+Only in binutils-2.19/gas/config: tc-ppc.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-s390.c binutils-2.19/gas/config/tc-s390.c
+--- binutils-2.19-vanilla/gas/config/tc-s390.c	2008-08-12 16:39:31.000000000 -0700
++++ binutils-2.19/gas/config/tc-s390.c	2009-05-13 17:23:23.368877000 -0700
+@@ -2220,7 +2220,7 @@ tc_gen_reloc (asection *seg ATTRIBUTE_UN
+ 		    bfd_get_reloc_code_name (code));
+       /* Set howto to a garbage value so that we can keep going.  */
+       reloc->howto = bfd_reloc_type_lookup (stdoutput, BFD_RELOC_32);
+-      assert (reloc->howto != NULL);
++      gas_assert (reloc->howto != NULL);
+     }
+   reloc->addend = fixp->fx_offset;
+ 
+Only in binutils-2.19/gas/config: tc-s390.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-score.c binutils-2.19/gas/config/tc-score.c
+--- binutils-2.19-vanilla/gas/config/tc-score.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-score.c	2009-05-13 17:15:52.151231000 -0700
+@@ -3938,7 +3938,7 @@ do_macro_la_rdi32 (char *str)
+ 		}
+ 	      else
+ 		{
+-		  assert (inst.reloc.exp.X_add_symbol);
++		  gas_assert (inst.reloc.exp.X_add_symbol);
+ 		  build_la_pic (reg_rd, inst.reloc.exp);
+ 		}
+ 
+@@ -5206,7 +5206,7 @@ md_apply_fix (fixS *fixP, valueT *valP, 
+ 
+   char *buf = fixP->fx_frag->fr_literal + fixP->fx_where;
+ 
+-  assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
++  gas_assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
+   if (fixP->fx_addsy == 0 && !fixP->fx_pcrel)
+     {
+       if (fixP->fx_r_type != BFD_RELOC_SCORE_DUMMY_HI16)
+@@ -5466,7 +5466,7 @@ tc_gen_reloc (asection * section ATTRIBU
+ 
+       retval[1]->addend = 0;
+       retval[1]->howto = bfd_reloc_type_lookup (stdoutput, BFD_RELOC_LO16);
+-      assert (retval[1]->howto != NULL);
++      gas_assert (retval[1]->howto != NULL);
+ 
+       fixp->fx_r_type = BFD_RELOC_HI16_S;
+     }
+@@ -6041,7 +6041,7 @@ s_score_end (int x ATTRIBUTE_UNUSED)
+     }
+   if (p != NULL)
+     {
+-      assert (S_GET_NAME (p));
++      gas_assert (S_GET_NAME (p));
+       if (strcmp (S_GET_NAME (p), S_GET_NAME (cur_proc_ptr->isym)))
+         as_warn (_(".end symbol does not match .ent symbol."));
+       if (debug_type == DEBUG_STABS)
+@@ -6059,7 +6059,7 @@ s_score_end (int x ATTRIBUTE_UNUSED)
+   else
+     {
+       dot = frag_now_fix ();
+-      assert (pdr_seg);
++      gas_assert (pdr_seg);
+       subseg_set (pdr_seg, 0);
+       /* Write the symbol.  */
+       exp.X_op = O_symbol;
+@@ -6588,4 +6588,3 @@ const pseudo_typeS md_pseudo_table[] =
+   {"cpadd", s_score_cpadd, 0},
+   {0, 0, 0}
+ };
+-
+Only in binutils-2.19/gas/config: tc-score.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-sh.c binutils-2.19/gas/config/tc-sh.c
+--- binutils-2.19-vanilla/gas/config/tc-sh.c	2008-08-06 08:42:15.000000000 -0700
++++ binutils-2.19/gas/config/tc-sh.c	2009-05-13 17:23:23.122885000 -0700
+@@ -4375,7 +4375,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ 		    bfd_get_reloc_code_name (r_type));
+       /* Set howto to a garbage value so that we can keep going.  */
+       rel->howto = bfd_reloc_type_lookup (stdoutput, BFD_RELOC_32);
+-      assert (rel->howto != NULL);
++      gas_assert (rel->howto != NULL);
+     }
+ #ifdef OBJ_ELF
+   else if (rel->howto->type == R_SH_IND12W)
+Only in binutils-2.19/gas/config: tc-sh.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-sparc.c binutils-2.19/gas/config/tc-sparc.c
+--- binutils-2.19-vanilla/gas/config/tc-sparc.c	2008-08-12 16:39:31.000000000 -0700
++++ binutils-2.19/gas/config/tc-sparc.c	2009-05-13 17:15:42.850581000 -0700
+@@ -1352,7 +1352,7 @@ md_assemble (char *str)
+ 	   The workaround is to add an fmovs of the destination register to
+ 	   itself just after the instruction.  This was true on machines
+ 	   with Weitek 1165 float chips, such as the Sun-4/260 and /280.  */
+-	assert (the_insn.reloc == BFD_RELOC_NONE);
++	gas_assert (the_insn.reloc == BFD_RELOC_NONE);
+ 	the_insn.opcode = FMOVS_INSN | rd | RD (rd);
+ 	output_insn (insn, &the_insn);
+ 	return;
+@@ -2741,7 +2741,7 @@ sparc_ip (char *str, const struct sparc_
+ 		sparc_ffs (SPARC_OPCODE_SUPPORTED (max_architecture)
+ 			   & needed_arch_mask);
+ 
+-	      assert (needed_architecture <= SPARC_OPCODE_ARCH_MAX);
++	      gas_assert (needed_architecture <= SPARC_OPCODE_ARCH_MAX);
+ 	      if (warn_on_bump
+ 		  && needed_architecture > warn_after_architecture)
+ 		{
+@@ -2955,7 +2955,7 @@ md_apply_fix (fixS *fixP, valueT *valP, 
+   offsetT val = * (offsetT *) valP;
+   long insn;
+ 
+-  assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
++  gas_assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
+ 
+   fixP->fx_addnumber = val;	/* Remember value for emit_reloc.  */
+ 
+@@ -4192,7 +4192,7 @@ sparc_cons_align (int nbytes)
+   if (nalign == 0)
+     return;
+ 
+-  assert (nalign > 0);
++  gas_assert (nalign > 0);
+ 
+   if (now_seg == absolute_section)
+     {
+Only in binutils-2.19/gas/config: tc-sparc.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-spu.c binutils-2.19/gas/config/tc-spu.c
+--- binutils-2.19-vanilla/gas/config/tc-spu.c	2008-08-12 16:39:31.000000000 -0700
++++ binutils-2.19/gas/config/tc-spu.c	2009-05-13 17:23:22.856867000 -0700
+@@ -268,7 +268,7 @@ md_assemble (char *op)
+   struct spu_insn insn;
+   int i;
+ 
+-  assert (op);
++  gas_assert (op);
+ 
+   /* skip over instruction to find parameters */
+ 
+Only in binutils-2.19/gas/config: tc-spu.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-tic30.c binutils-2.19/gas/config/tc-tic30.c
+--- binutils-2.19-vanilla/gas/config/tc-tic30.c	2007-10-17 09:45:55.000000000 -0700
++++ binutils-2.19/gas/config/tc-tic30.c	2009-05-13 17:23:22.442002000 -0700
+@@ -1388,7 +1388,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ #undef F
+ 
+   rel = xmalloc (sizeof (* rel));
+-  assert (rel != 0);
++  gas_assert (rel != 0);
+   rel->sym_ptr_ptr = xmalloc (sizeof (asymbol *));
+   *rel->sym_ptr_ptr = symbol_get_bfdsym (fixP->fx_addsy);
+   rel->address = fixP->fx_frag->fr_address + fixP->fx_where;
+@@ -2003,4 +2003,3 @@ md_assemble (char *line)
+   debug ("Final opcode: %08X\n", insn.opcode);
+   debug ("\n");
+ }
+-
+Only in binutils-2.19/gas/config: tc-tic30.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-vax.c binutils-2.19/gas/config/tc-vax.c
+--- binutils-2.19-vanilla/gas/config/tc-vax.c	2008-08-12 16:39:31.000000000 -0700
++++ binutils-2.19/gas/config/tc-vax.c	2009-05-13 17:23:22.047015000 -0700
+@@ -2401,7 +2401,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ #endif
+ 
+   reloc->howto = bfd_reloc_type_lookup (stdoutput, code);
+-  assert (reloc->howto != 0);
++  gas_assert (reloc->howto != 0);
+ 
+   return reloc;
+ }
+Only in binutils-2.19/gas/config: tc-vax.c~
+diff -upr binutils-2.19-vanilla/gas/config/tc-xtensa.c binutils-2.19/gas/config/tc-xtensa.c
+--- binutils-2.19-vanilla/gas/config/tc-xtensa.c	2008-08-20 16:28:58.000000000 -0700
++++ binutils-2.19/gas/config/tc-xtensa.c	2009-05-13 17:23:19.905277000 -0700
+@@ -1031,7 +1031,7 @@ use_transform (void)
+ {
+   /* After md_end, you should be checking frag by frag, rather
+      than state directives.  */
+-  assert (!past_xtensa_end);
++  gas_assert (!past_xtensa_end);
+   return directive_state[directive_transform];
+ }
+ 
+@@ -1042,7 +1042,7 @@ do_align_targets (void)
+   /* Do not use this function after md_end; just look at align_targets
+      instead.  There is no target-align directive, so alignment is either
+      enabled for all frags or not done at all.  */
+-  assert (!past_xtensa_end);
++  gas_assert (!past_xtensa_end);
+   return align_targets && use_transform ();
+ }
+ 
+@@ -1228,7 +1228,7 @@ xtensa_begin_directive (int ignore ATTRI
+       /* Allocate the literal state for this section and push
+ 	 onto the directive stack.  */
+       ls = xmalloc (sizeof (lit_state));
+-      assert (ls);
++      gas_assert (ls);
+ 
+       *ls = default_lit_sections;
+       directive_push (directive_literal_prefix, negated, ls);
+@@ -1353,7 +1353,7 @@ xtensa_end_directive (int ignore ATTRIBU
+ 	    case directive_literal_prefix:
+ 	      /* Restore the default collection sections from saved state.  */
+ 	      s = (lit_state *) state;
+-	      assert (s);
++	      gas_assert (s);
+ 	      default_lit_sections = *s;
+ 
+ 	      /* Free the state storage.  */
+@@ -1477,7 +1477,7 @@ xtensa_literal_prefix (void)
+ 
+   /* Get a null-terminated copy of the name.  */
+   name = xmalloc (len + 1);
+-  assert (name);
++  gas_assert (name);
+   strncpy (name, input_line_pointer, len);
+   name[len] = 0;
+ 
+@@ -1672,7 +1672,7 @@ map_suffix_reloc_to_operator (bfd_reloc_
+ 	  break;
+ 	}
+     }
+-  assert (operator != (unsigned char) -1);
++  gas_assert (operator != (unsigned char) -1);
+   return operator;
+ }
+ 
+@@ -1802,7 +1802,7 @@ expression_maybe_register (xtensa_opcode
+       if (t == absolute_section
+ 	  && xtensa_operand_is_PCrelative (isa, opc, opnd) == 1)
+ 	{
+-	  assert (tok->X_op == O_constant);
++	  gas_assert (tok->X_op == O_constant);
+ 	  tok->X_op = O_symbol;
+ 	  tok->X_add_symbol = &abs_symbol;
+ 	}
+@@ -1990,7 +1990,7 @@ parse_arguments (TInsn *insn, int num_ar
+ 	  input_line_pointer++;
+ 	  if (num_regs == 0)
+ 	    goto err;
+-	  assert (opnd_cnt > 0);
++	  gas_assert (opnd_cnt > 0);
+ 	  num_regs--;
+ 	  opnd_rf = xtensa_operand_regfile (isa, opcode, last_opnd_cnt);
+ 	  if (next_reg
+@@ -2005,7 +2005,7 @@ parse_arguments (TInsn *insn, int num_ar
+ 	      as_warn (_("too many arguments"));
+ 	      goto err;
+ 	    }
+-	  assert (opnd_cnt < MAX_INSN_ARGS);
++	  gas_assert (opnd_cnt < MAX_INSN_ARGS);
+ 
+ 	  expression_maybe_register (opcode, opnd_cnt, tok);
+ 	  next_reg = tok->X_add_number + 1;
+@@ -2331,7 +2331,7 @@ xtensa_translate_zero_immed (char *old_o
+   offsetT val;
+ 
+   opname = *popname;
+-  assert (opname[0] != '_');
++  gas_assert (opname[0] != '_');
+ 
+   if (strcmp (opname, old_op) != 0)
+     return 0;
+@@ -2808,7 +2808,7 @@ xg_instruction_matches_rule (TInsn *insn
+ 	{
+ 	case OP_CONSTANT:
+ 	  /* The expression must be the constant.  */
+-	  assert (cond->op_num < insn->ntok);
++	  gas_assert (cond->op_num < insn->ntok);
+ 	  exp1 = &insn->tok[cond->op_num];
+ 	  if (expr_is_const (exp1))
+ 	    {
+@@ -2847,8 +2847,8 @@ xg_instruction_matches_rule (TInsn *insn
+ 	  break;
+ 
+ 	case OP_OPERAND:
+-	  assert (cond->op_num < insn->ntok);
+-	  assert (cond->op_data < insn->ntok);
++	  gas_assert (cond->op_num < insn->ntok);
++	  gas_assert (cond->op_data < insn->ntok);
+ 	  exp1 = &insn->tok[cond->op_num];
+ 	  exp2 = &insn->tok[cond->op_data];
+ 
+@@ -2950,7 +2950,7 @@ xg_instruction_match (TInsn *insn)
+ {
+   TransitionTable *table = xg_build_simplify_table (&transition_rule_cmp);
+   TransitionList *l;
+-  assert (insn->opcode < table->num_opcodes);
++  gas_assert (insn->opcode < table->num_opcodes);
+ 
+   /* Walk through all of the possible transitions.  */
+   for (l = table->table[insn->opcode]; l != NULL; l = l->next)
+@@ -2993,8 +2993,8 @@ xg_is_single_relaxable_insn (TInsn *insn
+   TransitionList *l;
+   TransitionRule *match = 0;
+ 
+-  assert (insn->insn_type == ITYPE_INSN);
+-  assert (insn->opcode < table->num_opcodes);
++  gas_assert (insn->insn_type == ITYPE_INSN);
++  gas_assert (insn->opcode < table->num_opcodes);
+ 
+   for (l = table->table[insn->opcode]; l != NULL; l = l->next)
+     {
+@@ -3028,7 +3028,7 @@ xg_get_max_insn_widen_size (xtensa_opcod
+   TransitionList *l;
+   int max_size = xg_get_single_size (opcode);
+ 
+-  assert (opcode < table->num_opcodes);
++  gas_assert (opcode < table->num_opcodes);
+ 
+   for (l = table->table[opcode]; l != NULL; l = l->next)
+     {
+@@ -3041,7 +3041,7 @@ xg_get_max_insn_widen_size (xtensa_opcod
+       build_list = rule->to_instr;
+       if (is_unique_insn_expansion (rule))
+ 	{
+-	  assert (build_list->typ == INSTR_INSTR);
++	  gas_assert (build_list->typ == INSTR_INSTR);
+ 	  this_size = xg_get_max_insn_widen_size (build_list->opcode);
+ 	}
+       else
+@@ -3074,7 +3074,7 @@ xg_get_max_insn_widen_literal_size (xten
+   TransitionList *l;
+   int max_size = 0;
+ 
+-  assert (opcode < table->num_opcodes);
++  gas_assert (opcode < table->num_opcodes);
+ 
+   for (l = table->table[opcode]; l != NULL; l = l->next)
+     {
+@@ -3087,7 +3087,7 @@ xg_get_max_insn_widen_literal_size (xten
+       build_list = rule->to_instr;
+       if (is_unique_insn_expansion (rule))
+ 	{
+-	  assert (build_list->typ == INSTR_INSTR);
++	  gas_assert (build_list->typ == INSTR_INSTR);
+ 	  this_size = xg_get_max_insn_widen_literal_size (build_list->opcode);
+ 	}
+       else
+@@ -3119,8 +3119,8 @@ xg_is_relaxable_insn (TInsn *insn, int l
+   TransitionTable *table = xg_build_widen_table (&transition_rule_cmp);
+   TransitionList *l;
+ 
+-  assert (insn->insn_type == ITYPE_INSN);
+-  assert (insn->opcode < table->num_opcodes);
++  gas_assert (insn->insn_type == ITYPE_INSN);
++  gas_assert (insn->opcode < table->num_opcodes);
+ 
+   for (l = table->table[insn->opcode]; l != NULL; l = l->next)
+     {
+@@ -3205,7 +3205,7 @@ xg_immeds_fit (const TInsn *insn)
+   int i;
+ 
+   int n = insn->ntok;
+-  assert (insn->insn_type == ITYPE_INSN);
++  gas_assert (insn->insn_type == ITYPE_INSN);
+   for (i = 0; i < n; ++i)
+     {
+       const expressionS *expr = &insn->tok[i];
+@@ -3222,7 +3222,7 @@ xg_immeds_fit (const TInsn *insn)
+ 
+ 	default:
+ 	  /* The symbol should have a fixup associated with it.  */
+-	  assert (FALSE);
++	  gas_assert (FALSE);
+ 	  break;
+ 	}
+     }
+@@ -3248,7 +3248,7 @@ xg_symbolic_immeds_fit (const TInsn *ins
+   int i;
+   int n = insn->ntok;
+ 
+-  assert (insn->insn_type == ITYPE_INSN);
++  gas_assert (insn->insn_type == ITYPE_INSN);
+ 
+   for (i = 0; i < n; ++i)
+     {
+@@ -3356,7 +3356,7 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+ 	  int op_num = op->op_num;
+ 	  int op_data = op->op_data;
+ 
+-	  assert (op->op_num < MAX_INSN_ARGS);
++	  gas_assert (op->op_num < MAX_INSN_ARGS);
+ 
+ 	  if (targ->ntok <= op_num)
+ 	    targ->ntok = op_num + 1;
+@@ -3367,7 +3367,7 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+ 	      set_expr_const (&targ->tok[op_num], op_data);
+ 	      break;
+ 	    case OP_OPERAND:
+-	      assert (op_data < insn->ntok);
++	      gas_assert (op_data < insn->ntok);
+ 	      copy_expr (&targ->tok[op_num], &insn->tok[op_data]);
+ 	      break;
+ 	    case OP_LITERAL:
+@@ -3383,7 +3383,7 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+ 	      break;
+ 	    case OP_OPERAND_HI16U:
+ 	    case OP_OPERAND_LOW16U:
+-	      assert (op_data < insn->ntok);
++	      gas_assert (op_data < insn->ntok);
+ 	      if (expr_is_const (&insn->tok[op_data]))
+ 		{
+ 		  long val;
+@@ -3399,7 +3399,7 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+ 		  if (targ->opcode == XTENSA_UNDEFINED
+ 		      || (targ->opcode != xtensa_const16_opcode))
+ 		    return FALSE;
+-		  assert (op_data < insn->ntok);
++		  gas_assert (op_data < insn->ntok);
+ 		  /* Need to build a O_lo16 or O_hi16.  */
+ 		  copy_expr (&targ->tok[op_num], &insn->tok[op_data]);
+ 		  if (targ->tok[op_num].X_op == O_symbol)
+@@ -3420,7 +3420,7 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+ 		 OP_OPERAND_F32MINUS */
+ 	      if (xg_has_userdef_op_fn (op->typ))
+ 		{
+-		  assert (op_data < insn->ntok);
++		  gas_assert (op_data < insn->ntok);
+ 		  if (expr_is_const (&insn->tok[op_data]))
+ 		    {
+ 		      long val;
+@@ -3434,7 +3434,7 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+ 		    return FALSE; /* We cannot use a relocation for this.  */
+ 		  break;
+ 		}
+-	      assert (0);
++	      gas_assert (0);
+ 	      break;
+ 	    }
+ 	}
+@@ -3449,7 +3449,7 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+ 	{
+ 	  int op_num = op->op_num;
+ 	  int op_data = op->op_data;
+-	  assert (op->op_num < MAX_INSN_ARGS);
++	  gas_assert (op->op_num < MAX_INSN_ARGS);
+ 
+ 	  if (targ->ntok <= op_num)
+ 	    targ->ntok = op_num + 1;
+@@ -3457,7 +3457,7 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+ 	  switch (op->typ)
+ 	    {
+ 	    case OP_OPERAND:
+-	      assert (op_data < insn->ntok);
++	      gas_assert (op_data < insn->ntok);
+ 	      /* We can only pass resolvable literals through.  */
+ 	      if (!xg_valid_literal_expression (&insn->tok[op_data]))
+ 		return FALSE;
+@@ -3467,7 +3467,7 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+ 	    case OP_CONSTANT:
+ 	    case OP_LABEL:
+ 	    default:
+-	      assert (0);
++	      gas_assert (0);
+ 	      break;
+ 	    }
+ 	}
+@@ -3479,11 +3479,11 @@ xg_build_to_insn (TInsn *targ, TInsn *in
+       targ->insn_type = ITYPE_LABEL;
+       targ->is_specific_opcode = FALSE;
+       /* Literal with no ops is a label?  */
+-      assert (op == NULL);
++      gas_assert (op == NULL);
+       break;
+ 
+     default:
+-      assert (0);
++      gas_assert (0);
+     }
+ 
+   return TRUE;
+@@ -3516,8 +3516,8 @@ xg_expand_to_stack (IStack *istack, TIns
+   TransitionTable *table = xg_build_widen_table (&transition_rule_cmp);
+   TransitionList *l;
+ 
+-  assert (insn->insn_type == ITYPE_INSN);
+-  assert (insn->opcode < table->num_opcodes);
++  gas_assert (insn->insn_type == ITYPE_INSN);
++  gas_assert (insn->opcode < table->num_opcodes);
+ 
+   for (l = table->table[insn->opcode]; l != NULL; l = l->next)
+     {
+@@ -3684,7 +3684,7 @@ xg_finish_frag (char *last_insn,
+   xtensa_set_frag_assembly_state (frag_now);
+ 
+   /* Just to make sure that we did not split it up.  */
+-  assert (old_frag->fr_next == frag_now);
++  gas_assert (old_frag->fr_next == frag_now);
+ }
+ 
+ 
+@@ -3834,14 +3834,14 @@ xg_build_token_insn (BuildInstr *instr_s
+ 	{
+ 	case OP_CONSTANT:
+ 	  /* The expression must be the constant.  */
+-	  assert (b_op->op_num < MAX_INSN_ARGS);
++	  gas_assert (b_op->op_num < MAX_INSN_ARGS);
+ 	  exp = &new_insn->tok[b_op->op_num];
+ 	  set_expr_const (exp, b_op->op_data);
+ 	  break;
+ 
+ 	case OP_OPERAND:
+-	  assert (b_op->op_num < MAX_INSN_ARGS);
+-	  assert (b_op->op_data < (unsigned) old_insn->ntok);
++	  gas_assert (b_op->op_num < MAX_INSN_ARGS);
++	  gas_assert (b_op->op_data < (unsigned) old_insn->ntok);
+ 	  src_exp = &old_insn->tok[b_op->op_data];
+ 	  exp = &new_insn->tok[b_op->op_num];
+ 	  copy_expr (exp, src_exp);
+@@ -3850,11 +3850,11 @@ xg_build_token_insn (BuildInstr *instr_s
+ 	case OP_LITERAL:
+ 	case OP_LABEL:
+ 	  as_bad (_("can't handle generation of literal/labels yet"));
+-	  assert (0);
++	  gas_assert (0);
+ 
+ 	default:
+ 	  as_bad (_("can't handle undefined OP TYPE"));
+-	  assert (0);
++	  gas_assert (0);
+ 	}
+     }
+ 
+@@ -3880,8 +3880,8 @@ xg_simplify_insn (TInsn *old_insn, TInsn
+ 
+   insn_spec = rule->to_instr;
+   /* There should only be one.  */
+-  assert (insn_spec != NULL);
+-  assert (insn_spec->next == NULL);
++  gas_assert (insn_spec != NULL);
++  gas_assert (insn_spec->next == NULL);
+   if (insn_spec->next != NULL)
+     return FALSE;
+ 
+@@ -4060,8 +4060,8 @@ xg_assemble_literal (/* const */ TInsn *
+ 
+   set_expr_symbol_offset (&saved_loc, frag_now->fr_symbol, frag_now_fix ());
+ 
+-  assert (insn->insn_type == ITYPE_LITERAL);
+-  assert (insn->ntok == 1);	/* must be only one token here */
++  gas_assert (insn->insn_type == ITYPE_LITERAL);
++  gas_assert (insn->ntok == 1);	/* must be only one token here */
+ 
+   xtensa_switch_to_literal_fragment (&state);
+ 
+@@ -4111,7 +4111,7 @@ xg_assemble_literal (/* const */ TInsn *
+       break;
+     }
+ 
+-  assert (frag_now->tc_frag_data.literal_frag == NULL);
++  gas_assert (frag_now->tc_frag_data.literal_frag == NULL);
+   frag_now->tc_frag_data.literal_frag = get_literal_pool_location (now_seg);
+   frag_now->fr_symbol = xtensa_create_literal_symbol (now_seg, frag_now);
+   lit_sym = frag_now->fr_symbol;
+@@ -4131,7 +4131,7 @@ xg_assemble_literal_space (/* const */ i
+   offsetT litalign = 2;		/* 2^2 = 4 */
+   fragS *lit_saved_frag;
+ 
+-  assert (size % 4 == 0);
++  gas_assert (size % 4 == 0);
+ 
+   xtensa_switch_to_literal_fragment (&state);
+ 
+@@ -4278,7 +4278,7 @@ xg_resolve_literals (TInsn *insn, symbol
+   int i;
+   if (lit_sym == 0)
+     return;
+-  assert (insn->insn_type == ITYPE_INSN);
++  gas_assert (insn->insn_type == ITYPE_INSN);
+   for (i = 0; i < insn->ntok; i++)
+     if (insn->tok[i].X_add_symbol == sym)
+       insn->tok[i].X_add_symbol = lit_sym;
+@@ -4549,7 +4549,7 @@ update_next_frag_state (fragS *fragP)
+ 		   || next_fragP->fr_subtype == RELAX_UNREACHABLE)))
+ 	next_fragP = next_fragP->fr_next;
+ 
+-      assert (next_fragP->fr_type == rs_machine_dependent
++      gas_assert (next_fragP->fr_type == rs_machine_dependent
+ 	      && (next_fragP->fr_subtype == RELAX_MAYBE_UNREACHABLE
+ 		  || next_fragP->fr_subtype == RELAX_UNREACHABLE));
+ 
+@@ -4560,7 +4560,7 @@ update_next_frag_state (fragS *fragP)
+ 		   || new_target->fr_subtype == RELAX_DESIRE_ALIGN)))
+ 	new_target = new_target->fr_next;
+ 
+-      assert (new_target->fr_type == rs_machine_dependent
++      gas_assert (new_target->fr_type == rs_machine_dependent
+ 	      && (new_target->fr_subtype == RELAX_MAYBE_DESIRE_ALIGN
+ 		  || new_target->fr_subtype == RELAX_DESIRE_ALIGN));
+     }
+@@ -4710,7 +4710,7 @@ build_nop (TInsn *tinsn, int size)
+       else
+ 	tinsn->opcode = xtensa_nop_opcode;
+ 
+-      assert (tinsn->opcode != XTENSA_UNDEFINED);
++      gas_assert (tinsn->opcode != XTENSA_UNDEFINED);
+     }
+ }
+ 
+@@ -4748,7 +4748,7 @@ get_expanded_loop_offset (xtensa_opcode 
+   /* This is the OFFSET of the loop instruction in the expanded loop.
+      This MUST correspond directly to the specification of the loop
+      expansion.  It will be validated on fragment conversion.  */
+-  assert (opcode != XTENSA_UNDEFINED);
++  gas_assert (opcode != XTENSA_UNDEFINED);
+   if (opcode == xtensa_loop_opcode)
+     return 0;
+   if (opcode == xtensa_loopnez_opcode)
+@@ -5840,7 +5840,7 @@ md_apply_fix (fixS *fixP, valueT *valP, 
+ 	     by the linker, and it makes the object file disassembly
+ 	     readable when all branch targets are encoded in relocations.  */
+ 
+-	  assert (fixP->fx_addsy);
++	  gas_assert (fixP->fx_addsy);
+ 	  if (S_GET_SEGMENT (fixP->fx_addsy) == seg
+ 	      && !S_FORCE_RELOC (fixP->fx_addsy, 1))
+ 	    {
+@@ -5920,7 +5920,7 @@ tc_gen_reloc (asection *section ATTRIBUT
+ 
+   /* Make sure none of our internal relocations make it this far.
+      They'd better have been fully resolved by this point.  */
+-  assert ((int) fixp->fx_r_type > 0);
++  gas_assert ((int) fixp->fx_r_type > 0);
+ 
+   reloc->addend = fixp->fx_offset;
+ 
+@@ -6059,7 +6059,7 @@ release_resources (resource_table *rt, x
+     {
+       xtensa_funcUnit unit = (rt->opcode_unit_use) (rt->data, opcode, i);
+       int stage = (rt->opcode_unit_stage) (rt->data, opcode, i);
+-      assert (rt->units[stage + cycle][unit] > 0);
++      gas_assert (rt->units[stage + cycle][unit] > 0);
+       rt->units[stage + cycle][unit]--;
+     }
+ }
+@@ -6233,12 +6233,12 @@ finish_vinsn (vliw_insn *vinsn)
+ 	      TInsn *insn = &slotstack.insn[j];
+ 	      if (insn->insn_type == ITYPE_LITERAL)
+ 		{
+-		  assert (lit_sym == NULL);
++		  gas_assert (lit_sym == NULL);
+ 		  lit_sym = xg_assemble_literal (insn);
+ 		}
+ 	      else
+ 		{
+-		  assert (insn->insn_type == ITYPE_INSN);
++		  gas_assert (insn->insn_type == ITYPE_INSN);
+ 		  if (lit_sym)
+ 		    xg_resolve_literals (insn, lit_sym);
+ 		  if (j != slotstack.ninsn - 1)
+@@ -6339,7 +6339,7 @@ find_vinsn_conflicts (vliw_insn *vinsn)
+   int branches = 0;
+   xtensa_isa isa = xtensa_default_isa;
+ 
+-  assert (!past_xtensa_end);
++  gas_assert (!past_xtensa_end);
+ 
+   for (i = 0 ; i < vinsn->num_slots; i++)
+     {
+@@ -6721,7 +6721,7 @@ bundle_tinsn (TInsn *tinsn, vliw_insn *v
+   int slot, chosen_slot;
+ 
+   vinsn->format = xg_get_single_format (tinsn->opcode);
+-  assert (vinsn->format != XTENSA_UNDEFINED);
++  gas_assert (vinsn->format != XTENSA_UNDEFINED);
+   vinsn->num_slots = xtensa_format_num_slots (isa, vinsn->format);
+ 
+   chosen_slot = xg_get_single_slot (tinsn->opcode);
+@@ -6775,7 +6775,7 @@ emit_single_op (TInsn *orig_insn)
+       switch (insn->insn_type)
+ 	{
+ 	case ITYPE_LITERAL:
+-	  assert (lit_sym == NULL);
++	  gas_assert (lit_sym == NULL);
+ 	  lit_sym = xg_assemble_literal (insn);
+ 	  break;
+ 	case ITYPE_LABEL:
+@@ -6784,9 +6784,9 @@ emit_single_op (TInsn *orig_insn)
+ 	    char *label = xmalloc (strlen (FAKE_LABEL_NAME) + 12);
+ 	    sprintf (label, "%s_rl_%x", FAKE_LABEL_NAME, relaxed_sym_idx++);
+ 	    colon (label);
+-	    assert (label_sym == NULL);
++	    gas_assert (label_sym == NULL);
+ 	    label_sym = symbol_find_or_make (label);
+-	    assert (label_sym);
++	    gas_assert (label_sym);
+ 	    free (label);
+ 	  }
+ 	  break;
+@@ -6804,7 +6804,7 @@ emit_single_op (TInsn *orig_insn)
+ 	  }
+ 	  break;
+ 	default:
+-	  assert (0);
++	  gas_assert (0);
+ 	  break;
+ 	}
+     }
+@@ -6998,7 +6998,7 @@ xg_assemble_vliw_tokens (vliw_insn *vins
+ 	xg_assemble_literal_space (tinsn->literal_space, slot);
+ 
+       if (tinsn->subtype == RELAX_NARROW)
+-	assert (vinsn->num_slots == 1);
++	gas_assert (vinsn->num_slots == 1);
+       if (xtensa_opcode_is_jump (isa, tinsn->opcode) == 1)
+ 	is_jump = TRUE;
+       if (xtensa_opcode_is_branch (isa, tinsn->opcode) == 1)
+@@ -7058,7 +7058,7 @@ xg_assemble_vliw_tokens (vliw_insn *vins
+     {
+       if (is_jump)
+ 	{
+-	  assert (finish_frag);
++	  gas_assert (finish_frag);
+ 	  frag_var (rs_machine_dependent,
+ 		    UNREACHABLE_MAX_WIDTH, UNREACHABLE_MAX_WIDTH,
+ 		    RELAX_UNREACHABLE,
+@@ -7067,7 +7067,7 @@ xg_assemble_vliw_tokens (vliw_insn *vins
+ 	}
+       else if (is_branch && do_align_targets ())
+ 	{
+-	  assert (finish_frag);
++	  gas_assert (finish_frag);
+ 	  frag_var (rs_machine_dependent,
+ 		    UNREACHABLE_MAX_WIDTH, UNREACHABLE_MAX_WIDTH,
+ 		    RELAX_MAYBE_UNREACHABLE,
+@@ -7668,7 +7668,7 @@ xtensa_fix_close_loop_end_frags (void)
+ 		  }
+ 		frag_wane (fragP);
+ 	      }
+-	    assert (fragP->fr_type != rs_machine_dependent
++	    gas_assert (fragP->fr_type != rs_machine_dependent
+ 		    || fragP->fr_subtype != RELAX_ADD_NOP_IF_CLOSE_LOOP_END);
+ 	  }
+       }
+@@ -7744,7 +7744,7 @@ unrelaxed_frag_max_size (fragS *fragP)
+       break;
+     default:
+       /* We had darn well better know how big it is.  */
+-      assert (0);
++      gas_assert (0);
+       break;
+     }
+ 
+@@ -7798,7 +7798,7 @@ xtensa_fix_short_loop_frags (void)
+ 		tinsn_from_chars (&t_insn, loop_frag->fr_opcode, 0);
+ 		current_target = symbol_get_frag (fragP->fr_symbol);
+ 		current_opcode = t_insn.opcode;
+-		assert (xtensa_opcode_is_loop (xtensa_default_isa,
++		gas_assert (xtensa_opcode_is_loop (xtensa_default_isa,
+ 					       current_opcode) == 1);
+ 	      }
+ 
+@@ -8161,7 +8161,7 @@ get_text_align_power (unsigned target_si
+ {
+   if (target_size <= 4)
+     return 2;
+-  assert (target_size == 8);
++  gas_assert (target_size == 8);
+   return 3;
+ }
+ 
+@@ -8197,7 +8197,7 @@ get_text_align_fill_size (addressT addre
+   bfd_boolean skip_one = FALSE;
+ 
+   alignment = (1 << align_pow);
+-  assert (target_size > 0 && alignment >= (addressT) target_size);
++  gas_assert (target_size > 0 && alignment >= (addressT) target_size);
+ 
+   if (!use_nops)
+     {
+@@ -8227,7 +8227,7 @@ get_text_align_fill_size (addressT addre
+ 	  == (address + fill + target_size - 1) >> align_pow)
+ 	return fill;
+     }
+-  assert (0);
++  gas_assert (0);
+   return 0;
+ }
+ 
+@@ -8247,7 +8247,7 @@ branch_align_power (segT sec)
+ 	return 3;
+     }
+   else
+-    assert (xtensa_fetch_width == 4);
++    gas_assert (xtensa_fetch_width == 4);
+ 
+   return 2;
+ }
+@@ -8262,11 +8262,11 @@ get_text_align_nop_count (offsetT fill_s
+ 
+   if (use_no_density)
+     {
+-      assert (fill_size % 3 == 0);
++      gas_assert (fill_size % 3 == 0);
+       return (fill_size / 3);
+     }
+ 
+-  assert (fill_size != 1);	/* Bad argument.  */
++  gas_assert (fill_size != 1);	/* Bad argument.  */
+ 
+   while (fill_size > 1)
+     {
+@@ -8276,7 +8276,7 @@ get_text_align_nop_count (offsetT fill_s
+       fill_size -= insn_size;
+       count++;
+     }
+-  assert (fill_size != 1);	/* Bad algorithm.  */
++  gas_assert (fill_size != 1);	/* Bad algorithm.  */
+   return count;
+ }
+ 
+@@ -8291,7 +8291,7 @@ get_text_align_nth_nop_size (offsetT fil
+   if (use_no_density)
+     return 3;
+ 
+-  assert (fill_size != 1);	/* Bad argument.  */
++  gas_assert (fill_size != 1);	/* Bad argument.  */
+ 
+   while (fill_size > 1)
+     {
+@@ -8303,7 +8303,7 @@ get_text_align_nth_nop_size (offsetT fil
+       if (n + 1 == count)
+ 	return insn_size;
+     }
+-  assert (0);
++  gas_assert (0);
+   return 0;
+ }
+ 
+@@ -8337,8 +8337,8 @@ get_noop_aligned_address (fragS *fragP, 
+   xtensa_opcode opcode;
+   bfd_boolean is_loop;
+ 
+-  assert (fragP->fr_type == rs_machine_dependent);
+-  assert (fragP->fr_subtype == RELAX_ALIGN_NEXT_OPCODE);
++  gas_assert (fragP->fr_type == rs_machine_dependent);
++  gas_assert (fragP->fr_subtype == RELAX_ALIGN_NEXT_OPCODE);
+ 
+   /* Find the loop frag.  */
+   first_insn = next_non_empty_frag (fragP);
+@@ -8346,7 +8346,7 @@ get_noop_aligned_address (fragS *fragP, 
+   first_insn = next_non_empty_frag (first_insn);
+ 
+   is_loop = next_frag_opcode_is_loop (fragP, &opcode);
+-  assert (is_loop);
++  gas_assert (is_loop);
+   loop_insn_size = xg_get_single_size (opcode);
+ 
+   pre_opcode_bytes = next_frag_pre_opcode_bytes (fragP);
+@@ -8401,7 +8401,7 @@ get_aligned_diff (fragS *fragP, addressT
+   offsetT branch_align;
+   fragS *loop_frag;
+ 
+-  assert (fragP->fr_type == rs_machine_dependent);
++  gas_assert (fragP->fr_type == rs_machine_dependent);
+   switch (fragP->fr_subtype)
+     {
+     case RELAX_DESIRE_ALIGN:
+@@ -8418,7 +8418,7 @@ get_aligned_diff (fragS *fragP, addressT
+ 
+       *max_diff = (opt_diff + branch_align
+ 		   - (target_size + ((address + opt_diff) % branch_align)));
+-      assert (*max_diff >= opt_diff);
++      gas_assert (*max_diff >= opt_diff);
+       return opt_diff;
+ 
+     case RELAX_ALIGN_NEXT_OPCODE:
+@@ -8430,7 +8430,7 @@ get_aligned_diff (fragS *fragP, addressT
+       target_size = get_loop_align_size (next_frag_format_size (loop_frag));
+       loop_insn_offset = 0;
+       is_loop = next_frag_opcode_is_loop (fragP, &loop_opcode);
+-      assert (is_loop);
++      gas_assert (is_loop);
+ 
+       /* If the loop has been expanded then the LOOP instruction
+ 	 could be at an offset from this fragment.  */
+@@ -8450,13 +8450,13 @@ get_aligned_diff (fragS *fragP, addressT
+       *max_diff = xtensa_fetch_width
+ 	- ((target_address + opt_diff) % xtensa_fetch_width)
+ 	- target_size + opt_diff;
+-      assert (*max_diff >= opt_diff);
++      gas_assert (*max_diff >= opt_diff);
+       return opt_diff;
+ 
+     default:
+       break;
+     }
+-  assert (0);
++  gas_assert (0);
+   return 0;
+ }
+ 
+@@ -8520,7 +8520,7 @@ xtensa_relax_frag (fragS *fragP, long st
+     case RELAX_LITERAL_NR:
+       lit_size = 4;
+       fragP->fr_subtype = RELAX_LITERAL_FINAL;
+-      assert (unreported == lit_size);
++      gas_assert (unreported == lit_size);
+       memset (&fragP->fr_literal[fragP->fr_fix], 0, 4);
+       fragP->fr_var -= lit_size;
+       fragP->fr_fix += lit_size;
+@@ -8658,7 +8658,7 @@ relax_frag_for_align (fragS *fragP, long
+   long stretch_me;
+   long diff;
+ 
+-  assert (fragP->fr_subtype == RELAX_FILL_NOP
++  gas_assert (fragP->fr_subtype == RELAX_FILL_NOP
+ 	  || fragP->fr_subtype == RELAX_UNREACHABLE
+ 	  || (fragP->fr_subtype == RELAX_SLOTS
+ 	      && fragP->tc_frag_data.slot_subtypes[0] == RELAX_NARROW));
+@@ -8814,8 +8814,8 @@ future_alignment_required (fragS *fragP,
+     {
+       local_opt_diff = get_aligned_diff (fragP, address, &max_diff);
+       opt_diff = local_opt_diff;
+-      assert (opt_diff >= 0);
+-      assert (max_diff >= opt_diff);
++      gas_assert (opt_diff >= 0);
++      gas_assert (max_diff >= opt_diff);
+       if (max_diff == 0)
+ 	return 0;
+ 
+@@ -8873,7 +8873,7 @@ future_alignment_required (fragS *fragP,
+ 	{
+ 	  if (this_frag->fr_subtype == RELAX_UNREACHABLE)
+ 	    {
+-	      assert (opt_diff <= UNREACHABLE_MAX_WIDTH);
++	      gas_assert (opt_diff <= UNREACHABLE_MAX_WIDTH);
+ 	      return opt_diff;
+ 	    }
+ 	  return 0;
+@@ -8895,13 +8895,13 @@ future_alignment_required (fragS *fragP,
+ 
+       if (this_frag->fr_subtype == RELAX_SLOTS
+ 	  && this_frag->tc_frag_data.slot_subtypes[0] == RELAX_NARROW)
+-	assert (stretch_amount <= 1);
++	gas_assert (stretch_amount <= 1);
+       else if (this_frag->fr_subtype == RELAX_FILL_NOP)
+ 	{
+ 	  if (this_frag->tc_frag_data.is_no_density)
+-	    assert (stretch_amount == 3 || stretch_amount == 0);
++	    gas_assert (stretch_amount == 3 || stretch_amount == 0);
+ 	  else
+-	    assert (stretch_amount <= 3);
++	    gas_assert (stretch_amount <= 3);
+ 	}
+     }
+   return stretch_amount;
+@@ -8955,11 +8955,11 @@ bytes_to_stretch (fragS *this_frag,
+ {
+   int bytes_short = desired_diff - num_widens;
+ 
+-  assert (desired_diff >= 0 && desired_diff < 8);
++  gas_assert (desired_diff >= 0 && desired_diff < 8);
+   if (desired_diff == 0)
+     return 0;
+ 
+-  assert (wide_nops > 0 || num_widens > 0);
++  gas_assert (wide_nops > 0 || num_widens > 0);
+ 
+   /* Always prefer widening to NOP-filling.  */
+   if (bytes_short < 0)
+@@ -9033,7 +9033,7 @@ bytes_to_stretch (fragS *this_frag,
+ 	    return 3; /* case 7b */
+ 	  return 0;
+ 	default:
+-	  assert (0);
++	  gas_assert (0);
+ 	}
+     }
+   else
+@@ -9045,7 +9045,7 @@ bytes_to_stretch (fragS *this_frag,
+       switch (desired_diff)
+ 	{
+ 	case 1:
+-	  assert (0);
++	  gas_assert (0);
+ 	  return 0;
+ 	case 2:
+ 	case 3:
+@@ -9071,11 +9071,11 @@ bytes_to_stretch (fragS *this_frag,
+ 	    return 1; /* case 7b */
+ 	  return 0;
+ 	default:
+-	  assert (0);
++	  gas_assert (0);
+ 	  return 0;
+ 	}
+     }
+-  assert (0);
++  gas_assert (0);
+   return 0;
+ }
+ 
+@@ -9102,7 +9102,7 @@ relax_frag_immed (segT segP,
+   int num_text_bytes, num_literal_bytes;
+   int literal_diff, total_text_diff, this_text_diff;
+ 
+-  assert (fragP->fr_opcode != NULL);
++  gas_assert (fragP->fr_opcode != NULL);
+ 
+   xg_clear_vinsn (&cur_vinsn);
+   vinsn_from_chars (&cur_vinsn, fragP->fr_opcode);
+@@ -9139,7 +9139,7 @@ relax_frag_immed (segT segP,
+   istack_init (&istack);
+   num_steps = xg_assembly_relax (&istack, &tinsn, segP, fragP, frag_offset,
+ 				 min_steps, stretch);
+-  assert (num_steps >= min_steps && num_steps <= RELAX_IMMED_MAXSTEPS);
++  gas_assert (num_steps >= min_steps && num_steps <= RELAX_IMMED_MAXSTEPS);
+ 
+   fragP->tc_frag_data.slot_subtypes[slot] = (int) RELAX_IMMED + num_steps;
+ 
+@@ -9168,7 +9168,7 @@ relax_frag_immed (segT segP,
+ 	  num_steps = xg_assembly_relax (&istack, &tinsn, segP, fragP, 
+ 					 frag_offset + old_size,
+ 					 min_steps, stretch + old_size);
+-	  assert (num_steps >= min_steps && num_steps <= RELAX_IMMED_MAXSTEPS);
++	  gas_assert (num_steps >= min_steps && num_steps <= RELAX_IMMED_MAXSTEPS);
+ 
+ 	  fragP->tc_frag_data.slot_subtypes[slot] 
+ 	    = (int) RELAX_IMMED + num_steps;
+@@ -9185,14 +9185,14 @@ relax_frag_immed (segT segP,
+   this_text_diff = total_text_diff - fragP->tc_frag_data.text_expansion[slot];
+ 
+   /* It MUST get larger.  If not, we could get an infinite loop.  */
+-  assert (num_text_bytes >= 0);
+-  assert (literal_diff >= 0);
+-  assert (total_text_diff >= 0);
++  gas_assert (num_text_bytes >= 0);
++  gas_assert (literal_diff >= 0);
++  gas_assert (total_text_diff >= 0);
+ 
+   fragP->tc_frag_data.text_expansion[slot] = total_text_diff;
+   fragP->tc_frag_data.literal_expansion[slot] = num_literal_bytes;
+-  assert (fragP->tc_frag_data.text_expansion[slot] >= 0);
+-  assert (fragP->tc_frag_data.literal_expansion[slot] >= 0);
++  gas_assert (fragP->tc_frag_data.text_expansion[slot] >= 0);
++  gas_assert (fragP->tc_frag_data.literal_expansion[slot] >= 0);
+ 
+   /* Find the associated expandable literal for this.  */
+   if (literal_diff != 0)
+@@ -9200,12 +9200,12 @@ relax_frag_immed (segT segP,
+       fragS *lit_fragP = fragP->tc_frag_data.literal_frags[slot];
+       if (lit_fragP)
+ 	{
+-	  assert (literal_diff == 4);
++	  gas_assert (literal_diff == 4);
+ 	  lit_fragP->tc_frag_data.unreported_expansion += literal_diff;
+ 
+ 	  /* We expect that the literal section state has NOT been
+ 	     modified yet.  */
+-	  assert (lit_fragP->fr_type == rs_machine_dependent
++	  gas_assert (lit_fragP->fr_type == rs_machine_dependent
+ 		  && lit_fragP->fr_subtype == RELAX_LITERAL);
+ 	  lit_fragP->fr_subtype = RELAX_LITERAL_NR;
+ 
+@@ -9328,7 +9328,7 @@ md_convert_frag (bfd *abfd ATTRIBUTE_UNU
+ 
+ 	  fragS *f;
+ 	  fragp->fr_subtype = RELAX_LITERAL_FINAL;
+-	  assert (fragp->tc_frag_data.unreported_expansion == 4);
++	  gas_assert (fragp->tc_frag_data.unreported_expansion == 4);
+ 	  memset (&fragp->fr_literal[fragp->fr_fix], 0, 4);
+ 	  fragp->fr_var -= 4;
+ 	  fragp->fr_fix += 4;
+@@ -9381,12 +9381,12 @@ convert_frag_narrow (segT segP, fragS *f
+   int size, old_size, diff;
+   offsetT frag_offset;
+ 
+-  assert (slot == 0);
++  gas_assert (slot == 0);
+   tinsn_from_chars (&tinsn, fragP->fr_opcode, 0);
+ 
+   if (fragP->tc_frag_data.is_aligning_branch == 1)
+     {
+-      assert (fragP->tc_frag_data.text_expansion[0] == 1
++      gas_assert (fragP->tc_frag_data.text_expansion[0] == 1
+ 	      || fragP->tc_frag_data.text_expansion[0] == 0);
+       convert_frag_immed (segP, fragP, fragP->tc_frag_data.text_expansion[0],
+ 			  fmt, slot);
+@@ -9400,7 +9400,7 @@ convert_frag_narrow (segT segP, fragS *f
+       return;
+     }
+ 
+-  assert (fragP->fr_opcode != NULL);
++  gas_assert (fragP->fr_opcode != NULL);
+ 
+   /* Frags in this relaxation state should only contain
+      single instruction bundles.  */
+@@ -9424,8 +9424,8 @@ convert_frag_narrow (segT segP, fragS *f
+ 		       frag_offset, TRUE);
+ 
+   diff = size - old_size;
+-  assert (diff >= 0);
+-  assert (diff <= fragP->fr_var);
++  gas_assert (diff >= 0);
++  gas_assert (diff <= fragP->fr_var);
+   fragP->fr_var -= diff;
+   fragP->fr_fix += diff;
+ 
+@@ -9439,7 +9439,7 @@ convert_frag_fill_nop (fragS *fragP)
+ {
+   char *loc = &fragP->fr_literal[fragP->fr_fix];
+   int size = fragP->tc_frag_data.text_expansion[0];
+-  assert ((unsigned) size == (fragP->fr_next->fr_address
++  gas_assert ((unsigned) size == (fragP->fr_next->fr_address
+ 			      - fragP->fr_address - fragP->fr_fix));
+   if (size == 0)
+     {
+@@ -9477,7 +9477,7 @@ convert_frag_immed (segT segP,
+   int bytes;
+   bfd_boolean is_loop;
+ 
+-  assert (fr_opcode != NULL);
++  gas_assert (fr_opcode != NULL);
+ 
+   xg_clear_vinsn (&cur_vinsn);
+ 
+@@ -9506,7 +9506,7 @@ convert_frag_immed (segT segP,
+       else
+ 	{
+ 	  bytes += fragP->tc_frag_data.text_expansion[0];
+-	  assert (bytes == 2 || bytes == 3);
++	  gas_assert (bytes == 2 || bytes == 3);
+ 	  build_nop (&cur_vinsn.slots[0], bytes);
+ 	  fragP->fr_fix += fragP->tc_frag_data.text_expansion[0];
+ 	}
+@@ -9578,13 +9578,13 @@ convert_frag_immed (segT segP,
+ 		      unreach = unreach->fr_next;
+ 		    }
+ 
+-		  assert (unreach->fr_type == rs_machine_dependent
++		  gas_assert (unreach->fr_type == rs_machine_dependent
+ 			  && (unreach->fr_subtype == RELAX_MAYBE_UNREACHABLE
+ 			      || unreach->fr_subtype == RELAX_UNREACHABLE));
+ 
+ 		  target_offset += unreach->tc_frag_data.text_expansion[0];
+ 		}
+-	      assert (gen_label == NULL);
++	      gas_assert (gen_label == NULL);
+ 	      gen_label = symbol_new (FAKE_LABEL_NAME, now_seg,
+ 				      fr_opcode - fragP->fr_literal
+ 				      + target_offset, fragP);
+@@ -9620,12 +9620,12 @@ convert_frag_immed (segT segP,
+ 	    case ITYPE_LITERAL:
+ 	      lit_frag = fragP->tc_frag_data.literal_frags[slot];
+ 	      /* Already checked.  */
+-	      assert (lit_frag != NULL);
+-	      assert (lit_sym != NULL);
+-	      assert (tinsn->ntok == 1);
++	      gas_assert (lit_frag != NULL);
++	      gas_assert (lit_sym != NULL);
++	      gas_assert (tinsn->ntok == 1);
+ 	      /* Add a fixup.  */
+ 	      target_seg = S_GET_SEGMENT (lit_sym);
+-	      assert (target_seg);
++	      gas_assert (target_seg);
+ 	      reloc_type = map_operator_to_reloc (tinsn->tok[0].X_op, TRUE);
+ 	      fix_new_exp_in_seg (target_seg, 0, lit_frag, 0, 4,
+ 				  &tinsn->tok[0], FALSE, reloc_type);
+@@ -9676,10 +9676,10 @@ convert_frag_immed (segT segP,
+ 	}
+ 
+       diff = total_size - old_size;
+-      assert (diff >= 0);
++      gas_assert (diff >= 0);
+       if (diff != 0)
+ 	expanded = TRUE;
+-      assert (diff <= fragP->fr_var);
++      gas_assert (diff <= fragP->fr_var);
+       fragP->fr_var -= diff;
+       fragP->fr_fix += diff;
+     }
+@@ -9732,7 +9732,7 @@ fix_new_exp_in_seg (segT new_seg,
+   segT seg = now_seg;
+   subsegT subseg = now_subseg;
+ 
+-  assert (new_seg != 0);
++  gas_assert (new_seg != 0);
+   subseg_set (new_seg, new_subseg);
+ 
+   new_fix = fix_new_exp (frag, where, size, exp, pcrel, r_type);
+@@ -9786,18 +9786,18 @@ convert_frag_immed_finish_loop (segT seg
+   tinsn_from_chars (&loop_insn, fragP->fr_opcode + loop_offset, 0);
+   tinsn_immed_from_frag (&loop_insn, fragP, 0);
+ 
+-  assert (xtensa_opcode_is_loop (isa, loop_insn.opcode) == 1);
++  gas_assert (xtensa_opcode_is_loop (isa, loop_insn.opcode) == 1);
+   addi_offset += loop_offset;
+   addmi_offset += loop_offset;
+ 
+-  assert (tinsn->ntok == 2);
++  gas_assert (tinsn->ntok == 2);
+   if (tinsn->tok[1].X_op == O_constant)
+     target = tinsn->tok[1].X_add_number;
+   else if (tinsn->tok[1].X_op == O_symbol)
+     {
+       /* Find the fragment.  */
+       symbolS *sym = tinsn->tok[1].X_add_symbol;
+-      assert (S_GET_SEGMENT (sym) == segP
++      gas_assert (S_GET_SEGMENT (sym) == segP
+ 	      || S_GET_SEGMENT (sym) == absolute_section);
+       target = (S_GET_VALUE (sym) + tinsn->tok[1].X_add_number);
+     }
+@@ -9823,10 +9823,10 @@ convert_frag_immed_finish_loop (segT seg
+ 		  _("loop too long for LOOP instruction"));
+ 
+   tinsn_from_chars (&addi_insn, fragP->fr_opcode + addi_offset, 0);
+-  assert (addi_insn.opcode == xtensa_addi_opcode);
++  gas_assert (addi_insn.opcode == xtensa_addi_opcode);
+ 
+   tinsn_from_chars (&addmi_insn, fragP->fr_opcode + addmi_offset, 0);
+-  assert (addmi_insn.opcode == xtensa_addmi_opcode);
++  gas_assert (addmi_insn.opcode == xtensa_addmi_opcode);
+ 
+   set_expr_const (&addi_insn.tok[2], loop_length_lo);
+   tinsn_to_insnbuf (&addi_insn, insnbuf);
+@@ -9979,7 +9979,7 @@ xtensa_move_seg_list_to_beginning (seg_l
+       segT literal_section = head->seg;
+ 
+       /* Move the literal section to the front of the section list.  */
+-      assert (literal_section);
++      gas_assert (literal_section);
+       if (literal_section != stdoutput->sections)
+ 	{
+ 	  bfd_section_list_remove (stdoutput, literal_section);
+@@ -10024,12 +10024,12 @@ xtensa_move_literals (void)
+ 
+       while (!search_frag->tc_frag_data.literal_frag)
+ 	{
+-	  assert (search_frag->fr_fix == 0
++	  gas_assert (search_frag->fr_fix == 0
+ 		  || search_frag->fr_type == rs_align);
+ 	  search_frag = search_frag->fr_next;
+ 	}
+ 
+-      assert (search_frag->tc_frag_data.literal_frag->fr_subtype
++      gas_assert (search_frag->tc_frag_data.literal_frag->fr_subtype
+ 	      == RELAX_LITERAL_POOL_BEGIN);
+       xtensa_switch_section_emit_state (&state, segment->seg, 0);
+ 
+@@ -10052,9 +10052,9 @@ xtensa_move_literals (void)
+ 	  if (search_frag->tc_frag_data.literal_frag)
+ 	    {
+ 	      literal_pool = search_frag->tc_frag_data.literal_frag;
+-	      assert (literal_pool->fr_subtype == RELAX_LITERAL_POOL_BEGIN);
++	      gas_assert (literal_pool->fr_subtype == RELAX_LITERAL_POOL_BEGIN);
+ 	      frchain_to = literal_pool->tc_frag_data.lit_frchain;
+-	      assert (frchain_to);
++	      gas_assert (frchain_to);
+ 	    }
+ 	  insert_after = literal_pool->tc_frag_data.literal_frag;
+ 	  dest_seg = insert_after->fr_next->tc_frag_data.lit_seg;
+@@ -10092,7 +10092,7 @@ xtensa_move_literals (void)
+ 	  frchain_from = seg_info (segment->seg)->frchainP;
+ 	  as_warn (_("fixes not all moved from %s"), segment->seg->name);
+ 
+-	  assert (frchain_from->fix_root == NULL);
++	  gas_assert (frchain_from->fix_root == NULL);
+ 	}
+       frchain_from->fix_tail = NULL;
+       xtensa_restore_emit_state (&state);
+@@ -10145,7 +10145,7 @@ xtensa_reorder_seg_list (seg_list *head,
+       segT literal_section = head->seg;
+ 
+       /* Move the literal section after "after".  */
+-      assert (literal_section);
++      gas_assert (literal_section);
+       if (literal_section != after)
+ 	{
+ 	  bfd_section_list_remove (stdoutput, literal_section);
+@@ -10180,7 +10180,7 @@ xtensa_reorder_segments (void)
+   /* Now perform the final error check.  */
+   for (sec = stdoutput->sections; sec != NULL; sec = sec->next)
+     new_count++;
+-  assert (new_count == old_count);
++  gas_assert (new_count == old_count);
+ }
+ 
+ 
+@@ -10460,7 +10460,7 @@ xtensa_post_relax_hook (void)
+ static bfd_boolean
+ get_frag_is_literal (const fragS *fragP)
+ {
+-  assert (fragP != NULL);
++  gas_assert (fragP != NULL);
+   return fragP->tc_frag_data.is_literal;
+ }
+ 
+@@ -10542,7 +10542,7 @@ xtensa_create_property_segments (frag_pr
+ 		  fixS *fix;
+ 
+ 		  /* Write the fixup.  */
+-		  assert (cur_block);
++		  gas_assert (cur_block);
+ 		  fix = fix_new (frag_now, i * 8, 4,
+ 				 section_symbol (cur_block->sec),
+ 				 cur_block->offset,
+@@ -10640,7 +10640,7 @@ xtensa_create_xproperty_segments (frag_f
+ 		  fixS *fix;
+ 
+ 		  /* Write the fixup.  */
+-		  assert (cur_block);
++		  gas_assert (cur_block);
+ 		  fix = fix_new (frag_now, i * 12, 4,
+ 				 section_symbol (cur_block->sec),
+ 				 cur_block->offset,
+@@ -11052,7 +11052,7 @@ init_op_placement_info_table (void)
+ 
+   op_placement_table = (op_placement_info_table)
+     xmalloc (sizeof (op_placement_info) * num_opcodes);
+-  assert (xtensa_isa_num_formats (isa) < MAX_FORMATS);
++  gas_assert (xtensa_isa_num_formats (isa) < MAX_FORMATS);
+ 
+   for (opcode = 0; opcode < num_opcodes; opcode++)
+     {
+@@ -11158,7 +11158,7 @@ TInsn *
+ istack_top (IStack *stack)
+ {
+   int rec = stack->ninsn - 1;
+-  assert (!istack_empty (stack));
++  gas_assert (!istack_empty (stack));
+   return &stack->insn[rec];
+ }
+ 
+@@ -11170,7 +11170,7 @@ void
+ istack_push (IStack *stack, TInsn *insn)
+ {
+   int rec = stack->ninsn;
+-  assert (!istack_full (stack));
++  gas_assert (!istack_full (stack));
+   stack->insn[rec] = *insn;
+   stack->ninsn++;
+ }
+@@ -11184,7 +11184,7 @@ istack_push_space (IStack *stack)
+ {
+   int rec = stack->ninsn;
+   TInsn *insn;
+-  assert (!istack_full (stack));
++  gas_assert (!istack_full (stack));
+   insn = &stack->insn[rec];
+   tinsn_init (insn);
+   stack->ninsn++;
+@@ -11199,7 +11199,7 @@ void
+ istack_pop (IStack *stack)
+ {
+   int rec = stack->ninsn - 1;
+-  assert (!istack_empty (stack));
++  gas_assert (!istack_empty (stack));
+   stack->ninsn--;
+   tinsn_init (&stack->insn[rec]);
+ }
+@@ -11222,7 +11222,7 @@ tinsn_has_symbolic_operands (const TInsn
+   int i;
+   int n = insn->ntok;
+ 
+-  assert (insn->insn_type == ITYPE_INSN);
++  gas_assert (insn->insn_type == ITYPE_INSN);
+ 
+   for (i = 0; i < n; ++i)
+     {
+@@ -11246,7 +11246,7 @@ tinsn_has_invalid_symbolic_operands (con
+   int i;
+   int n = insn->ntok;
+ 
+-  assert (insn->insn_type == ITYPE_INSN);
++  gas_assert (insn->insn_type == ITYPE_INSN);
+ 
+   for (i = 0; i < n; ++i)
+     {
+@@ -11290,7 +11290,7 @@ tinsn_has_complex_operands (const TInsn 
+ {
+   int i;
+   int n = insn->ntok;
+-  assert (insn->insn_type == ITYPE_INSN);
++  gas_assert (insn->insn_type == ITYPE_INSN);
+   for (i = 0; i < n; ++i)
+     {
+       switch (insn->tok[i].X_op)
+@@ -11329,7 +11329,7 @@ tinsn_to_slotbuf (xtensa_format fmt,
+   int noperands = xtensa_opcode_num_operands (isa, opcode);
+   int i;
+ 
+-  assert (tinsn->insn_type == ITYPE_INSN);
++  gas_assert (tinsn->insn_type == ITYPE_INSN);
+   if (noperands != tinsn->ntok)
+     as_fatal (_("operand number mismatch"));
+ 
+@@ -11500,7 +11500,7 @@ tinsn_immed_from_frag (TInsn *tinsn, fra
+   if (fragP->tc_frag_data.slot_symbols[slot])
+     {
+       opnum = get_relaxable_immed (opcode);
+-      assert (opnum >= 0);
++      gas_assert (opnum >= 0);
+       set_expr_symbol_offset (&tinsn->tok[opnum],
+ 			      fragP->tc_frag_data.slot_symbols[slot],
+ 			      fragP->tc_frag_data.slot_offsets[slot]);
+@@ -11753,7 +11753,7 @@ expr_is_const (const expressionS *s)
+ offsetT
+ get_expr_const (const expressionS *s)
+ {
+-  assert (expr_is_const (s));
++  gas_assert (expr_is_const (s));
+   return s->X_add_number;
+ }
+ 
+@@ -11783,7 +11783,7 @@ expr_is_register (const expressionS *s)
+ offsetT
+ get_expr_register (const expressionS *s)
+ {
+-  assert (expr_is_register (s));
++  gas_assert (expr_is_register (s));
+   return s->X_add_number;
+ }
+ 
+Only in binutils-2.19/gas/config: tc-xtensa.c~
+diff -upr binutils-2.19-vanilla/gas/config/xtensa-relax.c binutils-2.19/gas/config/xtensa-relax.c
+--- binutils-2.19-vanilla/gas/config/xtensa-relax.c	2008-08-20 16:28:58.000000000 -0700
++++ binutils-2.19/gas/config/xtensa-relax.c	2009-05-13 17:14:34.849409000 -0700
+@@ -518,8 +518,8 @@ append_transition (TransitionTable *tt,
+   TransitionList *tl = (TransitionList *) xmalloc (sizeof (TransitionList));
+   TransitionList *prev;
+   TransitionList **t_p;
+-  assert (tt != NULL);
+-  assert (opcode < tt->num_opcodes);
++  gas_assert (tt != NULL);
++  gas_assert (opcode < tt->num_opcodes);
+ 
+   prev = tt->table[opcode];
+   tl->rule = t;
+@@ -892,7 +892,7 @@ op_is_constant (const opname_map_e *m1)
+ static unsigned
+ op_get_constant (const opname_map_e *m1)
+ {
+-  assert (m1->operand_name == NULL);
++  gas_assert (m1->operand_name == NULL);
+   return m1->constant_value;
+ }
+ 
+Only in binutils-2.19/gas/config: xtensa-relax.c~
+diff -upr binutils-2.19-vanilla/gas/dw2gencfi.c binutils-2.19/gas/dw2gencfi.c
+--- binutils-2.19-vanilla/gas/dw2gencfi.c	2008-10-16 05:52:09.000000000 -0700
++++ binutils-2.19/gas/dw2gencfi.c	2009-05-07 09:53:45.814956000 -0700
 @@ -284,7 +284,7 @@ cfi_add_CFA_offset (unsigned regno, offs
  {
    unsigned int abs_data_align;
@@ -768,9 +4083,9 @@ diff -rupN binutils-2.19-orig/gas/dw2gencfi.c binutils-2.19/gas/dw2gencfi.c
    cfi_add_CFA_insn_reg_offset (DW_CFA_offset, regno, offset);
  
    abs_data_align = (DWARF2_CIE_DATA_ALIGNMENT < 0
-diff -rupN binutils-2.19-orig/gas/dwarf2dbg.c binutils-2.19/gas/dwarf2dbg.c
---- binutils-2.19-orig/gas/dwarf2dbg.c	2008-08-05 01:13:48.000000000 -0700
-+++ binutils-2.19/gas/dwarf2dbg.c	2009-04-29 11:19:33.096432000 -0700
+diff -upr binutils-2.19-vanilla/gas/dwarf2dbg.c binutils-2.19/gas/dwarf2dbg.c
+--- binutils-2.19-vanilla/gas/dwarf2dbg.c	2008-08-05 01:13:48.000000000 -0700
++++ binutils-2.19/gas/dwarf2dbg.c	2009-05-07 09:53:45.843908000 -0700
 @@ -874,7 +874,7 @@ emit_inc_line_addr (int line_delta, addr
  
    /* Line number sequences cannot go backward in addresses.  This means
@@ -834,9 +4149,9 @@ diff -rupN binutils-2.19-orig/gas/dwarf2dbg.c binutils-2.19/gas/dwarf2dbg.c
  
        info_seg = subseg_new (".debug_info", 0);
        abbrev_seg = subseg_new (".debug_abbrev", 0);
-diff -rupN binutils-2.19-orig/gas/dwarf2dbg.h binutils-2.19/gas/dwarf2dbg.h
---- binutils-2.19-orig/gas/dwarf2dbg.h	2007-11-19 11:37:18.000000000 -0800
-+++ binutils-2.19/gas/dwarf2dbg.h	2009-04-29 15:43:29.472564000 -0700
+diff -upr binutils-2.19-vanilla/gas/dwarf2dbg.h binutils-2.19/gas/dwarf2dbg.h
+--- binutils-2.19-vanilla/gas/dwarf2dbg.h	2007-11-19 11:37:18.000000000 -0800
++++ binutils-2.19/gas/dwarf2dbg.h	2009-05-07 09:53:45.850908000 -0700
 @@ -81,12 +81,12 @@ extern void dwarf2_emit_label (symbolS *
  
  /* True when we've seen a .loc directive recently.  Used to avoid
@@ -852,9 +4167,9 @@ diff -rupN binutils-2.19-orig/gas/dwarf2dbg.h binutils-2.19/gas/dwarf2dbg.h
  
  extern void dwarf2_finish (void);
  
-diff -rupN binutils-2.19-orig/gas/ehopt.c binutils-2.19/gas/ehopt.c
---- binutils-2.19-orig/gas/ehopt.c	2007-11-06 09:15:10.000000000 -0800
-+++ binutils-2.19/gas/ehopt.c	2009-04-29 11:19:00.907036000 -0700
+diff -upr binutils-2.19-vanilla/gas/ehopt.c binutils-2.19/gas/ehopt.c
+--- binutils-2.19-vanilla/gas/ehopt.c	2007-11-06 09:15:10.000000000 -0800
++++ binutils-2.19/gas/ehopt.c	2009-05-07 09:53:45.868946000 -0700
 @@ -508,19 +508,19 @@ eh_frame_convert_frag (fragS *frag)
      case 0:
        {
@@ -878,9 +4193,9 @@ diff -rupN binutils-2.19-orig/gas/ehopt.c binutils-2.19/gas/ehopt.c
        loc4_frag->fr_literal[loc4_fix] = DW_CFA_advance_loc2;
        md_number_to_chars (frag->fr_literal + frag->fr_fix, diff, 2);
        break;
-diff -rupN binutils-2.19-orig/gas/expr.c binutils-2.19/gas/expr.c
---- binutils-2.19-orig/gas/expr.c	2007-10-19 10:31:24.000000000 -0700
-+++ binutils-2.19/gas/expr.c	2009-04-29 11:18:59.986189000 -0700
+diff -upr binutils-2.19-vanilla/gas/expr.c binutils-2.19/gas/expr.c
+--- binutils-2.19-vanilla/gas/expr.c	2007-10-19 10:31:24.000000000 -0700
++++ binutils-2.19/gas/expr.c	2009-05-07 09:53:45.884935000 -0700
 @@ -404,7 +404,7 @@ integer_constant (int radix, expressionS
        if (num_little_digits > SIZE_OF_LARGE_NUMBER - 1)
  	num_little_digits = SIZE_OF_LARGE_NUMBER - 1;
@@ -899,9 +4214,9 @@ diff -rupN binutils-2.19-orig/gas/expr.c binutils-2.19/gas/expr.c
    }
  }
  
-diff -rupN binutils-2.19-orig/gas/frags.c binutils-2.19/gas/frags.c
---- binutils-2.19-orig/gas/frags.c	2007-07-03 04:01:03.000000000 -0700
-+++ binutils-2.19/gas/frags.c	2009-04-29 11:20:51.096089000 -0700
+diff -upr binutils-2.19-vanilla/gas/frags.c binutils-2.19/gas/frags.c
+--- binutils-2.19-vanilla/gas/frags.c	2007-07-03 04:01:03.000000000 -0700
++++ binutils-2.19/gas/frags.c	2009-05-07 09:53:45.898953000 -0700
 @@ -137,12 +137,12 @@ frag_new (int old_frags_var_max_size
    fragS *former_last_fragP;
    frchainS *frchP;
@@ -937,9 +4252,9 @@ diff -rupN binutils-2.19-orig/gas/frags.c binutils-2.19/gas/frags.c
  
    frag_now->fr_next = NULL;
  }
-diff -rupN binutils-2.19-orig/gas/input-file.c binutils-2.19/gas/input-file.c
---- binutils-2.19-orig/gas/input-file.c	2007-07-03 04:01:03.000000000 -0700
-+++ binutils-2.19/gas/input-file.c	2009-04-29 11:18:08.775652000 -0700
+diff -upr binutils-2.19-vanilla/gas/input-file.c binutils-2.19/gas/input-file.c
+--- binutils-2.19-vanilla/gas/input-file.c	2007-07-03 04:01:03.000000000 -0700
++++ binutils-2.19/gas/input-file.c	2009-05-07 09:53:45.910944000 -0700
 @@ -124,7 +124,7 @@ input_file_open (char *filename, /* "" m
  
    preprocess = pre;
@@ -949,9 +4264,9 @@ diff -rupN binutils-2.19-orig/gas/input-file.c binutils-2.19/gas/input-file.c
    if (filename[0])
      {
        f_in = fopen (filename, FOPEN_RT);
-diff -rupN binutils-2.19-orig/gas/read.c binutils-2.19/gas/read.c
---- binutils-2.19-orig/gas/read.c	2008-03-13 03:51:33.000000000 -0700
-+++ binutils-2.19/gas/read.c	2009-04-29 11:18:08.351748000 -0700
+diff -upr binutils-2.19-vanilla/gas/read.c binutils-2.19/gas/read.c
+--- binutils-2.19-vanilla/gas/read.c	2008-03-13 03:51:33.000000000 -0700
++++ binutils-2.19/gas/read.c	2009-05-07 09:53:45.925928000 -0700
 @@ -3445,7 +3445,7 @@ s_weakref (int ignore ATTRIBUTE_UNUSED)
  	{
  	  expressionS *expP = symbol_get_value_expression (symp);
@@ -961,9 +4276,9 @@ diff -rupN binutils-2.19-orig/gas/read.c binutils-2.19/gas/read.c
  		  && expP->X_add_number == 0);
  	  symp = expP->X_add_symbol;
  	}
-diff -rupN binutils-2.19-orig/gas/sb.c binutils-2.19/gas/sb.c
---- binutils-2.19-orig/gas/sb.c	2007-07-03 04:01:03.000000000 -0700
-+++ binutils-2.19/gas/sb.c	2009-04-29 11:18:07.944739000 -0700
+diff -upr binutils-2.19-vanilla/gas/sb.c binutils-2.19/gas/sb.c
+--- binutils-2.19-vanilla/gas/sb.c	2007-07-03 04:01:03.000000000 -0700
++++ binutils-2.19/gas/sb.c	2009-05-07 09:53:45.933960000 -0700
 @@ -59,7 +59,7 @@ sb_build (sb *ptr, int size)
    /* See if we can find one to allocate.  */
    sb_element *e;
@@ -973,9 +4288,9 @@ diff -rupN binutils-2.19-orig/gas/sb.c binutils-2.19/gas/sb.c
  
    e = free_list.size[size];
    if (!e)
-diff -rupN binutils-2.19-orig/gas/subsegs.c binutils-2.19/gas/subsegs.c
---- binutils-2.19-orig/gas/subsegs.c	2007-07-03 04:01:03.000000000 -0700
-+++ binutils-2.19/gas/subsegs.c	2009-04-29 11:20:50.676241000 -0700
+diff -upr binutils-2.19-vanilla/gas/subsegs.c binutils-2.19/gas/subsegs.c
+--- binutils-2.19-vanilla/gas/subsegs.c	2007-07-03 04:01:03.000000000 -0700
++++ binutils-2.19/gas/subsegs.c	2009-05-07 09:53:45.939917000 -0700
 @@ -84,7 +84,7 @@ subseg_set_rest (segT seg, subsegT subse
    if (frag_now && frchain_now)
      frchain_now->frch_frag_now = frag_now;
@@ -994,9 +4309,9 @@ diff -rupN binutils-2.19-orig/gas/subsegs.c binutils-2.19/gas/subsegs.c
  }
  
  /*
-diff -rupN binutils-2.19-orig/gas/symbols.c binutils-2.19/gas/symbols.c
---- binutils-2.19-orig/gas/symbols.c	2008-08-21 23:07:45.000000000 -0700
-+++ binutils-2.19/gas/symbols.c	2009-04-29 11:21:16.200476000 -0700
+diff -upr binutils-2.19-vanilla/gas/symbols.c binutils-2.19/gas/symbols.c
+--- binutils-2.19-vanilla/gas/symbols.c	2008-08-21 23:07:45.000000000 -0700
++++ binutils-2.19/gas/symbols.c	2009-05-07 09:53:45.948906000 -0700
 @@ -217,7 +217,7 @@ local_symbol_convert (struct local_symbo
  {
    symbolS *ret;
@@ -1065,9 +4380,9 @@ diff -rupN binutils-2.19-orig/gas/symbols.c binutils-2.19/gas/symbols.c
        
        /* Format the thing.  */
        sprintf (concat_string, 
-diff -rupN binutils-2.19-orig/gas/write.c binutils-2.19/gas/write.c
---- binutils-2.19-orig/gas/write.c	2008-10-02 01:07:17.000000000 -0700
-+++ binutils-2.19/gas/write.c	2009-04-29 11:20:24.924898000 -0700
+diff -upr binutils-2.19-vanilla/gas/write.c binutils-2.19/gas/write.c
+--- binutils-2.19-vanilla/gas/write.c	2008-10-02 01:07:17.000000000 -0700
++++ binutils-2.19/gas/write.c	2009-05-07 09:53:45.955929000 -0700
 @@ -386,7 +386,7 @@ chain_frchains_together_1 (segT section,
      {
        prev_frag->fr_next = frchp->frch_root;
@@ -1143,9 +4458,9 @@ diff -rupN binutils-2.19-orig/gas/write.c binutils-2.19/gas/write.c
    symbol_table_frozen = 1;
  }
  
-diff -rupN binutils-2.19-orig/opcodes/i386-opc.h binutils-2.19/opcodes/i386-opc.h
---- binutils-2.19-orig/opcodes/i386-opc.h	2008-05-02 09:53:40.000000000 -0700
-+++ binutils-2.19/opcodes/i386-opc.h	2009-04-28 17:42:27.167628000 -0700
+diff -upr binutils-2.19-vanilla/opcodes/i386-opc.h binutils-2.19/opcodes/i386-opc.h
+--- binutils-2.19-vanilla/opcodes/i386-opc.h	2008-05-02 09:53:40.000000000 -0700
++++ binutils-2.19/opcodes/i386-opc.h	2009-05-07 09:53:45.960948000 -0700
 @@ -513,7 +513,7 @@ typedef union i386_operand_type
    unsigned int array[OTNumOfUints];
  } i386_operand_type;
@@ -1167,9 +4482,9 @@ diff -rupN binutils-2.19-orig/opcodes/i386-opc.h binutils-2.19/opcodes/i386-opc.
  
  /* these are for register name --> number & type hash lookup */
  typedef struct
-diff -rupN binutils-2.19-orig/opcodes/i386-tbl.h binutils-2.19/opcodes/i386-tbl.h
---- binutils-2.19-orig/opcodes/i386-tbl.h	2008-08-28 08:59:32.000000000 -0700
-+++ binutils-2.19/opcodes/i386-tbl.h	2009-04-28 17:44:40.757242000 -0700
+diff -upr binutils-2.19-vanilla/opcodes/i386-tbl.h binutils-2.19/opcodes/i386-tbl.h
+--- binutils-2.19-vanilla/opcodes/i386-tbl.h	2008-08-28 08:59:32.000000000 -0700
++++ binutils-2.19/opcodes/i386-tbl.h	2009-05-07 09:53:46.118921000 -0700
 @@ -20,7 +20,7 @@
  
  /* i386 opcode table.  */
