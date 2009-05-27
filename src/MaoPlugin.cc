@@ -20,8 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <MaoDebug.h>
-#include <MaoPlugin.h>
+#include "MaoDebug.h"
+#include "MaoPlugin.h"
 
 void LoadPlugin(const char *path) {
   fprintf(stderr, "Loading plugin %s\n", path);
