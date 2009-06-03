@@ -325,6 +325,7 @@ void InitLoopAlign();
 void InitBranchSeparate();
 void InitAddAddElimination();
 void InitAlignTinyLoops16();
+void InitPrefetchNta();
 
 void InitCFG();
 void InitRelax();

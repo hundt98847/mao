@@ -418,6 +418,7 @@ void InitPasses() {
   // Function passes
   InitDCE();
   InitNopKiller();
+  InitPrefetchNta();
   InitNopinizer();
   InitZEE();
   InitRedundantTestElimination();
@@ -428,6 +429,7 @@ void InitPasses() {
   InitBranchSeparate();
   InitAddAddElimination();
   InitAlignTinyLoops16();
+
 
   RegisterFunctionPass(
       "TEST", MaoFunctionPassManager::GenericPassCreator<TestPass>);
