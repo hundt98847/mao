@@ -52,14 +52,27 @@ class RedTestElimPass : public MaoFunctionPass {
   //
   bool Go() {
     CFG *cfg = CFG::GetCFG(unit_, function_);
+    if (!cfg->IsWellFormed()) return true;
 
+    // Container for instructions to remove. In order
+    // to make things simple and to avoid messing up
+    // iterators, we collect instructions in a first
+    // pass and delete them in a second loop.
+    //
     std::list<InstructionEntry *> redundants;
 
+    // Iterate over all basic blocks in the function.
+    // This analysis is done 'local', we're only looking
+    // within a basic block. This could be extended, however,
+    // we doubt there will be many opportunities.
+    //
     FORALL_CFG_BB(cfg,it) {
       FORALL_BB_ENTRY(it,entry) {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
 
+        // Is this a test instruction comparing identical registers?
+        //
         if (insn->op() == OP_test &&
             insn->IsRegisterOperand(0) &&
             insn->IsRegisterOperand(1) &&
@@ -67,8 +80,15 @@ class RedTestElimPass : public MaoFunctionPass {
             insn->prevInstruction()) {
           InstructionEntry *prev = insn->prevInstruction();
 
+          // Traverse upwards in the basic block, passing
+          // by mov instructions, which are known to not
+          // modify flags. This could be extended to include
+          // additional instructions, but these are the only
+          // patterns we've found so far.
+          //
           while (prev && prev->IsOpMov()) {
-            // check for re-def's
+            // check for re-def's of sub registers.
+            //
             if (prev->IsRegisterOperand(1) &&
                 RegistersOverlap(prev->GetRegisterOperand(1),
                                  insn->GetRegisterOperand(1))) {
@@ -77,12 +97,19 @@ class RedTestElimPass : public MaoFunctionPass {
             }
             prev = prev->prevInstruction();
           }
+
+          // Check whether this previous instruction defines
+          // the same flags that test is checking for.
+          //
+          // Note: There is potential to handle the OP_sal, OP_shl,
+          //       OP_sar, OP_shr as well, however, flag handling
+          //       is really difficult for these various shifts.
+          //       Disabled for now.
+          //
           if (prev)
             if (prev->op() == OP_sub || prev->op() == OP_add ||
                 prev->op() == OP_and || prev->op() == OP_or ||
                 prev->op() == OP_xor ||
-                prev->op() == OP_sal || prev->op() == OP_sar ||
-                prev->op() == OP_shl || prev->op() == OP_shr ||
                 prev->op() == OP_sbb) {
               int op_index = prev->NumOperands() > 1 ? 1 : 0;
               if (prev->IsRegisterOperand(op_index) &&
@@ -99,7 +126,8 @@ class RedTestElimPass : public MaoFunctionPass {
       }
     }
 
-    // Now delete all the redundant ones.
+    // Now delete all the redundant test instructions
+    //
     for (std::list<InstructionEntry *>::iterator it = redundants.begin();
          it != redundants.end(); ++it) {
       unit_->DeleteEntry(*it);
