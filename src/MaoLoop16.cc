@@ -207,7 +207,7 @@ class AlignTinyLoops16 : public MaoFunctionPass {
       //   |EEEEEEE---------|   there need to be more -'s than B's
       //
       if (lines > 1 && start_used < (fetchline_size_ - end_used)) {
-        Trace(2, "  -> Alignment possible, up %d bytes, save 1/%d fetch lines",
+        Trace(0, "  -> Alignment possible, up %d bytes, save 1/%d fetch lines",
               start_used,
               end_fetch - start_fetch + 1);
 
@@ -220,11 +220,7 @@ class AlignTinyLoops16 : public MaoFunctionPass {
         //
         // Subject to further tuning.
         //
-        if ((lines <= 4) ||
-            (lines == 5 && start_used < 13) ||
-            (lines == 6 && start_used < 11) ||
-            (lines == 7 && start_used < 9)  ||
-            (lines  > 7 && start_used < 5)) {
+        if (lines < 3) {
           Trace(0, "  -> Alignment DONE");
           (*iter)->min_bb()->first_entry()->AlignTo(4,-1,15);
 
