@@ -511,6 +511,12 @@ class InstructionEntry : public MaoEntry {
   }
 
   enum flag_code GetFlag() const { return code_flag_; }
+
+  /* Returns 0 if attempting to add a prefix where one from the same
+     class already exists, 1 if non rep/repne added, 2 if rep/repne
+     added.  */
+  int AddPrefix(unsigned int prefix);
+
  private:
   i386_insn *instruction_;
   MaoOpcode  op_;
@@ -552,11 +558,6 @@ class InstructionEntry : public MaoEntry {
   int StripRexPrefix(int prefix) const;
 
   std::string &PrintRexPrefix(std::string *out, int prefix) const;
-
-  /* Returns 0 if attempting to add a prefix where one from the same
-     class already exists, 1 if non rep/repne added, 2 if rep/repne
-     added.  */
-  int AddPrefix(unsigned int prefix);
 
   // Returns the instruction op string, including any suffix.
   const std::string GetAssemblyInstructionName() const;
@@ -621,7 +622,18 @@ class MaoUnit {
   InstructionEntry *CreateNop(Function *function);
   InstructionEntry *CreateUncondJump(LabelEntry *l, Function *function);
 
-  LabelEntry *CreateLabel(const char *labelname, Function* function, SubSection* ss);
+  // prefetch type:
+  //    0:  nta
+  //    1:  t0
+  //    2:  t1
+  //    3:  t2
+  InstructionEntry *CreatePrefetch(Function *function,
+                                   int prefetch_type,
+                                   InstructionEntry *insn,
+                                   int op_index);
+  LabelEntry *CreateLabel(const char *labelname,
+                          Function* function,
+                          SubSection* ss);
   DirectiveEntry *CreateDirective(DirectiveEntry::Opcode op,
                                   const DirectiveEntry::OperandVector &operands,
                                   Function *function,
