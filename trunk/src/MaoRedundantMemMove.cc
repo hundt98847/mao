@@ -42,8 +42,16 @@ class RedMemMovElimPass : public MaoFunctionPass {
   // Find these patterns in a single basic block:
   //
   //  movq    24(%rsp), %rdx
-  //  ... no def for that memory (check 'lookahead' instructions)
+  //  ... no def for this memory,
+  //  ... no def for the right hand side register %rdx,
+  //  ... check as many as 'lookahead' instructions.
   //  movq    24(%rsp), %rcx
+  //
+  // If this patterns is found, the last instruction can be
+  // changed to:
+  //  movq    %rdx, %rcx
+  // which has a shorter encoding and avoids a 2nd memory
+  // reference.
   //
   bool Go() {
     CFG *cfg = CFG::GetCFG(unit_, function_);
