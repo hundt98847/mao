@@ -358,7 +358,50 @@ InstructionEntry *MaoUnit::CreateNop(Function *function) {
   return e;
 }
 
-InstructionEntry *MaoUnit::CreateUncondJump(LabelEntry *label, Function *function) {
+static const char *prefetch_opcode_strings[] = {
+  "prefetchnta",
+  "prefetcht0",
+  "prefetcht1",
+  "prefetcht2"
+};
+
+static const MaoOpcode prefetch_opcodes[] = {
+  OP_prefetchnta,
+  OP_prefetcht0,
+  OP_prefetcht1,
+  OP_prefetcht2
+};
+
+InstructionEntry *MaoUnit::CreatePrefetch(Function *function,
+                                          int type,
+                                          InstructionEntry *insn,
+                                          int op_index) {
+  MAO_ASSERT(type >= 0 && type <= 3);
+  InstructionEntry *e = CreateInstruction(
+    prefetch_opcode_strings[type], 0xf18, function);
+
+  // next free ID for the entry
+  EntryID entry_index = entry_vector_.size();
+  e->set_id(entry_index);
+  e->set_op(prefetch_opcodes[type]);
+
+  i386_insn *in_insn = e->instruction();
+  in_insn->operands = 1;
+  in_insn->mem_operands = 1;
+
+  // Set address expression from insn operand op
+  e->SetOperand(0, insn, op_index);
+  if (insn->HasPrefix(ADDR_PREFIX_OPCODE))
+    e->AddPrefix(ADDR_PREFIX_OPCODE);
+
+  // Add the entry to the compilation unit
+  entry_vector_.push_back(e);
+  return e;
+}
+
+
+InstructionEntry *MaoUnit::CreateUncondJump(LabelEntry *label,
+                                            Function *function) {
   InstructionEntry *e = CreateInstruction("jmp", 0xeb, function);
   expressionS *disp_expression = (expressionS *)xmalloc(sizeof(expressionS));
   symbolS *symbolP;
