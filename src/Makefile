@@ -115,6 +115,7 @@ CCSRCS=						\
 	MaoRedundantTestElim.cc			\
 	MaoRedundantMemMove.cc			\
 	MaoBranchSeparator.cc			\
+	MaoScheduler.cc			\
 	MaoRelax.cc				\
 	MaoUnit.cc				\
 	MaoZee.cc				\

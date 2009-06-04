@@ -429,6 +429,7 @@ void InitPasses() {
   InitBranchSeparate();
   InitAddAddElimination();
   InitAlignTinyLoops16();
+  InitScheduler();
 
 
   RegisterFunctionPass(

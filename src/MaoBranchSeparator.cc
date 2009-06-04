@@ -304,8 +304,11 @@ bool BranchSeparatorPass::IsProfitable(Function *function) {
       }
       //The function list might be just a single function name and so
       //we need to compare the list against the given function name
-      if( strcmp (function_list, func_name) == 0 )
+      if( strcmp (function_list, func_name) == 0 ) {
+        Trace(2, "Profitable");
         return true;
+      }
+      Trace(2, "Not Profitable");
       return false;
     }
   else
