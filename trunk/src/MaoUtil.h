@@ -58,6 +58,21 @@ class BitString {
       (1ull << (index % (sizeof(unsigned long long) * 8)));
   }
 
+  int NextSetBit(int from_index) {
+    unsigned int word_pos = from_index/(sizeof(unsigned long long) * 8);
+    unsigned int bit_pos = from_index%(sizeof(unsigned long long) * 8);
+    while (word_pos < 4) {
+      while (bit_pos < (sizeof(unsigned long long) * 8)) {
+        if (word[word_pos]&(1ull << bit_pos))
+          return word_pos*sizeof(unsigned long long)*8+bit_pos;
+        bit_pos++;
+      }
+      word_pos++;
+      bit_pos=0;
+    }
+    return -1;
+  }
+
   unsigned long long GetWord(int index) {
     return word[index];
   }

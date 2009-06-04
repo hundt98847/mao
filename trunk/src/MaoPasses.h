@@ -319,6 +319,7 @@ void InitNopinizer();
 void InitZEE();
 void InitRedundantTestElimination();
 void InitRedundantMemMoveElimination();
+void InitScheduler();
 void InitMissDispElimination();
 void InitLongInstructionSplit();
 void InitLoopAlign();
