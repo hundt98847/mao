@@ -1960,6 +1960,7 @@ void InstructionEntry::SetOperand(int op1,
     i1->index_reg = i2->index_reg;
     i1->log2_scale_factor = i2->log2_scale_factor;
   }
+  i1->reloc[op1] = i2->reloc[op2];
 }
 
 bool InstructionEntry::CompareMemOperand(int op1,
