@@ -636,7 +636,8 @@ class MaoUnit {
   InstructionEntry *CreatePrefetch(Function *function,
                                    int prefetch_type,
                                    InstructionEntry *insn,
-                                   int op_index);
+                                   int op_index,
+                                   int offset = 0);
   LabelEntry *CreateLabel(const char *labelname,
                           Function* function,
                           SubSection* ss);

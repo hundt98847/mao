@@ -34,7 +34,9 @@
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(PREFNTA, 0) {
+MAO_OPTIONS_DEFINE(PREFNTA, 2) {
+  OPTION_INT("offset",  0, "Offset added to prefetch addresses"),
+  OPTION_INT("ptype",   0, "Type of prefetch (0: nta, ..., 3: t2)"),
 };
 
 // Insert prefetch.nta before loads
@@ -42,7 +44,10 @@ MAO_OPTIONS_DEFINE(PREFNTA, 0) {
 class PrefetchNtaPass : public MaoFunctionPass {
  public:
   PrefetchNtaPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
-      : MaoFunctionPass("PREFNTA", options, mao, function) {
+    : MaoFunctionPass("PREFNTA", options, mao, function),
+      insertions_(0) {
+    offset_ = GetOptionInt("offset");
+    ptype_ = GetOptionInt("ptype");
   }
 
   // Main entry point
@@ -60,15 +65,34 @@ class PrefetchNtaPass : public MaoFunctionPass {
         //
         if (insn->IsOpMov() &&
             insn->IsMemOperand(0)) {
-          InstructionEntry *pref = unit_->CreatePrefetch(function_, 0, insn, 0);
+          InstructionEntry *pref = unit_->CreatePrefetch(function_,
+                                                         ptype_,
+                                                         insn,
+                                                         0, /* operand */
+                                                         offset_);
           insn->LinkBefore(pref);
+          ++insertions_;
         }
       }
     }
 
+    // Provide simple log message to indicate progress
+    //
+    if (insertions_) {
+      const char *pstring[] = {
+        "nta", "t0", "t1", "t2"
+      };
+
+      Trace(1, "Inserted %d prefetch%s's, offset: %d",
+            insertions_, pstring[ptype_], offset_);
+    }
     return true;
   }
 
+ private:
+  int offset_;
+  int ptype_;
+  int insertions_;
 };
 
 // External Entry Point
