@@ -1940,6 +1940,121 @@ std::string &InstructionEntry::ImmediateOperandToString(std::string *out,
   return *out;
 }
 
+// Make a copy of an expression.
+expressionS *InstructionEntry::CreateExpressionCopy(expressionS *in_exp) {
+  expressionS *new_exp = new expressionS;
+  memcpy(new_exp, in_exp, sizeof(expressionS));
+  MAO_ASSERT(new_exp->X_add_number == in_exp->X_add_number);
+  return new_exp;
+}
+
+
+// Checks if two expressions are equal. It does not resolve anything,
+// and is conservative. It only returns true if it is sure they are
+// equal. Equal here means they have identical experssions. Note that
+// the expressions might resolve to different things if the "." symbols
+// is used.
+bool InstructionEntry::EqualExpressions(expressionS *expression1,
+                                        expressionS *expression2) const {
+  if (expression1->X_op != expression2->X_op)
+    return false;
+
+  switch (expression1->X_op) {
+    case O_constant:        /* X_add_number (a constant expression).  */
+      return (expression1->X_add_number == expression2->X_add_number);
+    case O_symbol:          /* X_add_symbol + X_add_number.  */
+      return (expression1->X_add_symbol == expression2->X_add_symbol &&
+              expression1->X_add_number == expression2->X_add_number);
+    case O_add:             /* (X_add_symbol +  X_op_symbol) + X_add_number.  */
+    case O_subtract:        /* (X_add_symbol -  X_op_symbol) + X_add_number.  */
+    case O_divide:          /* (X_add_symbol /  X_op_symbol) + X_add_number.  */
+    case O_multiply:        /* (X_add_symbol *  X_op_symbol) + X_add_number.  */
+    case O_modulus:         /* (X_add_symbol %  X_op_symbol) + X_add_number.  */
+    case O_left_shift:      /* (X_add_symbol << X_op_symbol) + X_add_number.  */
+    case O_right_shift:     /* (X_add_symbol >> X_op_symbol) + X_add_number.  */
+    case O_bit_inclusive_or:/* (X_add_symbol |  X_op_symbol) + X_add_number.  */
+    case O_bit_or_not:      /* (X_add_symbol |~ X_op_symbol) + X_add_number.  */
+    case O_bit_exclusive_or:/* (X_add_symbol ^  X_op_symbol) + X_add_number.  */
+    case O_bit_and:         /* (X_add_symbol &  X_op_symbol) + X_add_number.  */
+    case O_eq:              /* (X_add_symbol == X_op_symbol) + X_add_number.  */
+    case O_ne:              /* (X_add_symbol != X_op_symbol) + X_add_number.  */
+    case O_lt:              /* (X_add_symbol <  X_op_symbol) + X_add_number.  */
+    case O_le:              /* (X_add_symbol <= X_op_symbol) + X_add_number.  */
+    case O_ge:              /* (X_add_symbol >= X_op_symbol) + X_add_number.  */
+    case O_gt:              /* (X_add_symbol >  X_op_symbol) + X_add_number.  */
+    case O_logical_and:     /* (X_add_symbol && X_op_symbol) + X_add_number.  */
+    case O_logical_or:      /* (X_add_symbol || X_op_symbol) + X_add_number.  */
+      return (expression1->X_add_symbol == expression2->X_add_symbol &&
+              expression1->X_op_symbol  == expression2->X_op_symbol  &&
+              expression1->X_add_number == expression2->X_add_number);
+    case O_register:        /* A register (X_add_number is register number).  */
+      return (expression1->X_add_number == expression2->X_add_number);
+    case O_illegal:         /* An illegal expression.  */
+    case O_absent:          /* A nonexistent expression.  */
+      // absent and illegal expressions are not equal.
+      return false;
+    case O_symbol_rva:      /* X_add_symbol + X_add_number - the base address of the image.  */
+        // TODO(martint): Look at this case
+      return false;
+      /* A big value.  If X_add_number is negative or 0, the value is in
+         generic_floating_point_number.  Otherwise the value is in
+         generic_bignum, and X_add_number is the number of LITTLENUMs in
+         the value.  */
+    case O_big:
+        // TODO(martint): Look at this case
+        return false;
+    case O_uminus:           /* (- X_add_symbol) + X_add_number.  */
+    case O_bit_not:          /* (~ X_add_symbol) + X_add_number.  */
+    case O_logical_not:      /* (! X_add_symbol) + X_add_number.  */
+      return (expression1->X_add_symbol == expression2->X_add_symbol &&
+              expression1->X_add_number == expression2->X_add_number);
+    case O_index:             /* X_op_symbol [ X_add_symbol ] */
+      return (expression1->X_add_symbol == expression2->X_add_symbol &&
+              expression1->X_op_symbol  == expression2->X_op_symbol);
+      /* machine dependent operators */
+    case O_md1:
+    case O_md2:
+    case O_md3:
+    case O_md4:
+    case O_md5:
+    case O_md6:
+    case O_md7:
+    case O_md8:
+    case O_md9:
+    case O_md10:
+    case O_md11:
+    case O_md12:
+    case O_md13:
+    case O_md14:
+    case O_md15:
+    case O_md16:
+    case O_md17:
+    case O_md18:
+    case O_md19:
+    case O_md20:
+    case O_md21:
+    case O_md22:
+    case O_md23:
+    case O_md24:
+    case O_md25:
+    case O_md26:
+    case O_md27:
+    case O_md28:
+    case O_md29:
+    case O_md30:
+    case O_md31:
+    case O_md32:
+      // Fallback on a full compare for machine dependent expressions.
+      return memcmp(expression1, expression2, sizeof(expressionS)) == 0;
+    case O_max:      /* this must be the largest value */
+      MAO_ASSERT_MSG(false, "Invalid expression in compare.");
+    default:
+      MAO_ASSERT_MSG(false, "Invalid expression in compare.");
+  }
+  MAO_ASSERT(false);
+  return false;
+}
+
 void InstructionEntry::SetOperand(int op1,
                                   InstructionEntry *insn2,
                                   int op2) {
@@ -1949,12 +2064,11 @@ void InstructionEntry::SetOperand(int op1,
   memcpy(&i1->types[op1], &i2->types[op2], sizeof(i386_operand_type));
   i1->flags[op1] = i2->flags[op2];
   if (insn2->IsImmediateOperand(op2))
-    i1->op[op1].imms = i2->op[op2].imms;
+    i1->op[op1].imms = CreateExpressionCopy(i2->op[op2].imms);
   if (insn2->IsRegisterOperand(op2))
     i1->op[op1].regs = i2->op[op2].regs;
   if (insn2->IsMemOperand(op2))
-    i1->op[op1].disps = i2->op[op2].disps;
-
+    i1->op[op1].disps = CreateExpressionCopy(i2->op[op2].disps);
   if (insn2->IsMemOperand(op2)) {
     i1->base_reg = i2->base_reg;
     i1->index_reg = i2->index_reg;
