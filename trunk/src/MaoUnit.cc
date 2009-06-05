@@ -2292,7 +2292,7 @@ const std::string InstructionEntry::GetAssemblyInstructionName() const {
     // From general.s
     OP_movzbw,
     // From i386.s
-    OP_fstsw, OP_movsx,
+    OP_fstsw,
     // From opcode.s
     OP_cwtd,
     // From svme.s
@@ -2338,6 +2338,31 @@ const std::string InstructionEntry::GetAssemblyInstructionName() const {
                sizeof(keep_sse4_2_suffix)/sizeof(MaoOpcode))) {
     return instruction_->tm.name;
   }
+
+  // These instruction have valid suffix information
+  // in tm.opcode_modifier.no_Xsuf
+  // Use it when printing instead of the .suffix
+  if (op() == OP_movsx || op() == OP_movzx) {
+    // Handle movsx and movzx, found in i386.c in the gas
+    // test suite
+    std::string s = instruction_->tm.name;
+    // Make sure max one suffix is listed in the template.
+    MAO_ASSERT((!instruction_->tm.opcode_modifier.no_bsuf +
+                !instruction_->tm.opcode_modifier.no_wsuf +
+                !instruction_->tm.opcode_modifier.no_lsuf +
+                !instruction_->tm.opcode_modifier.no_ssuf +
+                !instruction_->tm.opcode_modifier.no_qsuf +
+                !instruction_->tm.opcode_modifier.no_ldsuf) < 2);
+    if (!instruction_->tm.opcode_modifier.no_bsuf) s.append("b");
+    if (!instruction_->tm.opcode_modifier.no_wsuf) s.append("w");
+    if (!instruction_->tm.opcode_modifier.no_lsuf) s.append("l");
+    if (!instruction_->tm.opcode_modifier.no_ssuf) s.append("s");
+    if (!instruction_->tm.opcode_modifier.no_qsuf) s.append("q");
+    if (!instruction_->tm.opcode_modifier.no_ldsuf)s.append("ld");
+    return s;
+  }
+
+
 
   if (IsInList(op(), supress_suffix,
                sizeof(supress_suffix)/sizeof(MaoOpcode))) {
