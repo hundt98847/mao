@@ -544,6 +544,12 @@ class InstructionEntry : public MaoEntry {
   i386_insn *CreateInstructionCopy(i386_insn *in_inst);
   // Allocates memory for a register entry to be used
   // in the instruction
+  expressionS *CreateExpressionCopy(expressionS *in_exp);
+  bool EqualExpressions(expressionS *expression1,
+                        expressionS *expression2) const;
+
+
+
   reg_entry *CopyRegEntry(const reg_entry *in_reg);
   // Frees all allocated memory for this instruction
   void FreeInstruction();
