@@ -375,7 +375,8 @@ static const MaoOpcode prefetch_opcodes[] = {
 InstructionEntry *MaoUnit::CreatePrefetch(Function *function,
                                           int type,
                                           InstructionEntry *insn,
-                                          int op_index) {
+                                          int op_index,
+                                          int offset) {
   MAO_ASSERT(type >= 0 && type <= 3);
   InstructionEntry *e = CreateInstruction(
     prefetch_opcode_strings[type], 0xf18, function);
@@ -393,6 +394,8 @@ InstructionEntry *MaoUnit::CreatePrefetch(Function *function,
   e->SetOperand(0, insn, op_index);
   if (insn->HasPrefix(ADDR_PREFIX_OPCODE))
     e->AddPrefix(ADDR_PREFIX_OPCODE);
+  if (offset && in_insn->op[0].disps)
+    in_insn->op[0].disps->X_add_number += offset;
 
   // Add the entry to the compilation unit
   entry_vector_.push_back(e);
@@ -1942,6 +1945,8 @@ std::string &InstructionEntry::ImmediateOperandToString(std::string *out,
 
 // Make a copy of an expression.
 expressionS *InstructionEntry::CreateExpressionCopy(expressionS *in_exp) {
+  if (!in_exp)
+    return NULL;
   expressionS *new_exp = new expressionS;
   memcpy(new_exp, in_exp, sizeof(expressionS));
   MAO_ASSERT(new_exp->X_add_number == in_exp->X_add_number);
