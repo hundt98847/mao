@@ -37,10 +37,10 @@ MaoAction::MaoAction(const char *name, MaoOptionMap *options, MaoUnit *unit)
                  "(action: %s)", name);
 
   tracing_level_ = GetOptionInt("trace");
-  da_vcg_ = GetOptionInt("da[vcg]");
-  db_vcg_ = GetOptionInt("db[vcg]");
-  da_cfg_ = GetOptionInt("da[cfg]");
-  db_cfg_ = GetOptionInt("db[cfg]");
+  da_vcg_ = GetOptionBool("da[vcg]");
+  db_vcg_ = GetOptionBool("db[vcg]");
+  da_cfg_ = GetOptionBool("da[cfg]");
+  db_cfg_ = GetOptionBool("db[cfg]");
 }
 
 MaoAction::~MaoAction() { }
