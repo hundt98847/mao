@@ -262,10 +262,10 @@ bool SetPassSpecificOptions(const char *option, const char *arg,
   }
   if (!strcasecmp(option, "db") ||
       !strcasecmp(option, "da")) {
+    std::string full_option = option;
     const char *param;
     GetParam(arg, next, &param, token_buff);
     if (param) {
-      std::string full_option = option;
       full_option.append("[").append(param).append("]");
       value.bval_ = true;
       (*options)[full_option] = value;
