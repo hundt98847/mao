@@ -49,7 +49,8 @@ class BackBranchAlign : public MaoFunctionPass {
   //
   class AlignCandidate {
    public:
-    AlignCandidate( const SimpleLoop *inner_loop,
+    AlignCandidate( MaoEntryIntMap   *offsets,
+                    const SimpleLoop *inner_loop,
                     const BasicBlock *inner_min_bb,
                     const BasicBlock *inner_max_bb,
                     const SimpleLoop *outer_loop,
@@ -60,8 +61,15 @@ class BackBranchAlign : public MaoFunctionPass {
       inner_max_bb_(inner_max_bb),
       outer_loop_(outer_loop),
       outer_min_bb_(outer_min_bb),
-      outer_max_bb_(outer_max_bb) {}
+      outer_max_bb_(outer_max_bb) {
+      if ((*offsets)[inner_min_bb->first_entry()] >
+          (*offsets)[outer_min_bb->first_entry()])
+        min_bb_ = outer_min_bb;
+      else
+        min_bb_ = inner_min_bb;
+    }
 
+    const BasicBlock *min_bb()       { return min_bb_; }
     const BasicBlock *inner_min_bb() { return inner_min_bb_; }
     const BasicBlock *inner_max_bb() { return inner_max_bb_; }
     const SimpleLoop *inner_loop()   { return inner_loop_; }
@@ -69,6 +77,7 @@ class BackBranchAlign : public MaoFunctionPass {
     const BasicBlock *outer_max_bb() { return outer_max_bb_; }
     const SimpleLoop *outer_loop()   { return outer_loop_; }
    protected:
+    const BasicBlock *min_bb_;
     const SimpleLoop *inner_loop_;
     const BasicBlock *inner_min_bb_, *inner_max_bb_;
     const SimpleLoop *outer_loop_;
@@ -105,6 +114,22 @@ class BackBranchAlign : public MaoFunctionPass {
           (*offsets)[(*max_bb)->first_entry()])
         *max_bb = (*iter);
       }
+  }
+
+  void FindNestOffsets(MaoEntryIntMap *offsets,
+                       AlignCandidate *candidate,
+                       int            *inner_offset,
+                       int            *outer_offset ) {
+    *inner_offset =
+      (*offsets)[candidate->inner_max_bb()->GetLastInstruction()];
+    *outer_offset =
+      (*offsets)[candidate->outer_max_bb()->GetLastInstruction()];
+
+    if (*outer_offset < *inner_offset) {
+      int tmp = *outer_offset;
+      *outer_offset = *inner_offset;
+      *inner_offset = tmp;
+    }
   }
 
 
@@ -160,35 +185,39 @@ class BackBranchAlign : public MaoFunctionPass {
       }
       if (!inner_last->HasTarget() ||
           !outer_last->HasTarget()) {
-        Trace(0, "Unsupported end instructions");
-        if (tracing_level() > 0) {
-          inner_last->PrintEntry();
-          outer_last->PrintEntry();
-        }
+        Trace (0, "Unsupported end instructions");
+        TraceC(0, "inner: ");
+        inner_last->PrintEntry();
+        TraceC(0, "outer: ");
+        outer_last->PrintEntry();
         return;
       }
 
       int outer_offset = (*offsets)[outer_last];
       int inner_offset = (*offsets)[inner_last];
 
-      if (outer_offset < inner_offset) {
-        Trace(0, "Unexpected control flow, bail");
-        return;
-          }
       Trace(0, "Offset for back-branches, "
             "inner: %d, outer: %d, %s", inner_offset, outer_offset,
-            outer_offset - inner_offset < align_limit_ ?
+            abs(outer_offset - inner_offset) < align_limit_ ?
             "NEED ALIGNMENT" : "TOO FAR");
+
+      if (outer_offset < inner_offset) {
+        Trace(0, "Unexpected control flow");
+        int tmp = outer_offset;
+        outer_offset = inner_offset;
+        inner_offset = tmp;
+      }
 
       if (outer_offset - inner_offset < align_limit_) {
         bool linked_in = false;
         for (LoopList::iterator iter = candidates_.begin();
              iter != candidates_.end(); ++iter) {
-          if ((*offsets)[(*iter)->outer_min_bb()->first_entry()] >
+          if ((*offsets)[(*iter)->min_bb()->first_entry()] >
               outer_offset) {
             candidates_.insert(
               iter,
-              new AlignCandidate(inner, inner_min_bb, inner_max_bb,
+              new AlignCandidate(offsets,
+                                 inner, inner_min_bb, inner_max_bb,
                                  loop, outer_min_bb, outer_max_bb));
             linked_in = true;
             break;
@@ -196,7 +225,8 @@ class BackBranchAlign : public MaoFunctionPass {
         }
         if (!linked_in)
           candidates_.push_back(
-            new AlignCandidate(inner, inner_min_bb, inner_max_bb,
+            new AlignCandidate(offsets,
+                               inner, inner_min_bb, inner_max_bb,
                                loop, outer_min_bb, outer_max_bb));
       }
 
@@ -216,9 +246,7 @@ class BackBranchAlign : public MaoFunctionPass {
   //
   // After each re-alignment, a new relaxation pass is needed.
   //
-  void AlignBackBranches(SimpleLoop  *loop,
-                  Function    *function) {
-    MAO_ASSERT(function);
+  void AlignBackBranches(SimpleLoop  *loop ) {
     MaoEntryIntMap *sizes, *offsets;
 
     // Initial relaxation
@@ -240,10 +268,8 @@ class BackBranchAlign : public MaoFunctionPass {
     //
     for (LoopList::const_iterator iter = candidates_.begin();
          iter != candidates_.end(); ++iter) {
-      int inner_offset =
-        (*offsets)[(*iter)->inner_max_bb()->GetLastInstruction()];
-      int outer_offset =
-        (*offsets)[(*iter)->outer_max_bb()->GetLastInstruction()];
+      int inner_offset, outer_offset;
+      FindNestOffsets(offsets, (*iter), &inner_offset, &outer_offset);
 
       if (inner_offset / align_limit_ !=
           outer_offset / align_limit_) {
@@ -257,11 +283,7 @@ class BackBranchAlign : public MaoFunctionPass {
         sizes = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
         offsets = MaoRelaxer::GetOffsetMap(unit_, function_->GetSection());
 
-        inner_offset =
-          (*offsets)[(*iter)->inner_max_bb()->GetLastInstruction()];
-        outer_offset =
-          (*offsets)[(*iter)->outer_max_bb()->GetLastInstruction()];
-
+        FindNestOffsets(offsets, (*iter), &inner_offset, &outer_offset);
         Trace(1, "Aligned top of loop nest to 8 byte, offsets: %d, %d",
               inner_offset, outer_offset);
 
@@ -277,17 +299,14 @@ class BackBranchAlign : public MaoFunctionPass {
       Trace(0, "Inserting %d nops (outer: %d)", diff, outer_offset);
       for (int i = 0; i < diff; i++) {
         InstructionEntry *nop = unit_->CreateNop(function_);
-        (*iter)->outer_min_bb()->first_entry()->LinkBefore(nop);
+        (*iter)->min_bb()->first_entry()->LinkBefore(nop);
       }
 
       MaoRelaxer::InvalidateSizeMap(function_->GetSection());
       sizes = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
       offsets = MaoRelaxer::GetOffsetMap(unit_, function_->GetSection());
 
-      inner_offset =
-        (*offsets)[(*iter)->inner_max_bb()->GetLastInstruction()];
-      outer_offset =
-        (*offsets)[(*iter)->outer_max_bb()->GetLastInstruction()];
+      FindNestOffsets(offsets, (*iter), &inner_offset, &outer_offset);
       if (inner_offset / align_limit_ !=
           outer_offset / align_limit_) {
         Trace(0, "Inserting %d nops did the trick, %d, %d",
@@ -311,7 +330,7 @@ class BackBranchAlign : public MaoFunctionPass {
     if (!loop_graph_ ||
         !loop_graph_->NumberOfLoops()) return true;
 
-    AlignBackBranches(loop_graph_->root(), function_);
+    AlignBackBranches(loop_graph_->root());
     return true;
   }
 
