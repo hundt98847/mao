@@ -26,6 +26,7 @@ PYTHONLDOPTS=
 LIBZ=-lz
 OBJDIR=../obj-$(TARGET)
 BINDIR=../bin
+HEADERDIR=../include
 CC=gcc
 
 # Allow users to set this SRCDIR, to build outside of the source directory.
@@ -200,7 +201,68 @@ $(BINDIR)/mao-$(DEVPREFIX)$(TARGET): stamp-bin $(OBJDIR)/gen-opcodes.h $(OBJS)
 $(PLUGIN_TARGETS) : $(BINDIR)/%-$(TARGET).$(DYNLIBEXT) : $(OBJDIR)/%.o stamp-bin
 	$(CC) $(CFLAGS) $(DYNFLAGS) -o $@ $<
 
-.PHONY : clean allclean all mao-$(DEVPREFIX)$(TARGET)
+.PHONY : clean allclean all mao-$(DEVPREFIX)$(TARGET) headers
+
+
+MAO_HEADERS = $(SRCDIR)/MaoCFG.h $(SRCDIR)/MaoDebug.h $(SRCDIR)/MaoDefs.h \
+	      $(SRCDIR)/MaoLoops.h $(SRCDIR)/MaoOptions.h $(SRCDIR)/MaoPasses.h\
+	      $(SRCDIR)/MaoPlugin.h $(SRCDIR)/MaoStats.h $(SRCDIR)/MaoUnit.h \
+	      $(SRCDIR)/MaoUtil.h $(SRCDIR)/SymbolTable.h \
+	      $(OBJDIR)/gen-opcodes.h $(SRCDIR)/mao.h $(SRCDIR)/irlink.h
+
+MAO_BINUTILS_HEADERS = $(BINUTILSRC)/gas/config/tc-i386.h \
+	    	       $(BINUTILSRC)/gas/config/te-linux.h \
+	               $(BINUTILSRC)/gas/config/obj-elf.h \
+	               $(BINUTILSRC)/gas/read.h \
+	               $(BINUTILSRC)/gas/symbols.h \
+	               $(BINUTILSRC)/gas/listing.h \
+	               $(BINUTILSRC)/gas/obj.h \
+	               $(BINUTILSRC)/gas/asintl.h \
+	               $(BINUTILSRC)/gas/flonum.h \
+	               $(BINUTILSRC)/gas/bit_fix.h \
+	               $(BINUTILSRC)/gas/as.h \
+	               $(BINUTILSRC)/gas/dwarf2dbg.h \
+	               $(BINUTILSRC)/gas/bignum.h \
+	               $(BINUTILSRC)/gas/hash.h \
+	               $(BINUTILSRC)/gas/tc.h \
+	               $(BINUTILSRC)/gas/expr.h \
+	               $(BINUTILSRC)/gas/frags.h \
+	               $(BINUTILSRC)/gas/write.h \
+	               $(BINUTILOBJ)/gas/obj-format.h \
+	               $(BINUTILOBJ)/gas/config.h \
+	               $(BINUTILOBJ)/gas/targ-cpu.h \
+	               $(BINUTILOBJ)/gas/targ-env.h \
+	               $(BINUTILSRC)/include/ansidecl.h \
+	               $(BINUTILSRC)/include/symcat.h \
+	               $(BINUTILSRC)/include/progress.h \
+	               $(BINUTILSRC)/include/bfdlink.h \
+	               $(BINUTILSRC)/include/fopen-same.h \
+	               $(BINUTILSRC)/include/libiberty.h \
+	               $(BINUTILOBJ)/bfd/bfd.h
+
+MAO_ELF_HEADERS = $(BINUTILSRC)/include/elf/common.h \
+	          $(BINUTILSRC)/include/elf/internal.h \
+	          $(BINUTILSRC)/include/elf/external.h
+
+MAO_BFD_HEADERS = $(BINUTILSRC)/bfd/elf-bfd.h
+
+MAO_INCLUDE_OPCODE_HEADERS = $(BINUTILSRC)/include/opcode/i386.h
+
+MAO_OPCODES_HEADERS = $(BINUTILSRC)/opcodes/i386-opc.h
+
+headers:
+	mkdir -p $(HEADERDIR)
+	cp $(MAO_HEADERS) $(HEADERDIR)
+	mkdir -p $(HEADERDIR)/binutils
+	cp $(MAO_BINUTILS_HEADERS) $(HEADERDIR)/binutils
+	mkdir -p $(HEADERDIR)/binutils/bfd
+	cp $(MAO_BFD_HEADERS) $(HEADERDIR)/binutils/bfd
+	mkdir -p $(HEADERDIR)/binutils/elf
+	cp $(MAO_ELF_HEADERS) $(HEADERDIR)/binutils/elf
+	mkdir -p $(HEADERDIR)/binutils/opcodes
+	cp $(MAO_OPCODES_HEADERS) $(HEADERDIR)/binutils/opcodes
+	mkdir -p $(HEADERDIR)/binutils/opcode
+	cp $(MAO_INCLUDE_OPCODE_HEADERS) $(HEADERDIR)/binutils/opcode
 
 stamp-bin:
 	test -d $(BINDIR) || mkdir -p $(BINDIR)
