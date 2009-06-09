@@ -427,6 +427,7 @@ void InitPasses() {
   InitLongInstructionSplit();
   InitLoopAlign();
   InitBranchSeparate();
+  InitBackBranchAlign();
   InitAddAddElimination();
   InitAlignTinyLoops16();
   InitScheduler();
