@@ -891,7 +891,7 @@ int BasicBlock::NumEntries() {
   return num;
 }
 
-InstructionEntry *BasicBlock::GetFirstInstruction() {
+InstructionEntry *BasicBlock::GetFirstInstruction() const {
   MaoEntry *e = first_entry_;
   while (e) {
     if (e->IsInstruction()) return e->AsInstruction();
@@ -901,6 +901,18 @@ InstructionEntry *BasicBlock::GetFirstInstruction() {
   }
   return NULL;
 }
+
+InstructionEntry *BasicBlock::GetLastInstruction() const {
+  MaoEntry *e = last_entry_;
+  while (e) {
+    if (e->IsInstruction()) return e->AsInstruction();
+    if (e == first_entry_)
+      return NULL;
+    e = e->prev();
+  }
+  return NULL;
+}
+
 void BasicBlock::Print(FILE *f, MaoEntry *last) {
   MaoEntry *e = first_entry_;
   if (!last)
