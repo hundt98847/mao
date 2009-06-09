@@ -130,8 +130,9 @@ class BasicBlock {
   // Caution: This routine iterates through a bb to count entries
   int       NumEntries();
 
-  // Find 1st instruction, can be NULL
-  InstructionEntry *GetFirstInstruction();
+  // Find 1st, last instruction, can be NULL
+  InstructionEntry *GetFirstInstruction() const;
+  InstructionEntry *GetLastInstruction() const;
 
   // Dump BasicBlock until/including an entry.
   // If NULL, dump the whole basic block
