@@ -3010,7 +3010,7 @@ bool InstructionEntry::IsJump() const {
 }
 
 bool InstructionEntry::IsIndirectJump() const {
-  // Jump instructino always have one operand
+  // Jump instructions always have one operand
   MAO_ASSERT(!IsJump() || instruction_->operands == 1);
   return IsJump() && (instruction_->types[0].bitfield.baseindex ||
                       IsRegisterOperand(instruction_, 0));
