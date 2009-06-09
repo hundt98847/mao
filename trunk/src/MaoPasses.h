@@ -327,6 +327,8 @@ void InitBranchSeparate();
 void InitAddAddElimination();
 void InitAlignTinyLoops16();
 void InitPrefetchNta();
+void InitBackBranchAlign();
+
 
 void InitCFG();
 void InitRelax();

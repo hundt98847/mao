@@ -1,5 +1,6 @@
 OS=Linux
 TARGET=x86_64-linux
+DEVPREFIX=
 LOCALEDIR=/usr/share/locale
 BINUTILSRC=../binutils-2.19
 BINUTILOBJ=$(BINUTILSRC)-obj-$(TARGET)
@@ -94,6 +95,7 @@ CCSRCS=						\
 	ir.cc					\
 	mao.cc					\
 	MaoAddAdd.cc				\
+	MaoBackBranchAlign.cc			\
 	MaoCFG.cc				\
 	MaoDCE.cc				\
 	MaoDefs.cc				\
@@ -143,7 +145,7 @@ CCDEPS=$(patsubst %.cc,$(OBJDIR)/%.d,$(CCSRCS))
 PLUGINDEPS=$(patsubst %.cc,$(OBJDIR)/%.d,$(PLUGIN_CCSRCS))
 DEPS=$(CDEPS) $(CCDEPS) $(PLUGINDEPS)
 
-all: mao-$(TARGET) $(PLUGIN_TARGETS)
+all: mao-$(DEVPREFIX)$(TARGET) $(PLUGIN_TARGETS)
 
 # C source rule
 $(OBJDIR)/%.o : %.c stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
@@ -190,15 +192,15 @@ $(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) GenOpcodes.cc MaoDefs.h MaoDefs.tbl Ma
 $(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes
 	$(OBJDIR)/GenOpcodes -p $(OBJDIR) $(BINUTILSRC)/opcodes/i386-opc.tbl $(SRCDIR)/MaoDefs.tbl
 
-mao-$(TARGET): $(BINDIR)/mao-$(TARGET)
+mao-$(DEVPREFIX)$(TARGET): $(BINDIR)/mao-$(DEVPREFIX)$(TARGET)
 
-$(BINDIR)/mao-$(TARGET): stamp-bin $(OBJDIR)/gen-opcodes.h $(OBJS)
-	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -rdynamic -o $(BINDIR)/mao-$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil
+$(BINDIR)/mao-$(DEVPREFIX)$(TARGET): stamp-bin $(OBJDIR)/gen-opcodes.h $(OBJS)
+	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -rdynamic -o $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil
 
 $(PLUGIN_TARGETS) : $(BINDIR)/%-$(TARGET).$(DYNLIBEXT) : $(OBJDIR)/%.o stamp-bin
 	$(CC) $(CFLAGS) $(DYNFLAGS) -o $@ $<
 
-.PHONY : clean allclean all mao-$(TARGET)
+.PHONY : clean allclean all mao-$(DEVPREFIX)$(TARGET)
 
 stamp-bin:
 	test -d $(BINDIR) || mkdir -p $(BINDIR)
@@ -210,7 +212,7 @@ stamp-obj-$(TARGET):
 
 clean : 
 	-rm -f $(OBJDIR)/*
-	-rm -f $(BINDIR)/mao-$(TARGET) $(PLUGIN_TARGETS)
+	-rm -f $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(PLUGIN_TARGETS)
 
 allclean : 
 	-rm -rf ../obj-*
