@@ -91,9 +91,9 @@ class MaoEntry {
   virtual ~MaoEntry();
 
   virtual std::string &ToString(std::string *out) const = 0;
-  virtual void PrintEntry(FILE *out) const = 0;
+  virtual void PrintEntry(FILE *out = stderr) const = 0;
   std::string &SourceInfoToString(std::string *out) const;
-  virtual void PrintIR(FILE *out) const = 0;
+  virtual void PrintIR(FILE *out = stderr) const = 0;
   virtual char GetDescriptiveChar() const = 0;
   virtual EntryType Type() const = 0;
 
@@ -176,7 +176,7 @@ class LabelEntry : public MaoEntry {
   ~LabelEntry() { delete name_; }
 
   virtual std::string &ToString(std::string *out) const;
-  virtual void PrintEntry(FILE *out) const;
+  virtual void PrintEntry(FILE *out = stderr) const;
   virtual void PrintIR(FILE *out) const;
   virtual EntryType Type() const { return LABEL; }
   const char *name() { return name_; }
@@ -338,7 +338,7 @@ class DirectiveEntry : public MaoEntry {
   const Operand *GetOperand(int num) { return operands_[num]; }
 
   virtual std::string &ToString(std::string *out) const;
-  virtual void PrintEntry(::FILE *out) const;
+  virtual void PrintEntry(::FILE *out = stderr) const;
   virtual void PrintIR(::FILE *out) const;
   virtual MaoEntry::EntryType  Type() const;
   virtual char GetDescriptiveChar() const {return 'D';}
@@ -382,7 +382,7 @@ class InstructionEntry : public MaoEntry {
                    MaoUnit *maounit);
   ~InstructionEntry();
   virtual std::string &ToString(std::string *out) const;
-  virtual void PrintEntry(FILE *out) const;
+  virtual void PrintEntry(FILE *out = stderr) const;
   virtual void PrintIR(FILE *out) const;
   virtual MaoEntry::EntryType  Type() const;
 
@@ -649,10 +649,15 @@ class MaoUnit {
   // Dumpers
   void PrintMaoUnit() const;
   void PrintMaoUnit(FILE *out) const;
-  void PrintIR(bool print_entries, bool print_sections,
-               bool print_subsections, bool print_functions) const;
-  void PrintIR(FILE *out, bool print_entries, bool print_sections,
-               bool print_subsections, bool print_functions) const;
+  void PrintIR(bool print_entries = true,
+               bool print_sections = true,
+               bool print_subsections = true,
+               bool print_functions = true) const;
+  void PrintIR(FILE *out,
+               bool print_entries = true,
+               bool print_sections = true,
+               bool print_subsections = true,
+               bool print_functions = true) const;
 
 
   // Returns the section matching the given name. Returns
