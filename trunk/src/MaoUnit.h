@@ -117,6 +117,7 @@ class MaoEntry {
   InstructionEntry *nextInstruction();
   InstructionEntry *prevInstruction();
 
+  void Unlink();
   // Take 'entry' and link it in before/after current instruction
   void LinkBefore(MaoEntry *entry);
   void LinkAfter(MaoEntry *entry);
