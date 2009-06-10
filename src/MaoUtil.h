@@ -18,12 +18,17 @@
 #ifndef MAOUTIL_H_
 #define MAOUTIL_H_
 
-#include <string.h>
+//#include <string.h>
+#include <string>
 
 // Used by the STL-maps of sections and subsections.
 struct ltstr {
   bool operator()(const char* s1, const char* s2) const {
     return strcmp(s1, s2) < 0;
+  }
+
+  bool operator()(std::string s1, std::string s2) const {
+    return strcmp(s1.c_str(), s2.c_str()) < 0;
   }
 };
 

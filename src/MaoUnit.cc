@@ -1158,6 +1158,27 @@ std::string &MaoEntry::SourceInfoToString(std::string *out) const {
   return *out;
 }
 
+void MaoEntry::Unlink() {
+  MaoEntry *prev = prev_, *next = next_;
+  if (prev != NULL) {
+    prev->set_next (next);
+  }
+  if (next != NULL) {
+    next->set_prev (prev);
+  }
+  Function *function = maounit_->GetFunction(this);
+  if (function &&
+      function->first_entry() == this) {
+    function->set_first_entry (next);
+  }
+  if (function &&
+      function->last_entry() == this) {
+    function->set_last_entry (prev);
+  }
+  prev_=NULL;
+  next_=NULL;
+}
+
 void MaoEntry::LinkBefore(MaoEntry *entry) {
   entry->set_next(this);
   entry->set_prev(prev());
@@ -1187,6 +1208,9 @@ void MaoEntry::LinkBefore(MaoEntry *entry) {
 void MaoEntry::LinkAfter(MaoEntry *entry) {
   entry->set_next(next());
   entry->set_prev(this);
+  if (next()) {
+    next()->set_prev(entry);
+  }
   set_next(entry);
 
   // Do we need to update the function?
