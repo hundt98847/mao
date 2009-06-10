@@ -627,6 +627,7 @@ class MaoUnit {
                                       unsigned int base_opcode,
                                       Function *function);
   InstructionEntry *CreateNop(Function *function);
+  InstructionEntry *CreateLock(Function *function);
   InstructionEntry *CreateUncondJump(LabelEntry *l, Function *function);
 
   // prefetch type:
