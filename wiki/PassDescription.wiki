@@ -98,7 +98,7 @@ The current implementation might be a little too optimistic. There is a question
   MaoLoop16
 }}}
 === Description ===
-This pass seeks to align very tight loops to 16-byte boundaries to avoid incurring an instruction fetch penalty. This problem was discovered analyzing a 9% degradation in 252.eon on Ilium.
+This pass seeks to align very tight loops to 16-byte boundaries to avoid incurring an instruction fetch penalty. This problem was discovered analyzing a 9% degradation in 252.eon on an Intel platform.
 
 Very tiny loops, e.g., loops that are shorter than 32-byte, should be aligned to 16-byte boundaries to minimize the number of fetch lines. Thiss pass looks at inner loops, it checks whether pushing the starting address down would reduce the number of required fetch lines. IN particular, it checks whether more bytes are available in the last fetch lines than are used in the 1st fetchline. For example:
 {{{
