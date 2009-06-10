@@ -5,27 +5,31 @@
 Some initial option handling code has been implemented.
 
   * Mao specific options are passed to MAO via:
-       -mao:option_string
+       --mao=option_string
 
-  * This option_string cannot contain spaces, individual options are separated with a comma ','
+  * This option_string cannot contain spaces.
 
-  * Multiple -mao: options can be specified.
+  * Individual options for a pass are separated with a '+'
+
+  * Passes are separated with a ':'. See the examples below.
+
+  * Multiple --mao= options can be specified.
 
   * All other options on the MAO command line are passed to the integrated assembler.
 
-  * Options can also be specified via the environment variable MAOOPTS. When setting this variable, omit the preceding -mao: part from the example above, only pass in options_string.
+  * Options can also be specified via the environment variable MAOOPTS. When setting this variable, omit the preceding --mao= part from the example above, only pass in options_string.
 
-  * Starting MAO with no options, or passing -mao:-h, displays the help text,  which shows all currently "registered" options. Some options are available for all passes, such as the trace or dump-before and dump-after options. They are summarized in this output under "ALL"
+  * Starting MAO with no options, or passing -=mao=-h, displays the help text,  which shows all currently "registered" options. Some options are available for all passes, such as the trace or dump-before and dump-after options. They are summarized in this output under "ALL"
 
-<pre>
+{{{
 Mao 0.1
-Usage: mao [-mao:mao-options]+ [regular-assembler-options]+ input-file
+Usage: mao [--mao=mao-options]+ [regular-assembler-options]+ input-file
 
-'mao-options' are seperated by commas, and are:
+'mao-options' are seperated by '+' or ':', and are:
 
 -h          display this help text
 -v          verbose (set trace level to 3)
--ofname     specify assembly output file (also -o,fname)
+[...]
 
 PASS=[phase-option][,phase-option]+
 
@@ -45,20 +49,30 @@ Pass: REDMOV
   lookahead : (int)    Look ahead limit for pattern matcher
 Pass: REDTEST
 ...
-</pre>
+}}}
 
+= Invoking Passes with Options =
+Passes are invoked when they are specified on the command line. Please remember to specify an ASM pass at the end to force output of an actual asssembly file.
+A simple MAO invocation to just parse an assembly file and output it right after that would lool like this:
+
+{{{
+   ../bin/mao-x86_64-linux --mao=ASM=o[/dev/null]:LFIND=vcg+trace[0] loop2.s
+}}}
 
 = Pass-specific Options =
 
     * To specify a pass and a pass-specific option, please take a look at this self-explanatory example:
-
-        -mao:CFG=callsplit,other_opts,ZEE=trace[2],enable,...
+{{{
+        --mao=CFG=callsplit+other_opts:ZEE=trace[2]
+}}}
 
     * Valid pass names must be followed by a '=' sign.
 
-    * Options can have parameters, which can be specified as either:
+    * Options can have parameters, which can be specified with either one of:
+{{{
         option(value)
         option[value]
+}}}
 
     * Supported option types are int, bool, and string. Only
       one value can be passed as a parameter.
@@ -70,8 +84,9 @@ Pass: REDTEST
     * The trace option sets the tracing level for a given pass to 1.
 
     * For example, to enable tracing for all passes at level 3, except for pass LFIND, one would specify:
-
-        ../bin/mao-x86_64-linux -mao:-v-o,/dev/null,LFIND=vcg,trace[0] loop2.s
+{{{
+        ../bin/mao-x86_64-linux --mao=-v:LFIND=vcg+trace[0]:ASM=o[/dev/null] loop2.s
+}}}
 
 = Specifying Options in Source =
 
