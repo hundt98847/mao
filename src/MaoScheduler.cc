@@ -177,6 +177,14 @@ class SchedulerPass : public MaoFunctionPass {
   bool Go() {
     CFG *cfg = CFG::GetCFG (unit_, function_);
     FORALL_CFG_BB(cfg, bb_iterator) {
+      MaoEntry *first = *((*bb_iterator)->EntryBegin());
+      MaoEntry *last = *((*bb_iterator)->EntryEnd());
+      std::string first_str, last_str;
+      if (first)
+        first->ToString(&first_str);
+      if (last)
+        last->ToString(&last_str);
+      Trace (2, "BB start = %s, BB end = %s", first_str.c_str(), last_str.c_str());
       DependenceDag *dag = FormDependenceDag(*bb_iterator);
       if (dag != NULL) {
         Trace (2, "Dag for new bb:");
@@ -270,6 +278,9 @@ void SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, MaoEn
 
 void SchedulerPass::ScheduleNode (int node, MaoEntry **head) {
   MaoEntry *entry = entries_[node];
+  //Don't do anything if the node to be scheduled is the head node
+  if (entry == *head)
+    return;
   entry->Unlink();
   (*head)->LinkAfter(entry);
   std::string str1, str2;
@@ -487,6 +498,9 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
   return dag;
 }
 
+// An instruction is considered to touch memory if
+// 1. It has base or index registers, buit not a lea
+// 2. It is a call instruction
 bool SchedulerPass::IsMemOperation (InstructionEntry *entry) {
     if (entry->IsCall())
       return true;
@@ -497,6 +511,8 @@ bool SchedulerPass::IsMemOperation (InstructionEntry *entry) {
     return false;
 
 }
+// Certain instructions can not be reordered and their positions
+// need  to be maintained
 bool SchedulerPass::CanReorder (InstructionEntry *entry) {
   if (entry->IsReturn() || entry->IsJump() || entry->IsCondJump() || entry->op() == OP_leave || entry->op() == OP_cmp)
     return false;
