@@ -1,14 +1,14 @@
 #summary Description of Optimization Passes
 
+<wiki:toc max_depth="2" />
+
 = Optimization Passes =
 
 MAO comes with a set of analysis, transformation, and optimization passes. The invocation order is determined by the user via the command line interface, the order in which passes are specified will be the order in which the passes are executed.
 
 Since MAO is a young project, some passes are developed more than others, and some might not make sense at all. In this document, we keep the current status for the various passes.
 
-<wiki:toc max_depth="1" />
-
-= ZEE - Zero Extension Elimination =
+== ZEE - Zero Extension Elimination ==
 === Source ===
 {{{ 
   MaoZee.cc 
@@ -39,7 +39,7 @@ This pass can be greatly enhanced. It should look across basic blocks for dead z
 }}}
 which is not yet handled.
 
-= REDTEST - Redundant Test Removal =
+== REDTEST - Redundant Test Removal ==
 === Source ===
 {{{
   MaoRedundantTestElim.cc
@@ -64,7 +64,7 @@ The pass implementation is fairly straightforward. It finds test instructions wi
 === Extensions ===
 This pass can be extended to handle the sar, shr, sal, shl as well. However, the flag logic for these operations is non-canonical, and proper handling will be difficult. The pass can also be extended to work across basic blocks (expect little benefit)
 
-= REDMOV - Redundant Memory Move Elimination =
+== REDMOV - Redundant Memory Move Elimination ==
 === Source ===
 {{{
   MaoRedundantMemMove.cc
@@ -92,7 +92,7 @@ The implementation of this pass is somewhat interesting, as it has to check, whe
 === Caveats ===
 The current implementation might be a little too optimistic. There is a question around multi-threaded code. We believe the transformation is legal for the current C++ memory model. There is also an issue around performance, this pass does not seem to help. Work in progress.
 
-= LOOP16 - Align very tiny loops =
+== LOOP16 - Align very tiny loops ==
 === Source ===
 {{{
   MaoLoop16
@@ -113,7 +113,87 @@ The pass implementation is somewhat interesting, it makes use of the loop struct
 === Extensions ===
 The current heuristics are somewhat braindead - it only aligns loops with 2 or less fetchlines. A more thorough analysis might find more opportunity.
 
-= MISSDISP - Find missing displacement =
+== NOPKILL - Remove Alignments ==
+=== Source ===
+{{{
+  MaoNopKiller.cc
+}}}
+=== Description ===
+=== Extensions ===
+
+== NOPIN - Insert Random Nops ==
+=== Source ===
+{{{
+  MaoNopinizer.cc
+}}}
+=== Description ===
+=== Extensions ===
+
+== BACKBRALIGN - Back Branch Alignment ==
+=== Source ===
+{{{
+  MaoBackBranchAlign.cc
+}}}
+=== Description ===
+=== Extensions ===
+
+== PREFNTA - Simple Prefetch Insertion ==
+=== Source ===
+{{{
+  MaoPrefetchNta.cc
+}}}
+=== Description ===
+=== Extensions ===
+
+== SCHED - Instruction Scheduling ==
+=== Source ===
+{{{
+  MaoScheduler.cc
+}}}
+=== Description ===
+=== Extensions ===
+
+
+
+== ADDADD - Remove Redundant Adds ==
+=== Source ===
+{{{
+  MaoAddAdd.cc
+}}}
+=== Description ===
+=== Extensions ===
+
+
+
+= Analysis Passes =
+These passes perform some analysis. Typically, we would implement the analysis first. If a particular pattern cannot be found, we keep it at that and don't bother implementing the corresponding transformations.
+
+== LFIND - Loop Recognition ==
+=== Source ===
+{{{
+  MaoLoops.cc
+}}}
+=== Description ===
+This path performs fast loop recognition based on Paul Havlak's paper "Nesting of Reducible and Irreducible Loops", Rice University.
+
+We avoid doing tree balancing and instead use path compression to avoid traversing parent pointers over and over. This is a small extension to the original paper. In the implementation, most of the variable names and identifiers are taken literally from this paper (and the original Tarjan paper mentioned above)
+
+== DCE - Unreachable Code Removal ==
+=== Source ===
+{{{
+  MaoDCE.cc
+}}}
+=== Description ===
+This pass seeks to find unreachable basic blocks. 
+
+The basic assumption is that a reasonable compiler would not leave any unreachable code in a produced asm file. This pass is therefore mainly used for quality assurance for compiler _and_ MAO's control flow implementation.
+
+However, once MAO is hooked up to a threaded VM, these kinds of simple scalar optimizations will become relevant. 
+
+For now, only analysis has been implemented. It is a straightforward pass and can be used to learn about the CFG implementation.
+
+
+== MISSDISP - Find missing displacement ==
 Analysis Pass.
 
 === Source ===
