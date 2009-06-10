@@ -358,6 +358,20 @@ InstructionEntry *MaoUnit::CreateNop(Function *function) {
   return e;
 }
 
+InstructionEntry *MaoUnit::CreateLock(Function *function) {
+  InstructionEntry *e = CreateInstruction("lock", 0xf0, function);
+
+  // next free ID for the entry
+  EntryID entry_index = entry_vector_.size();
+  e->set_id(entry_index);
+
+  e->set_op(OP_lock);
+
+  // Add the entry to the compilation unit
+  entry_vector_.push_back(e);
+  return e;
+}
+
 static const char *prefetch_opcode_strings[] = {
   "prefetchnta",
   "prefetcht0",

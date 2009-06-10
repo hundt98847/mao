@@ -180,6 +180,7 @@ class SchedulerPass : public MaoFunctionPass {
       MaoEntry *first = *((*bb_iterator)->EntryBegin());
       MaoEntry *last = *((*bb_iterator)->EntryEnd());
       std::string first_str, last_str;
+      lock_set_.clear();
       if (first)
         first->ToString(&first_str);
       if (last)
@@ -194,6 +195,7 @@ class SchedulerPass : public MaoFunctionPass {
           Trace (2, "%s: %d", insn_str_[i].c_str(), dependence_heights[i]);
         }
         Schedule (dag, dependence_heights, (*bb_iterator)->first_entry());
+        PrefixLocks (*bb_iterator);
       }
 
     }
@@ -204,6 +206,7 @@ class SchedulerPass : public MaoFunctionPass {
 
  private:
   std::map<std::string, int, ltstr> insn_map_;
+  std::set<MaoEntry *> lock_set_;
   std::string *insn_str_;
   MaoEntry **entries_;
   BitString GetSrcRegisters (InstructionEntry *insn);
@@ -211,10 +214,12 @@ class SchedulerPass : public MaoFunctionPass {
   DependenceDag *FormDependenceDag(BasicBlock *bb);
   bool CanReorder (InstructionEntry *entry);
   bool IsMemOperation (InstructionEntry *entry);
+  bool IsLock (InstructionEntry *entry);
   int *ComputeDependenceHeights (DependenceDag *dag);
   int RemoveTallest (std::list<int> *list, int *heights);
   void ScheduleNode (int node, MaoEntry **head);
   void Schedule (DependenceDag *dag, int *dependence_heights, MaoEntry *head);
+  void PrefixLocks (BasicBlock *bb);
 
 
 
@@ -276,6 +281,14 @@ void SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, MaoEn
   }
 }
 
+void SchedulerPass::PrefixLocks (BasicBlock *bb) {
+  for(SectionEntryIterator entry_iter = bb->EntryBegin();
+      entry_iter != bb->EntryEnd(); ++entry_iter) {
+    MaoEntry *entry = *entry_iter;
+    if (lock_set_.find(entry) != lock_set_.end())
+      entry->LinkBefore(unit_->CreateLock(function_));
+  }
+}
 void SchedulerPass::ScheduleNode (int node, MaoEntry **head) {
   MaoEntry *entry = entries_[node];
   //Don't do anything if the node to be scheduled is the head node
@@ -292,7 +305,7 @@ void SchedulerPass::ScheduleNode (int node, MaoEntry **head) {
 
 int SchedulerPass::RemoveTallest (std::list<int> *list, int *heights) {
   int best_height = -1, best_node = -1;
-  for (std::list<int>::iterator iter = list->begin(); 
+  for (std::list<int>::iterator iter = list->begin();
        iter != list->end(); ++iter) {
     int node = *iter;
     if (heights[node] > best_height) {
@@ -390,18 +403,42 @@ BitString SchedulerPass::GetDestRegisters (InstructionEntry *insn) {
 SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) {
   int last_writer[MAX_REGS];
   int insns_in_bb = 0;
+  bool lock_next=false;
+  std::vector<MaoEntry*> locks;
   for(SectionEntryIterator entry_iter = bb->EntryBegin();
       entry_iter != bb->EntryEnd(); ++entry_iter) {
     MaoEntry *entry = *entry_iter;
     if (!entry->IsInstruction())
       continue;
     InstructionEntry *insn = entry->AsInstruction();
+    if (IsLock(insn)) {
+      lock_next=true;
+      locks.push_back(insn);
+      continue;
+    }
+    if (lock_next)
+      lock_set_.insert (insn);
+    lock_next=false;
     if(!CanReorder(insn))
       continue;
     insns_in_bb++;
   }
   if (insns_in_bb == 0)
     return NULL;
+  //Remove any lock instructions in the original code
+  //lock acts more like a prefix in the sense that it applies to the
+  //immediately following isntruction. However, it has a separate entry
+  //in the code. To enforce the fact that the lock and the following
+  //instruction have to be adjacent even after the scheduling, the
+  //instructions following a lock are added to a separate set and the
+  //lock is removed from the original stream. During scheduling if the
+  //instruction is in lock_set_, a new lock instruction is created and
+  //prefixed to it.
+  for (std::vector<MaoEntry*>::iterator lock_iter=locks.begin();
+       lock_iter != locks.end(); ++lock_iter) {
+    MaoEntry *entry=*lock_iter;
+    entry->Unlink();
+  }
 
   insn_str_ = new std::string[insns_in_bb];
   entries_ = new MaoEntry*[insns_in_bb];
@@ -498,6 +535,12 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
   return dag;
 }
 
+bool SchedulerPass::IsLock(InstructionEntry *entry) {
+    if (entry->op() == OP_lock)
+      return true;
+    else
+      return false;
+}
 // An instruction is considered to touch memory if
 // 1. It has base or index registers, buit not a lea
 // 2. It is a call instruction
@@ -508,6 +551,24 @@ bool SchedulerPass::IsMemOperation (InstructionEntry *entry) {
       return false;
     if (entry->HasBaseRegister() || entry->HasIndexRegister())
       return true;
+    switch (entry->op())
+    {
+      case OP_cmpxchg:
+      case OP_cmpxchg8b:
+      case OP_cmpxchg16b:
+      case OP_lfence:
+      case OP_lock:
+      case OP_push:
+      case OP_pusha:
+      case OP_pushf:
+      case OP_pop:
+      case OP_popa:
+      case OP_popf:
+        return true;
+      default:
+        return false;
+    }
+
     return false;
 
 }
