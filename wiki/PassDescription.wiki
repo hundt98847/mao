@@ -98,9 +98,9 @@ The current implementation might be a little too optimistic. There is a question
   MaoLoop16
 }}}
 === Description ===
-This pass seeks to align very tight loops to 16-byte boundaries to avoid incurring an instruction fetch penalty. This problem was discovered analyzing a 9% degradation in 252.eon on an Intel platform.
+This pass seeks to align very tight loops to 16-byte boundaries to avoid incurring an instruction fetch penalty. This problem was discovered analyzing a 9% degradation for 252.eon on an Intel platform.
 
-Very tiny loops, e.g., loops that are shorter than 32-byte, should be aligned to 16-byte boundaries to minimize the number of fetch lines. Thiss pass looks at inner loops, it checks whether pushing the starting address down would reduce the number of required fetch lines. IN particular, it checks whether more bytes are available in the last fetch lines than are used in the 1st fetchline. For example:
+Very tiny loops, e.g., loops that are shorter than 32-byte, should be aligned to 16-byte boundaries to minimize the number of fetch lines. This pass looks at inner loops, it checks whether pushing the starting address down would reduce the number of required fetch lines. In particular, it checks whether more bytes are available in the last fetch lines than are used in the 1st fetch line. For example:
 {{{
          |0123456789012345|
          |.........BBBBBBB|   these bytes are used by loop
@@ -111,7 +111,7 @@ Very tiny loops, e.g., loops that are shorter than 32-byte, should be aligned to
 The pass implementation is somewhat interesting, it makes use of the loop structure graph, multiple relaxations, and displays how to get to instruction offsets and sizes within MAO.
 
 === Extensions ===
-The current heuristics are somewhat braindead - it only aligns loops with 2 or less fetchlines. A more thorough analysis might find more opportunity.
+The current heuristics are somewhat brain dead - it only aligns loops with 2 or less fetch lines. A more thorough analysis might find more opportunity.
 
 == NOPKILL - Remove Alignments ==
 === Source ===
@@ -153,7 +153,16 @@ Many more experiments need to be run. Smarter nop insertion policies should be t
   MaoBackBranchAlign.cc
 }}}
 === Description ===
+This pass seeks to align the position of back-edges in 2-deep loop nests, such that the jump instructions reside in different 32-byte aligned block.
+
+We were able to observe that for short running nested loops, the branch predictors could be confused when the two back branches were on the same 32-byte line.
+
+This pass employs an interesting transformation strategy, based on an idea by Martin Thuresson. Instead of explicitly aligning the backbranch, we simple shift the whole loop down until the back branches end up on different lines.
+
+Performance results so far aren't that great. More study is needed, in particular, aligning the backbranch might be an alternative codegen strategy.
+
 === Extensions ===
+More codegen and alignment strategies need to be explored.
 
 == PREFNTA - Simple Prefetch Insertion ==
 === Source ===
@@ -184,8 +193,19 @@ We ran experiments with the various prefetch types and offsets to a given load, 
   MaoAddAdd.cc
 }}}
 === Description ===
-=== Extensions ===
+This is a local optimization and only operates in a basic block. 
+The pass seeks to eliminate the first add instruction in the following pattern:
+{{{
+       add/sub rX, IMM1
+       ...no redef of rX
+       add/sub rX, IMM2
+}}}
+Yes, it is hard to believe, but we find such instances in gcc 4.4 generated code. Analysis shows that such atrocities are possible, based on phase ordering difficulties in the compiler.
 
+This simple peephole is a good example for instruction manipulation in MAO. The performance effect across our set of benchmarks is, of course, negligible.
+
+=== Extensions ===
+We could look across the basic block boundaries.
 
 
 = Analysis Passes =
