@@ -119,7 +119,17 @@ The current heuristics are somewhat braindead - it only aligns loops with 2 or l
   MaoNopKiller.cc
 }}}
 === Description ===
-=== Extensions ===
+This pass seeks to eliminate all nops from a function. In particular, it eliminates:
+{{{
+     nop
+     nopl
+     xchg %ax, %ax
+     xchg %eax, %eax
+     xchg %rax, %rax
+     .p2align ...
+}}}
+
+We wanted to study the performance effects of removing such compiler inserted alignments. While we found that code size can be reduced by about 2% be removing these things. There are correctness issues, as some codes rely on a certain code layout. So far, this pass is good for experimentation, in particular for the other alignment passes, but it's not ready for prime time.
 
 == NOPIN - Insert Random Nops ==
 === Source ===
@@ -127,7 +137,15 @@ The current heuristics are somewhat braindead - it only aligns loops with 2 or l
   MaoNopinizer.cc
 }}}
 === Description ===
+This pass inserts random nops into functions.
+
+The idea is to find micro-architectural issues with this methodology. Using various parameters for density and distribution of nops, for example loops will end up being aligned in ways that would not be found via regular compilations.
+
+Experiments with this pass quickly found a 3% opportunity in a compression benchmark.
+
 === Extensions ===
+Many more experiments need to be run. Smarter nop insertion policies should be tried out, in particular, around branches and branch targets.
+
 
 == BACKBRALIGN - Back Branch Alignment ==
 === Source ===
@@ -143,6 +161,11 @@ The current heuristics are somewhat braindead - it only aligns loops with 2 or l
   MaoPrefetchNta.cc
 }}}
 === Description ===
+This pass allows insertion of a prefetch instruction right in front of a memory load. All x86 prefetch types are supported (nta, t0, t1, t2). The key idea for this path is in the SBO space (Mars, Hundt, CGO '09), where we basically try to avoid cache pollution by prefixing any load with a prefetchnta.
+
+This technique yielded interesting performance results. As expected almost all benchmarks degraded, however, typically by less than 2x, most often in the 10% to 30% range. This was surprising. The larger degradations point to benchmarks that can benefit from memory hierarchy optimizations, and/or altered prefetch settings on the system. One benchmark actually improved by 6% on AMD/Opteron, independently of the type of prefetch being inserted. We suspect that a 2nd order effect kicked in, very likely some micro-architectural event.
+
+We ran experiments with the various prefetch types and offsets to a given load, but couldn't materialize performance gains. We suspect the number of prefetches is just too high for our systems.
 === Extensions ===
 
 == SCHED - Instruction Scheduling ==
