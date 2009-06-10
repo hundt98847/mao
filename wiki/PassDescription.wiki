@@ -58,7 +58,78 @@ Correspondingly, the compiler can oftentimes not properly determine whether a te
    testl    %r15d, %r15d
 }}}
 
-The pass implementation is fairly straightforward. It finds test instructions with identical registers, and then peeks upwards, passing (only) over mov instructions (not defining the register used in the test instructions), which do not set flags, until it finds an add, sub, and, or, xor, or sbb instruction defining the same register. If such test instructions is found, it is removed.
+The pass implementation is fairly straightforward. It finds test instructions with identical registers, and then peeks upwards, passing (only) over mov instructions (not defining the register used in the test instructions), which do not set flags, until it finds an add, sub, and, or, xor, or sbb instruction defining the same register. If such test instruction is found, it is removed.
 
 === Extensions ===
-This pass can be extended to handle the sar, shr, sal, shl as well. However, the flag logic for these operations is non-canonical, and proper handling will be difficult.
+This pass can be extended to handle the sar, shr, sal, shl as well. However, the flag logic for these operations is non-canonical, and proper handling will be difficult. The pass can also be extended to work across basic blocks (expect little benefit)
+
+= REDMOV - Redundant Memory Move Elimination =
+=== Source ===
+{{{
+  MaoRedundantMemMove.cc
+}}}
+=== Description ===
+This pass seeks to remove memory operations. It is a local pass and only works in a basic block.
+
+Because of various (phase ordering) issues, compiler oftentimes generate code of the following form to load from memory:
+{{{
+    movq    24(%rsp), %rdx
+    ... no def for this memory,
+    ... no def for the right hand side register %rdx,
+    movq    24(%rsp), %rcx
+}}}
+
+We find that the 2nd movg address operation is not necessary and the instruction can be replaced by:
+{{{
+  //  movq    %rdx, %rcx
+}}}
+This instruction has a shorter encoding and avoids a 2nd memory reference.
+
+
+The implementation of this pass is somewhat interesting, as it has to check, whether the address in the instruction aliases with any instruction in between the two moves. It makes use of the infrastructure to determine whether registers overlap and/or are defined between the instructions. 
+
+=== Caveats ===
+The current implementation might be a little too optimistic. There is a question around multi-threaded code. We believe the transformation is legal for the current C++ memory model. There is also an issue around performance, this pass does not seem to help. Work in progress.
+
+= LOOP16 - Align very tiny loops =
+=== Source ===
+{{{
+  MaoLoop16
+}}}
+=== Description ===
+This pass seeks to align very tight loops to 16-byte boundaries to avoid incurring an instruction fetch penalty. This problem was discovered analyzing a 9% degradation in 252.eon on Ilium.
+
+Very tiny loops, e.g., loops that are shorter than 32-byte, should be aligned to 16-byte boundaries to minimize the number of fetch lines. Thiss pass looks at inner loops, it checks whether pushing the starting address down would reduce the number of required fetch lines. IN particular, it checks whether more bytes are available in the last fetch lines than are used in the 1st fetchline. For example:
+{{{
+         |0123456789012345|
+         |.........BBBBBBB|   these bytes are used by loop
+         |XXXXXXXXXXXXXXXX|*  any number of filled lines
+         |EEEEEEE---------|   there need to be more -'s than B's
+}}}
+
+The pass implementation is somewhat interesting, it makes use of the loop structure graph, multiple relaxations, and displays how to get to instruction offsets and sizes within MAO.
+
+=== Extensions ===
+The current heuristics are somewhat braindead - it only aligns loops with 2 or less fetchlines. A more thorough analysis might find more opportunity.
+
+= MISSDISP - Find missing displacement =
+Analysis Pass.
+
+=== Source ===
+{{{
+  MaoMissDisp.cc
+}}}
+=== Description ===
+This pass seeks to transform this pattern:
+{{{
+   add    $0x8,%rax
+   mov    (%rax),%rax
+}}}
+into this instruction:
+{{{
+   mov    0x8(%rax),%rax
+}}}
+
+It is a local optimization and only operates in a basic block. 
+
+We only found this code in gcc compiled code at optimization level -O0. It provides a good and simple example for how to check for patterns. Currently, it does *not* perform the transformation. We didn't bother to implement the transformation, as we didn't find real instances in code that matters.
