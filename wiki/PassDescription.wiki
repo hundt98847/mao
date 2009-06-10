@@ -6,6 +6,7 @@ MAO comes with a set of analysis, transformation, and optimization passes. The i
 
 Since MAO is a young project, some passes are developed more than others, and some might not make sense at all. In this document, we keep the current status for the various passes.
 
+<wiki:toc max_depth="1" />
 
 = ZEE - Zero Extension Elimination =
 === Source ===
