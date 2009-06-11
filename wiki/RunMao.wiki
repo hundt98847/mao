@@ -5,22 +5,49 @@
 After building MAO, for each build target, a binary called {{{mao-$TARGET}}} will be placed in 
 {{{./bin/.}}} For example, building a 64-bit MAO on Linux produces {{{./bin/mao-x86_64-linux}}}.
 
-The MAO binary accepts all flags accepted by the GNU Assembler, as a matter of fact, all flags are passed on to the integrated assembler. To specify MAO specific options, use the option {{{-mao:...}}}, everything after the {{{-mao:}}} will be parsed by MAO. 
+The MAO binary accepts all flags accepted by the GNU Assembler, and as a matter of fact, all flags are passed on to the integrated assembler. To specify MAO specific options, use the option {{{--mao=...}}}. Everything specified after the {{{--mao=}}} will be parsed by MAO and taken off the arguments passed to the integrated assembler. 
 
 Multiple MAO options can be specified on the command line. 
 
-Additionally, the environment variable MAOOPTS can be set. This environment variable is parsed before the actual command line parameters. It should only contain MAO specific options, without the {{{-mao:}}} prefix.
+Additionally, the environment variable MAOOPTS can be set. This environment variable is parsed before the actual command line parameters. It should only contain MAO specific options, without the {{{--mao=}}} prefix.
 
 Please find more details on how to specify MAO options in OptionHandling.
 
-The default output of MAO goes to stdout. To change the output file, the option -o can be used. For example:
+= Passes =
+Everything MAO does is organized in passes. There is a pass to read an input assembly file. This pass is enabled by default. There are various analysis, transformation, and optimization passes, and there is an ASM pass which write the IR to a valid assembly file.
+
+In order to get anything done with MAO, the sequence of passes must be specified on the command line (or, later, in a control file). This is done via the {{{--mao=...}}} option. Specifying a pass on the command line enables the pass and puts it in sequence with the other specified passes. 
+
+Passes cannot be enabled or disabled. If they are on the command-line, they are sequenced in and enabled. If they are not on the command-line, they are not executed.
+
+Certain passes perform analysis, for example, to build a control flow graph, or to perform loop recognition. These passes do *not* need to be specified explicitly. If, for example, an optimization pass requires such analysis, it will explicitly call that particular pass.
+
+For example:
+{{{
+  ../bin/mao-x86_64-linux --mao=:ZEE:ASM=o[/dev/stderr] input.s
+}}}
+would open and read the file input.s (that's done by default). Then pass ZEE is executed, before pass ASM is executed. The ASM pass got a parameter to define the output file (/dev/stderr) in the example.
+
+Another example:
+{{{
+  ../bin/mao-x86_64-linux  --mao=ZEE=trace:REDTEST=trace:REDMOV=trace \
+                           --mao=LOOP16=trace:BACKBRALIGN=trace[0] input.s
+}}}
+will invoke the phases ZEE, REDTEST, REDMOV, LOOP16 and BACKBRALIGN in this sequence. This example is missing the ASM pass at the end, so there would be no output generated. This can be useful to run, e.g., analysis only passes.
+
+= Default Output =
+The default output of MAO goes to stdout via the pass ASM. To change the output file, the option 'o' to 'ASM' can be used. For example:
 
 {{{
   # redirect output to stderr
-  ../bin/mao-x86_64-linux -mao:-o/dev/stderr,ZEE=enable,trace input.s
+  ../bin/mao-x86_64-linux --mao=:ZEE=trace:ASM=o[/dev/stderr] input.s
 
   # kill all output
-  ../bin/mao-x86_64-linux -mao:-o/dev/null,ZEE=enable,trace input.s
+  ../bin/mao-x86_64-linux --mao=ASM=o[/dev/null] input.s
+
+  # simple omit the ASM pass will also not create output
+  ../bin/mao-x86_64-linux input.s
+
 }}}
 
 To see all available options, start MAO with no command line parameters.
@@ -40,14 +67,13 @@ $ gcc -o foo.o foo.cc
 
 In order to benefit from MAO optimizations, it should be run right before the GNU assembler. The easiest way to do this is to replace the 'as' with a script which executes MAO first, and then start 'as' on MAO's output. 
 
-We wrote such a wrapper script and put it in {{{ mao/scripts/as }}}.
+We wrote such a wrapper script and put it in {{{ mao/scripts/as_wrapper.sh }}}.
 
 To squeeze this script into gcc, you can:
 
    # Replace the 'as' directly. For example, rename it, and put a wrapper script named 'as' in its original place, which runs MAO and the former orginal assembler. This method has the drawback that MAO will always be executed.
    # Pass the -Bpath option to gcc and place the 'as' wrapper script into the specified path. gcc will look into these paths first, and if it finds an 'as' it will execute it from there. This method allows to selectively apply MAO to compilations.
    # This method is similar to point 2, instead of passing the -B option, the enviroment variable GCC_EXEC_PREFIX can be set.
-   # TODO: We are planning on adding an explicit option to the gcc driver to enable MAO invocation without the tricks above.
 
 = Integrating MAO with Open64 =
 
