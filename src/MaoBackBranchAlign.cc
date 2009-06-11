@@ -116,6 +116,14 @@ class BackBranchAlign : public MaoFunctionPass {
       }
   }
 
+  // FindNestOffsets
+  //
+  // Find offsets of the two backbranches.
+  // The expectation is that the outer_offset is higher than the
+  // inner_offset, for proper nesting of loops.
+  //
+  // If this is not true, we switch outer and inner offsets.
+  //
   void FindNestOffsets(MaoEntryIntMap *offsets,
                        AlignCandidate *candidate,
                        int            *inner_offset,
@@ -277,8 +285,8 @@ class BackBranchAlign : public MaoFunctionPass {
         continue;
       }
 
-      if ((*offsets)[(*iter)->outer_min_bb()->GetFirstInstruction()] % 8) {
-        (*iter)->outer_min_bb()->first_entry()->AlignTo(3,-1,7);
+      if ((*offsets)[(*iter)->min_bb()->GetFirstInstruction()] % 8) {
+        (*iter)->min_bb()->first_entry()->AlignTo(3,-1,7);
         MaoRelaxer::InvalidateSizeMap(function_->GetSection());
         sizes = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
         offsets = MaoRelaxer::GetOffsetMap(unit_, function_->GetSection());
