@@ -424,7 +424,6 @@ void InitPasses() {
   InitRedundantTestElimination();
   InitRedundantMemMoveElimination();
   InitMissDispElimination();
-  InitLongInstructionSplit();
   InitLoopAlign();
   InitBranchSeparate();
   InitBackBranchAlign();
