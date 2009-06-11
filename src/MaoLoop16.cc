@@ -36,8 +36,8 @@
 // Options
 // --------------------------------------------------------------------
 MAO_OPTIONS_DEFINE(LOOP16, 3) {
-  OPTION_INT("max_fetch_lines",  10,
-             "Seek to align loops with size < max_fetch_lines*fetchline_size"),
+  OPTION_INT("max_fetch_lines",  2,
+             "Seek to align loops with size <= max_fetch_lines*fetchline_size"),
   OPTION_INT("fetch_line_size", 16, "Fetchline size"),
   OPTION_INT("limit", -1, "Limit tranformation invocations")
 };
@@ -124,7 +124,7 @@ class AlignTinyLoops16 : public MaoFunctionPass {
       // Add this loop to list of candidates if it passes the
       // filter. Sort by starting offset.
       //
-      if (size < max_fetch_lines_*fetchline_size_) {
+      if (size <= max_fetch_lines_*fetchline_size_) {
         bool linked_in = false;
         for (LoopList::iterator iter = candidates_.begin();
              iter != candidates_.end(); ++iter) {
@@ -220,7 +220,7 @@ class AlignTinyLoops16 : public MaoFunctionPass {
         //
         // Subject to further tuning.
         //
-        if (lines < 3) {
+        if (lines <= max_fetch_lines_) {
           Trace(0, "  -> Alignment DONE");
           (*iter)->min_bb()->first_entry()->AlignTo(4,-1,15);
 
