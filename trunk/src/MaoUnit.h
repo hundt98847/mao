@@ -390,7 +390,7 @@ class InstructionEntry : public MaoEntry {
   const char *GetTarget() const;
   virtual char GetDescriptiveChar() const {return 'I';}
 
-  bool HasPrefix(char prefix) const;
+  bool HasPrefix(unsigned char prefix) const;
   bool SuppressLockPrefix() const;
 
   std::string &InstructionToString(std::string *out) const;

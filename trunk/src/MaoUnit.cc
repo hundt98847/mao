@@ -2548,7 +2548,7 @@ std::string &InstructionEntry::PrintRexPrefix(std::string *out,
 }
 
 
-bool InstructionEntry::HasPrefix(char prefix) const {
+bool InstructionEntry::HasPrefix(unsigned char prefix) const {
   if (instruction_->prefixes > 0) {
     for (unsigned int i = 0;
          i < sizeof(instruction_->prefix)/sizeof(unsigned char);
