@@ -23,6 +23,7 @@
 #include "MaoDefs.h"
 #include "MaoRelax.h"
 
+// TODO(rhundt): This pass is incomplete.
 
 // --------------------------------------------------------------------
 // Options
