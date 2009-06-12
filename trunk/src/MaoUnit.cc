@@ -330,7 +330,7 @@ InstructionEntry *MaoUnit::CreateInstruction(const char *opcode_str,
       break;
     default:
       MAO_ASSERT_MSG(false, "Unable to match code flag to architecture");
-      return NULL; // Quells a warning about flag used without being defined
+      return NULL;  // Quells a warning about flag used without being defined
   }
 
   InstructionEntry *e = new InstructionEntry(&insn, flag, 0, NULL, this);
@@ -420,7 +420,8 @@ InstructionEntry *MaoUnit::CreatePrefetch(Function *function,
 InstructionEntry *MaoUnit::CreateUncondJump(LabelEntry *label,
                                             Function *function) {
   InstructionEntry *e = CreateInstruction("jmp", 0xeb, function);
-  expressionS *disp_expression = (expressionS *)xmalloc(sizeof(expressionS));
+  expressionS *disp_expression =
+      static_cast<expressionS *>(xmalloc(sizeof(expressionS)));
   symbolS *symbolP;
 
   i386_insn *insn = e->instruction();
@@ -428,7 +429,7 @@ InstructionEntry *MaoUnit::CreateUncondJump(LabelEntry *label,
   insn->disp_operands = 1;
   insn->mem_operands = 1;
 
-  //Set the displacement fileds
+  // Set the displacement fileds
   insn->types[0].bitfield.disp32 = 1;
   insn->types[0].bitfield.disp32s = 1;
 
@@ -1175,22 +1176,22 @@ std::string &MaoEntry::SourceInfoToString(std::string *out) const {
 void MaoEntry::Unlink() {
   MaoEntry *prev = prev_, *next = next_;
   if (prev != NULL) {
-    prev->set_next (next);
+    prev->set_next(next);
   }
   if (next != NULL) {
-    next->set_prev (prev);
+    next->set_prev(prev);
   }
   Function *function = maounit_->GetFunction(this);
   if (function &&
       function->first_entry() == this) {
-    function->set_first_entry (next);
+    function->set_first_entry(next);
   }
   if (function &&
       function->last_entry() == this) {
-    function->set_last_entry (prev);
+    function->set_last_entry(prev);
   }
-  prev_=NULL;
-  next_=NULL;
+  prev_ = NULL;
+  next_ = NULL;
 }
 
 void MaoEntry::LinkBefore(MaoEntry *entry) {
@@ -2036,7 +2037,8 @@ bool InstructionEntry::EqualExpressions(expressionS *expression1,
     case O_absent:          /* A nonexistent expression.  */
       // absent and illegal expressions are not equal.
       return false;
-    case O_symbol_rva:      /* X_add_symbol + X_add_number - the base address of the image.  */
+    case O_symbol_rva:      /* X_add_symbol + X_add_number - the base address */
+                            /* the image.                                     */
         // TODO(martint): Look at this case
       return false;
       /* A big value.  If X_add_number is negative or 0, the value is in
@@ -2375,7 +2377,8 @@ unsigned int InstructionEntry::GetLog2ScaleFactor() {
 }
 
 
-const std::string InstructionEntry::GetAssemblyInstructionName() const {
+std::string &
+InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
   #define XMMWORD_MNEM_SUFFIX  'x'
   #define YMMWORD_MNEM_SUFFIX 'y'
 
@@ -2385,150 +2388,168 @@ const std::string InstructionEntry::GetAssemblyInstructionName() const {
   #define LONG_DOUBLE_MNEM_SUFFIX '\1'
   #endif
 
-  if (instruction_->suffix == 0) {
-    return instruction_->tm.name;
+    // fdiv and fsub have different opcodes in intel and at&t syntax. They
+    // are also bug-compatible with older compilers/tools, making the
+    // intel documentation wrong.
+    // Since the templates in i386-tbl.h are build in a way that the name
+    // and opcode in the matched tempalte does not always match the at&t
+    // syntax that we output, we need to handle these instruction
+    // in a special way.
+  if (instruction_->tm.base_opcode >= 0xdcf8 &&
+      instruction_->tm.base_opcode <= (0xdcf8 + 7)) *out = "fdivr";
+  else if (instruction_->tm.base_opcode >= 0xdcf0 &&
+           instruction_->tm.base_opcode <= (0xdcf0 + 7)) *out = "fdiv";
+  else if (instruction_->tm.base_opcode >= 0xdef8 &&
+           instruction_->tm.base_opcode <= (0xdef8 + 7)) *out = "fdivrp";
+  else if (instruction_->tm.base_opcode >= 0xdef0 &&
+           instruction_->tm.base_opcode <= (0xdef0 + 7)) *out = "fdivp";
+  else if (instruction_->tm.base_opcode >= 0xdce8 &&
+           instruction_->tm.base_opcode <= (0xdce8 + 7)) *out = "fsubr";
+  else if (instruction_->tm.base_opcode >= 0xdce0 &&
+           instruction_->tm.base_opcode <= (0xdce0 + 7)) *out = "fsub";
+  else if (instruction_->tm.base_opcode >= 0xdee8 &&
+           instruction_->tm.base_opcode <= (0xdee8 + 7)) *out = "fsubrp";
+  else if (instruction_->tm.base_opcode >= 0xdee0 &&
+           instruction_->tm.base_opcode <= (0xdee0 + 7)) *out = "fsubp";
+  else
+    out->append(instruction_->tm.name);
+
+  if (instruction_->suffix != 0) {
+    if (instruction_->suffix == LONG_DOUBLE_MNEM_SUFFIX) {
+      out->insert(out->begin(), 'l');
+      return *out;
+    }
+
+    const MaoOpcode opcode_needs_y_suffix[] = {
+      // AVX Instructions from gas test-suite:
+      OP_vcvtpd2dq, OP_vcvtpd2ps, OP_vcvttpd2dq
+    };
+
+    const MaoOpcode opcode_has_l_suffix[] =  {
+      OP_movsbl, OP_movswl, OP_movzbl, OP_movzwl, OP_movswl, OP_cmovl,
+      OP_cmovnl, OP_cwtl, OP_cltd, OP_movbe
+    };
+    const MaoOpcode opcode_has_w_suffix[] =  {
+      OP_cbtw, OP_fnstsw, OP_movsbw
+    };
+    const MaoOpcode opcode_has_b_suffix[] =  {
+      OP_setb
+    };
+    const MaoOpcode keep_sse4_2_suffix[] =  {
+      OP_crc32
+    };
+
+    const MaoOpcode supress_suffix[] =  {
+      // Misc instructions from the gas testsuite.
+      OP_invept, OP_movd, OP_cmpxchg16b, OP_vmptrld, OP_vmclear, OP_vmxon,
+      OP_vmptrst, OP_ldmxcsr, OP_stmxcsr, OP_clflush, OP_addsubps, OP_cvtpd2dq,
+      OP_comiss, OP_cvttps2dq, OP_haddps, OP_movdqu, OP_movshdup, OP_pshufhw,
+      OP_movsldup, OP_pshuflw, OP_punpcklbw, OP_unpckhpd, OP_paddq, OP_psubq,
+      OP_pmuludq, OP_punpckldq, OP_punpcklqdq, OP_unpckhps, OP_punpcklwd,
+      OP_cmpeqss, OP_ucomiss, OP_cvtss2sd, OP_divss, OP_minss, OP_maxss,
+      OP_movntss, OP_movss, OP_rcpss, OP_rsqrtss, OP_sqrtss, OP_subss,
+      OP_unpcklpd, OP_mulss, OP_unpcklps, OP_cmpss, OP_vmovd, OP_vextractps,
+      OP_vpextrb, OP_vpinsrb, OP_vpextrd, OP_cqto, OP_jecxz,
+      // AVX Instructions from gas test-suite:
+      OP_vldmxcsr, OP_vstmxcsr, OP_vaddss, OP_vdivss, OP_vcvtss2sd, OP_vmaxss,
+      OP_vminss, OP_vmulss, OP_vrcpss, OP_vrsqrtss, OP_vsqrtss, OP_vsubss,
+      OP_vcmpeqss, OP_vcmpltss, OP_vcmpless, OP_vcmpunordss, OP_vcmpneqss,
+      OP_vcmpnltss, OP_vcmpnless, OP_vcmpordss, OP_vcmpeq_uqss, OP_vcmpngess,
+      OP_vcmpngtss, OP_vcmpfalsess, OP_vcmpneq_oqss, OP_vcmpgess, OP_vcmpgtss,
+      OP_vcmptruess, OP_vcmpeq_osss, OP_vcmplt_oqss, OP_vcmple_oqss,
+      OP_vcmpunord_sss, OP_vcmpneq_usss, OP_vcmpnlt_uqss, OP_vcmpnle_uqss,
+      OP_vcmpord_sss, OP_vcmpeq_usss, OP_vcmpnge_uqss, OP_vcmpngt_uqss,
+      OP_vcmpfalse_osss, OP_vcmpneq_osss, OP_vcmpge_oqss, OP_vcmpgt_oqss,
+      OP_vcmptrue_usss, OP_vbroadcastss, OP_vcomiss, OP_vpmovsxbd, OP_vpmovsxwq,
+      OP_vpmovzxbd, OP_vpmovzxwq, OP_vucomiss, OP_vmovss, OP_vmovss, OP_vcmpss,
+      OP_vinsertps, OP_vroundss, OP_vfmaddss, OP_vfmaddss, OP_vfmsubss,
+      OP_vfmsubss, OP_vfnmaddss, OP_vfnmsubss, OP_vfnmsubss, OP_vpmovsxbq,
+      OP_vpmovzxbq, OP_vpextrw, OP_vpextrw, OP_vpinsrw, OP_vpinsrw,
+      // CBW instructions
+      OP_cbw, OP_cwde, OP_cdqe, OP_cwd, OP_cdq, OP_cqo,
+      // From x86-64-ept.s
+      OP_invvpid,
+      // From x86-64-prescott.s
+      OP_monitor, OP_mwait,
+      // From general.s
+      OP_movzbw,
+      // From i386.s
+      OP_fstsw,
+      // From opcode.s
+      OP_cwtd,
+      // From svme.s
+      OP_skinit, OP_vmload, OP_vmsave, OP_invlpga, OP_vmrun
+    };
+
+    if ((instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
+         instruction_->suffix == YMMWORD_MNEM_SUFFIX) &&
+        !IsInList(op(), opcode_needs_y_suffix,
+                  sizeof(opcode_needs_y_suffix)/sizeof(MaoOpcode))) {
+      return *out;
+    }
+
+    if ((instruction_->suffix == 'l') &&
+        IsInList(op(), opcode_has_l_suffix,
+                 sizeof(opcode_has_l_suffix)/sizeof(MaoOpcode))) {
+      return *out;
+    }
+    if ((instruction_->suffix == 'w') &&
+        IsInList(op(), opcode_has_w_suffix,
+                 sizeof(opcode_has_w_suffix)/sizeof(MaoOpcode))) {
+      return *out;
+    }
+    if ((instruction_->suffix == 'b') &&
+        IsInList(op(), opcode_has_b_suffix,
+                 sizeof(opcode_has_b_suffix)/sizeof(MaoOpcode))) {
+      return *out;
+    }
+    if (instruction_->suffix == 'q' &&
+        instruction_->tm.name[strlen(instruction_->tm.name)-1] == 'q') {
+      return *out;
+    }
+
+    // Do not print suffix for cpusse4_1 instructions
+    //  e.g.: OP_extractps, OP_pextrb, OP_pextrd, OP_pinsrb, OP_pinsrd
+    if (instruction_->tm.cpu_flags.bitfield.cpusse4_1) {
+      return *out;
+    }
+    // Do not print suffix for cpusse4_2 instructions
+    // except for OP_crc32
+    if (instruction_->tm.cpu_flags.bitfield.cpusse4_2 &&
+        !IsInList(op(), keep_sse4_2_suffix,
+                  sizeof(keep_sse4_2_suffix)/sizeof(MaoOpcode))) {
+      return *out;
+    }
+
+    // These instruction have valid suffix information
+    // in tm.opcode_modifier.no_Xsuf
+    // Use it when printing instead of the .suffix
+    if (op() == OP_movsx || op() == OP_movzx) {
+      // Handle movsx and movzx, found in i386.c in the gas
+      // test suite
+      // Make sure max one suffix is listed in the template.
+      MAO_ASSERT((!instruction_->tm.opcode_modifier.no_bsuf +
+                  !instruction_->tm.opcode_modifier.no_wsuf +
+                  !instruction_->tm.opcode_modifier.no_lsuf +
+                  !instruction_->tm.opcode_modifier.no_ssuf +
+                  !instruction_->tm.opcode_modifier.no_qsuf +
+                  !instruction_->tm.opcode_modifier.no_ldsuf) < 2);
+      if (!instruction_->tm.opcode_modifier.no_bsuf) out->append("b");
+      if (!instruction_->tm.opcode_modifier.no_wsuf) out->append("w");
+      if (!instruction_->tm.opcode_modifier.no_lsuf) out->append("l");
+      if (!instruction_->tm.opcode_modifier.no_ssuf) out->append("s");
+      if (!instruction_->tm.opcode_modifier.no_qsuf) out->append("q");
+      if (!instruction_->tm.opcode_modifier.no_ldsuf)out->append("ld");
+      return *out;
+    }
+
+    if (IsInList(op(), supress_suffix,
+                 sizeof(supress_suffix)/sizeof(MaoOpcode))) {
+      return *out;
+    }
+    out->insert(out->end(), instruction_->suffix);
   }
-
-  if (instruction_->suffix == LONG_DOUBLE_MNEM_SUFFIX) {
-    std::string s = instruction_->tm.name;
-    s.insert(s.begin(), 'l');
-    return s;
-  }
-
-  const MaoOpcode opcode_needs_y_suffix[] = {
-    // AVX Instructions from gas test-suite:
-    OP_vcvtpd2dq, OP_vcvtpd2ps, OP_vcvttpd2dq
-  };
-
-  const MaoOpcode opcode_has_l_suffix[] =  {
-    OP_movsbl, OP_movswl, OP_movzbl, OP_movzwl, OP_movswl, OP_cmovl, OP_cmovnl,
-    OP_cwtl, OP_cltd, OP_movbe
-  };
-  const MaoOpcode opcode_has_w_suffix[] =  {
-    OP_cbtw, OP_fnstsw, OP_movsbw
-  };
-  const MaoOpcode opcode_has_b_suffix[] =  {
-    OP_setb
-  };
-  const MaoOpcode keep_sse4_2_suffix[] =  {
-    OP_crc32
-  };
-
-  const MaoOpcode supress_suffix[] =  {
-    // Misc instructions from the gas testsuite.
-    OP_invept, OP_movd, OP_cmpxchg16b, OP_vmptrld, OP_vmclear, OP_vmxon,
-    OP_vmptrst, OP_ldmxcsr, OP_stmxcsr, OP_clflush, OP_addsubps, OP_cvtpd2dq,
-    OP_comiss, OP_cvttps2dq, OP_haddps, OP_movdqu, OP_movshdup, OP_pshufhw,
-    OP_movsldup, OP_pshuflw, OP_punpcklbw, OP_unpckhpd, OP_paddq, OP_psubq,
-    OP_pmuludq, OP_punpckldq, OP_punpcklqdq, OP_unpckhps, OP_punpcklwd,
-    OP_cmpeqss, OP_ucomiss, OP_cvtss2sd, OP_divss, OP_minss, OP_maxss,
-    OP_movntss, OP_movss, OP_rcpss, OP_rsqrtss, OP_sqrtss, OP_subss,
-    OP_unpcklpd, OP_mulss, OP_unpcklps, OP_cmpss, OP_vmovd, OP_vextractps,
-    OP_vpextrb, OP_vpinsrb, OP_vpextrd, OP_cqto, OP_jecxz,
-    // AVX Instructions from gas test-suite:
-    OP_vldmxcsr, OP_vstmxcsr, OP_vaddss, OP_vdivss, OP_vcvtss2sd, OP_vmaxss,
-    OP_vminss, OP_vmulss, OP_vrcpss, OP_vrsqrtss, OP_vsqrtss, OP_vsubss,
-    OP_vcmpeqss, OP_vcmpltss, OP_vcmpless, OP_vcmpunordss, OP_vcmpneqss,
-    OP_vcmpnltss, OP_vcmpnless, OP_vcmpordss, OP_vcmpeq_uqss, OP_vcmpngess,
-    OP_vcmpngtss, OP_vcmpfalsess, OP_vcmpneq_oqss, OP_vcmpgess, OP_vcmpgtss,
-    OP_vcmptruess, OP_vcmpeq_osss, OP_vcmplt_oqss, OP_vcmple_oqss,
-    OP_vcmpunord_sss, OP_vcmpneq_usss, OP_vcmpnlt_uqss, OP_vcmpnle_uqss,
-    OP_vcmpord_sss, OP_vcmpeq_usss, OP_vcmpnge_uqss, OP_vcmpngt_uqss,
-    OP_vcmpfalse_osss, OP_vcmpneq_osss, OP_vcmpge_oqss, OP_vcmpgt_oqss,
-    OP_vcmptrue_usss, OP_vbroadcastss, OP_vcomiss, OP_vpmovsxbd, OP_vpmovsxwq,
-    OP_vpmovzxbd, OP_vpmovzxwq, OP_vucomiss, OP_vmovss, OP_vmovss, OP_vcmpss,
-    OP_vinsertps, OP_vroundss, OP_vfmaddss, OP_vfmaddss, OP_vfmsubss,
-    OP_vfmsubss, OP_vfnmaddss, OP_vfnmsubss, OP_vfnmsubss, OP_vpmovsxbq,
-    OP_vpmovzxbq, OP_vpextrw, OP_vpextrw, OP_vpinsrw, OP_vpinsrw,
-    // CBW instructions
-    OP_cbw, OP_cwde, OP_cdqe, OP_cwd, OP_cdq, OP_cqo,
-    // From x86-64-ept.s
-    OP_invvpid,
-    // From x86-64-prescott.s
-    OP_monitor, OP_mwait,
-    // From general.s
-    OP_movzbw,
-    // From i386.s
-    OP_fstsw,
-    // From opcode.s
-    OP_cwtd,
-    // From svme.s
-    OP_skinit, OP_vmload, OP_vmsave, OP_invlpga, OP_vmrun
-  };
-
-  if ((instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
-       instruction_->suffix == YMMWORD_MNEM_SUFFIX) &&
-      !IsInList(op(), opcode_needs_y_suffix,
-                sizeof(opcode_needs_y_suffix)/sizeof(MaoOpcode))) {
-    return instruction_->tm.name;
-  }
-
-  if ((instruction_->suffix == 'l') &&
-      IsInList(op(), opcode_has_l_suffix,
-               sizeof(opcode_has_l_suffix)/sizeof(MaoOpcode))) {
-    return instruction_->tm.name;
-  }
-  if ((instruction_->suffix == 'w') &&
-      IsInList(op(), opcode_has_w_suffix,
-               sizeof(opcode_has_w_suffix)/sizeof(MaoOpcode))) {
-    return instruction_->tm.name;
-  }
-  if ((instruction_->suffix == 'b') &&
-      IsInList(op(), opcode_has_b_suffix,
-               sizeof(opcode_has_b_suffix)/sizeof(MaoOpcode))) {
-    return instruction_->tm.name;
-  }
-  if (instruction_->suffix == 'q' &&
-      instruction_->tm.name[strlen(instruction_->tm.name)-1] == 'q') {
-    return instruction_->tm.name;
-  }
-
-  // Do not print suffix for cpusse4_1 instructions
-  //  e.g.: OP_extractps, OP_pextrb, OP_pextrd, OP_pinsrb, OP_pinsrd
-  if (instruction_->tm.cpu_flags.bitfield.cpusse4_1) {
-    return instruction_->tm.name;
-  }
-  // Do not print suffix for cpusse4_2 instructions
-  // except for OP_crc32
-  if (instruction_->tm.cpu_flags.bitfield.cpusse4_2 &&
-      !IsInList(op(), keep_sse4_2_suffix,
-               sizeof(keep_sse4_2_suffix)/sizeof(MaoOpcode))) {
-    return instruction_->tm.name;
-  }
-
-  // These instruction have valid suffix information
-  // in tm.opcode_modifier.no_Xsuf
-  // Use it when printing instead of the .suffix
-  if (op() == OP_movsx || op() == OP_movzx) {
-    // Handle movsx and movzx, found in i386.c in the gas
-    // test suite
-    std::string s = instruction_->tm.name;
-    // Make sure max one suffix is listed in the template.
-    MAO_ASSERT((!instruction_->tm.opcode_modifier.no_bsuf +
-                !instruction_->tm.opcode_modifier.no_wsuf +
-                !instruction_->tm.opcode_modifier.no_lsuf +
-                !instruction_->tm.opcode_modifier.no_ssuf +
-                !instruction_->tm.opcode_modifier.no_qsuf +
-                !instruction_->tm.opcode_modifier.no_ldsuf) < 2);
-    if (!instruction_->tm.opcode_modifier.no_bsuf) s.append("b");
-    if (!instruction_->tm.opcode_modifier.no_wsuf) s.append("w");
-    if (!instruction_->tm.opcode_modifier.no_lsuf) s.append("l");
-    if (!instruction_->tm.opcode_modifier.no_ssuf) s.append("s");
-    if (!instruction_->tm.opcode_modifier.no_qsuf) s.append("q");
-    if (!instruction_->tm.opcode_modifier.no_ldsuf)s.append("ld");
-    return s;
-  }
-
-
-
-  if (IsInList(op(), supress_suffix,
-               sizeof(supress_suffix)/sizeof(MaoOpcode))) {
-    return instruction_->tm.name;
-  }
-
-  std::string s = instruction_->tm.name;
-  s.insert(s.end(), instruction_->suffix);
-  return s;
+  return *out;
 }
 
 std::string &InstructionEntry::PrintRexPrefix(std::string *out,
@@ -2791,7 +2812,9 @@ std::string &InstructionEntry::InstructionToString(std::string *out) const {
 
   // Gets the name of the assembly instruction, including
   // suffixes.
-  out->append(GetAssemblyInstructionName());
+  std::string instruction_name;
+  GetAssemblyInstructionName(&instruction_name);
+  out->append(instruction_name);
   out->append("\t");
 
   // Loop over operands
@@ -3087,7 +3110,7 @@ bool InstructionEntry::IsReturn() const {
 }
 
 bool InstructionEntry::IsAdd() const {
-  return op() == OP_add;;
+  return op() == OP_add;
 }
 
 
