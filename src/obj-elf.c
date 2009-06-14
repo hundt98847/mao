@@ -463,6 +463,11 @@ obj_elf_visibility (int visibility)
     {
       name = input_line_pointer;
       c = get_symbol_end ();
+
+      struct MaoStringPiece symbol_name =
+          { name, strlen(name) };
+      link_hidden_directive(symbol_name);
+
       symbolP = symbol_find_or_make (name);
       *input_line_pointer = c;
 

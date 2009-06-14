@@ -120,6 +120,8 @@ extern "C" {
 
   void link_cons_reloc(enum bfd_reloc_code_real reloc);
 
+  void link_hidden_directive(struct MaoStringPiece symbol_name);
+
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 

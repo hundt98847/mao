@@ -144,6 +144,14 @@ class MaoEntry {
 
   MaoUnit *maounit_;
 
+  const std::string &ExpressionToStringDisp(
+      const expressionS *expr,
+      std::string *out,
+      const i386_operand_type *operand_type,
+      const enum bfd_reloc_code_real *reloc) const;
+  const std::string &ExpressionToString(const expressionS *expr,
+                                        std::string *out) const;
+
  private:
   EntryID id_;
 
@@ -163,6 +171,14 @@ class MaoEntry {
   // For labels, this means that there is NO corresponding
   // entry in the gas symbol table.s
   bool mao_local_;
+
+  const char *OpToString(operatorT op) const;
+
+  const std::string &ExpressionToStringImp(
+      const expressionS *expr,
+      std::string *out,
+      const i386_operand_type *operand_type,
+      const enum bfd_reloc_code_real *reloc) const;
 };
 
 
@@ -249,6 +265,7 @@ class DirectiveEntry : public MaoEntry {
     DC_D,
     DC_S,
     DC_X,
+    HIDDEN,
     NUM_OPCODES  // Used to get the size of the array
   };
 
@@ -356,10 +373,6 @@ class DirectiveEntry : public MaoEntry {
                                       const char *separator) const;
   const std::string &OperandToString(const Operand &operand,
                                      std::string *out) const;
-
-  const char *OpToString(operatorT op) const;
-  const std::string &OperandExpressionToString(const expressionS *expr,
-                                               std::string *out) const;
 
   const char *GetOperandSeparator() const;
 

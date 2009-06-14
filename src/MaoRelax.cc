@@ -421,6 +421,7 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
           case DirectiveEntry::DC_X:
             (*size_map)[entry] = SizeOfFloat(dentry);
             break;
+          case DirectiveEntry::HIDDEN:
           case DirectiveEntry::NUM_OPCODES:
             (*size_map)[entry] = 0;
             // Nothing to do
