@@ -28,6 +28,7 @@
 #include "MaoUnit.h"
 
 #include "ir.h"
+#include "struc-symbol.h"
 
 // Needed for macros (OPERAND_TYPE_IMM64, ..) in gotrel[]
 #include "opcodes/i386-init.h"
@@ -436,7 +437,7 @@ InstructionEntry *MaoUnit::CreateUncondJump(LabelEntry *label,
   for (int j = 0; j < MAX_OPERANDS; j++)
     insn->reloc[j] = NO_RELOC;
 
-  symbolP = symbol_find_or_make (label->name());
+  symbolP = symbol_find_or_make(label->name());
 
   disp_expression->X_op = O_symbol;
   disp_expression->X_add_symbol = symbolP;
@@ -1046,7 +1047,19 @@ std::string MaoEntry::GetDotOrSymbol(symbolS *symbol) const {
   const char *s = S_GET_NAME(symbol);
   MAO_ASSERT(s);
   if (strcmp(s, FAKE_LABEL_NAME) == 0) {
-    return ".";
+    // Check if there is a sy_value assigned to this temporary expression
+    // if not, then we can print a dot.
+    // TODO(martint): find out how sy_used works....
+    if (symbol->sy_used == 1) {
+      return ".";
+    } else {
+      // sy_value containts an expression. Return it as a string.
+      std::string str;
+      str.append("(");
+      ExpressionToString(&symbol->sy_value, &str);
+      str.append(")");
+      return str.c_str();
+    }
 
 // This code fails, since the same temporary name is used for both dot symbols
 // and other temporary expressions.
@@ -1107,10 +1120,10 @@ const std::string &MaoEntry::RelocToString(const enum bfd_reloc_code_real reloc,
     { "DTPOFF",   { BFD_RELOC_386_TLS_LDO_32,
                     BFD_RELOC_X86_64_DTPOFF32 },
       OPERAND_TYPE_IMM32_32S_64_DISP32_64 },
-    { "GOTNTPOFF",{ BFD_RELOC_386_TLS_GOTIE,
+    { "GOTNTPOFF", { BFD_RELOC_386_TLS_GOTIE,
                     _dummy_first_bfd_reloc_code_real },
       OPERAND_TYPE_NONE },
-    { "INDNTPOFF",{ BFD_RELOC_386_TLS_IE,
+    { "INDNTPOFF", { BFD_RELOC_386_TLS_IE,
                     _dummy_first_bfd_reloc_code_real },
       OPERAND_TYPE_NONE },
     { "GOT",      { BFD_RELOC_386_GOT32,
@@ -1153,6 +1166,206 @@ const std::string &MaoEntry::RelocToString(const enum bfd_reloc_code_real reloc,
   return *out;
 }
 
+
+const char *MaoEntry::OpToString(operatorT op) const {
+  switch (op) {
+    case O_add:             return "+";
+    case O_subtract:        return "-";
+    case O_divide:          return "/";
+    case O_multiply:        return "*";
+    case O_modulus:         return "%";
+    case O_left_shift:      return "<<";
+    case O_right_shift:     return "<<";
+    case O_bit_inclusive_or:return "|";
+    case O_bit_or_not:      return "|~";
+    case O_bit_exclusive_or:return "^";
+    case O_bit_and:         return "&";
+    case O_eq:              return "==";
+    case O_ne:              return "!=";
+    case O_lt:              return "<";
+    case O_le:              return "<=";
+    case O_ge:              return ">=";
+    case O_gt:              return ">";
+    case O_logical_and:     return "&&";
+    case O_logical_or:      return "||";
+    default:
+      break;
+  }
+  MAO_ASSERT(false);
+  return "";
+}
+
+const std::string &MaoEntry::ExpressionToString(const expressionS *expr,
+                                                std::string *out) const {
+  return ExpressionToStringImp(expr, out, NULL, NULL);
+}
+
+const std::string &MaoEntry::ExpressionToStringDisp(
+    const expressionS *expr,
+    std::string *out,
+    const i386_operand_type *operand_type,
+    const enum bfd_reloc_code_real *reloc) const {
+  return ExpressionToStringImp(expr, out, operand_type, reloc);
+}
+
+
+const std::string &MaoEntry::ExpressionToStringImp(
+    const expressionS *expr, std::string *out,
+    const i386_operand_type *operand_type,  // NULL if not used
+    const enum bfd_reloc_code_real *reloc)  // NULL if not used
+    const {
+  switch (expr->X_op) {
+    // SUPPORTED
+      /* X_add_number (a constant expression).  */
+    case O_constant:
+      {
+        std::ostringstream int_string;
+        int_string << expr->X_add_number;
+        out->append(int_string.str());
+      }
+      break;
+      /* X_add_symbol + X_add_number.  */
+    case O_symbol:
+      {
+        std::ostringstream exp_string;
+        if (expr->X_add_symbol) {
+          exp_string << GetDotOrSymbol(expr->X_add_symbol);
+          if (reloc != NULL) {
+            std::string s;
+            exp_string << RelocToString(*reloc, &s);
+          }
+          if (expr->X_add_number != 0) {
+            exp_string << "+";
+          }
+        }
+        if (expr->X_add_number != 0) {
+          exp_string << expr->X_add_number;
+        }
+        out->append(exp_string.str());
+      }
+      break;
+
+    case O_add:             /* (X_add_symbol +  X_op_symbol) + X_add_number.  */
+    case O_subtract:        /* (X_add_symbol -  X_op_symbol) + X_add_number.  */
+    case O_divide:          /* (X_add_symbol /  X_op_symbol) + X_add_number.  */
+    case O_multiply:        /* (X_add_symbol *  X_op_symbol) + X_add_number.  */
+    case O_modulus:         /* (X_add_symbol %  X_op_symbol) + X_add_number.  */
+    case O_left_shift:      /* (X_add_symbol << X_op_symbol) + X_add_number.  */
+    case O_right_shift:     /* (X_add_symbol >> X_op_symbol) + X_add_number.  */
+    case O_bit_inclusive_or:/* (X_add_symbol |  X_op_symbol) + X_add_number.  */
+    case O_bit_or_not:      /* (X_add_symbol |~ X_op_symbol) + X_add_number.  */
+    case O_bit_exclusive_or:/* (X_add_symbol ^  X_op_symbol) + X_add_number.  */
+    case O_bit_and:         /* (X_add_symbol &  X_op_symbol) + X_add_number.  */
+    case O_eq:              /* (X_add_symbol == X_op_symbol) + X_add_number.  */
+    case O_ne:              /* (X_add_symbol != X_op_symbol) + X_add_number.  */
+    case O_lt:              /* (X_add_symbol <  X_op_symbol) + X_add_number.  */
+    case O_le:              /* (X_add_symbol <= X_op_symbol) + X_add_number.  */
+    case O_ge:              /* (X_add_symbol >= X_op_symbol) + X_add_number.  */
+    case O_gt:              /* (X_add_symbol >  X_op_symbol) + X_add_number.  */
+    case O_logical_and:     /* (X_add_symbol && X_op_symbol) + X_add_number.  */
+    case O_logical_or:      /* (X_add_symbol || X_op_symbol) + X_add_number.  */
+      {
+        std::ostringstream exp_string;
+        if (expr->X_add_symbol) {
+          exp_string << GetDotOrSymbol(expr->X_add_symbol);
+          if (reloc != NULL) {
+            std::string s;
+            exp_string << RelocToString(*reloc, &s);
+          }
+          // When GOTPCREL is used, the second symbol is implicit and
+          // should not be printed.
+          if (reloc == NULL ||
+              (*reloc != BFD_RELOC_32_PCREL && *reloc != BFD_RELOC_32)) {
+            if (expr->X_op_symbol) {
+              exp_string << OpToString(expr->X_op);
+              exp_string << GetDotOrSymbol(expr->X_op_symbol);
+              if (expr->X_add_number != 0) {
+                exp_string << "+";
+              }
+            }
+          }
+        }
+        if (expr->X_add_number != 0) {
+          exp_string << expr->X_add_number;
+        }
+        out->append(exp_string.str());
+      }
+      break;
+      /* A register (X_add_number is register number).  */
+    case O_register:
+      {
+        std::ostringstream exp_string;
+        exp_string << "%" << i386_regtab[expr->X_add_number].reg_name;
+        out->append(exp_string.str());
+      }
+      break;
+    // UNSUPPORTED
+    /* An illegal expression.  */
+    case O_illegal:
+      /* A nonexistent expression.  */
+    case O_absent:
+      /* X_add_symbol + X_add_number - the base address of the image.  */
+    case O_symbol_rva:
+
+      /* A big value.  If X_add_number is negative or 0, the value is in
+         generic_floating_point_number.  Otherwise the value is in
+         generic_bignum, and X_add_number is the number of LITTLENUMs in
+         the value.  */
+    case O_big:
+      /* (- X_add_symbol) + X_add_number.  */
+    case O_uminus:
+      /* (~ X_add_symbol) + X_add_number.  */
+    case O_bit_not:
+      /* (! X_add_symbol) + X_add_number.  */
+    case O_logical_not:
+
+
+      /* X_op_symbol [ X_add_symbol ] */
+    case O_index:
+      /* machine dependent operators */
+    case O_md1:
+    case O_md2:
+    case O_md3:
+    case O_md4:
+    case O_md5:
+    case O_md6:
+    case O_md7:
+    case O_md8:
+    case O_md9:
+    case O_md10:
+    case O_md11:
+    case O_md12:
+    case O_md13:
+    case O_md14:
+    case O_md15:
+    case O_md16:
+    case O_md17:
+    case O_md18:
+    case O_md19:
+    case O_md20:
+    case O_md21:
+    case O_md22:
+    case O_md23:
+    case O_md24:
+    case O_md25:
+    case O_md26:
+    case O_md27:
+    case O_md28:
+    case O_md29:
+    case O_md30:
+    case O_md31:
+    case O_md32:
+  /* this must be the largest value */
+    case O_max:
+    default:
+      MAO_ASSERT_MSG(
+          0,
+          "OperandExpressionToString does not support the op %d\n",
+          expr->X_op);
+      break;
+  }
+  return *out;
+}
 
 void MaoEntry::Spaces(unsigned int n, FILE *outfile) const {
   for (unsigned int i = 0; i < n; i++) {
@@ -1370,7 +1583,8 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".code64",
   ".dc.d",
   ".dc.s",
-  ".dc.x"
+  ".dc.x",
+  ".hidden"
 };
 
 
@@ -1418,177 +1632,6 @@ const std::string &DirectiveEntry::OperandsToString(
 }
 
 
-const char *DirectiveEntry::OpToString(operatorT op) const {
-  switch (op) {
-    case O_add:             return "+";
-    case O_subtract:        return "-";
-    case O_divide:          return "/";
-    case O_multiply:        return "*";
-    case O_modulus:         return "%";
-    case O_left_shift:      return "<<";
-    case O_right_shift:     return "<<";
-    case O_bit_inclusive_or:return "|";
-    case O_bit_or_not:      return "|~";
-    case O_bit_exclusive_or:return "^";
-    case O_bit_and:         return "&";
-    case O_eq:              return "==";
-    case O_ne:              return "!=";
-    case O_lt:              return "<";
-    case O_le:              return "<=";
-    case O_ge:              return ">=";
-    case O_gt:              return ">";
-    case O_logical_and:     return "&&";
-    case O_logical_or:      return "||";
-    default:
-      break;
-  }
-  MAO_ASSERT(false);
-  return "";
-}
-
-const std::string &DirectiveEntry::OperandExpressionToString(
-    const expressionS *expr, std::string *out) const {
-  switch (expr->X_op) {
-    // SUPPORTED
-      /* X_add_number (a constant expression).  */
-    case O_constant:
-      {
-        std::ostringstream int_string;
-        int_string << expr->X_add_number;
-        out->append(int_string.str());
-      }
-      break;
-      /* X_add_symbol + X_add_number.  */
-    case O_symbol:
-      {
-        std::ostringstream exp_string;
-        if (expr->X_add_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_add_symbol);
-          if (expr->X_add_number != 0) {
-            exp_string << "+";
-          }
-        }
-        if (expr->X_add_number != 0) {
-          exp_string << expr->X_add_number;
-        }
-        out->append(exp_string.str());
-      }
-      break;
-
-    case O_add:             /* (X_add_symbol +  X_op_symbol) + X_add_number.  */
-    case O_subtract:        /* (X_add_symbol -  X_op_symbol) + X_add_number.  */
-    case O_divide:          /* (X_add_symbol /  X_op_symbol) + X_add_number.  */
-    case O_multiply:        /* (X_add_symbol *  X_op_symbol) + X_add_number.  */
-    case O_modulus:         /* (X_add_symbol %  X_op_symbol) + X_add_number.  */
-    case O_left_shift:      /* (X_add_symbol << X_op_symbol) + X_add_number.  */
-    case O_right_shift:     /* (X_add_symbol >> X_op_symbol) + X_add_number.  */
-    case O_bit_inclusive_or:/* (X_add_symbol |  X_op_symbol) + X_add_number.  */
-    case O_bit_or_not:      /* (X_add_symbol |~ X_op_symbol) + X_add_number.  */
-    case O_bit_exclusive_or:/* (X_add_symbol ^  X_op_symbol) + X_add_number.  */
-    case O_bit_and:         /* (X_add_symbol &  X_op_symbol) + X_add_number.  */
-    case O_eq:              /* (X_add_symbol == X_op_symbol) + X_add_number.  */
-    case O_ne:              /* (X_add_symbol != X_op_symbol) + X_add_number.  */
-    case O_lt:              /* (X_add_symbol <  X_op_symbol) + X_add_number.  */
-    case O_le:              /* (X_add_symbol <= X_op_symbol) + X_add_number.  */
-    case O_ge:              /* (X_add_symbol >= X_op_symbol) + X_add_number.  */
-    case O_gt:              /* (X_add_symbol >  X_op_symbol) + X_add_number.  */
-    case O_logical_and:     /* (X_add_symbol && X_op_symbol) + X_add_number.  */
-    case O_logical_or:      /* (X_add_symbol || X_op_symbol) + X_add_number.  */
-      {
-        std::ostringstream exp_string;
-        if (expr->X_add_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_add_symbol);
-          if (expr->X_op_symbol) {
-            exp_string << OpToString(expr->X_op);
-          }
-        }
-        if (expr->X_op_symbol) {
-          exp_string << GetDotOrSymbol(expr->X_op_symbol);
-          if (expr->X_add_number != 0) {
-            exp_string << "+";
-          }
-        }
-        if (expr->X_add_number != 0) {
-          exp_string << expr->X_add_number;
-        }
-        out->append(exp_string.str());
-      }
-      break;
-      /* A register (X_add_number is register number).  */
-    case O_register:
-      {
-        std::ostringstream exp_string;
-        exp_string << "%" << i386_regtab[expr->X_add_number].reg_name;
-        out->append(exp_string.str());
-      }
-      break;
-    // UNSUPPORTED
-    /* An illegal expression.  */
-    case O_illegal:
-      /* A nonexistent expression.  */
-    case O_absent:
-      /* X_add_symbol + X_add_number - the base address of the image.  */
-    case O_symbol_rva:
-
-      /* A big value.  If X_add_number is negative or 0, the value is in
-         generic_floating_point_number.  Otherwise the value is in
-         generic_bignum, and X_add_number is the number of LITTLENUMs in
-         the value.  */
-    case O_big:
-      /* (- X_add_symbol) + X_add_number.  */
-    case O_uminus:
-      /* (~ X_add_symbol) + X_add_number.  */
-    case O_bit_not:
-      /* (! X_add_symbol) + X_add_number.  */
-    case O_logical_not:
-
-
-      /* X_op_symbol [ X_add_symbol ] */
-    case O_index:
-      /* machine dependent operators */
-    case O_md1:
-    case O_md2:
-    case O_md3:
-    case O_md4:
-    case O_md5:
-    case O_md6:
-    case O_md7:
-    case O_md8:
-    case O_md9:
-    case O_md10:
-    case O_md11:
-    case O_md12:
-    case O_md13:
-    case O_md14:
-    case O_md15:
-    case O_md16:
-    case O_md17:
-    case O_md18:
-    case O_md19:
-    case O_md20:
-    case O_md21:
-    case O_md22:
-    case O_md23:
-    case O_md24:
-    case O_md25:
-    case O_md26:
-    case O_md27:
-    case O_md28:
-    case O_md29:
-    case O_md30:
-    case O_md31:
-    case O_md32:
-  /* this must be the largest value */
-    case O_max:
-    default:
-      MAO_ASSERT_MSG(
-          0,
-          "OperandExpressionToString does not support the op %d\n",
-          expr->X_op);
-      break;
-  }
-  return *out;
-}
 
 const std::string &DirectiveEntry::OperandToString(const Operand &operand,
                                                    std::string *out) const {
@@ -1608,10 +1651,10 @@ const std::string &DirectiveEntry::OperandToString(const Operand &operand,
       out->append(S_GET_NAME(operand.data.sym));
       break;
     case EXPRESSION:
-      OperandExpressionToString(operand.data.expr, out);
+      ExpressionToString(operand.data.expr, out);
       break;
     case EXPRESSION_RELOC:
-      OperandExpressionToString(operand.data.expr_reloc.expr, out);
+      ExpressionToString(operand.data.expr_reloc.expr, out);
       // Append the relocation to the string here!
       if (operand.data.expr_reloc.reloc != _dummy_first_bfd_reloc_code_real) {
         std::string reloc;
@@ -1953,9 +1996,6 @@ std::string &InstructionEntry::ImmediateOperandToString(std::string *out,
           MAO_ASSERT(false);
       }
       string_stream << "$";
-      if (expr->X_add_symbol || expr->X_op_symbol) {
-        string_stream << "(";
-      }
       if (expr->X_add_symbol) {
         string_stream << GetDotOrSymbol(expr->X_add_symbol)
                       << RelocToString(reloc, &reloc_string).c_str();
@@ -1965,7 +2005,6 @@ std::string &InstructionEntry::ImmediateOperandToString(std::string *out,
                       << GetDotOrSymbol(expr->X_op_symbol);
       }
       if (expr->X_add_symbol || expr->X_op_symbol) {
-        string_stream << ")";
         if (expr->X_add_number) {
           string_stream << "+";
         }
@@ -2200,8 +2239,7 @@ std::string &InstructionEntry::MemoryOperandToString(std::string *out,
     }
   }
 
-  const i386_operand_type &operand_type = instruction_->types[op_index];
-  const enum bfd_reloc_code_real reloc = instruction_->reloc[op_index];
+
   const expressionS *expr = instruction_->op[op_index].disps;
   const char *segment_override = instruction_->seg[seg_index]?
       instruction_->seg[seg_index]->seg_name:
@@ -2229,66 +2267,18 @@ std::string &InstructionEntry::MemoryOperandToString(std::string *out,
     }
   }
 
-  std::string reloc_string;
-
+  const i386_operand_type &operand_type = instruction_->types[op_index];
   if (operand_type.bitfield.disp8 ||
       operand_type.bitfield.disp16 ||
       operand_type.bitfield.disp32 ||
       operand_type.bitfield.disp32s ||
       operand_type.bitfield.disp64) {
-    // Signed-offset:
-    switch (expr->X_op) {
-      case O_constant:
-        /* X_add_number (a constant expression).  */
-        string_stream << "("
-                      << expr->X_add_number
-                      << ")";
-        break;
-      case O_symbol:
-        if (expr->X_add_number)
-          string_stream << "(";
-        /* X_add_symbol + X_add_number.  */
-        if (expr->X_add_symbol) {
-          string_stream << GetDotOrSymbol(expr->X_add_symbol)
-                        << RelocToString(reloc, &reloc_string);
-        }
-        if (expr->X_add_number) {
-          string_stream << "+"
-                        << expr->X_add_number;
-          string_stream << ")";
-        }
-        break;
-        /* (X_add_symbol - X_op_symbol) + X_add_number.  */
-      case O_subtract:
-        if (expr->X_add_symbol || expr->X_op_symbol) {
-          string_stream << "(";
-        }
-        if (expr->X_add_symbol) {
-          string_stream << GetDotOrSymbol(expr->X_add_symbol)
-                        << RelocToString(reloc, &reloc_string);
-        }
-        // When GOTPCREL is used, the second symbol is implicit and
-        // should not be printed.
-        if (reloc != BFD_RELOC_32_PCREL && reloc != BFD_RELOC_32) {
-          if (expr->X_op_symbol) {
-            string_stream << "-"
-                          << GetDotOrSymbol(expr->X_op_symbol);
-          }
-        }
-        if (expr->X_add_symbol || expr->X_op_symbol) {
-          string_stream << ")";
-          if (expr->X_add_number)
-            string_stream << "+";
-        }
-        if (expr->X_add_number) {
-          string_stream << expr->X_add_number;
-        }
-        break;
-      default:
-        MAO_ASSERT_MSG(0, "Unable to print unsupported expression: %d",
-                       expr->X_op);
-    }
+    const enum bfd_reloc_code_real reloc = instruction_->reloc[op_index];
+    std::string expr_string;
+    ExpressionToStringDisp(expr, &expr_string, &operand_type, &reloc);
+    string_stream << expr_string;
   }
+
   // (base,index,scale)
 
   // The gas structure only holds on base_reg (the last one parsed in the

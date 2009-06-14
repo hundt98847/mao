@@ -470,3 +470,10 @@ void link_previous_directive() {
 void link_cons_reloc(enum bfd_reloc_code_real reloc) {
   reloc_ = reloc;
 }
+
+void link_hidden_directive(struct MaoStringPiece symbol_name) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(symbol_name));
+  link_directive_tail(DirectiveEntry::HIDDEN, operands);
+
+}
