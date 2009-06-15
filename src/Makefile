@@ -117,7 +117,7 @@ CCSRCS=						\
 	MaoRedundantTestElim.cc			\
 	MaoRedundantMemMove.cc			\
 	MaoBranchSeparator.cc			\
-	MaoScheduler.cc			\
+	MaoScheduler.cc				\
 	MaoRelax.cc				\
 	MaoUnit.cc				\
 	MaoZee.cc				\
@@ -207,7 +207,9 @@ MAO_HEADERS = $(SRCDIR)/MaoCFG.h $(SRCDIR)/MaoDebug.h $(SRCDIR)/MaoDefs.h \
 	      $(SRCDIR)/MaoLoops.h $(SRCDIR)/MaoOptions.h $(SRCDIR)/MaoPasses.h\
 	      $(SRCDIR)/MaoPlugin.h $(SRCDIR)/MaoStats.h $(SRCDIR)/MaoUnit.h \
 	      $(SRCDIR)/MaoUtil.h $(SRCDIR)/SymbolTable.h \
-	      $(OBJDIR)/gen-opcodes.h $(SRCDIR)/mao.h $(SRCDIR)/irlink.h
+	      $(OBJDIR)/gen-opcodes.h $(SRCDIR)/mao.h $(SRCDIR)/irlink.h \
+              $(SRCDIR)/gas/expr.h
+
 
 MAO_BINUTILS_HEADERS = $(BINUTILSRC)/gas/config/tc-i386.h \
 	    	       $(BINUTILSRC)/gas/config/te-linux.h \
@@ -224,7 +226,6 @@ MAO_BINUTILS_HEADERS = $(BINUTILSRC)/gas/config/tc-i386.h \
 	               $(BINUTILSRC)/gas/bignum.h \
 	               $(BINUTILSRC)/gas/hash.h \
 	               $(BINUTILSRC)/gas/tc.h \
-	               $(BINUTILSRC)/gas/expr.h \
 	               $(BINUTILSRC)/gas/frags.h \
 	               $(BINUTILSRC)/gas/write.h \
 	               $(BINUTILOBJ)/gas/obj-format.h \
