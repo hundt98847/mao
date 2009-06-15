@@ -1577,7 +1577,8 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".dc.d",
   ".dc.s",
   ".dc.x",
-  ".hidden"
+  ".hidden",
+  ".fill"
 };
 
 

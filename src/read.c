@@ -2089,6 +2089,9 @@ s_fill (int ignore ATTRIBUTE_UNUSED)
 	 compiler.  */
     }
   demand_empty_rest_of_line ();
+
+  // link back to MAO
+  link_fill_directive(&rep_exp, size, fill);
 }
 
 void

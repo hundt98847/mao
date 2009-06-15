@@ -70,6 +70,10 @@ class MaoRelaxer : public MaoPass {
       DirectiveEntry *entry, int mult, struct frag *frag,
       bool new_frag, MaoEntryIntMap *size_map, FragToEntryMap *relax_map);
 
+  static struct frag *HandleFill(
+      DirectiveEntry *entry, struct frag *frag,
+      bool new_frag, MaoEntryIntMap *size_map, FragToEntryMap *relax_map);
+
   static void HandleString(
       DirectiveEntry *entry, int multiplier, bool null_terminate,
       struct frag *frag, MaoEntryIntMap *size_map);

@@ -122,6 +122,8 @@ extern "C" {
 
   void link_hidden_directive(struct MaoStringPiece symbol_name);
 
+  void link_fill_directive(expressionS *repeat, long size, long value);
+
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);
 
