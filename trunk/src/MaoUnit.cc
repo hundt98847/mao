@@ -1044,33 +1044,26 @@ MaoEntry::~MaoEntry() {
 #endif
 
 std::string MaoEntry::GetDotOrSymbol(symbolS *symbol) const {
-  const char *s = S_GET_NAME(symbol);
-  MAO_ASSERT(s);
-  if (strcmp(s, FAKE_LABEL_NAME) == 0) {
-    // Check if there is a sy_value assigned to this temporary expression
-    // if not, then we can print a dot.
-    // TODO(martint): find out how sy_used works....
-    if (symbol->sy_used == 1) {
-      return ".";
-    } else {
-      // sy_value containts an expression. Return it as a string.
-      std::string str;
-      str.append("(");
-      ExpressionToString(&symbol->sy_value, &str);
-      str.append(")");
-      return str.c_str();
-    }
+  std::string out_string;
 
-// This code fails, since the same temporary name is used for both dot symbols
-// and other temporary expressions.
-//     // gas can sometimes store temporary value as a symbol.
-//     // See /binutils-2.19/gas/testsuite/gas/i386/absrel.s for an example.
-//     std::stringstream out;
-//     out << S_GET_VALUE(symbol);
-//     return out.str();
+  const char *symbol_name = S_GET_NAME(symbol);
+  MAO_ASSERT(symbol_name);
+  if (strcmp(symbol_name, FAKE_LABEL_NAME) == 0) {
+    // Check if there is a sy_value assigned to a temporary expression
+    // or if it is the "current location".
+    if (S_GET_SEGMENT (symbol) == expr_section ||
+        S_GET_SEGMENT (symbol) == absolute_section) {
+      // sy_value containts an expression. Return it as a string.
+      out_string = "(";
+      ExpressionToString(&symbol->sy_value, &out_string);
+      out_string.append(")");
+    } else {
+      out_string = ".";
+    }
   } else {
-    return s;
+    out_string = symbol_name;
   }
+  return out_string;
 }
 
 
