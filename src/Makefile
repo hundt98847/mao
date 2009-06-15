@@ -208,7 +208,7 @@ MAO_HEADERS = $(SRCDIR)/MaoCFG.h $(SRCDIR)/MaoDebug.h $(SRCDIR)/MaoDefs.h \
 	      $(SRCDIR)/MaoPlugin.h $(SRCDIR)/MaoStats.h $(SRCDIR)/MaoUnit.h \
 	      $(SRCDIR)/MaoUtil.h $(SRCDIR)/SymbolTable.h \
 	      $(OBJDIR)/gen-opcodes.h $(SRCDIR)/mao.h $(SRCDIR)/irlink.h \
-              $(SRCDIR)/gas/expr.h
+              $(SRCDIR)/expr.h
 
 
 MAO_BINUTILS_HEADERS = $(BINUTILSRC)/gas/config/tc-i386.h \
