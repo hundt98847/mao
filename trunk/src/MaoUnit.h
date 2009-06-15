@@ -266,6 +266,7 @@ class DirectiveEntry : public MaoEntry {
     DC_S,
     DC_X,
     HIDDEN,
+    FILL,
     NUM_OPCODES  // Used to get the size of the array
   };
 

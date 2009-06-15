@@ -475,5 +475,12 @@ void link_hidden_directive(struct MaoStringPiece symbol_name) {
   DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(symbol_name));
   link_directive_tail(DirectiveEntry::HIDDEN, operands);
+}
 
+void link_fill_directive(expressionS *repeat, long size, long value) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(repeat));
+  operands.push_back(new DirectiveEntry::Operand(size));
+  operands.push_back(new DirectiveEntry::Operand(value));
+  link_directive_tail(DirectiveEntry::FILL, operands);
 }

@@ -426,6 +426,11 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
             (*size_map)[entry] = 0;
             // Nothing to do
             break;
+          case DirectiveEntry::FILL:
+            frag = HandleFill(dentry, frag, true, size_map, relax_map);
+            break;
+          default:
+            MAO_ASSERT_MSG(0, "Unhandled directive: %d", dentry->op());
         }
         break;
       }
@@ -644,6 +649,61 @@ struct frag *MaoRelaxer::HandleSpace(DirectiveEntry *entry,
 
   return frag;
 }
+
+
+struct frag *MaoRelaxer::HandleFill(DirectiveEntry *entry,
+                                    struct frag *frag,
+                                    bool new_frag,
+                                    MaoEntryIntMap *size_map,
+                                    FragToEntryMap *relax_map) {
+  MAO_ASSERT(entry->NumOperands() == 3);
+  const DirectiveEntry::Operand *repeat_opnd = entry->GetOperand(0);
+  const DirectiveEntry::Operand *size_opnd = entry->GetOperand(1);
+  MAO_ASSERT(repeat_opnd->type == DirectiveEntry::EXPRESSION);
+  MAO_ASSERT(size_opnd->type == DirectiveEntry::INT);
+
+  expressionS *repeat_exp = repeat_opnd->data.expr;
+  int size = size_opnd->data.i;
+  MAO_ASSERT(size >= 1);
+
+  fprintf(stderr, "inside fill...\n");
+
+  if (repeat_exp->X_op == O_constant) {
+    frag->fr_fix +=  size * repeat_exp->X_add_number;
+    (*size_map)[entry] = size * repeat_exp->X_add_number;
+  } else {
+    // TODO(nvachhar): Ugh... we have to create a symbol
+    // here to store in the fragment.  This means each
+    // execution of relaxation allocates memory that will
+    // never be freed.  Let's hope relaxation doesn't run
+    // too often.
+
+    symbol *rep_sym = make_expr_symbol(repeat_exp);
+    if (size != 1) {
+      // simple case
+      rep_sym = make_expr_symbol (repeat_exp);
+    } else {
+      // Need to create temporary expression. Ugh... (again)
+      // The size is repeat * size
+      expressionS size_exp;
+      size_exp.X_op = O_constant;
+      size_exp.X_add_number = size;
+
+      repeat_exp->X_op = O_multiply;
+      repeat_exp->X_add_symbol = rep_sym;
+      repeat_exp->X_op_symbol = make_expr_symbol (&size_exp);
+      repeat_exp->X_add_number = 0;
+      rep_sym = make_expr_symbol (repeat_exp);
+    }
+
+    (*size_map)[entry] = 0;
+    (*relax_map)[frag] = entry;
+    frag = FragVar(rs_space, 1, (relax_substateT) 0, rep_sym,
+                     (offsetT) 0, NULL, frag, new_frag);
+  }
+  return frag;
+}
+
 
 
 void MaoRelaxer::HandleString(DirectiveEntry *entry, int multiplier,
