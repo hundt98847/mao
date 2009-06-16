@@ -86,8 +86,8 @@ function main()  {
   # Use getopt to separate out options from input files. Makes it easy
   # to find inputs to as
   local dir_name=`dirname $0`
-  local mao_bin=${dir_name}/mao
-  local as_bin=${dir_name}/as-orig
+  local mao_bin=${dir_name}/../../bin/mao #assumes script will be run from scripts/gcc_hook
+  local as_bin=/usr/bin/as
   local mao_output_file='a.mao.s'
 
   #long options used by as
