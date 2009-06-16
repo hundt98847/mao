@@ -19,7 +19,7 @@ Some initial option handling code has been implemented.
 
   * Options can also be specified via the environment variable MAOOPTS. When setting this variable, omit the preceding --mao= part from the example above, only pass in options_string.
 
-  * Starting MAO with no options, or passing -=mao=-h, displays the help text,  which shows all currently "registered" options. Some options are available for all passes, such as the trace or dump-before and dump-after options. They are summarized in this output under "ALL"
+  * Using the command line option -=mao=-h displays the help text,  which shows all currently "registered" options. Some options are available for all passes, such as the trace or dump-before and dump-after options. They are summarized in this output under "ALL"
 
 {{{
 Mao 0.1
