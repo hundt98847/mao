@@ -50,11 +50,11 @@ The default output of MAO goes to stdout via the pass ASM. To change the output 
 
 }}}
 
-To see all available options, start MAO with the -help command line parameters. e.g.
+To see all available options and passes, start MAO with the no command line parameters. e.g.
 
 {{{
   # print all available command line options and descriptions
-  ../bin/mao-x86_64-linux -help
+  ../bin/mao-x86_64-linux
 }}}
 
 = Integrating MAO with gcc =
