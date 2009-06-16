@@ -18,7 +18,7 @@
 #ifndef MAOUTIL_H_
 #define MAOUTIL_H_
 
-//#include <string.h>
+#include <string.h>
 #include <string>
 
 // Used by the STL-maps of sections and subsections.
