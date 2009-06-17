@@ -1,161 +1,178 @@
-#!/usr/bin/python2.4
-# -*- mode: python -*-
+#!/bin/bash
+#
+# $Id$
+# Copyright 2009 Google Inc. All Rights Reserved.
+# Author: eraman@google.com (Easwaran Raman)
+# Wrapper to as that calls mao if required before calling original as
+#
 
-"""This script wraps the GNU assembler to run MAO.  It will first run
-mao on the input file to generate a new assembly file.  It will then
-run the original as on MAO's output.  Finally, it deletes any
-temporary files it creates.  Currently, the script only works if one
-input file is specified on the command line.  Additionally, the script
-assumes that in the directory containing the script there are binaries
-named mao and as-orig which are the MAO and original GAS binaries,
-respectively."""
-
-import os
-import shutil
-import subprocess
-import sys
-import tempfile
-
-
-class RunError(Exception):
-  def __init__(self, returncode, command, root):
-    Exception.__init__(self)
-    self.returncode = returncode
-    self.command = command
-    self.root = root
-
-  def __str__(self):
-    line1 = "Error running command: %s\n" % " ".join(self.command)
-    if self.root:
-      line2 = str(self.root)
-      return "%s%s\n" % (line1, line2)
-    else:
-      return line1
+save_temps=0
+mao_help=0
+as_args=( )
+mao_args=( )
+invoke_mao=0
+output_file='a.out'
+input_files=()
+wrapper_help=0
 
 
-def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
-  try:
-    child = subprocess.Popen(command,
-                             stdin=stdin, stdout=stdout, stderr=stderr,
-                             env=env)
-    (_, err) = child.communicate()
-    err = child.wait()
-    if err != 0:
-      raise RunError(err, command, None)
-  except OSError, e:
-    raise RunError(1, command, e)
+#######################################
+# Parse arguments to as to separate mao and as arguments,
+# identify input and output files and recognize --save-temps
+#
+# Globals:
+#   save_temps
+#   invoke_mao
+#   input_files
+#   output_file
+#   as_args
+#   mao_args
+# Arguments:
+#   arguments processed by getopt
+# Returns:
+#   None
+#######################################
+
+function parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case $1
+    in
+      '--save-temps')
+        save_temps=1
+        shift 1
+      ;;
+
+      '--help')
+        wrapper_help=1
+        shift 1
+      ;;
+
+      '-h')
+        wrapper_help=1
+        shift 1
+      ;;
+
+      '--mao')
+        mao_args[${#mao_args[*]}]="--mao=$2"
+        invoke_mao=1
+	if [[ $2 = "-h" ]]; then
+	  mao_help=1
+	fi
+
+        shift 2
+      ;;
+
+      '-o')
+        output_file=$2
+        shift 2
+      ;;
+
+      '--')
+        shift
+        input_files=$@
+        break;
+      ;;
+
+      *)
+        mao_args[${#mao_args[*]}]=$1
+        as_args[${#as_args[*]}]=$1
+        shift
+    esac
+  done
+}
 
 
-def _Run(command, env=None):
-  err = subprocess.call(command, env=env)
-  return err
+function main()  {
+  # Use getopt to separate out options from input files. Makes it easy
+  # to find inputs to as
+  local dir_name=`dirname $0`
+  local mao_bin=${dir_name}/../bin/mao #assumes script will be run from scripts/gcc_hook
+  local as_bin=/usr/bin/as
+  local mao_output_file='a.mao.s'
 
-def _GenSizeReport(assembly_file, basedir):
-  relax_cmd = [os.path.join(basedir, "verify_relaxer.py"), assembly_file]
-  error = _Run(relax_cmd)
+  #long options used by as
+  local as_long_opts="alternate,a::,al::debug-prefix-map:,defsym:,dump-config,emulation:,execstack,noexecstack,\
+fatal-warnings,gdwarf-2,gdwarf2,gen-debug,gstabs,gstabs+,hash-size:,help,itbl:,keep-locals,listing-lhs-width:,\
+listing-lhs-width2:,listing-rhs-width:,MD:,mri,nocpp,no-warn,reduce-memory-overheads,statistics,\
+strip-local-absolute,version,verbose,target-help,traditional-format,warn,mao:,save-temps,32,64,divide,march:,\
+mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
 
-def main(argv):
-  in_file = ""
-  in_file_index = None
-  out_file_index = None
-  count = 0
-  cmd = []
-  gas_args = []
-  flag = 0
+  #short options used by as
+  local as_short_opts="JKLMRWZa::Dfg::I:o:vwXt:kVQ:sqn"
 
-  args = []
-  verify_function_sizes = False
-  for arg in argv:
-    if arg == "-mao_wrapper:verify_relaxer":
-      verify_function_sizes = True
-    else:
-      args.append(arg)
+  #Abort if mao or the real as does not exist
+  if [[ ! -x "${as_bin}" ]]; then
+    echo "$0: Unable to execute the assembler ${as_bin}"
+    exit 1
+  fi
+  if [[ ! -x "${mao_bin}" ]]; then
+    echo "$0: Unable to execute  ${mao_bin}"
+    exit 1
+  fi
 
-  for arg in args:
-    count += 1
-    cmd.append(arg)
+  #Pre-process the arguments using getopt
+  preprocessed_args="$(getopt  -u -a -o${as_short_opts} -l${as_long_opts} -- $@)"
+  retval=$?;
+  if [[ ${retval} = 1 ]]; then
+    echo "$0: Unable to parse options" >&2
+    exit 1
+  elif [[ ${retval} = 2 ]]; then
+    echo "$0: getopt does not understand its own parameters" >&2
+    exit 1
+  elif [[ ${retval} = 3 ]]; then
+    echo "$0: Internal error in getopt" >&2
+    exit 1
+  fi
 
-    if arg.startswith("-mao:"):
-      continue
+  parse_args ${preprocessed_args}
 
-    gas_args.append(count - 1)
+  if [[ ${wrapper_help} = 1 ]]; then
+    echo -e "Mao usage :\n"
+    ${mao_bin} --mao=-h
+    echo -e "\nAssembler usage :\n"
+    ${as_bin} --help
+    exit 0
+  fi
 
-    if flag == 1:
-      flag = 0
-      if arg.endswith(".o"):
-        out_file_index = count - 1
-        continue
-    if arg.endswith(".s"):
-      in_file = arg
-      in_file_index = len(gas_args)-1
-      continue
-    if arg == "-o":
-      flag = 1
+  if [[ $output_file != "a.out" ]]; then
+    mao_output_file=${output_file/%.o/.mao.s}
+  fi
 
-  try:
-    if not in_file:
-      _RunCheck(cmd)
-      sys.exit(0)
+  if [[ ${invoke_mao} = 1 ]]; then
 
-    #########################################################
-    # Create two temporary files with the appropriate suffix
-    #########################################################
-    (fd, s_tempfile) = tempfile.mkstemp(suffix=".s")
-    os.close(fd)
-
-    (fd, o_tempfile) = tempfile.mkstemp(suffix=".o")
-    os.close(fd)
-
-    #########################################################
-    # Preprocess the file (output in tempfile1)
-    #########################################################
-    try:
-      mao_cmd = cmd[:]
-      mao_cmd[0] = os.path.join(os.path.dirname(argv[0]), "mao")
-      if out_file_index != None:
-        mao_cmd[out_file_index] = o_tempfile
-      mao_cmd.append("-mao:ASM=o[%s]" % s_tempfile)
-      _RunCheck(mao_cmd)
-    except RunError, e:
-      if "MAO_DEBUG_DIR" in os.environ:
-        try:
-          shutil.copy(in_file, os.environ['MAO_DEBUG_DIR'])
-          sys.stderr.write("Copied failing input file to %s\n" %
-                           os.path.join(os.environ['MAO_DEBUG_DIR'],
-                                        os.path.basename(in_file)))
-        except Exception:
-          pass
-      raise e
-
-    #########################################################
-    # Run the original assemble
-    #########################################################
-    compile_cmd = [cmd[i] for i in gas_args]
-    compile_cmd[0] = os.path.join(os.path.dirname(argv[0]), "as-orig")
-    compile_cmd[in_file_index] = s_tempfile
-    error = _Run(compile_cmd)
+    echo "${mao_bin} ${mao_args[*]} ${input_files} --mao=ASM=o[${mao_output_file}]"
+    ${mao_bin} ${mao_args[*]} ${input_files} --mao=ASM=o[${mao_output_file}]
+    ${mao_bin} ${mao_args[*]} ${input_files} --mao=ASM=o[lemmesee]
+    if [[ $? != 0 ]]; then
+      echo "$0: Execution of ${mao_bin} failed with error code $?"
+      exit 1
+    fi
+    #If --mao=-h is called, as-orig should not be invoked
+    if [[ ${mao_help} = 1 ]]; then
+      exit 0
+    fi
 
 
-    #########################################################
-    # Verify / Uncomment the add this feature
-    #########################################################
-    if verify_function_sizes:
-      _GenSizeReport(in_file, os.path.join(os.path.dirname(argv[0])))
 
+    echo "${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}"
+    ${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}
+    if [[ $? != 0 ]]; then
+      echo "$0: Execution of ${as_bin} failed with error code $?"
+      exit 1
+    fi
 
-    #########################################################
-    # Remove the temporary files
-    #########################################################
-    _RunCheck(["rm", "-f", s_tempfile, o_tempfile])
+    if [[ ${save_temps} = 0 ]]; then
+      #echo "rm ${mao_output_file}"
+      rm -f ${mao_output_file}
+    fi
+  else
+    ${as_bin} ${as_args[*]} ${input_files} -o ${output_file}
+    if [[ $? != 0 ]]; then
+      echo "$0: Execution of ${as_bin} failed with error code $?"
+      exit 1
+    fi
+  fi
+}
 
-    #########################################################
-    # Exit with the error code from the compilation
-    #########################################################
-    sys.exit(error)
-  except RunError, e:
-    sys.stderr.write(str(e))
-    sys.exit(e.returncode)
+main $@
 
-
-if __name__ == "__main__":
-  main(sys.argv)
