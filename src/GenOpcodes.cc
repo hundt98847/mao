@@ -93,9 +93,9 @@ void usage(char *const argv[]) {
   exit(1);
 }
 
-class GenDefEntry {
+class GenDefUseEntry {
  public:
-  GenDefEntry(char *op_str) :
+  GenDefUseEntry(char *op_str) :
     op_str_(op_str) {
     flags.CF = flags.PF = flags.AF = flags.ZF = flags.SF =
     flags.TP = flags.IF = flags.DF = flags.OF = flags.IOPL =
@@ -133,8 +133,8 @@ class GenDefEntry {
   char *op_str_;
 };
 
-typedef std::map<char *, GenDefEntry *, ltstr> MnemMap;
-static MnemMap mnem_map;
+typedef std::map<char *, GenDefUseEntry *, ltstr> MnemMap;
+static MnemMap mnem_def_map, mnem_use_map;
 
 class RegEntry {
  public:
@@ -187,7 +187,7 @@ RegEntry *FindRegister(const char *str) {
 }
 
 
-void ReadSideEffects(const char *fname) {
+void ReadSideEffects(const char *fname, MnemMap &mnem_map) {
   char buff[1024];
 
   FILE *f = fopen(fname, "r");
@@ -204,11 +204,12 @@ void ReadSideEffects(const char *fname) {
     if (buff[0] == '#' || buff[0] == '\n') continue;
     char *mnem = next_field(buff, ' ', &p);
 
-    GenDefEntry *e = new GenDefEntry(strdup(mnem));
+    GenDefUseEntry *e = new GenDefUseEntry(strdup(mnem));
     mnem_map[strdup(mnem)] = e;
 
     BitString *mask = &e->reg_mask;
 
+    bool eflags=false;
     while (p && *p && (p < end)) {
       char *q = next_field(p, ' ', &p);
       if (!*q) break;
@@ -222,6 +223,24 @@ void ReadSideEffects(const char *fname) {
       if (!strcasecmp(q, "clear:"))  /* TODO(rhundt): refine */; else
       if (!strcasecmp(q, "undef:"))  /* TODO(rhundt): refine */; else
 
+      if (!strcasecmp(q, "CF")) eflags = true; else
+      if (!strcasecmp(q, "PF")) eflags = true; else
+      if (!strcasecmp(q, "AF")) eflags = true; else
+      if (!strcasecmp(q, "ZF")) eflags = true; else
+      if (!strcasecmp(q, "SF")) eflags = true; else
+      if (!strcasecmp(q, "TP")) eflags = true; else
+      if (!strcasecmp(q, "IF")) eflags = true; else
+      if (!strcasecmp(q, "DF")) eflags = true; else
+      if (!strcasecmp(q, "OF")) eflags = true; else
+      if (!strcasecmp(q, "IOPL")) eflags = true; else
+      if (!strcasecmp(q, "NT")) eflags = true; else
+      if (!strcasecmp(q, "RF")) eflags = true; else
+      if (!strcasecmp(q, "VM")) eflags = true; else
+      if (!strcasecmp(q, "AC")) eflags = true; else
+      if (!strcasecmp(q, "VIF")) eflags = true; else
+      if (!strcasecmp(q, "VIP")) eflags = true; else
+      if (!strcasecmp(q, "ID")) eflags = true; else 
+      /*
       if (!strcasecmp(q, "CF")) e->flags.CF = true; else
       if (!strcasecmp(q, "PF")) e->flags.PF = true; else
       if (!strcasecmp(q, "AF")) e->flags.AF = true; else
@@ -238,18 +257,19 @@ void ReadSideEffects(const char *fname) {
       if (!strcasecmp(q, "AC")) e->flags.AC = true; else
       if (!strcasecmp(q, "VIF")) e->flags.VIF = true; else
       if (!strcasecmp(q, "VIP")) e->flags.VIP = true; else
-      if (!strcasecmp(q, "ID")) e->flags.ID = true; else
+      if (!strcasecmp(q, "ID")) e->flags.ID = true; else */
 
-      if (!strcasecmp(q, "op0"))  e->op_mask |= DEF_OP0; else
-      if (!strcasecmp(q, "src"))  e->op_mask |= DEF_OP0; else
+      if (!strcasecmp(q, "op0"))  e->op_mask |= REG_OP0; else
+      if (!strcasecmp(q, "src"))  e->op_mask |= REG_OP0; else
 
-      if (!strcasecmp(q, "op1"))  e->op_mask |= DEF_OP1; else
-      if (!strcasecmp(q, "dest")) e->op_mask |= DEF_OP1; else
+      if (!strcasecmp(q, "op1"))  e->op_mask |= REG_OP1; else
+      if (!strcasecmp(q, "dest")) e->op_mask |= REG_OP1; else
 
-      if (!strcasecmp(q, "op2"))  e->op_mask |= DEF_OP2; else
-      if (!strcasecmp(q, "op3"))  e->op_mask |= DEF_OP3; else
-      if (!strcasecmp(q, "op4"))  e->op_mask |= DEF_OP4; else
-      if (!strcasecmp(q, "op5"))  e->op_mask |= DEF_OP5; else {
+      if (!strcasecmp(q, "op2"))  e->op_mask |= REG_OP2; else
+      if (!strcasecmp(q, "op3"))  e->op_mask |= REG_OP3; else
+      if (!strcasecmp(q, "op4"))  e->op_mask |= REG_OP4; else
+      if (!strcasecmp(q, "op5"))  e->op_mask |= REG_OP5; else
+      if (!strcasecmp(q, "exp"))  e->op_mask |= USE_OP_ALL; else {
         RegEntry *r = FindRegister(q);
         if (r)
           mask->Set(r->num_);
@@ -260,6 +280,10 @@ void ReadSideEffects(const char *fname) {
       }
       if (p > end) break;
     }
+    if (eflags)
+      e->reg_mask.Set(FindRegister("eflags")->num_);
+
+
   }
 
   fclose(f);
@@ -316,8 +340,8 @@ int main(int argc, char *const argv[]) {
     }
   }
 
-  // there shoule be two more arguments
-  if ((argc - optind) != 2)
+  // there shoule be three more arguments
+  if ((argc - optind) != 3)
     usage(argv);
 
 
@@ -327,7 +351,10 @@ int main(int argc, char *const argv[]) {
   // Get tables and data
   //
   ReadRegisterTable(op_table);
-  ReadSideEffects(side_effect_table);
+  ReadSideEffects(side_effect_table, mnem_def_map);
+
+  side_effect_table = argv[optind+2];
+  ReadSideEffects(side_effect_table, mnem_use_map);
 
   // Open the various input and output files,
   // emit top portion in generated files.
@@ -341,11 +368,13 @@ int main(int argc, char *const argv[]) {
   const char *out_filename;
   const char *table_filename;
   const char *defs_filename;
+  const char *uses_filename;
 
   if (out_path != NULL) {
     char out_filename_buf[2048];
     char table_filename_buf[2048];
     char defs_filename_buf[2048];
+    char uses_filename_buf[2048];
 
     sprintf(out_filename_buf, "%s%s",   out_path, "/gen-opcodes.h");
     out_filename = out_filename_buf;
@@ -353,16 +382,20 @@ int main(int argc, char *const argv[]) {
     table_filename = table_filename_buf;
     sprintf(defs_filename_buf, "%s%s",  out_path, "/gen-defs.h");
     defs_filename = defs_filename_buf;
+    sprintf(uses_filename_buf, "%s%s",  out_path, "/gen-uses.h");
+    uses_filename  = uses_filename_buf;
   } else {
     out_filename   = "gen-opcodes.h";
     table_filename = "gen-opcodes-table.h";
     defs_filename  = "gen-defs.h";
+    uses_filename  = "gen-uses.h";
   }
-  FILE *out, *table, *def;
+  FILE *out, *table, *def, *use;
 
   (out   = fopen(out_filename,   "w")) || fail_on_open(argv, out_filename);
   (table = fopen(table_filename, "w")) || fail_on_open(argv, table_filename);
   (def   = fopen(defs_filename,  "w")) || fail_on_open(argv, defs_filename);
+  (use   = fopen(uses_filename,  "w")) || fail_on_open(argv, uses_filename);
 
   fprintf(out,
           "// DO NOT EDIT - this file is automatically "
@@ -388,6 +421,13 @@ int main(int argc, char *const argv[]) {
           "DefEntry def_entries [] = {\n"
           "  { OP_invalid, 0, BNULL, BNULL, BNULL, BNULL, BNULL },\n" );
 
+  fprintf(use,
+          "// DO NOT EDIT - this file is automatically "
+          "generated by GenOpcodes\n//\n"
+          "#define BNULL BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull)\n"
+          "#define BALL  BitString(-1ull, -1ull, -1ull, -1ull)\n"
+          "UseEntry use_entries [] = {\n"
+          "  { OP_invalid, 0, BNULL, BNULL, BNULL, BNULL, BNULL },\n" );
   // Read through the instruction description file, isolate the first
   // field, which contains the opcode, and generate an
   //   OP_... into the gen-opcodes.h file.
@@ -443,21 +483,21 @@ int main(int argc, char *const argv[]) {
       fprintf(table, "  { OP_%s, \t\"%s\" },\n", sanitized_name, name);
 
       /* Emit def entry */
-      MnemMap::iterator it = mnem_map.find(sanitized_name);
-      if (it == mnem_map.end()) {
+      MnemMap::iterator def_it = mnem_def_map.find(sanitized_name);
+      if (def_it == mnem_def_map.end()) {
         fprintf(def, "  { OP_%s, DEF_OP_ALL, BALL, BALL, BALL, BALL, BALL },\n", sanitized_name);
         if (emit_warnings)
           fprintf(stderr, "Warning: No side-effects for: %s\n", sanitized_name);
       } else {
         fprintf(def, "  { OP_%s, 0", sanitized_name);
-        GenDefEntry *e = (*it).second;
+        GenDefUseEntry *e = (*def_it).second;
         e->found = true;
-        if (e->op_mask & DEF_OP0) fprintf(def, " | DEF_OP0");
-        if (e->op_mask & DEF_OP1) fprintf(def, " | DEF_OP1");
-        if (e->op_mask & DEF_OP2) fprintf(def, " | DEF_OP2");
-        if (e->op_mask & DEF_OP3) fprintf(def, " | DEF_OP3");
-        if (e->op_mask & DEF_OP4) fprintf(def, " | DEF_OP4");
-        if (e->op_mask & DEF_OP5) fprintf(def, " | DEF_OP5");
+        if (e->op_mask & REG_OP0) fprintf(def, " | REG_OP0");
+        if (e->op_mask & REG_OP1) fprintf(def, " | REG_OP1");
+        if (e->op_mask & REG_OP2) fprintf(def, " | REG_OP2");
+        if (e->op_mask & REG_OP3) fprintf(def, " | REG_OP3");
+        if (e->op_mask & REG_OP4) fprintf(def, " | REG_OP4");
+        if (e->op_mask & REG_OP5) fprintf(def, " | REG_OP5");
 
         // populate reg_mask
         fprintf(def, ", ");
@@ -472,6 +512,44 @@ int main(int argc, char *const argv[]) {
         PrintRegMask(def, e->reg_mask64);
         fprintf(def, " },\n");
       }
+
+      /* Emit use entry */
+      MnemMap::iterator use_it = mnem_use_map.find(sanitized_name);
+      if (use_it == mnem_use_map.end()) {
+        fprintf(use, "  { OP_%s, USE_OP_ALL, BALL, BALL, BALL, BALL, BALL },\n", sanitized_name);
+        if (emit_warnings)
+          fprintf(stderr, "Warning: No side-effects for: %s\n", sanitized_name);
+      } else {
+        fprintf(use, "  { OP_%s, 0", sanitized_name);
+        GenDefUseEntry *e = (*use_it).second;
+        e->found = true;
+        if ( ((e->op_mask | REG_OP_BASE | REG_OP_INDEX) & USE_OP_ALL) == USE_OP_ALL)
+          fprintf(use, " | USE_OP_ALL");
+        else {
+          if (e->op_mask & REG_OP0) fprintf(use, " | REG_OP0");
+          if (e->op_mask & REG_OP1) fprintf(use, " | REG_OP1");
+          if (e->op_mask & REG_OP2) fprintf(use, " | REG_OP2");
+          if (e->op_mask & REG_OP3) fprintf(use, " | REG_OP3");
+          if (e->op_mask & REG_OP4) fprintf(use, " | REG_OP4");
+          if (e->op_mask & REG_OP5) fprintf(use, " | REG_OP5");
+
+          //Always include base and disp register in the use
+          fprintf(use, " | REG_OP_BASE | REG_OP_INDEX");
+        }
+
+        // populate reg_mask
+        fprintf(use, ", ");
+        PrintRegMask(use, e->reg_mask);
+        fprintf(use, ", ");
+        PrintRegMask(use, e->reg_mask8);
+        fprintf(use, ", ");
+        PrintRegMask(use, e->reg_mask16);
+        fprintf(use, ", ");
+        PrintRegMask(use, e->reg_mask32);
+        fprintf(use, ", ");
+        PrintRegMask(use, e->reg_mask64);
+        fprintf(use, " },\n");
+      }
     }
     strcpy(lastname, name);
   }
@@ -479,8 +557,8 @@ int main(int argc, char *const argv[]) {
   // quality check - see which DefEntries remain unused
   //
   if (emit_warnings)
-    for (MnemMap::iterator it = mnem_map.begin();
-         it != mnem_map.end(); ++it) {
+    for (MnemMap::iterator it = mnem_def_map.begin();
+         it != mnem_def_map.end(); ++it) {
       if (!(*it).second->found)
         fprintf(stderr, "Warning: Unused side-effects description: %s\n",
                 (*it).second->op_str());
@@ -497,10 +575,16 @@ int main(int argc, char *const argv[]) {
           "sizeof(def_entries) / sizeof(DefEntry);\n"
           );
 
+  fprintf(use, "};\n"
+          "const unsigned int use_entries_size = "
+          "sizeof(use_entries) / sizeof(UseEntry);\n"
+          );
+
   fclose(in);
   fclose(out);
   fclose(table);
   fclose(def);
+  fclose(use);
 
   return 0;
 }

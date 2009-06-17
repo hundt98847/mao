@@ -30,7 +30,17 @@
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(SCHEDULER, 0) {
+MAO_OPTIONS_DEFINE(SCHEDULER, 4) {
+  OPTION_STR("function_list", "",
+             "A comma separated list of mangled function names"
+             " on which this pass is applied."
+             " An empty string means the pass is applied on all functions"),
+  OPTION_STR("functions_file", "",
+             " "),
+  OPTION_INT("start_func", 0,
+             "Number of the first function that is optimized"),
+  OPTION_INT("end_func", 1000000000,
+             "Number of the last  function that is optimized"),
 };
 
 #define MAX_REGS 256
@@ -172,9 +182,37 @@ class SchedulerPass : public MaoFunctionPass {
   };
 
   SchedulerPass(MaoOptionMap *options, MaoUnit *mao, Function *func)
-      : MaoFunctionPass("SCHEDULER", options, mao, func) { }
+    : MaoFunctionPass("SCHEDULER", options, mao, func) {
+
+      profitable_ = IsProfitable (func);
+  }
 
   bool Go() {
+    int start_func = GetOptionInt("start_func");
+    int end_func = GetOptionInt("end_func");
+    const char* functions_file = GetOptionString("functions_file");
+    FILE *fp = NULL;
+    if (strcmp(functions_file, "")) {
+      fp= fopen (functions_file, "r");
+      const char *this_func_name = (function_->name()).c_str();
+      char line[4096];
+      int func_num=0;
+      while (!feof(fp)) {
+        fscanf (fp, "%s", line);
+        if (!strcmp(line, this_func_name))
+          break;
+        func_num++;
+      }
+      fclose(fp);
+      Trace (0, "Function %d: %s", func_num, this_func_name);
+  
+  
+      if (func_num < start_func ||
+          func_num > end_func)
+        return true;
+    }
+    if (!profitable_)
+      return true;
     CFG *cfg = CFG::GetCFG (unit_, function_);
     FORALL_CFG_BB(cfg, bb_iterator) {
       MaoEntry *first = *((*bb_iterator)->EntryBegin());
@@ -209,6 +247,9 @@ class SchedulerPass : public MaoFunctionPass {
   std::set<MaoEntry *> lock_set_;
   std::string *insn_str_;
   MaoEntry **entries_;
+  bool profitable_;
+  static int function_count_;
+
   BitString GetSrcRegisters (InstructionEntry *insn);
   BitString GetDestRegisters (InstructionEntry *insn);
   DependenceDag *FormDependenceDag(BasicBlock *bb);
@@ -220,10 +261,13 @@ class SchedulerPass : public MaoFunctionPass {
   void ScheduleNode (int node, MaoEntry **head);
   void Schedule (DependenceDag *dag, int *dependence_heights, MaoEntry *head);
   void PrefixLocks (BasicBlock *bb);
+  bool IsProfitable (Function *);
 
 
 
 };
+
+int SchedulerPass::function_count_ = 0;
 
 void SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, MaoEntry *head) {
   char *scheduled = new char[dag->NodeCount()];
@@ -312,6 +356,11 @@ int SchedulerPass::RemoveTallest (std::list<int> *list, int *heights) {
       best_height = heights[node];
       best_node = node;
     }
+    else if ( (heights[node] == best_height) &&
+              (node < best_node)) {
+      best_height = heights[node];
+      best_node = node;
+    }
   }
   list->remove (best_node);
   return best_node;
@@ -375,6 +424,9 @@ int *SchedulerPass::ComputeDependenceHeights (DependenceDag *dag) {
 }
 
 BitString SchedulerPass::GetSrcRegisters (InstructionEntry *insn) {
+  BitString use_mask = GetRegisterUseMask(insn);
+  return use_mask;
+  /*
   int operands = insn->NumOperands();
   BitString mask;
   for (int i = 0; i < operands; i++) {
@@ -392,7 +444,7 @@ BitString SchedulerPass::GetSrcRegisters (InstructionEntry *insn) {
     mask = mask | GetMaskForRegister(reg->reg_name);
   }
   return mask;
-
+  */
 }
 
 BitString SchedulerPass::GetDestRegisters (InstructionEntry *insn) {
@@ -457,7 +509,7 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
       continue;
     entries_[insns_in_bb] = insn;
     insn->ToString(&insn_str_[insns_in_bb]);
-    //Trace (2, "Instruction %d: %s\n", insns_in_bb, insn_str_[insns_in_bb].c_str());
+    Trace (2, "Instruction %d: %s\n", insns_in_bb, insn_str_[insns_in_bb].c_str());
     if (IsMemOperation(insn)) {
       if (prev_mem_operation != -1)
         dag->AddEdge (prev_mem_operation, insns_in_bb, MEM_DEP);
@@ -469,6 +521,11 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
 
     BitString src_regs_mask = GetSrcRegisters (insn);
     BitString dest_regs_mask = GetDestRegisters (insn);
+    Trace (2, "Src registers: ");
+    src_regs_mask.Print();
+    Trace (2, "Dest  registers: ");
+    dest_regs_mask.Print();
+
     int index=0;
     while ((index = src_regs_mask.NextSetBit(index)) != -1) {
       //Trace (2, "src reg = %d", index);
@@ -551,12 +608,18 @@ bool SchedulerPass::IsMemOperation (InstructionEntry *entry) {
       return false;
     if (entry->HasBaseRegister() || entry->HasIndexRegister())
       return true;
+    if (entry->HasPrefix (REPE_PREFIX_OPCODE) ||
+        entry->HasPrefix (REPNE_PREFIX_OPCODE))
+      return true;
+
     switch (entry->op())
     {
       case OP_cmpxchg:
       case OP_cmpxchg8b:
       case OP_cmpxchg16b:
       case OP_lfence:
+      case OP_mfence:
+      case OP_sfence:
       case OP_lock:
       case OP_push:
       case OP_pusha:
@@ -564,6 +627,16 @@ bool SchedulerPass::IsMemOperation (InstructionEntry *entry) {
       case OP_pop:
       case OP_popa:
       case OP_popf:
+      case OP_rep:
+      case OP_repe:
+      case OP_repz:
+      case OP_repne:
+      case OP_repnz:
+      case OP_cmps:
+      case OP_stos:
+      case OP_lods:
+      case OP_scas:
+
         return true;
       default:
         return false;
@@ -575,10 +648,49 @@ bool SchedulerPass::IsMemOperation (InstructionEntry *entry) {
 // Certain instructions can not be reordered and their positions
 // need  to be maintained
 bool SchedulerPass::CanReorder (InstructionEntry *entry) {
-  if (entry->IsReturn() || entry->IsJump() || entry->IsCondJump() || entry->op() == OP_leave || entry->op() == OP_cmp)
+  if (entry->IsReturn() || entry->IsJump() || entry->IsCondJump())
     return false;
+  switch (entry->op())
+  {
+    case OP_leave:
+      return false;
+    default:
+      return true;
+  }
+  return true;
+}
+
+// Is the transformation profitable for this function
+// Right now it checks a list of function names passed as
+// a parameter to deciede if the function is profitable or
+// not
+bool SchedulerPass::IsProfitable(Function *function) {
+  //List of comma separated functions to apply this pass
+  const char *function_list;
+  function_list = GetOptionString("function_list");
+  const char *func_name = (function->name()).c_str();
+  const char *comma_pos;
+
+
+  if(strcmp (function_list, ""))
+    {
+      while ( (comma_pos = strchr (function_list, ';')) != NULL) {
+        int len = comma_pos - function_list;
+        if(strncmp(func_name, function_list, len) == 0)
+          return true;
+        function_list = comma_pos+1;
+      }
+      //The function list might be just a single function name and so
+      //we need to compare the list against the given function name
+      if( strcmp (function_list, func_name) == 0 ) {
+        return true;
+      }
+      return false;
+    }
   else
-    return true;
+    {
+      return true;
+    }
 }
 
 // External Entry Point

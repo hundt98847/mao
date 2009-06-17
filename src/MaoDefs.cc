@@ -19,6 +19,7 @@
 #include "MaoUnit.h"
 #include "MaoDefs.h"
 #include "gen-defs.h"
+#include "gen-uses.h"
 
 #include <string.h>
 #include <map>
@@ -261,6 +262,13 @@ void InitRegisters() {
     FillSubRegs(&def_entries[i].reg_mask32);
     FillSubRegs(&def_entries[i].reg_mask64);
   }
+  for (unsigned int i = 0; i < use_entries_size; i++) {
+    FillSubRegs(&use_entries[i].reg_mask);
+    FillSubRegs(&use_entries[i].reg_mask8);
+    FillSubRegs(&use_entries[i].reg_mask16);
+    FillSubRegs(&use_entries[i].reg_mask32);
+    FillSubRegs(&use_entries[i].reg_mask64);
+  }
 }
 
 // For a given register name, return it's
@@ -305,6 +313,48 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
         mask = mask | GetMaskForRegister(reg);
        }
     }
+  }
+  return mask;
+}
+
+// For an instruction, check use masks, check
+// operands and if they use a register, add
+// the masks to the results.
+//
+BitString GetRegisterUseMask(InstructionEntry *insn) {
+  UseEntry *e = &use_entries[insn->op()];
+  MAO_ASSERT(e->opcode = insn->op());
+
+  BitString mask = e->reg_mask;
+
+  // check 1st operand. If it is 8/16/32/64 bit operand, see whether
+  // there are special register masks stored for insn.
+  if (insn->NumOperands() > 0) {
+    if (insn->IsRegister8Operand(0) || insn->IsMem8Operand(0))
+      mask = mask | e->reg_mask8;
+    if (insn->IsRegister16Operand(0) || insn->IsMem16Operand(0))
+      mask = mask | e->reg_mask16;
+    if (insn->IsRegister32Operand(0) || insn->IsMem32Operand(0))
+      mask = mask | e->reg_mask32;
+    if (insn->IsRegister64Operand(0) || insn->IsMem32Operand(0))
+      mask = mask | e->reg_mask64;
+  }
+
+  for (int op = 0; op < 5 && op < insn->NumOperands(); ++op) {
+    if (e->op_mask & (1 << op)) {
+      if (insn->IsRegisterOperand(op)) {
+        const char *reg = insn->GetRegisterOperandStr(op);
+        mask = mask | GetMaskForRegister(reg);
+       }
+    }
+  }
+  if (insn->HasBaseRegister() && (e->op_mask & REG_OP_BASE)) {
+    const char *reg = insn->GetBaseRegisterStr();
+    mask = mask | GetMaskForRegister(reg);
+  }
+  if (insn->HasIndexRegister() && (e->op_mask & REG_OP_INDEX)) {
+    const char *reg = insn->GetIndexRegisterStr();
+    mask = mask | GetMaskForRegister(reg);
   }
   return mask;
 }

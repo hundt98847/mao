@@ -25,14 +25,19 @@
 //#include "opcodes/i386-opc.h"
 
 // Bitmasks for operands
-#define  DEF_OP0      (1 << 0)
-#define  DEF_OP1      (1 << 1)
-#define  DEF_OP2      (1 << 2)
-#define  DEF_OP3      (1 << 3)
-#define  DEF_OP4      (1 << 4)
-#define  DEF_OP5      (1 << 5)
+#define  REG_OP0      (1 << 0)
+#define  REG_OP1      (1 << 1)
+#define  REG_OP2      (1 << 2)
+#define  REG_OP3      (1 << 3)
+#define  REG_OP4      (1 << 4)
+#define  REG_OP5      (1 << 5)
 
-#define  DEF_OP_ALL (DEF_OP0 | DEF_OP1 | DEF_OP2 | DEF_OP3 | DEF_OP4 | DEF_OP5)
+#define  REG_OP_BASE  (1 << 6)
+#define  REG_OP_INDEX  (1 << 7)
+
+#define  DEF_OP_ALL (REG_OP0 | REG_OP1 | REG_OP2 | REG_OP3 | REG_OP4 | REG_OP5)
+
+#define  USE_OP_ALL (REG_OP0 | REG_OP1 | REG_OP2 | REG_OP3 | REG_OP4 | REG_OP5 | REG_OP_BASE | REG_OP_INDEX)
 
 // more are possible...
 struct DefEntry {
@@ -44,13 +49,29 @@ struct DefEntry {
   BitString     reg_mask32;  //   for 32-bit addressing modes
   BitString     reg_mask64;  //   for 64-bit addressing modes
 };
+
+// Should possibly using the same struct for both.
+// Duplicating just in case if there is a difference in usage
+struct UseEntry {
+  int           opcode;      // matches table gen-opcodes.h
+  unsigned int  op_mask;     // if insn defs operand(s)
+  BitString     reg_mask;    // if insn defs register(s)
+  BitString     reg_mask8;   //   for  8-bit addressing modes
+  BitString     reg_mask16;  //   for 16-bit addressing modes
+  BitString     reg_mask32;  //   for 32-bit addressing modes
+  BitString     reg_mask64;  //   for 64-bit addressing modes
+};
+
 extern DefEntry def_entries[];
+extern UseEntry use_entries[];
 
 // external entry points
 class InstructionEntry;
 
 void InitRegisters();
 BitString  GetRegisterDefMask(InstructionEntry *insn);
+
+BitString  GetRegisterUseMask(InstructionEntry *insn);
 
 BitString  GetCallingConventionDefMask();
 

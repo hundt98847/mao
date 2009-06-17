@@ -1,0 +1,354 @@
+#
+# Copyright 2008 Google Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
+
+# Side effect table for instructions
+#
+# memnonic  defs
+#
+# with defs being one of:
+#    reg    all valid register names are supported. Taking the register
+#           names from binutils-2.xx/opcodes/i386-reg.tbl
+#
+#    op0    instruction def's operand 0  (also 'src')
+#    op1    instruction def's operand 1  (also 'exp')
+#    ...
+#    exp:   all explicit registers in the operation are used
+#
+#    addr8: all following registers are def'ed in case
+#           op0 of the instruction denotes an 8-bit reg
+#           or mem. Note: The colon : is required.
+#    addr16:
+#    addr32:
+#    addr64: correspondingly.
+#
+#    flags: starting to define flags. Valid flag names are:
+#          CF PF AF ZF SF TP IF DF OF IOPL NT RF VM AC VIF VIP ID
+#
+#    clear: indicate which flags are cleared.
+#    undef: indicate which flags are left undefined.
+#
+#    all:  switches back to default mask and def assignment.
+
+#a
+aaa   al flags: AF
+aad   ax
+aam   ax
+aas   al flags: AF
+adc   exp flags: CF
+add   exp
+addpd exp
+addps exp
+addsd exp
+addss exp
+and   exp
+andpd exp
+andps exp
+andnpd exp
+andnps exp
+arpl src
+
+#b
+blendpd exp
+blendps exp
+blendvpd exp xmm0
+blendvps exp xmm0
+bound src
+bsf src
+bsr src
+bswap exp
+bt exp
+btc exp
+btr exp
+bts exp
+
+#c
+call rax rcx rdx rsi rdi r8 r9 r10 r11
+
+cmova   src flags: CF ZF
+cmovae  src flags: CF
+cmovb   src flags: CF
+cmovbe  src flags: CF ZF
+cmovc   src flags: CF
+cmove   src flags: ZF
+cmovg   src flags: ZF SF OF
+cmovge  src flags: SF OF
+cmovl   src flags: SF OF
+cmovle  src flags: ZF SF OF
+cmovna  src flags: CF ZF
+cmovnae src flags: CF
+cmovnb  src flags: CF
+cmovnbe src flags: CF ZF
+cmovnc  src flags: CF
+cmovne  src flags: ZF
+cmovng  src flags: ZF SF OF
+cmovnge src flags: SF OF
+cmovnl  src flags: SF OF
+cmovnle src flags: ZF SF OF
+cmovno  src flags: OF
+cmovnp  src flags: PF
+cmovns  src flags: SF
+cmovnz  src flags: ZF
+cmovo   src flags: OF
+cmovp   src flags: PF
+cmovs   src flags: SF
+cmovz   src flags: ZF
+
+cmp op0 op1
+cmppd exp
+cmpps exp
+
+#cmpsb, cmpsw and cmpsq are represented as cmps in the opcode table
+#The instruction entry doesn't have an operand and hence there is no
+#good way to determine the addr size (without looking at the opcode).
+#So conservatively assume all registers are used in all modes
+cmps   ds es di si edi esi rsi rdi
+
+# these three are mentioned in the Intel manual, but don't have
+# an explicit entry in the opcode tables.
+# cmpsb  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+# cmpsw  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+# cmpsq  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+
+cmpxchg rax rbx rcx rdx
+cmpxchg8b edx eax ecx ebx
+cmpxchg16b rdx rax rcx rbx
+
+comisd exp
+comiss exp
+cpuid eax ecx
+crc32 exp
+cvtdq2pd exp
+cvtdq2pd exp
+cvtpd2dq exp
+cvtpd2dq exp
+cvtdq2ps exp
+cvtdq2ps exp
+cvtpd2pi exp
+cvtpd2ps exp
+cvtpd2ps exp
+cvtps2pd exp
+cvtps2pd exp
+cvtps2dq exp
+cvtps2dq exp
+cvtsd2si exp
+cvtsd2si exp
+cvtsd2ss exp
+cvtsd2ss exp
+cvtss2sd exp
+cvtss2sd exp
+cvttpd2pi exp
+cvttsd2si exp
+cvttsd2si exp
+cvttpd2dq exp
+cvttpd2dq exp
+cvttps2dq exp
+cvttps2dq exp
+
+cwd ax
+cdq eax 
+cqo rax
+
+daa al flags: AF CF
+das al flags: AF CF
+dec exp
+div exp addr8: ax addr16: ax dx addr32: eax edx addr64: rax rdx
+divpd exp
+divps exp
+divsd exp
+divss exp
+dppd exp
+dpps exp
+
+# jumpers
+jmp
+ljmp
+ja   flags: CF ZF
+jna  flags: CF ZF
+jae  flags: CF
+jnae flags: CF
+jb   flags: CF
+jnb  flags: CF
+jbe  flags: CF ZF
+jnbe flags: CF ZF
+jc   flags: CF
+jnc  flags: CF
+je   flags: ZF
+jne  flags: ZF
+jg   flags: ZF SF OF
+jng  flags: ZF SF OF
+jge  flags: SF OF
+jnge flags: SF OF
+jl   flags: SF OF
+jnl  flags: SF OF
+jle  flags: SF OF ZF
+jnle flags: SF OF ZF
+jo   flags: OF
+jno  flags: OF
+jp   flags: PF
+jnp  flags: PF
+js   flags: SF
+jns  flags: SF
+jz   flags: ZF
+jnz  flags: ZF
+jpe  flags: PF
+jpo  flags: PF
+
+jcxz cx
+jecxz ecx
+jrcxz rcx
+
+lmsw src
+lods  ds addr16: si addr32: esi addr64: rsi
+# these are in the Intel manual, but taken care of by the mode
+# append trick in mao/gas
+# lodsb al
+# lodsw ax
+# lodsd eax
+# lodsq rax
+
+
+mov  src
+mul   exp addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
+
+mwait eax ecx
+
+#O
+or exp
+
+# R
+rcl exp flags: CF OF
+rcr exp flags: CF OF
+rol exp flags: CF OF
+ror exp flags: CF OF
+
+rdmsr ecx
+rdpmc ecx
+
+#reps are tricky to handle since their operands is based
+#on what follows the rep. Handle them conservatively
+#Further complicated by th fact that registers used depends
+#on REX prefix
+rep  exp ds es ax eax rax cx ecx rcx dx si esi rsi di edi rdi
+repe  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
+repz  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
+repne  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
+repnz  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
+
+# S
+sahf ah
+sbb exp flags: CF
+scas  es rdi rax
+
+seta   flags: CF ZF
+setna  flags: CF ZF
+setae  flags: CF
+setnae flags: CF
+setb   flags: CF
+setnb  flags: CF
+setbe  flags: CF ZF
+setnbe flags: CF ZF
+setc   flags: CF
+setnc  flags: CF
+sete   flags: ZF
+setne  flags: ZF
+setg   flags: ZF SF OF
+setng  flags: ZF SF OF
+setge  flags: SF OF
+setnge flags: SF OF
+setl   flags: SF OF
+setnl  flags: SF OF
+setle  flags: SF OF ZF
+setnle flags: SF OF ZF
+seto   flags: OF
+setno  flags: OF
+setp   flags: PF
+setnp  flags: PF
+sets   flags: SF
+setns  flags: SF
+setz   flags: ZF
+setnz  flags: ZF
+setpe  flags: PF
+setpo  flags: PF
+
+sgdt src
+shld exp
+shrd exp
+shufpd exp
+shufps exp
+sidt exp
+sldt exp
+smsw src
+sqrtpd exp
+sqrtps exp
+sqrtsd exp
+sqrtss exp
+stc    flags: CF
+std    flags: DF
+sti    flags: IF VIF
+stmxcsr exp
+stos  rax rdi di edi flags: DF
+# taken care of by mode append:
+# stosb src addr8: di addr16: di addr32: edi addr64: rdi
+# stosw src addr8: di addr16: di addr32: edi addr64: rdi
+# stosd src addr8: di addr16: di addr32: edi addr64: rdi
+# stosq src addr8: di addr16: di addr32: edi addr64: rdi
+
+str   src
+sub   exp flags: OF SF ZF AF PF CF
+subpd exp
+subps exp
+subsd exp
+subss exp
+swapgs
+syscall rcx r11
+sysenter
+sysexit
+sysret
+
+
+# T
+test exp
+
+# U
+ucomisd exp
+ucomiss exp
+ud2
+unpckhpd exp
+unpckhps exp
+unpcklpd exp
+unpcklps exp
+
+
+# W
+wait
+fwait
+wbinvd
+wrmsr
+
+# X
+xadd exp  flags: CF PF AF SF ZF OF
+xchg src exp
+xgetbv edx eax
+xlat  al
+# taken care of by mode append
+# xlatb al
+xor exp
+xorpd exp
+xorps exp
+xrstor src
+xsave src
+xsetbv
