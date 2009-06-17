@@ -76,3 +76,15 @@ stdout, run the following
 
 mao-x86_64 -mao_o /dev/stdout example.s
 
+Hooking mao into gcc:
+---------------------
+
+Simply add "-B/[MAODIR]/scripts" to your gcc command line and pass MAO directives
+using "-Wa,--mao=..."
+
+Example below:
+
+"gcc test.c -o test -B/home/username/mao/scripts -Wa,--mao=ASM=o[mao_test.s]"
+
+This command will compile your program 'test' and run a MAO asm dumping pass, 
+dumping the asm source into the file 'mao_test.s'. 
