@@ -42,37 +42,37 @@
 #
 #    all:  switches back to default mask and def assignment.
 #
-aaa   ax
-aad   ax
-aam   ax
-aas   ax
-adc   dest
-add   dest
+aaa   ax flags: AF CF
+aad   ax flags: SF ZF PF undef: OF AF CF
+aam   ax flags: SF ZF PF undef: OF AF CF
+aas   ax flags: AF CF undef: OF SF ZF PF
+adc   dest flags: OF SF ZF AF PF CF
+add   dest flags: OF SF ZF AF PF CF
 addpd dest
 addps dest
 addsd dest
 addss dest
-and   dest
+and   dest flags: SF ZF PF clear: OF CF undef: AF
 andpd dest
 andps dest
 andnpd dest
 andnps dest
-arpl dest
+arpl dest flags: ZF
 
 blendpd dest
 blendps dest
 blendvpd dest
 blendvps dest
 bound 
-bsf dest
-bsr dest
+bsf dest flags: ZF undef: CF OF SF AF PF
+bsr dest flags: ZF undef: CF OF SF AF PF
 bswap src dest
 bt 
-btc 
-btr 
-bts
+btc src dest flags: CF undef: OF SF ZF AF PF
+btr src dest flags: CF undef: OF SF ZF AF PF
+bts src dest flags: CF undef: OF SF ZF AF PF
 
-call rax rcx rdx rsi rdi r8 r9 r10 r11
+call rax rcx rdx rsi rdi r8 r9 r10 r11 flags: CF ZF SF OF PF AF
 cbw  ax
 cwde eax
 cdqe rax
@@ -112,11 +112,16 @@ cmovng  dest
 cmovg   dest
 cmovnle dest
 
-cmp
+#TODO: Refine the cmp instruction into various cmpcc forms
+cmp   flags: CF OF SF PF AF ZF
 cmppd dest
 cmpps dest
 
-cmps   addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
+#cmpsb, cmpsw and cmpsq are represented as cmps in the opcode table
+#The instruction entry doesn't have an operand and hence there is no
+#good way to determine the addr size (without looking at the opcode).
+#So conservatively assume all registers are defed in all modes
+cmps   di si edi esi rsi rdi flags: CF OF AF ZF SF PF
 cmpsd  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 
 # these three are mentioned in the Intel manual, but don't have
@@ -165,7 +170,7 @@ cqo rdx rax
 
 daa al
 das al
-dec op0
+dec op0 flags: OF SF ZF AF PF
 div addr8: ax addr16: ax dx addr32: eax edx addr64: rax rdx
 divpd dest
 divps dest
@@ -672,7 +677,7 @@ sysret
 
 
 # T
-test   flags: SF ZF PF
+test   flags: SF ZF PF OF CF undef: AF
 
 # U
 ucomisd dest
