@@ -437,17 +437,21 @@ class InstructionEntry : public MaoEntry {
     return IsMemOperand(instruction(), op_index);
   }
   bool IsMem8Operand(const unsigned int op_index) {
-    return instruction_->types[op_index].bitfield.disp8;
+    return instruction_->types[op_index].bitfield.disp8 ||
+        instruction_->types[op_index].bitfield.unspecified;
   }
   bool IsMem16Operand(const unsigned int op_index) {
-    return instruction_->types[op_index].bitfield.disp16;
+    return instruction_->types[op_index].bitfield.disp16 ||
+        instruction_->types[op_index].bitfield.unspecified;
   }
   bool IsMem32Operand(const unsigned int op_index) {
     return instruction_->types[op_index].bitfield.disp32 ||
-      instruction_->types[op_index].bitfield.disp32s;
+        instruction_->types[op_index].bitfield.disp32s ||
+        instruction_->types[op_index].bitfield.unspecified;
   }
   bool IsMem64Operand(const unsigned int op_index) {
-    return instruction_->types[op_index].bitfield.disp64;
+    return instruction_->types[op_index].bitfield.disp64 ||
+        instruction_->types[op_index].bitfield.unspecified;
   }
   bool IsImmediateOperand(const unsigned int op_index) {
     return IsImmediateOperand(instruction(), op_index);
