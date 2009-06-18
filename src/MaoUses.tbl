@@ -222,6 +222,61 @@ lods  ds addr16: si addr32: esi addr64: rsi
 
 
 mov  src
+
+movapd src
+movaps src
+movabs src
+movd src
+movddup src
+movdqa src
+movdqu src
+movdq2q src
+movhlps src
+movhpd src
+movhps src
+movlhps src
+movlpd src
+movlps src
+movmskpd src
+movmskps src
+movntdqa src
+movntdq src
+movnti src
+movntpd src
+movntps src
+movntq src
+movq src
+movq2dq src
+
+movs   ds es addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+# There are two movsd in the manual. One seems to be movs with mode set to
+# 32 and another is an xmm move. I don't know which one is this, so I'm
+# treating it conservatively
+movs   src ds es addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+
+
+movupd src
+movups src
+
+# various zero and sign extent moves.
+movbe src
+movsbl src
+movsbw src
+movswl src
+movsbq src
+movswq src
+movslq src
+movsx src
+movsxd src
+
+movzbl src
+movzbw src
+movzbl src
+movzbq src
+movzbq src
+movzwq src
+movzx src
+
 mul   exp addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
 
 mwait eax ecx
