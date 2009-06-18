@@ -124,6 +124,7 @@ void ReadRegisterTable() {
 //
 void AddSubRegs(const char *r64, const char *r32,
 		const char *r16, const char *r8,
+                const char *r8_alias = NULL,
                 const char *r8h = NULL) {
 
   // Find properties
@@ -131,6 +132,7 @@ void AddSubRegs(const char *r64, const char *r32,
   RegProps *p32 = reg_name_map.find(r32)->second;
   RegProps *p16 = NULL;
   RegProps *p8  = NULL;
+  RegProps *p8_alias  = NULL;
   RegProps *p8h = NULL;
 
   // Assign sub-regs
@@ -142,6 +144,10 @@ void AddSubRegs(const char *r64, const char *r32,
       if (r8h) {
         p8h = reg_name_map.find(r8h)->second;
         p16->AddSubReg(p8h->mask());
+      }
+      if (r8_alias) {
+        p8_alias  = reg_name_map.find(r8_alias)->second;
+        p16->AddSubReg(p8_alias->mask());
       }
     }
     p32->AddSubReg(p16->sub_regs());
@@ -159,6 +165,12 @@ void AddSubRegs(const char *r64, const char *r32,
     p8->AddParentReg(p32->mask());
     if (p16)
       p8->AddParentReg(p16->mask());
+  }
+  if (p8_alias) {
+    p8_alias->AddParentReg(p64->mask());
+    p8_alias->AddParentReg(p32->mask());
+    if (p16)
+      p8_alias->AddParentReg(p16->mask());
   }
   if (p8h) {
     p8h->AddParentReg(p64->mask());
@@ -190,6 +202,27 @@ void FillSubRegs(BitString *mask) {
   }
 }
 
+// For a given register mask, find the
+// corresponding RegProps and additionally
+// set the mask's parent regs found in the RegProps
+//
+void FillParentRegs(BitString *mask) {
+  if (mask->IsNonNull() && !mask->IsUndef()) {
+    // Loop over bitstring (4 * 64 = 256 bits)
+    for (int i = 0; i < 4; i++)
+      if (mask->GetWord(i))
+        for (int j = 0; j < 64; j++) {
+          if (i*64+j >= reg_max)
+            break;
+
+          if (mask->Get(i*64+j)) {
+            RegProps *r = reg_num_map.find(i*64+j)->second;
+            MAO_ASSERT(r);
+            *mask = *mask | r->parent_regs();
+          }
+        }
+  }
+}
 
 // Read register table, generate aliases, generate
 // sub register relations.
@@ -237,10 +270,10 @@ void InitRegisters() {
   AddAlias("edi", "r7d");
   AddAlias("rdi", "r7");
 
-  AddSubRegs("rax", "eax", "ax", "al", "ah");
-  AddSubRegs("rcx", "ecx", "cx", "cl", "ch");
-  AddSubRegs("rdx", "edx", "dx", "dl", "dh");
-  AddSubRegs("rbx", "ebx", "bx", "bl", "bh");
+  AddSubRegs("rax", "eax", "ax", "al", "axl", "ah");
+  AddSubRegs("rcx", "ecx", "cx", "cl", "cxl", "ch");
+  AddSubRegs("rdx", "edx", "dx", "dl", "dxl", "dh");
+  AddSubRegs("rbx", "ebx", "bx", "bl", "bxl", "bh");
   AddSubRegs("rsp", "esp", "sp", "spl");
   AddSubRegs("rbp", "ebp", "bp", "bpl");
   AddSubRegs("rsi", "esi", "si", "sil");
@@ -261,6 +294,11 @@ void InitRegisters() {
     FillSubRegs(&def_entries[i].reg_mask16);
     FillSubRegs(&def_entries[i].reg_mask32);
     FillSubRegs(&def_entries[i].reg_mask64);
+    FillParentRegs(&def_entries[i].reg_mask);
+    FillParentRegs(&def_entries[i].reg_mask8);
+    FillParentRegs(&def_entries[i].reg_mask16);
+    FillParentRegs(&def_entries[i].reg_mask32);
+    FillParentRegs(&def_entries[i].reg_mask64);
   }
   for (unsigned int i = 0; i < use_entries_size; i++) {
     FillSubRegs(&use_entries[i].reg_mask);
@@ -268,6 +306,11 @@ void InitRegisters() {
     FillSubRegs(&use_entries[i].reg_mask16);
     FillSubRegs(&use_entries[i].reg_mask32);
     FillSubRegs(&use_entries[i].reg_mask64);
+    FillParentRegs(&use_entries[i].reg_mask);
+    FillParentRegs(&use_entries[i].reg_mask8);
+    FillParentRegs(&use_entries[i].reg_mask16);
+    FillParentRegs(&use_entries[i].reg_mask32);
+    FillParentRegs(&use_entries[i].reg_mask64);
   }
 }
 
@@ -289,7 +332,7 @@ BitString GetMaskForRegister(const char *reg) {
 //
 BitString GetRegisterDefMask(InstructionEntry *insn) {
   DefEntry *e = &def_entries[insn->op()];
-  MAO_ASSERT(e->opcode = insn->op());
+  MAO_ASSERT(e->opcode == insn->op());
 
   BitString mask = e->reg_mask;
 
@@ -314,6 +357,18 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
        }
     }
   }
+  DefEntry *prefix_entry = NULL;
+  if (insn->HasPrefix (REPE_PREFIX_OPCODE))
+    prefix_entry = &def_entries[OP_repe];
+  else if (insn->HasPrefix (REPNE_PREFIX_OPCODE))
+    prefix_entry = &def_entries[OP_repne];
+
+  if (prefix_entry != NULL) {
+    BitString prefix_mask = prefix_entry->reg_mask;
+    mask = mask | prefix_mask;
+  }
+  FillSubRegs (&mask);
+  FillParentRegs (&mask);
   return mask;
 }
 
@@ -323,7 +378,7 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
 //
 BitString GetRegisterUseMask(InstructionEntry *insn) {
   UseEntry *e = &use_entries[insn->op()];
-  MAO_ASSERT(e->opcode = insn->op());
+  MAO_ASSERT(e->opcode == insn->op());
 
   BitString mask = e->reg_mask;
 
@@ -356,6 +411,18 @@ BitString GetRegisterUseMask(InstructionEntry *insn) {
     const char *reg = insn->GetIndexRegisterStr();
     mask = mask | GetMaskForRegister(reg);
   }
+  UseEntry *prefix_entry = NULL;
+  if (insn->HasPrefix (REPE_PREFIX_OPCODE))
+    prefix_entry = &use_entries[OP_repe];
+  else if (insn->HasPrefix (REPNE_PREFIX_OPCODE))
+    prefix_entry = &use_entries[OP_repne];
+
+  if (prefix_entry != NULL) {
+    BitString prefix_mask = prefix_entry->reg_mask;
+    mask = mask | prefix_mask;
+  }
+  FillSubRegs (&mask);
+  FillParentRegs (&mask);
   return mask;
 }
 

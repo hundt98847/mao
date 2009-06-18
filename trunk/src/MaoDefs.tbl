@@ -396,7 +396,7 @@ movsldup dest
 # N
 neg  op0  flags: CF OF SF ZF AF PF
 nop       flags: 
-not  op0  flags:
+not  op0
 
 # O
 or   dest flags: SF ZF PF clear: OF CF undef: AF
@@ -549,7 +549,7 @@ psubusb  dest
 psubusw  dest
 ptest    clear: OF AF PF SF flags: ZF CF
 
-# For punpckh.. and punpckl.., Intel and AT&T differ in the final 
+# For punpckh.. and punpckl.., Intel and AT&T differ in the final
 # characters.
 #
 punpckhbw  dest
@@ -587,6 +587,17 @@ rdmsr edx eax flags:
 rdpmc edx eax flags:
 rdtsc edx eax flags:
 rdtscp edx eax ecx flags:
+
+#reps are tricky to handle since their operands is based
+#on what follows the rep. Handle them conservatively
+#Further complicated by th fact that registers used depends
+#on REX prefix
+rep  cx ecx rcx
+repe  cx ecx rcx
+repz  cx ecx rcx
+repne  cx ecx rcx
+repnz  cx ecx rcx
+
 ret   rip
 roundpd  dest
 roundps  dest
@@ -705,7 +716,7 @@ xgetbv edx eax
 xlat  al
 # taken care of by mode append
 # xlatb al
-xor dest
+xor dest flags: SF ZF PF clear: OF CF undef: AF
 xorpd dest
 xorps dest
 xrstor src
