@@ -76,7 +76,7 @@ We wrote such a wrapper script and put it in {{{ mao/scripts/as_wrapper.sh }}}.
 To squeeze this script into gcc, you can:
 
    # Replace the 'as' directly. For example, rename it, and put a wrapper script named 'as' in its original place, which runs MAO and the former orginal assembler. This method has the drawback that MAO will always be executed.
-   # Recommended: Pass the -Bpath option to gcc and place the 'as' wrapper script into the specified path. gcc will look into these paths first, and if it finds an 'as' it will execute it from there. This method allows to selectively apply MAO to compilations. We have included such a path for you called gcc_hook.  Simply add "-B/MAODIR/scripts/gcc_hook" to your gcc command line and pass MAO directives using "-Wa,--mao=..." e.g.
+   # Recommended: Pass the -Bpath option to gcc and place the 'as' wrapper script into the specified path. gcc will look into these paths first, and if it finds an 'as' it will execute it from there. This method allows to selectively apply MAO to compilations. The scripts directory in MAO's base directory may be used, however, soft links to 'mao' and 'as-orig' (as-orig should link to your original gas 'as' binary) must be created\.  After doing this, simply add "-B/MAODIR/scripts" to your gcc command line and pass MAO directives using "-Wa,--mao=..." e.g.
 {{{
 $ gcc test.c -o test -B/home/username/mao/scripts/gcc_hook -Wa,--mao=ASM=o[mao_test.s]
 }}}
