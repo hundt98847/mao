@@ -18,7 +18,7 @@
 #ifndef MAO_H_
 #define MAO_H_
 
-#define MAO_VERSION "0.1"
+#define MAO_VERSION "0.1 r" REV_NUM
 
 // gas main entry point
 extern "C" {
