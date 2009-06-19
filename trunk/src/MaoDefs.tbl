@@ -598,7 +598,7 @@ repz  cx ecx rcx
 repne  cx ecx rcx
 repnz  cx ecx rcx
 
-ret   rip
+ret   rip rsp
 roundpd  dest
 roundps  dest
 roundsd  dest
