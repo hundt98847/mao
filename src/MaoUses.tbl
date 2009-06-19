@@ -76,7 +76,7 @@ btr exp
 bts exp
 
 #c
-call rax rcx rdx rsi rdi r8 r9 r10 r11
+#call rsp rip cs
 
 cmova   src flags: CF ZF
 cmovae  src flags: CF
@@ -174,7 +174,7 @@ dppd exp
 dpps exp
 
 # jumpers
-jmp
+jmp exp
 ljmp
 ja   flags: CF ZF
 jna  flags: CF ZF
@@ -210,6 +210,13 @@ jpo  flags: PF
 jcxz cx
 jecxz ecx
 jrcxz rcx
+
+#L
+
+# lea uses only base and index regs which are included by default
+lea
+
+leave rsp rbp
 
 lmsw src
 lods  ds addr16: si addr32: esi addr64: rsi
@@ -303,6 +310,8 @@ repz  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
 repne  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
 repnz  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
 
+ret rsp
+
 # S
 sahf ah
 sbb exp flags: CF
@@ -340,6 +349,11 @@ setpe  flags: PF
 setpo  flags: PF
 
 sgdt src
+sal exp cl
+sar exp cl
+shl exp cl
+shr exp cl
+
 shld exp
 shrd exp
 shufpd exp
@@ -363,7 +377,7 @@ stos  rax rdi di edi flags: DF
 # stosq src addr8: di addr16: di addr32: edi addr64: rdi
 
 str   src
-sub   exp flags: OF SF ZF AF PF CF
+sub   exp
 subpd exp
 subps exp
 subsd exp
