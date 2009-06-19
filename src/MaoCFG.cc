@@ -760,6 +760,16 @@ bool CFGBuilder::IsVaargBasedJump(InstructionEntry *entry,
     pattern->push_back(e);
     e = e->next();
   }
+  //The instruction following the sequence of movaps is also a possible
+  //target of the indirect jump
+  while (e && !e->IsInstruction())
+    e = e->next();
+
+  if (e)
+    pattern->push_back(e);
+
+
+
   return pattern->size() > 1;
 }
 
