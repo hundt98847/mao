@@ -215,7 +215,6 @@ class SchedulerPass : public MaoFunctionPass {
     if (!profitable_)
       return true;
     CFG *cfg = CFG::GetCFG (unit_, function_);
-    function_->Print(stderr);
     FORALL_CFG_BB(cfg, bb_iterator) {
       MaoEntry *first = *((*bb_iterator)->EntryBegin());
       MaoEntry *last = *((*bb_iterator)->EntryEnd());
