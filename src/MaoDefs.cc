@@ -336,18 +336,16 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
 
   BitString mask = e->reg_mask;
 
-  // check 1st operand. If it is 8/16/32/64 bit operand, see whether
-  // there are special register masks stored for insn.
-  if (insn->NumOperands() > 0) {
-    if (insn->IsRegister8Operand(0) || insn->IsMem8Operand(0))
-      mask = mask | e->reg_mask8;
-    if (insn->IsRegister16Operand(0) || insn->IsMem16Operand(0))
-      mask = mask | e->reg_mask16;
-    if (insn->IsRegister32Operand(0) || insn->IsMem32Operand(0))
-      mask = mask | e->reg_mask32;
-    if (insn->IsRegister64Operand(0) || insn->IsMem32Operand(0))
-      mask = mask | e->reg_mask64;
-  }
+  //TODO: Do not blindly apply the operand width based masks
+  //The masks are blindly applied because in certain instructions
+  //without explicit operands the operand width is encoded in
+  //the opcode and the previous system of determining it based
+  //on the type of the operand fails.
+  //
+  mask = mask | e->reg_mask8;
+  mask = mask | e->reg_mask16;
+  mask = mask | e->reg_mask32;
+  mask = mask | e->reg_mask64;
 
   for (int op = 0; op < 5 && op < insn->NumOperands(); ++op) {
     if (e->op_mask & (1 << op)) {
@@ -357,6 +355,19 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
        }
     }
   }
+  //The following code is to handle an instruction like
+  // sar %rax, which actually means
+  // sar $1, %rax
+  // In the MaoDefs.tbl, it says that the operation writes
+  // to its dest operand which is interpreted as operand 1,
+  // but is actually operand 0 in this case
+  if ( (insn->NumOperands() == 1) &&
+       (insn->IsRegisterOperand(0)) &&
+       (e->op_mask & (1 << 1)) ) {
+    const char *reg = insn->GetRegisterOperandStr(0);
+    mask = mask | GetMaskForRegister(reg);
+  }
+
   DefEntry *prefix_entry = NULL;
   if (insn->HasPrefix (REPE_PREFIX_OPCODE))
     prefix_entry = &def_entries[OP_repe];
@@ -382,18 +393,16 @@ BitString GetRegisterUseMask(InstructionEntry *insn) {
 
   BitString mask = e->reg_mask;
 
-  // check 1st operand. If it is 8/16/32/64 bit operand, see whether
-  // there are special register masks stored for insn.
-  if (insn->NumOperands() > 0) {
-    if (insn->IsRegister8Operand(0) || insn->IsMem8Operand(0))
-      mask = mask | e->reg_mask8;
-    if (insn->IsRegister16Operand(0) || insn->IsMem16Operand(0))
-      mask = mask | e->reg_mask16;
-    if (insn->IsRegister32Operand(0) || insn->IsMem32Operand(0))
-      mask = mask | e->reg_mask32;
-    if (insn->IsRegister64Operand(0) || insn->IsMem32Operand(0))
-      mask = mask | e->reg_mask64;
-  }
+  //TODO: Do not blindly apply the operand width based masks
+  //The masks are blindly applied because in certain instructions
+  //without explicit operands the operand width is encoded in
+  //the opcode and the previous system of determining it based
+  //on the type of the operand fails.
+  //
+  mask = mask | e->reg_mask8;
+  mask = mask | e->reg_mask16;
+  mask = mask | e->reg_mask32;
+  mask = mask | e->reg_mask64;
 
   for (int op = 0; op < 5 && op < insn->NumOperands(); ++op) {
     if (e->op_mask & (1 << op)) {
