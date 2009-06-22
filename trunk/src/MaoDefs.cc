@@ -525,6 +525,17 @@ bool       RegistersContained(BitString &parent,
   return (parent & child) == child;
 }
 
+bool       IsParent(const reg_entry *parent,
+                    const reg_entry *child) {
+  BitString  parents = GetParentRegs(child);
+  // is parent in parents?
+  RegProps *preg = reg_ptr_map.find(parent)->second;
+  return (! ((preg->mask() & parents) ==
+             BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull)));
+
+}
+
+
 BitString  GetParentRegs(const reg_entry *reg) {
   RegProps *p1 = reg_ptr_map.find(reg)->second;
   MAO_ASSERT(p1);

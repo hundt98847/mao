@@ -87,6 +87,8 @@ bool       RegistersOverlap(const reg_entry *reg1,
                             const reg_entry *reg2);
 bool       RegistersContained(BitString &parent,
                               BitString &child);
+bool       IsParent(const reg_entry *parent,
+                    const reg_entry *child);
 BitString  GetParentRegs(const reg_entry *reg);
 
 // Provide pointer to
