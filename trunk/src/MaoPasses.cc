@@ -421,6 +421,7 @@ void InitPasses() {
   InitPrefetchNta();
   InitNopinizer();
   InitZEE();
+  InitRATFinder();
   InitRedundantTestElimination();
   InitRedundantMemMoveElimination();
   InitMissDispElimination();
