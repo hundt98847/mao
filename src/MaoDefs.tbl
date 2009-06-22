@@ -367,6 +367,7 @@ movzbw dest
 movzbl dest
 movzbq dest
 movzbq dest
+movzwl dest
 movzwq dest
 movzx dest
 

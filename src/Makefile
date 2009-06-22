@@ -120,6 +120,7 @@ CCSRCS=						\
 	MaoRedundantMemMove.cc			\
 	MaoBranchSeparator.cc			\
 	MaoScheduler.cc				\
+	MaoRatFinder.cc				\
 	MaoRelax.cc				\
 	MaoUnit.cc				\
 	MaoZee.cc				\

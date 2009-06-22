@@ -435,6 +435,27 @@ BitString GetRegisterUseMask(InstructionEntry *insn) {
   return mask;
 }
 
+
+// Returns the set of defined registers from the list of operands.
+// TODO(martint): Add implicit registers.
+std::set<const reg_entry *> GetDefinedRegister(InstructionEntry *insn) {
+  std::set<const reg_entry *> regs;
+
+  DefEntry *e = &def_entries[insn->op()];
+  MAO_ASSERT(e->opcode == insn->op());
+
+  for (int op = 0; op < 5 && op < insn->NumOperands(); ++op) {
+    if (e->op_mask & (1 << op)) {
+      if (insn->IsRegisterOperand(op)) {
+        const reg_entry *reg = insn->GetRegisterOperand(op);
+        regs.insert(reg);
+       }
+    }
+  }
+  return regs;
+}
+
+
 // Returns a mask for the live in registers.
 // TODO(martint): Take the ABI into considerations
 BitString GetCallingConventionDefMask() {
@@ -516,4 +537,12 @@ const reg_entry *GetIP() {
   return rip_props->reg();
   // else
   // return eip_props->reg();
+}
+
+
+const reg_entry *GetRegFromName(const char *reg_name) {
+  RegNameMap::iterator it = reg_name_map.find(reg_name);
+
+  MAO_ASSERT(it != reg_name_map.end());
+  return (*it).second->reg();
 }

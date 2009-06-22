@@ -18,6 +18,7 @@
 #ifndef __MAODEFS_H_INCLUDED
 #define __MAODEFS_H_INCLUDED
 
+#include <set>
 #include <stdio.h>
 #include "MaoUtil.h"
 
@@ -73,6 +74,8 @@ BitString  GetRegisterDefMask(InstructionEntry *insn);
 
 BitString  GetRegisterUseMask(InstructionEntry *insn);
 
+std::set<const reg_entry *> GetDefinedRegister(InstructionEntry *insn);
+
 BitString  GetCallingConventionDefMask();
 
 void       PrintRegisterDefMask(FILE *f, BitString mask,
@@ -91,5 +94,7 @@ BitString  GetParentRegs(const reg_entry *reg);
 //   %eip  for 32-bit compiles
 //
 const reg_entry *GetIP();
+
+const reg_entry *GetRegFromName(const char *reg_name);
 
 #endif // __MAODEFS_H_INCLUDED

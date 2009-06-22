@@ -317,6 +317,7 @@ void InitDCE();
 void InitNopKiller();
 void InitNopinizer();
 void InitZEE();
+void InitRATFinder();
 void InitRedundantTestElimination();
 void InitRedundantMemMoveElimination();
 void InitScheduler();
