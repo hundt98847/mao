@@ -41,102 +41,130 @@ class RatFinderPass : public MaoFunctionPass {
   // who have only been partially written before. This access pattern might
   // cause stalls in the pipeline. See "Intel 64 and IA-32 Architecture
   // Optimization Reference Manual" for "Partial Register Stalls".
+  //
   // Trace level 1: Prints out the basic block which have possible
   //                RAT stalls.
   // Trace level 2: Prints out each instruction that triggers a possible
   //                RAT stall.
-  // Trace level 3: Prints out a list of defined registers for each
-  //                basic block.
   bool Go() {
     CFG *cfg = CFG::GetCFG(unit_, function_);
+
+    // Used registers
+    const reg_entry *r_eax = GetRegFromName("eax");
+    const reg_entry *r_ebx = GetRegFromName("ebx");
+    const reg_entry *r_ecx = GetRegFromName("ecx");
+    const reg_entry *r_edx = GetRegFromName("edx");
+    const reg_entry *r_edi = GetRegFromName("edi");
+    const reg_entry *r_esi = GetRegFromName("esi");
+    const reg_entry *r_ebp = GetRegFromName("ebp");
+    const reg_entry *r_esp = GetRegFromName("esp");
+    const reg_entry *r_r8d = GetRegFromName("r8d");
+    const reg_entry *r_r9d = GetRegFromName("r9d");
+    const reg_entry *r_r10d = GetRegFromName("r10d");
+    const reg_entry *r_r11d = GetRegFromName("r11d");
+    const reg_entry *r_r12d = GetRegFromName("r12d");
+    const reg_entry *r_r13d = GetRegFromName("r13d");
+    const reg_entry *r_r14d = GetRegFromName("r14d");
+    const reg_entry *r_r15d = GetRegFromName("r15d");
+    const reg_entry *r_rax = GetRegFromName("rax");
+    const reg_entry *r_rbx = GetRegFromName("rbx");
+    const reg_entry *r_rcx = GetRegFromName("rcx");
+    const reg_entry *r_rdx = GetRegFromName("rdx");
+    const reg_entry *r_rdi = GetRegFromName("rdi");
+    const reg_entry *r_rsi = GetRegFromName("rsi");
+    const reg_entry *r_rbp = GetRegFromName("rbp");
+    const reg_entry *r_rsp = GetRegFromName("rsp");
+    const reg_entry *r_r8  = GetRegFromName("r8");
+    const reg_entry *r_r9  = GetRegFromName("r9");
+    const reg_entry *r_r10 = GetRegFromName("r10");
+    const reg_entry *r_r11 = GetRegFromName("r11");
+    const reg_entry *r_r12 = GetRegFromName("r12");
+    const reg_entry *r_r13 = GetRegFromName("r13");
+    const reg_entry *r_r14 = GetRegFromName("r14");
+    const reg_entry *r_r15 = GetRegFromName("r15");
 
     FORALL_CFG_BB(cfg, it) {
       MaoEntry *first = (*it)->GetFirstInstruction();
       if (!first) continue;
-
-      // Hold the list of defined registers in this basic block. The subregs
-      // defined are also stored here.
-      BitString all_defined_gpp_regs_mask = BitString(0x0ull, 0x0ull, 0x0ull,
-                                                      0x0ull);
 
       // Number of found RAT stall possibilities for this basic block
       int num_rat_stall_possibilites = 0;
 
       FORALL_BB_ENTRY(it, entry) {
         if (!(*entry)->IsInstruction()) continue;
-        InstructionEntry *insn = (*entry)->AsInstruction();
-
-        // Keep track of all the defined registers in the basic block.
-        // TODO(martint): code should only handle GPP registers
-        // When we add a new entry, check if a child register entry was defined
-        // before. If so, this is a possible RAT stall.
+        InstructionEntry *current_insn = (*entry)->AsInstruction();
 
         // Get the registers that are defined by the current instruction.
         // Normally this is only one register/instruction
-        std::set<const reg_entry *> defined_gpp_regs = GetDefinedRegister(insn);
+        std::set<const reg_entry *> defined_regs =
+            GetDefinedRegister(current_insn);
         // For each defined registers:
         for (std::set<const reg_entry *>::const_iterator iter =
-                 defined_gpp_regs.begin();
-             iter != defined_gpp_regs.end();
+                 defined_regs.begin();
+             iter != defined_regs.end();
              ++iter) {
           const reg_entry *defined_reg = *iter;
 
           // Since 32-bit writes in 64-bit mode are automatically
           // zero extended to the 64-bit registers, we upgrade
-          // the register name it defines.
+          // the register definition.
           if (unit_->Is64BitMode()) {
             // Upgrade eXX register to rXX registers!
-            // TODO(martint): change to to avoid strcmp
-            if (strcmp(defined_reg->reg_name, "eax") == 0) {
-              defined_reg = GetRegFromName("rax");
-            } else if (strcmp(defined_reg->reg_name, "ebx") == 0) {
-              defined_reg = GetRegFromName("rbx");
-            } else if (strcmp(defined_reg->reg_name, "ecx") == 0) {
-              defined_reg = GetRegFromName("rcx");
-            } else if (strcmp(defined_reg->reg_name, "edx") == 0) {
-              defined_reg = GetRegFromName("rdx");
-            } else if (strcmp(defined_reg->reg_name, "edi") == 0) {
-              defined_reg = GetRegFromName("rdi");
-            } else if (strcmp(defined_reg->reg_name, "esi") == 0) {
-              defined_reg = GetRegFromName("rsi");
-            } else if (strcmp(defined_reg->reg_name, "ebp") == 0) {
-              defined_reg = GetRegFromName("rbp");
-            } else if (strcmp(defined_reg->reg_name, "esp") == 0) {
-              defined_reg = GetRegFromName("rsp");
-            } else if (strcmp(defined_reg->reg_name, "r8d") == 0) {
-              defined_reg = GetRegFromName("r8");
-            } else if (strcmp(defined_reg->reg_name, "r9d") == 0) {
-              defined_reg = GetRegFromName("r9");
-            } else if (strcmp(defined_reg->reg_name, "r10d") == 0) {
-              defined_reg = GetRegFromName("r10");
-            } else if (strcmp(defined_reg->reg_name, "r11d") == 0) {
-              defined_reg = GetRegFromName("r11");
-            } else if (strcmp(defined_reg->reg_name, "r12d") == 0) {
-              defined_reg = GetRegFromName("r12");
-            } else if (strcmp(defined_reg->reg_name, "r13d") == 0) {
-              defined_reg = GetRegFromName("r13");
-            } else if (strcmp(defined_reg->reg_name, "r14d") == 0) {
-              defined_reg = GetRegFromName("r14");
-            } else if (strcmp(defined_reg->reg_name, "r15d") == 0) {
-              defined_reg = GetRegFromName("r15");
-            }
+            if      (defined_reg == r_eax)  defined_reg = r_rax;
+            else if (defined_reg == r_ebx)  defined_reg = r_rbx;
+            else if (defined_reg == r_ecx)  defined_reg = r_rcx;
+            else if (defined_reg == r_edx)  defined_reg = r_rdx;
+            else if (defined_reg == r_edi)  defined_reg = r_rdi;
+            else if (defined_reg == r_esi)  defined_reg = r_rsi;
+            else if (defined_reg == r_ebp)  defined_reg = r_rbp;
+            else if (defined_reg == r_esp)  defined_reg = r_rsp;
+            else if (defined_reg == r_r8d)  defined_reg = r_r8;
+            else if (defined_reg == r_r9d)  defined_reg = r_r9;
+            else if (defined_reg == r_r10d) defined_reg = r_r10;
+            else if (defined_reg == r_r11d) defined_reg = r_r11;
+            else if (defined_reg == r_r12d) defined_reg = r_r12;
+            else if (defined_reg == r_r13d) defined_reg = r_r13;
+            else if (defined_reg == r_r14d) defined_reg = r_r14;
+            else if (defined_reg == r_r15d) defined_reg = r_r15;
           }
 
-          // Check if the current write will update a register
-          // that have only partially been updated before. If so,
-          // this is a possible RAT stall (Register Alias Table Stall)
-          if (IsPossibleRAT(defined_reg, &all_defined_gpp_regs_mask)) {
-            num_rat_stall_possibilites++;
-            if (tracing_level() >= 2) {
-              Trace(2, "Possible RAT stall: ");
-              insn->PrintEntry(stderr);
+          // If this is a "small" registers, check for writes later in the
+          // that might cause a RAT stall.
+          BitString defined_reg_parents = GetParentRegs(defined_reg);
+          // No need to check registers without parents.
+          if (!( defined_reg_parents ==
+                BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull))) {
+            // Loop through the remaining instructions in the basic block.
+            InstructionEntry *next = current_insn->nextInstruction();
+            MaoEntry *last = (*it)->GetLastInstruction();
+            while (next) {
+              // Loop over all the defined registers.
+              std::set<const reg_entry *> defined_next_regs =
+                  GetDefinedRegister(next);
+              for (std::set<const reg_entry *>::const_iterator n_iter =
+                       defined_next_regs.begin();
+                   n_iter != defined_next_regs.end();
+                   ++n_iter) {
+                const reg_entry *defined_next_reg = *n_iter;
+                // Check if defined_next_reg is a parent of defained_reg.
+                // Then this is a possible RAT stall.
+                if (IsParent(defined_next_reg, defined_reg)) {
+                  num_rat_stall_possibilites++;
+                  if (tracing_level() >= 2) {
+                    Trace(2, "Possible RAT stall: ");
+                    current_insn->PrintEntry(stderr);
+                    break;
+                  }
+                }
+              } // while(next)
+              // Exit at the end of the basic block, or when we have
+              // identified a RAT stall for the register.
+              if (next == last || num_rat_stall_possibilites > 0)
+                break;
+              next = next->nextInstruction();
             }
           }
-          // Now, add the current register to the list of defined
-          // registers.
-          all_defined_gpp_regs_mask = all_defined_gpp_regs_mask
-              | GetMaskForRegister(defined_reg->reg_name);
-        }  // defined_gpp_regs
+        }  // defined_regs
       }  // Entries
 
       if (num_rat_stall_possibilites > 0) {
@@ -149,30 +177,8 @@ class RatFinderPass : public MaoFunctionPass {
           }
         }
       }
-
-      // Print out all the registers defined in this basic block
-      if (tracing_level() >= 3) {
-        PrintRegisterDefMask(stderr, all_defined_gpp_regs_mask, "Defined ");
-      }
     }  // BB
-
     return true;
-  }
- private:
-  bool IsPossibleRAT(const reg_entry *reg,
-                   BitString *regs_mask) const {
-    // Check if the mask includes one childreg definition of reg.
-    BitString reg_mask = GetMaskForRegister(reg->reg_name);
-    // First condition: The registers (and subregisters) must have been written
-    //                  to before in this basic block.
-    if ( !((reg_mask & (*regs_mask)) ==
-           BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull))) {
-      // Second condition: Check if the full register was already written to.
-      if ( !((reg_mask & (*regs_mask)) == reg_mask) ) {
-        return true;
-      }
-    }
-    return false;
   }
 };
 
