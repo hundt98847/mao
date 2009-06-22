@@ -103,6 +103,22 @@ class RatFinderPass : public MaoFunctionPass {
               defined_reg = GetRegFromName("rbp");
             } else if (strcmp(defined_reg->reg_name, "esp") == 0) {
               defined_reg = GetRegFromName("rsp");
+            } else if (strcmp(defined_reg->reg_name, "r8d") == 0) {
+              defined_reg = GetRegFromName("r8");
+            } else if (strcmp(defined_reg->reg_name, "r9d") == 0) {
+              defined_reg = GetRegFromName("r9");
+            } else if (strcmp(defined_reg->reg_name, "r10d") == 0) {
+              defined_reg = GetRegFromName("r10");
+            } else if (strcmp(defined_reg->reg_name, "r11d") == 0) {
+              defined_reg = GetRegFromName("r11");
+            } else if (strcmp(defined_reg->reg_name, "r12d") == 0) {
+              defined_reg = GetRegFromName("r12");
+            } else if (strcmp(defined_reg->reg_name, "r13d") == 0) {
+              defined_reg = GetRegFromName("r13");
+            } else if (strcmp(defined_reg->reg_name, "r14d") == 0) {
+              defined_reg = GetRegFromName("r14");
+            } else if (strcmp(defined_reg->reg_name, "r15d") == 0) {
+              defined_reg = GetRegFromName("r15");
             }
           }
 
