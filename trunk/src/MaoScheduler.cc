@@ -102,23 +102,13 @@ class SchedulerPass : public MaoFunctionPass {
     void Print (FILE *file) {
       fprintf (file, "#instructions = %d\n", num_instructions_);
       for (int i=0; i<num_instructions_; i++) {
-        fprintf (file, "%s -> ", dag_insn_str_[i].c_str());
+        fprintf (file, "(%d) %s -> ", i, dag_insn_str_[i].c_str());
         for (int j=0; j<num_instructions_; j++) {
           if(adj_matrix_[i*num_instructions_ + j] != NO_DEP)
-            fprintf (file, "%s[%d],  ", dag_insn_str_[j].c_str(), adj_matrix_[i*num_instructions_ + j]);
+            fprintf (file, "(%d) %s[%d],  ", j, dag_insn_str_[j].c_str(), adj_matrix_[i*num_instructions_ + j]);
         }
         fprintf (file, "\n");
       }
-    }
-
-    DependenceDag *Reverse () {
-      DependenceDag *reverse_dag = new DependenceDag (num_instructions_, dag_insn_str_);
-      for (int i=0; i<num_instructions_; i++) {
-        for (int j=0; j<num_instructions_; j++) {
-          reverse_dag->adj_matrix_[i*num_instructions_ +j] = adj_matrix_[j*num_instructions_ +i];
-        }
-      }
-      return reverse_dag;
     }
 
 
@@ -206,8 +196,8 @@ class SchedulerPass : public MaoFunctionPass {
       }
       fclose(fp);
       Trace (0, "Function %d: %s", func_num, this_func_name);
-  
-  
+
+
       if (func_num < start_func ||
           func_num > end_func)
         return true;
@@ -309,15 +299,15 @@ MaoEntry* SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, 
              pred_iter != predecessors->end(); ++pred_iter) {
           int pred = *pred_iter;
           if(!scheduled[pred]) {
-            Trace (2, "Predecessor node %s not scheduled ", insn_str_[pred].c_str());
+            Trace (2, "Predecessor  %s of %s not scheduled ", insn_str_[pred].c_str(), insn_str_[succ].c_str());
             can_schedule=false;
             break;
           }
         }
         if (can_schedule) {
           ready->push_back(succ);
-          Trace (2, "Adding successor node %s  with dep %d to the ready queue", insn_str_[succ].c_str(), dag->GetEdge(node, succ));
-          if (dependence_heights[succ] > best_height && 
+          Trace (2, "Adding successor node (%d) %s  with dep %d and height %d to the ready queue", succ, insn_str_[succ].c_str(), dag->GetEdge(node, succ), dependence_heights[succ]);
+          if (dependence_heights[succ] > best_height &&
               (dag->GetEdge(node, succ) & TRUE_DEP) ) {
             best_height = dependence_heights[succ];
             best_node = succ;
@@ -327,11 +317,12 @@ MaoEntry* SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, 
       }
       if (best_node == -1)
         break;
-      ScheduleNode (best_node, &head);
-      scheduled[best_node]=1;
-      last_entry = entries_[best_node];
-      ready->remove (best_node);
-      successors = dag->GetSuccessors (best_node);
+      node = best_node;
+      ScheduleNode (node, &head);
+      scheduled[node]=1;
+      last_entry = entries_[node];
+      ready->remove (node);
+      successors = dag->GetSuccessors (node);
     }
 
   }
@@ -355,7 +346,7 @@ void SchedulerPass::ScheduleNode (int node, MaoEntry **head) {
   std::string str1, str2;
   (*head)->ToString (&str1);
   entry->ToString (&str2);
-  Trace (2, "Scheduling %s after %s", str2.c_str(), str1.c_str());
+  Trace (2, "Scheduling (%d) %s after %s", node, str2.c_str(), str1.c_str());
   *head = entry;
 }
 
@@ -437,6 +428,7 @@ int *SchedulerPass::ComputeDependenceHeights (DependenceDag *dag) {
 
 BitString SchedulerPass::GetSrcRegisters (InstructionEntry *insn) {
   BitString use_mask = GetRegisterUseMask(insn);
+
   return use_mask;
   /*
   int operands = insn->NumOperands();
@@ -500,6 +492,8 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
   for (std::vector<MaoEntry*>::iterator lock_iter=locks.begin();
        lock_iter != locks.end(); ++lock_iter) {
     MaoEntry *entry=*lock_iter;
+    if (entry == bb->first_entry())
+      bb->set_first_entry (entry->next());
     entry->Unlink();
   }
 
