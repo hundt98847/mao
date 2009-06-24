@@ -349,10 +349,10 @@ setpe  flags: PF
 setpo  flags: PF
 
 sgdt src
-sal exp cl
-sar exp cl
-shl exp cl
-shr exp cl
+sal exp
+sar exp
+shl exp
+shr exp
 
 shld exp
 shrd exp

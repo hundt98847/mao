@@ -91,6 +91,9 @@ bool       IsParent(const reg_entry *parent,
                     const reg_entry *child);
 BitString  GetParentRegs(const reg_entry *reg);
 
+void FillSubRegs(BitString *mask);
+void FillParentRegs(BitString *mask);
+
 // Provide pointer to
 //   %rip  for 64-bit compiles
 //   %eip  for 32-bit compiles

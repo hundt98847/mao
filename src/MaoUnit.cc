@@ -1938,6 +1938,7 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
   MAO_ASSERT(instruction->operands > op_index);
   i386_operand_type t = instruction->types[op_index];
   return (t.bitfield.acc
+          || t.bitfield.shiftcount
           || t.bitfield.reg8
           || t.bitfield.reg16
           || t.bitfield.reg32
@@ -2939,11 +2940,6 @@ std::string &InstructionEntry::InstructionToString(std::string *out) const {
       out->append("(%dx)");
     }
 
-    if (instruction_->types[i].bitfield.shiftcount) {
-      // its a register name!
-      out->append("%");
-      out->append(instruction_->op[i].regs->reg_name);
-    }
   }
   return *out;
 }
@@ -2976,8 +2972,7 @@ i386_insn *InstructionEntry::CreateInstructionCopy(i386_insn *in_inst) {
       new_inst->op[i].disps = new expressionS;
       MAO_ASSERT(new_inst->op[i].disps);
       *new_inst->op[i].disps = *in_inst->op[i].disps;
-    } else if (IsRegisterOperand(in_inst, i) ||
-              in_inst->types[i].bitfield.shiftcount ) {
+    } else if (IsRegisterOperand(in_inst, i)) {
       new_inst->op[i].regs = in_inst->op[i].regs;
     }
   }
