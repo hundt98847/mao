@@ -438,7 +438,7 @@ BitString GetRegisterUseMask(InstructionEntry *insn) {
 
 // Returns the set of defined registers from the list of operands.
 // TODO(martint): Add implicit registers.
-std::set<const reg_entry *> GetDefinedRegister(InstructionEntry *insn) {
+std::set<const reg_entry *> GetDefinedRegisters(InstructionEntry *insn) {
   std::set<const reg_entry *> regs;
 
   DefEntry *e = &def_entries[insn->op()];
@@ -454,6 +454,38 @@ std::set<const reg_entry *> GetDefinedRegister(InstructionEntry *insn) {
   }
   return regs;
 }
+
+// Returns the set of used registers from the list of operands.
+// TODO(martint): Clean up code not to repeat the same logic as
+// GetRegisterUseMask()
+std::set<const reg_entry *> GetUsedRegisters(InstructionEntry *insn) {
+  std::set<const reg_entry *> regs;
+
+  UseEntry *e = &use_entries[insn->op()];
+  MAO_ASSERT(e->opcode == insn->op());
+
+
+  for (int op = 0; op < 5 && op < insn->NumOperands(); ++op) {
+    if (e->op_mask & (1 << op)) {
+      if (insn->IsRegisterOperand(op)) {
+        const reg_entry *reg = insn->GetRegisterOperand(op);
+        regs.insert(reg);
+       }
+    }
+  }
+
+  if (insn->HasBaseRegister() && (e->op_mask & REG_OP_BASE)) {
+    const reg_entry *reg = insn->GetBaseRegister();
+    regs.insert(reg);
+  }
+  if (insn->HasIndexRegister() && (e->op_mask & REG_OP_INDEX)) {
+    const reg_entry *reg = insn->GetIndexRegister();
+    regs.insert(reg);
+  }
+
+  return regs;
+}
+
 
 
 // Returns a mask for the live in registers.
@@ -556,4 +588,19 @@ const reg_entry *GetRegFromName(const char *reg_name) {
 
   MAO_ASSERT(it != reg_name_map.end());
   return (*it).second->reg();
+}
+
+
+bool IsRegDefined(InstructionEntry *insn, const reg_entry *reg) {
+  // TODO(martint): Improve this slow implementation.
+  std::set<const reg_entry *> defined_regs = GetDefinedRegisters(insn);
+  for (std::set<const reg_entry *>::const_iterator iter =
+           defined_regs.begin();
+       iter != defined_regs.end();
+       ++iter) {
+    if (RegistersOverlap(*iter, reg)) {
+      return true;
+    }
+  }
+  return false;
 }

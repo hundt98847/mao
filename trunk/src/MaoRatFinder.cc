@@ -97,7 +97,7 @@ class RatFinderPass : public MaoFunctionPass {
         // Get the registers that are defined by the current instruction.
         // Normally this is only one register/instruction
         std::set<const reg_entry *> defined_regs =
-            GetDefinedRegister(current_insn);
+            GetDefinedRegisters(current_insn);
         // For each defined registers:
         for (std::set<const reg_entry *>::const_iterator iter =
                  defined_regs.begin();
@@ -128,27 +128,25 @@ class RatFinderPass : public MaoFunctionPass {
             else if (defined_reg == r_r15d) defined_reg = r_r15;
           }
 
-          // If this is a "small" registers, check for writes later in the
+          // If this is a "small" register, check for writes later in the
           // that might cause a RAT stall.
-          BitString defined_reg_parents = GetParentRegs(defined_reg);
-          // No need to check registers without parents.
-          if (!( defined_reg_parents ==
+          if (!( GetParentRegs(defined_reg) ==
                 BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull))) {
             // Loop through the remaining instructions in the basic block.
             InstructionEntry *next = current_insn->nextInstruction();
             MaoEntry *last = (*it)->GetLastInstruction();
             while (next) {
               // Loop over all the defined registers.
-              std::set<const reg_entry *> defined_next_regs =
-                  GetDefinedRegister(next);
+              std::set<const reg_entry *> used_next_regs =
+                  GetUsedRegisters(next);
               for (std::set<const reg_entry *>::const_iterator n_iter =
-                       defined_next_regs.begin();
-                   n_iter != defined_next_regs.end();
+                       used_next_regs.begin();
+                   n_iter != used_next_regs.end();
                    ++n_iter) {
-                const reg_entry *defined_next_reg = *n_iter;
+                const reg_entry *used_next_reg = *n_iter;
                 // Check if defined_next_reg is a parent of defained_reg.
                 // Then this is a possible RAT stall.
-                if (IsParent(defined_next_reg, defined_reg)) {
+                if (IsParent(used_next_reg, defined_reg)) {
                   num_rat_stall_possibilites++;
                   if (tracing_level() >= 2) {
                     Trace(2, "Possible RAT stall: ");
@@ -156,10 +154,16 @@ class RatFinderPass : public MaoFunctionPass {
                     break;
                   }
                 }
-              } // while(next)
-              // Exit at the end of the basic block, or when we have
-              // identified a RAT stall for the register.
-              if (next == last || num_rat_stall_possibilites > 0)
+              }  // while(next)
+              // Exit conditions:
+              // At the end of basic block.
+              if (next == last)
+                break;
+              // We defined the registers again
+              if (IsRegDefined(next, defined_reg))
+                break;
+              // We have already found a RAT possibility
+              if (num_rat_stall_possibilites > 0)
                 break;
               next = next->nextInstruction();
             }
