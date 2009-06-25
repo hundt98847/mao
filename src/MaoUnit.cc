@@ -2763,6 +2763,7 @@ std::string &InstructionEntry::InstructionToString(std::string *out) const {
             //  addr32 lea symbol,%rax
             switch (code_flag_) {
               case  CODE_16BIT:
+                out->append("addr32  ");
                 break;
               case  CODE_32BIT:
                 out->append("addr16  ");
