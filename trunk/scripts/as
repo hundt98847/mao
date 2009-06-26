@@ -91,11 +91,11 @@ function main()  {
   local mao_output_file='a.mao.s'
 
   #long options used by as
-  local as_long_opts="alternate,a::,al::debug-prefix-map:,defsym:,dump-config,emulation:,execstack,noexecstack,\
+  local as_long_opts="alternate,a::,al::,debug-prefix-map:,defsym:,dump-config,emulation:,execstack,noexecstack,\
 fatal-warnings,gdwarf-2,gdwarf2,gen-debug,gstabs,gstabs+,hash-size:,help,itbl:,keep-locals,listing-lhs-width:,\
 listing-lhs-width2:,listing-rhs-width:,MD:,mri,nocpp,no-warn,reduce-memory-overheads,statistics,\
 strip-local-absolute,version,verbose,target-help,traditional-format,warn,mao:,save-temps,32,64,divide,march:,\
-mtune:,mnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
+mtune:,mmnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
 
   #short options used by as
   local as_short_opts="JKLMRWZa::Dfg::I:o:vwXt:kVQ:sqn"
