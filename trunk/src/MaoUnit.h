@@ -147,8 +147,11 @@ class MaoEntry {
   const std::string &ExpressionToStringDisp(
       const expressionS *expr,
       std::string *out,
-      const i386_operand_type *operand_type,
       const enum bfd_reloc_code_real *reloc) const;
+  const std::string &ExpressionToStringImmediate(
+      const expressionS *expr,
+      std::string *out,
+       const enum bfd_reloc_code_real *reloc) const;
   const std::string &ExpressionToString(const expressionS *expr,
                                         std::string *out) const;
 
@@ -177,7 +180,7 @@ class MaoEntry {
   const std::string &ExpressionToStringImp(
       const expressionS *expr,
       std::string *out,
-      const i386_operand_type *operand_type,
+      bool immediate,
       const enum bfd_reloc_code_real *reloc) const;
 };
 
