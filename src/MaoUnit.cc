@@ -1181,6 +1181,9 @@ const char *MaoEntry::OpToString(operatorT op) const {
     case O_gt:              return ">";
     case O_logical_and:     return "&&";
     case O_logical_or:      return "||";
+    case O_uminus:          return "-";
+    case O_bit_not:         return "~";
+    case O_logical_not:     return "!";
     default:
       break;
   }
@@ -1190,21 +1193,28 @@ const char *MaoEntry::OpToString(operatorT op) const {
 
 const std::string &MaoEntry::ExpressionToString(const expressionS *expr,
                                                 std::string *out) const {
-  return ExpressionToStringImp(expr, out, NULL, NULL);
+  return ExpressionToStringImp(expr, out, false, NULL);
 }
 
 const std::string &MaoEntry::ExpressionToStringDisp(
     const expressionS *expr,
     std::string *out,
-    const i386_operand_type *operand_type,
     const enum bfd_reloc_code_real *reloc) const {
-  return ExpressionToStringImp(expr, out, operand_type, reloc);
+  return ExpressionToStringImp(expr, out, false, reloc);
+}
+
+
+const std::string &MaoEntry::ExpressionToStringImmediate(
+    const expressionS *expr,
+    std::string *out,
+    const enum bfd_reloc_code_real *reloc) const {
+  return ExpressionToStringImp(expr, out, true, reloc);
 }
 
 
 const std::string &MaoEntry::ExpressionToStringImp(
     const expressionS *expr, std::string *out,
-    const i386_operand_type *operand_type,  // NULL if not used
+    bool immedate,
     const enum bfd_reloc_code_real *reloc)  // NULL if not used
     const {
   switch (expr->X_op) {
@@ -1213,6 +1223,8 @@ const std::string &MaoEntry::ExpressionToStringImp(
     case O_constant:
       {
         std::ostringstream int_string;
+        if (immedate)
+          out->append("$");
         int_string << expr->X_add_number;
         out->append(int_string.str());
       }
@@ -1221,6 +1233,8 @@ const std::string &MaoEntry::ExpressionToStringImp(
     case O_symbol:
       {
         std::ostringstream exp_string;
+        if (immedate)
+          exp_string << "$";
         if (expr->X_add_symbol) {
           exp_string << GetDotOrSymbol(expr->X_add_symbol);
           if (reloc != NULL) {
@@ -1259,6 +1273,8 @@ const std::string &MaoEntry::ExpressionToStringImp(
     case O_logical_or:      /* (X_add_symbol || X_op_symbol) + X_add_number.  */
       {
         std::ostringstream exp_string;
+        if (immedate)
+          exp_string << "$";
         if (expr->X_add_symbol) {
           exp_string << GetDotOrSymbol(expr->X_add_symbol);
           if (reloc != NULL) {
@@ -1292,6 +1308,22 @@ const std::string &MaoEntry::ExpressionToStringImp(
         out->append(exp_string.str());
       }
       break;
+
+    case O_uminus:        /* (- X_add_symbol) + X_add_number.  */
+    case O_bit_not:       /* (~ X_add_symbol) + X_add_number.  */
+    case O_logical_not:   /* (! X_add_symbol) + X_add_number.  */
+      {
+        std::ostringstream exp_string;
+        if (immedate)
+          exp_string << "$";
+        exp_string << "(" << OpToString(expr->X_op)
+                   << GetDotOrSymbol(expr->X_add_symbol) << ")";
+        if (expr->X_add_number != 0) {
+          exp_string << expr->X_add_number;
+        }
+        out->append(exp_string.str());
+      }
+      break;
     // UNSUPPORTED
     /* An illegal expression.  */
     case O_illegal:
@@ -1305,14 +1337,6 @@ const std::string &MaoEntry::ExpressionToStringImp(
          generic_bignum, and X_add_number is the number of LITTLENUMs in
          the value.  */
     case O_big:
-      /* (- X_add_symbol) + X_add_number.  */
-    case O_uminus:
-      /* (~ X_add_symbol) + X_add_number.  */
-    case O_bit_not:
-      /* (! X_add_symbol) + X_add_number.  */
-    case O_logical_not:
-
-
       /* X_op_symbol [ X_add_symbol ] */
     case O_index:
       /* machine dependent operators */
@@ -1353,7 +1377,7 @@ const std::string &MaoEntry::ExpressionToStringImp(
     default:
       MAO_ASSERT_MSG(
           0,
-          "OperandExpressionToString does not support the op %d\n",
+          "ExpressionToStringImp does not support the op %d\n",
           expr->X_op);
       break;
   }
@@ -2270,7 +2294,7 @@ std::string &InstructionEntry::MemoryOperandToString(std::string *out,
       operand_type.bitfield.disp64) {
     const enum bfd_reloc_code_real reloc = instruction_->reloc[op_index];
     std::string expr_string;
-    ExpressionToStringDisp(expr, &expr_string, &operand_type, &reloc);
+    ExpressionToStringDisp(expr, &expr_string, &reloc);
     string_stream << expr_string;
   }
 
@@ -2401,7 +2425,23 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
 
   if (instruction_->suffix != 0) {
     if (instruction_->suffix == LONG_DOUBLE_MNEM_SUFFIX) {
-      out->insert(out->begin(), 'l');
+      // TODO(martint): Handle these special case found in intelok.s
+      // in a cleaner way.
+      // It seems that some intel syntax causes an invalid l prefix
+      // to be added for some instructions.
+      const MaoOpcode supress_l_prefix[] = {
+        // AVX Instructions from gas test-suite:
+        OP_fbld, OP_fbstp, OP_fld, OP_fstp
+      };
+      if (!IsInList(op(), supress_l_prefix,
+                    sizeof(supress_l_prefix)/sizeof(MaoOpcode))) {
+        out->insert(out->begin(), 'l');
+      }
+      // For these instructions, the suggested l prefix should
+      // be translated to a t suffix.
+      if (op() == OP_fld || op() == OP_fstp) {
+        out->insert(out->end(), 't');
+      }
       return *out;
     }
 
@@ -2463,7 +2503,9 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
       // From opcode.s
       OP_cwtd,
       // From svme.s
-      OP_skinit, OP_vmload, OP_vmsave, OP_invlpga, OP_vmrun
+      OP_skinit, OP_vmload, OP_vmsave, OP_invlpga, OP_vmrun,
+      // From intelok.s
+      OP_addss, OP_pinsrw
     };
 
     if ((instruction_->suffix == XMMWORD_MNEM_SUFFIX ||
@@ -2849,21 +2891,20 @@ std::string &InstructionEntry::InstructionToString(std::string *out) const {
           num_operands > 2 &&
           i == 0 &&
           IsImmediateOperand(instruction_, 1)) {
-        ImmediateOperandToString(out,
-                                 instruction_->reloc[1],
-                                 instruction_->op[1].imms);
-
+        ExpressionToStringImmediate(instruction_->op[1].imms,
+                                    out,
+                                    &instruction_->reloc[1]);
       } else if (instruction_->tm.cpu_flags.bitfield.cpusse4a &&
                  num_operands > 2 &&
                  i == 1 &&
                  IsImmediateOperand(instruction_, 0)) {
-        ImmediateOperandToString(out,
-                                 instruction_->reloc[0],
-                                 instruction_->op[0].imms);
+        ExpressionToStringImmediate(instruction_->op[0].imms,
+                                    out,
+                                    &instruction_->reloc[0]);
       } else {
-        ImmediateOperandToString(out,
-                                 instruction_->reloc[i],
-                                 instruction_->op[i].imms);
+        ExpressionToStringImmediate(instruction_->op[i].imms,
+                                    out,
+                                    &instruction_->reloc[i]);
       }
     }
 
