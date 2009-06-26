@@ -577,9 +577,6 @@ class InstructionEntry : public MaoEntry {
   void FreeInstruction();
   bool IsInList(const MaoOpcode opcode, const MaoOpcode list[],
                 const unsigned int number_of_elements) const;
-  std::string &ImmediateOperandToString(std::string *out,
-                                        const enum bfd_reloc_code_real reloc,
-                                        const expressionS *expr) const;
   std::string &MemoryOperandToString(std::string *out,
                                      int op_index) const;
 

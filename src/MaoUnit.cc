@@ -1978,68 +1978,6 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.regymm);
 }
 
-std::string &InstructionEntry::ImmediateOperandToString(std::string *out,
-                                       const enum bfd_reloc_code_real reloc,
-                                       const expressionS *expr) const {
-  std::ostringstream string_stream;
-  std::string reloc_string;
-  switch (expr->X_op) {
-    case O_constant: {
-      /* X_add_number (a constant expression).  */
-      string_stream << "$" << expr->X_add_number;
-      break;
-    }
-    case O_symbol:
-      /* X_add_symbol + X_add_number.  */
-      if (expr->X_add_symbol) {
-        string_stream << "$"
-                      << GetDotOrSymbol(expr->X_add_symbol)
-                      << RelocToString(reloc, &reloc_string);
-        string_stream << "+";
-      }
-      string_stream << expr->X_add_number;
-      break;
-    case O_add:
-    case O_subtract: {
-      /* (X_add_symbol + X_op_symbol) + X_add_number.  */
-      /* (X_add_symbol - X_op_symbol) + X_add_number.  */
-      const char *op = "";
-      switch (expr->X_op) {
-        case O_add:
-          op = "+";
-          break;
-        case O_subtract:
-          op = "-";
-          break;
-        default:
-          MAO_ASSERT(false);
-      }
-      string_stream << "$";
-      if (expr->X_add_symbol) {
-        string_stream << GetDotOrSymbol(expr->X_add_symbol)
-                      << RelocToString(reloc, &reloc_string).c_str();
-      }
-      if (expr->X_op_symbol) {
-        string_stream << op
-                      << GetDotOrSymbol(expr->X_op_symbol);
-      }
-      if (expr->X_add_symbol || expr->X_op_symbol) {
-        if (expr->X_add_number) {
-          string_stream << "+";
-        }
-      }
-      if (expr->X_add_number) {
-        string_stream << expr->X_add_number;
-      }
-      break;
-    }
-    default:
-      MAO_ASSERT_MSG(0, "Unable to print unsupported expression");
-  }
-  out->append(string_stream.str());
-  return *out;
-}
-
 // Make a copy of an expression.
 expressionS *InstructionEntry::CreateExpressionCopy(expressionS *in_exp) {
   if (!in_exp)
