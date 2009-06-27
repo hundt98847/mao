@@ -422,13 +422,43 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
             (*size_map)[entry] = SizeOfFloat(dentry);
             break;
           case DirectiveEntry::HIDDEN:
-          case DirectiveEntry::NUM_OPCODES:
             (*size_map)[entry] = 0;
-            // Nothing to do
             break;
           case DirectiveEntry::FILL:
             frag = HandleFill(dentry, frag, true, size_map, relax_map);
             break;
+          case DirectiveEntry::STRUCT:
+            // TODO(martint): Add support for .struct/.offset directives
+            MAO_ASSERT_MSG(false, ".struct directive unsupported in relaxer.");
+          case DirectiveEntry::INCBIN:
+            // TODO(martint): Add support for .struct/.offset directives
+            MAO_ASSERT_MSG(false, ".struct directive unsupported in relaxer.");
+          case DirectiveEntry::SYMVER:
+          case DirectiveEntry::LOC_MARK_LABELS:
+          case DirectiveEntry::CFI_STARTPROC:
+          case DirectiveEntry::CFI_ENDPROC:
+          case DirectiveEntry::CFI_DEF_CFA:
+          case DirectiveEntry::CFI_DEF_CFA_REGISTER:
+          case DirectiveEntry::CFI_DEF_CFA_OFFSET:
+          case DirectiveEntry::CFI_ADJUST_CFA_OFFSET:
+          case DirectiveEntry::CFI_OFFSET:
+          case DirectiveEntry::CFI_REL_OFFSET:
+          case DirectiveEntry::CFI_REGISTER:
+          case DirectiveEntry::CFI_RETURN_COLUMN:
+          case DirectiveEntry::CFI_RESTORE:
+          case DirectiveEntry::CFI_UNDEFINED:
+          case DirectiveEntry::CFI_SAME_VALUE:
+          case DirectiveEntry::CFI_REMEMBER_STATE:
+          case DirectiveEntry::CFI_RESTORE_STATE:
+          case DirectiveEntry::CFI_WINDOW_SAVE:
+          case DirectiveEntry::CFI_ESCAPE:
+          case DirectiveEntry::CFI_SIGNAL_FRAME:
+          case DirectiveEntry::CFI_PERSONALITY:
+          case DirectiveEntry::CFI_LSDA:
+          case DirectiveEntry::CFI_VAL_ENCODED_ADDR:
+            (*size_map)[entry] = 0;
+            break;
+          case DirectiveEntry::NUM_OPCODES: // should never happen..
           default:
             MAO_ASSERT_MSG(0, "Unhandled directive: %d", dentry->op());
         }

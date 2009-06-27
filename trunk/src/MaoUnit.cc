@@ -925,6 +925,7 @@ void MaoUnit::DeleteEntry(MaoEntry *entry) {
 
 void MaoUnit::PushCurrentSubSection() {
   MAO_ASSERT(current_subsection_);
+  prev_subsection_ = current_subsection_;
   subsection_stack_.push(current_subsection_);
 }
 
@@ -1602,7 +1603,32 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".dc.s",
   ".dc.x",
   ".hidden",
-  ".fill"
+  ".fill",
+  ".struct",
+  ".incbin",
+  ".symver",
+  ".loc_mark_labels",
+  ".cfi_startproc",
+  ".cfi_endproc",
+  ".cfi_def_cfa",
+  ".cfi_def_cfa_register",
+  ".cfi_def_cfa_offset",
+  ".cfi_adjust_cfa_offset",
+  ".cfi_offset",
+  ".cfi_rel_offset",
+  ".cfi_register",
+  ".cfi_return_column",
+  ".cfi_restore",
+  ".cfi_undefined",
+  ".cfi_same_value",
+  ".cfi_remember_state",
+  ".cfi_restore_state",
+  ".cfi_window_save",
+  ".cfi_escape",
+  ".cfi_signal_frame",
+  ".cfi_personality",
+  ".cfi_lsda",
+  ".cfi_val_encoded_addr"
 };
 
 

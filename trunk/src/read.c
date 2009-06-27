@@ -3434,6 +3434,8 @@ s_struct (int ignore ATTRIBUTE_UNUSED)
   if (flag_mri)
     stop = mri_comment_field (&stopc);
   abs_section_offset = get_absolute_expression ();
+  // link to mao
+  link_struct_directive(abs_section_offset);
 #if defined (OBJ_ELF) || defined (OBJ_MAYBE_ELF)
   /* The ELF backend needs to know that we are changing sections, so
      that .previous works correctly. */
@@ -5597,6 +5599,12 @@ s_incbin (int x ATTRIBUTE_UNUSED)
     }
 
   demand_empty_rest_of_line ();
+
+
+  // link it to mao.
+  struct MaoStringPiece sp_filename =
+      { filename, strlen(filename) };
+  link_incbin_directive(sp_filename, skip, count);
 
   /* Try opening absolute path first, then try include dirs.  */
   binfile = fopen (filename, FOPEN_RB);

@@ -484,3 +484,173 @@ void link_fill_directive(expressionS *repeat, long size, long value) {
   operands.push_back(new DirectiveEntry::Operand(value));
   link_directive_tail(DirectiveEntry::FILL, operands);
 }
+
+void link_struct_directive(long value) {
+  DirectiveEntry::OperandVector operands;
+  // ... the current section is actually the absolute section
+  // from now on.
+  maounit_->PushCurrentSubSection();
+  operands.push_back(new DirectiveEntry::Operand(value));
+  link_directive_tail(DirectiveEntry::STRUCT, operands);
+}
+
+
+void link_incbin_directive(struct MaoStringPiece filename, long skip,
+                           long count) {
+  DirectiveEntry::OperandVector operands;
+  std::string quoted_filename = quote_string_piece(filename);
+  operands.push_back(new DirectiveEntry::Operand(quoted_filename));
+  operands.push_back(new DirectiveEntry::Operand(skip));  // 0 is default
+  operands.push_back(new DirectiveEntry::Operand(count)); // 0 is default
+  link_directive_tail(DirectiveEntry::INCBIN, operands);
+}
+
+void link_symver_directive(struct MaoStringPiece name,
+                           struct MaoStringPiece symvername) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(name));
+  operands.push_back(new DirectiveEntry::Operand(symvername));
+  link_directive_tail(DirectiveEntry::SYMVER, operands);
+}
+
+void link_loc_mark_labels_directive(long value) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(value));
+  link_directive_tail(DirectiveEntry::LOC_MARK_LABELS, operands);
+}
+
+void link_cfi_startproc_directive(char is_simple) {
+  DirectiveEntry::OperandVector operands;
+  if (is_simple) {
+    operands.push_back(new DirectiveEntry::Operand("simple"));
+  }
+  link_directive_tail(DirectiveEntry::CFI_STARTPROC, operands);
+}
+void link_cfi_endproc_directive() {
+  DirectiveEntry::OperandVector operands;
+  link_directive_tail(DirectiveEntry::CFI_ENDPROC, operands);
+}
+
+void link_cfi_def_cfa_direcive(struct MaoStringPiece reg, long offset) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(reg));
+  operands.push_back(new DirectiveEntry::Operand(offset));
+  link_directive_tail(DirectiveEntry::CFI_DEF_CFA, operands);
+}
+
+
+void link_cfi_def_cfa_register_direcive(struct MaoStringPiece reg) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(reg));
+  link_directive_tail(DirectiveEntry::CFI_DEF_CFA_REGISTER, operands);
+}
+
+void link_cfi_def_cfa_offset_direcive(long offset) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(offset));
+  link_directive_tail(DirectiveEntry::CFI_DEF_CFA_OFFSET, operands);
+}
+
+void link_cfi_adjust_cfa_offset(long offset) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(offset));
+  link_directive_tail(DirectiveEntry::CFI_ADJUST_CFA_OFFSET, operands);
+}
+
+void link_cfi_offset_direcive(struct MaoStringPiece reg, long offset) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(reg));
+  operands.push_back(new DirectiveEntry::Operand(offset));
+  link_directive_tail(DirectiveEntry::CFI_OFFSET, operands);
+}
+
+void link_cfi_rel_offset_direcive(struct MaoStringPiece reg, long offset) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(reg));
+  operands.push_back(new DirectiveEntry::Operand(offset));
+  link_directive_tail(DirectiveEntry::CFI_REL_OFFSET, operands);
+}
+
+void link_cfi_register_direcive(struct MaoStringPiece reg1,
+                                struct MaoStringPiece reg2) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(reg1));
+  operands.push_back(new DirectiveEntry::Operand(reg2));
+  link_directive_tail(DirectiveEntry::CFI_REGISTER, operands);
+}
+
+void link_cfi_return_column_direcive(struct MaoStringPiece reg) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(reg));
+  link_directive_tail(DirectiveEntry::CFI_RETURN_COLUMN, operands);
+}
+
+void link_cfi_restore_direcive(int num_regs, struct MaoStringPiece *regs) {
+  DirectiveEntry::OperandVector operands;
+  for(int i = 0; i < num_regs; ++i) {
+    operands.push_back(new DirectiveEntry::Operand(regs[i]));
+  }
+  link_directive_tail(DirectiveEntry::CFI_RESTORE, operands);
+}
+
+void link_cfi_undefined_direcive(int num_regs, struct MaoStringPiece *regs) {
+  DirectiveEntry::OperandVector operands;
+  for(int i = 0; i < num_regs; ++i) {
+    operands.push_back(new DirectiveEntry::Operand(regs[i]));
+  }
+  link_directive_tail(DirectiveEntry::CFI_UNDEFINED, operands);
+}
+void link_cfi_same_value_direcive(struct MaoStringPiece reg) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(reg));
+  link_directive_tail(DirectiveEntry::CFI_SAME_VALUE, operands);
+}
+void link_cfi_remember_state_direcive() {
+  DirectiveEntry::OperandVector operands;
+  link_directive_tail(DirectiveEntry::CFI_REMEMBER_STATE, operands);
+}
+
+void link_cfi_restore_state_direcive() {
+  DirectiveEntry::OperandVector operands;
+  link_directive_tail(DirectiveEntry::CFI_RESTORE_STATE, operands);
+}
+void link_cfi_window_save_direcive() {
+  DirectiveEntry::OperandVector operands;
+  link_directive_tail(DirectiveEntry::CFI_WINDOW_SAVE, operands);
+}
+
+void link_cfi_escape_direcive() {
+  MAO_ASSERT_MSG(false, "Unimplemented directive.");
+}
+void link_cfi_signal_frame_direcive() {
+  DirectiveEntry::OperandVector operands;
+  link_directive_tail(DirectiveEntry::CFI_SIGNAL_FRAME, operands);
+}
+
+void link_cfi_personality_direcive(long encoding, expressionS *expr) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(encoding));
+  if (expr != NULL) {
+    operands.push_back(new DirectiveEntry::Operand(expr));
+  }
+  link_directive_tail(DirectiveEntry::CFI_PERSONALITY, operands);
+}
+
+void link_cfi_lsda_direcive(long encoding, expressionS *expr) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(encoding));
+  if (expr != NULL) {
+    operands.push_back(new DirectiveEntry::Operand(expr));
+  }
+  link_directive_tail(DirectiveEntry::CFI_LSDA, operands);
+}
+
+void link_cfi_val_encoded_addr_direcive(struct MaoStringPiece reg,
+                                        long encoding,
+                                        struct MaoStringPiece label) {
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(reg));
+  operands.push_back(new DirectiveEntry::Operand(encoding));
+  operands.push_back(new DirectiveEntry::Operand(label));
+  link_directive_tail(DirectiveEntry::CFI_VAL_ENCODED_ADDR, operands);
+}

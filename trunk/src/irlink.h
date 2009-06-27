@@ -123,6 +123,37 @@ extern "C" {
   void link_hidden_directive(struct MaoStringPiece symbol_name);
 
   void link_fill_directive(expressionS *repeat, long size, long value);
+  void link_struct_directive(long value);
+  void link_incbin_directive(struct MaoStringPiece filename, long skip,
+                             long count);
+  void link_symver_directive(struct MaoStringPiece name,
+                             struct MaoStringPiece symvername);
+  void link_loc_mark_labels_directive(long value);
+  void link_cfi_startproc_directive(char is_simple);
+  void link_cfi_endproc_directive();
+  void link_cfi_def_cfa_direcive(struct MaoStringPiece reg, long offset);
+  void link_cfi_def_cfa_register_direcive(struct MaoStringPiece reg);
+  void link_cfi_def_cfa_offset_direcive(long offset);
+  void link_cfi_adjust_cfa_offset(long offset);
+  void link_cfi_offset_direcive(struct MaoStringPiece reg, long offset);
+  void link_cfi_rel_offset_direcive(struct MaoStringPiece reg, long offset);
+  void link_cfi_register_direcive(struct MaoStringPiece reg1,
+                                  struct MaoStringPiece reg2);
+  void link_cfi_return_column_direcive(struct MaoStringPiece reg);
+  void link_cfi_restore_direcive(int num_regs, struct MaoStringPiece *regs);
+  void link_cfi_undefined_direcive(int num_regs, struct MaoStringPiece *regs);
+  void link_cfi_same_value_direcive(struct MaoStringPiece reg);
+  void link_cfi_remember_state_direcive();
+  void link_cfi_restore_state_direcive();
+  void link_cfi_window_save_direcive();
+  void link_cfi_escape_direcive();
+  void link_cfi_signal_frame_direcive();
+  void link_cfi_personality_direcive(long encoding, expressionS *expr);
+  void link_cfi_lsda_direcive(long encoding, expressionS *expr);
+  void link_cfi_val_encoded_addr_direcive(struct MaoStringPiece reg,
+                                          long encoding,
+                                          struct MaoStringPiece label);
+
 
   // Register mao object so that linking functions can access it
   void set_mao_unit(void *mao_unit);

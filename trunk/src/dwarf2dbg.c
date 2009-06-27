@@ -639,6 +639,7 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
       else if (strcmp (p, "is_stmt") == 0)
 	{
 	  *input_line_pointer = c;
+          const char *helper_pointer = input_line_pointer;
 	  value = get_absolute_expression ();
 	  if (value == 0)
 	    current.flags &= ~DWARF2_FLAG_IS_STMT;
@@ -650,10 +651,14 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
 	      return;
 	    }
           options[num_options++] = GetStringPiece("is_stmt");
+          struct MaoStringPiece  sp_value =  {helper_pointer,
+                                              input_line_pointer-helper_pointer};
+          options[num_options++] =  sp_value;
 	}
       else if (strcmp (p, "isa") == 0)
 	{
 	  *input_line_pointer = c;
+          const char *helper_pointer = input_line_pointer;
 	  value = get_absolute_expression ();
 	  if (value >= 0)
 	    current.isa = value;
@@ -663,6 +668,9 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
 	      return;
 	    }
           options[num_options++] = GetStringPiece("isa");
+          struct MaoStringPiece  sp_value =  {helper_pointer,
+                                              input_line_pointer-helper_pointer};
+          options[num_options++] =  sp_value;
 	}
       else
 	{
@@ -688,6 +696,8 @@ void
 dwarf2_directive_loc_mark_labels (int dummy ATTRIBUTE_UNUSED)
 {
   offsetT value = get_absolute_expression ();
+
+  link_loc_mark_labels_directive(value);
 
   if (value != 0 && value != 1)
     {
