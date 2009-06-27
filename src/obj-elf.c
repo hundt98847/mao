@@ -1262,6 +1262,9 @@ obj_elf_symver (int ignore ATTRIBUTE_UNUSED)
 
   sym = symbol_find_or_make (name);
 
+  struct MaoStringPiece sp_name =
+      { name, input_line_pointer - name};
+
   *input_line_pointer = c;
 
   SKIP_WHITESPACE ();
@@ -1311,7 +1314,10 @@ obj_elf_symver (int ignore ATTRIBUTE_UNUSED)
 
       *input_line_pointer = c;
     }
+  struct MaoStringPiece sp_symvername =
+      { name, input_line_pointer - name};
 
+  link_symver_directive(sp_name, sp_symvername);
   demand_empty_rest_of_line ();
 }
 
