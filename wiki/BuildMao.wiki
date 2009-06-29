@@ -9,6 +9,8 @@ These are the instructions for builing MAO for both i686 and x86_64,
 for Linux and OSX. Note that --disable-nls might be needed when building binutils for Mac (tested on Leopard).
 
 {{{
+#Please note that when copying and pasting the following
+#commands, include the parentheses in the last command
 cd $DIR
 wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
 gzip -dc binutils-2.19.tar.gz | tar xvf -
