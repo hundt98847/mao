@@ -1620,6 +1620,7 @@ const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".ident",
   ".set",  // identical to .equ
   ".equiv",
+  ".eqv",
   ".weakref",
   ".arch",
   ".linefile",

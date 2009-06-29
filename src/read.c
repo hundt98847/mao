@@ -3774,10 +3774,16 @@ pseudo_set_imp (symbolS *symbolP, int mode)
       set_zero_frag (symbolP);
       break;
     }
-  if (mode == 0) {
-    link_set_directive(symbolP, &exp);
-  } else {
-    link_equiv_directive(symbolP, &exp);
+  switch (mode) {
+    case 0:
+      link_set_directive(symbolP, &exp);
+      break;
+    case -1:
+      link_eqv_directive(symbolP, &exp);
+      break;
+    case 1:
+      link_equiv_directive(symbolP, &exp);
+      break;
   }
 }
 
