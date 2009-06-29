@@ -608,6 +608,7 @@ class InstructionEntry : public MaoEntry {
   int StripRexPrefix(int prefix) const;
 
   std::string &PrintRexPrefix(std::string *out, int prefix) const;
+  unsigned char GetRexPrefix() const;
 
   // Returns the instruction op string, including any suffix.
   std::string &GetAssemblyInstructionName(std::string *out) const;

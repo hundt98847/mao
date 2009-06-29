@@ -2361,13 +2361,13 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
   #define LONG_DOUBLE_MNEM_SUFFIX '\1'
   #endif
 
-    // fdiv and fsub have different opcodes in intel and at&t syntax. They
-    // are also bug-compatible with older compilers/tools, making the
-    // intel documentation wrong.
-    // Since the templates in i386-tbl.h are build in a way that the name
-    // and opcode in the matched tempalte does not always match the at&t
-    // syntax that we output, we need to handle these instruction
-    // in a special way.
+  // fdiv and fsub have different opcodes in intel and at&t syntax. They
+  // are also bug-compatible with older compilers/tools, making the
+  // intel documentation wrong.
+  // Since the templates in i386-tbl.h are build in a way that the name
+  // and opcode in the matched tempalte does not always match the at&t
+  // syntax that we output, we need to handle these instruction
+  // in a special way.
   if (instruction_->tm.base_opcode >= 0xdcf8 &&
       instruction_->tm.base_opcode <= (0xdcf8 + 7)) *out = "fdivr";
   else if (instruction_->tm.base_opcode >= 0xdcf0 &&
@@ -2384,6 +2384,13 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
            instruction_->tm.base_opcode <= (0xdee8 + 7)) *out = "fsubrp";
   else if (instruction_->tm.base_opcode >= 0xdee0 &&
            instruction_->tm.base_opcode <= (0xdee0 + 7)) *out = "fsubp";
+  else if (instruction_->tm.base_opcode == 0xfbe) *out = "movsb";
+  else if (instruction_->tm.base_opcode == 0xfbf) *out = "movsw";
+  else if (instruction_->tm.base_opcode == 0x63 &&
+           ((GetRexPrefix() & REX_W) || op() == OP_movsx))
+    *out = "movsl";
+  else if (instruction_->tm.base_opcode == 0xfb6) *out = "movzb";
+  else if (instruction_->tm.base_opcode == 0xfb7) *out = "movzw";
   else
     out->append(instruction_->tm.name);
 
@@ -2415,11 +2422,10 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
     };
 
     const MaoOpcode opcode_has_l_suffix[] =  {
-      OP_movsbl, OP_movswl, OP_movzbl, OP_movzwl, OP_movswl, OP_cmovl,
-      OP_cmovnl, OP_cwtl, OP_cltd, OP_movbe
+      OP_cmovl,OP_cmovnl, OP_cwtl, OP_cltd, OP_movbe
     };
     const MaoOpcode opcode_has_w_suffix[] =  {
-      OP_cbtw, OP_fnstsw, OP_movsbw
+      OP_cbtw, OP_fnstsw
     };
     const MaoOpcode opcode_has_b_suffix[] =  {
       OP_setb
@@ -2495,7 +2501,7 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
       return *out;
     }
     if (instruction_->suffix == 'q' &&
-        instruction_->tm.name[strlen(instruction_->tm.name)-1] == 'q') {
+        out->c_str()[out->length()-1] == 'q') {
       return *out;
     }
 
@@ -2512,25 +2518,11 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
       return *out;
     }
 
-    // These instruction have valid suffix information
-    // in tm.opcode_modifier.no_Xsuf
-    // Use it when printing instead of the .suffix
-    if (op() == OP_movsx || op() == OP_movzx) {
-      // Handle movsx and movzx, found in i386.c in the gas
-      // test suite
-      // Make sure max one suffix is listed in the template.
-      MAO_ASSERT((!instruction_->tm.opcode_modifier.no_bsuf +
-                  !instruction_->tm.opcode_modifier.no_wsuf +
-                  !instruction_->tm.opcode_modifier.no_lsuf +
-                  !instruction_->tm.opcode_modifier.no_ssuf +
-                  !instruction_->tm.opcode_modifier.no_qsuf +
-                  !instruction_->tm.opcode_modifier.no_ldsuf) < 2);
-      if (!instruction_->tm.opcode_modifier.no_bsuf) out->append("b");
-      if (!instruction_->tm.opcode_modifier.no_wsuf) out->append("w");
-      if (!instruction_->tm.opcode_modifier.no_lsuf) out->append("l");
-      if (!instruction_->tm.opcode_modifier.no_ssuf) out->append("s");
-      if (!instruction_->tm.opcode_modifier.no_qsuf) out->append("q");
-      if (!instruction_->tm.opcode_modifier.no_ldsuf)out->append("ld");
+    // Special case movslq.  For some reason gas lists its suffix as
+    // 'l' when it should be 'q'.
+    if (instruction_->tm.base_opcode == 0x63 &&
+        (GetRexPrefix() & REX_W) && instruction_->suffix == 'l') {
+      out->append("q");
       return *out;
     }
 
@@ -2560,6 +2552,21 @@ std::string &InstructionEntry::PrintRexPrefix(std::string *out,
 }
 
 
+unsigned char InstructionEntry::GetRexPrefix() const {
+  if (instruction_->prefixes > 0) {
+    for (unsigned int i = 0;
+         i < sizeof(instruction_->prefix)/sizeof(unsigned char);
+         ++i) {
+      if (instruction_->prefix[i] >= REX_OPCODE &&
+          instruction_->prefix[i] < REX_OPCODE+16) {
+        return instruction_->prefix[i];
+      }
+    }
+  }
+  return 0;
+}
+
+
 bool InstructionEntry::HasPrefix(unsigned char prefix) const {
   if (instruction_->prefixes > 0) {
     for (unsigned int i = 0;
@@ -2572,6 +2579,7 @@ bool InstructionEntry::HasPrefix(unsigned char prefix) const {
   }
   return false;
 }
+
 
 // If the register name cr8..15 is used, the lock prefix is implicit.
 bool InstructionEntry::SuppressLockPrefix() const {
@@ -2614,6 +2622,12 @@ int InstructionEntry::StripRexPrefix(int prefix) const {
       instruction_->tm.cpu_flags.bitfield.cpusse4_1 ||
       instruction_->tm.cpu_flags.bitfield.cpusse4_2 ||
       instruction_->tm.cpu_flags.bitfield.cpusse5 ) {
+    return 0;
+  }
+
+  // Special case for movslq.  No prefix is necessary.
+  if (instruction_->tm.base_opcode == 0x63 &&
+      ((stripped_prefix-REX_OPCODE) & REX_W)) {
     return 0;
   }
 
