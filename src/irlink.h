@@ -60,6 +60,7 @@ extern "C" {
   // Link back sections from gas (i.e. data, text, bss and section directives)
   void link_section(int push, const char *name,
                    struct MaoStringPiece arguments);
+  void link_subsection_directive(int subsection_number);
   // Link symbols from gas
   void link_symbol(const char *name, enum SymbolVisibility symbol_visibility,
                    const char *line_verbatim);

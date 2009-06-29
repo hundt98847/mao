@@ -249,10 +249,9 @@ std::pair<bool, Section *> MaoUnit::FindOrCreateAndFind(
   return std::make_pair(new_section, section);
 }
 
-// Called when found a new subsection reference in the assembly.
-bool MaoUnit::SetSubSection(const char *section_name,
-                            unsigned int subsection_number,
-                            MaoEntry *entry) {
+SubSection *MaoUnit::AddNewSubSection(const char *section_name,
+                                      unsigned int subsection_number,
+                                      MaoEntry *entry) {
   // Get (and possibly create) the section
   std::pair<bool, Section *> section_pair = FindOrCreateAndFind(section_name);
   Section *section = section_pair.second;
@@ -269,14 +268,10 @@ bool MaoUnit::SetSubSection(const char *section_name,
   sub_sections_.push_back(subsection);
   section->AddSubSection(subsection);
 
-  // set current_subsection!
-  prev_subsection_ = current_subsection_;
-  current_subsection_ = subsection;
-
   // Assume that the section is only one entry long.
   // last_entry is updated as we add entries..
-  current_subsection_->set_first_entry(entry);
-  current_subsection_->set_last_entry(entry);
+  subsection->set_first_entry(entry);
+  subsection->set_last_entry(entry);
 
   // Now we should check if we should link this entry back to the previous
   // subsection within this section!
@@ -286,7 +281,7 @@ bool MaoUnit::SetSubSection(const char *section_name,
     entry->set_prev(last_entry);
   }
 
-  return section_pair.first;
+  return subsection;
 }
 
 
@@ -525,14 +520,16 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
     // Make sure the entry does not create a section
     DirectiveEntry *de = entry->IsDirective()?entry->AsDirective():NULL;
     if (de == NULL || de->op() != DirectiveEntry::SECTION) {
-      SetSubSection("mao_start_section", 0,  entry);
+      prev_subsection_ = current_subsection_;
+      current_subsection_ = AddNewSubSection("mao_start_section", 0,  entry);
       current_subsection_->set_start_section(true);
     }
   }
   // Create a subsection if necessary
   if (create_default_section &&
       (!current_subsection_ || current_subsection_->start_section())) {
-    SetSubSection(DEFAULT_SECTION_NAME, 0, entry);
+    prev_subsection_ = current_subsection_;
+    current_subsection_ = AddNewSubSection(DEFAULT_SECTION_NAME, 0, entry);
     MAO_ASSERT(current_subsection_);
   }
 
@@ -563,7 +560,21 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
             directive_entry->GetOperand(0);
         MAO_ASSERT(section_name->type == DirectiveEntry::STRING);
         std::string *s_section_name = section_name->data.str;
-        SetSubSection(s_section_name->c_str(), 0, entry);
+        prev_subsection_ = current_subsection_;
+        current_subsection_ = AddNewSubSection(s_section_name->c_str(), 0,
+                                               entry);
+      }
+
+      if (directive_entry->op() == DirectiveEntry::SUBSECTION) {
+        // the name from operand
+        MAO_ASSERT(directive_entry->NumOperands() == 1);
+        const DirectiveEntry::Operand *subsection_op =
+            directive_entry->GetOperand(0);
+        MAO_ASSERT(subsection_op->type == DirectiveEntry::INT);
+        int subsection_number = subsection_op->data.i;
+        current_subsection_ = AddNewSubSection(current_subsection_->name().c_str(),
+                                               subsection_number,
+                                               entry);
       }
 
       if (directive_entry->op() == DirectiveEntry::SET) {
@@ -923,16 +934,21 @@ void MaoUnit::DeleteEntry(MaoEntry *entry) {
   }
 }
 
-void MaoUnit::PushCurrentSubSection() {
+void MaoUnit::PushSubSection() {
   MAO_ASSERT(current_subsection_);
+  subsection_stack_.push(std::make_pair(current_subsection_,
+                                        prev_subsection_));
+  // In MAO. pushsection gets translated to  .section
+  // directive. We need to make sure that prev_subsection is
+  // set correctly here.
   prev_subsection_ = current_subsection_;
-  subsection_stack_.push(current_subsection_);
 }
 
 
 void MaoUnit::PopSubSection(int line_number) {
   MAO_ASSERT(!subsection_stack_.empty());
-  SubSection *ss = subsection_stack_.top();
+  SubSection *ss = subsection_stack_.top().first;
+  SubSection *ps = subsection_stack_.top().second;
   subsection_stack_.pop();
 
   DirectiveEntry::OperandVector operands;
@@ -941,8 +957,23 @@ void MaoUnit::PopSubSection(int line_number) {
   DirectiveEntry *directive =
       new DirectiveEntry(DirectiveEntry::SECTION, operands,
                          line_number, NULL, this);
+
   // AddEntry will change current_subserction_
   AddEntry(directive, false);
+
+  // Pushsection takes a subsection number as argument. Since we translate
+  // .pushsection to .section, we have to add another .subsection entry
+  // if a subsection number is given.
+  if (ss->number() != 0) {
+    DirectiveEntry::OperandVector ss_operand;
+    ss_operand.push_back(new DirectiveEntry::Operand(ss->number()));
+    DirectiveEntry *ss_directive =
+        new DirectiveEntry(DirectiveEntry::SUBSECTION, ss_operand,
+                           line_number, NULL, this);
+    AddEntry(ss_directive, false);
+  }
+
+  prev_subsection_ = ps;
 }
 
 
@@ -1052,8 +1083,8 @@ std::string MaoEntry::GetDotOrSymbol(symbolS *symbol) const {
   if (strcmp(symbol_name, FAKE_LABEL_NAME) == 0) {
     // Check if there is a sy_value assigned to a temporary expression
     // or if it is the "current location".
-    if (S_GET_SEGMENT (symbol) == expr_section ||
-        S_GET_SEGMENT (symbol) == absolute_section) {
+    if (S_GET_SEGMENT(symbol) == expr_section ||
+        S_GET_SEGMENT(symbol) == absolute_section) {
       // sy_value containts an expression. Return it as a string.
       out_string = "(";
       ExpressionToString(&symbol->sy_value, &out_string);
@@ -1558,6 +1589,7 @@ void LabelEntry::PrintIR(FILE *out) const {
 const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".file",
   ".section",
+  ".subsection",
   ".globl",
   ".local",
   ".weak",
@@ -2959,7 +2991,6 @@ std::string &InstructionEntry::InstructionToString(std::string *out) const {
       // its a register name!
       out->append("(%dx)");
     }
-
   }
   return *out;
 }
