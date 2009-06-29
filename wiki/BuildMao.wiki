@@ -50,7 +50,7 @@ When building on MacOS X, the following flags might be necessary.
 make OS=MacOS
 }}}
 
-Python instructions
+Python instructions (Currently Disabled)
 {{{
 # Python
 #
