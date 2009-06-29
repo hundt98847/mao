@@ -27,6 +27,7 @@ cd binutils-2.19-obj-x86_64-linux
 ../binutils-2.19/configure --target=x86_64-linux
 make
 
+#After completing either x86_64 or i686-linux
 cd ..
 cd src
 
