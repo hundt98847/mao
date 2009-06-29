@@ -22,8 +22,8 @@ cd binutils-2.19-obj-i686-linux
 ../binutils-2.19/configure --target=i686-linux
 make
 
-# For x86_64
-cd ..
+# For x86_64 - you should be in the main directory
+# that was created when you checked out MAO
 mkdir binutils-2.19-obj-x86_64-linux
 cd binutils-2.19-obj-x86_64-linux
 ../binutils-2.19/configure --target=x86_64-linux
