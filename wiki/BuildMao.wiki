@@ -28,7 +28,27 @@ cd binutils-2.19-obj-x86_64-linux
 make
 
 cd ..
+cd src
 
+# Note that the Makefile in this directory specifies
+# the location of binutils. Depending on your setup, you
+# may have to change the Makefile to point to the proper
+# locations.
+make TARGET=i686-linux
+make TARGET=x86_64-linux
+}}}
+
+
+When building on MacOS X, the following flags might be necessary.
+{{{
+# When configuring binutils
+./binutils-2.19/configure --target=x86_64-linux --disable-nls
+# Building mao
+make OS=MacOS
+}}}
+
+Python instructions
+{{{
 # Python
 #
 # Note: Python integration is currently disabled, so 
@@ -41,23 +61,4 @@ cd ..
 #make
 #make DESTDIR=$DIR/python-2.5.4 install
 #cd ..
-
-
-cd src
-
-# Note that the Makefile in this directory specifies
-# the location of binutils. Depending on your setup, you
-# may have to change the Makefile to point to the proper
-# locations.
-make TARGET=i686-linux
-make TARGET=x86_64-linux
-}}}
-
-
-When builing on MacOS X, the following flags might be necessary.
-{{{
-# When configuring binutils
-./binutils-2.19/configure --target=x86_64-linux --disable-nls
-# Building mao
-make OS=MacOS
 }}}
