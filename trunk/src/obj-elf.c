@@ -941,21 +941,18 @@ obj_elf_section (int push)
   entsize = 0;
   linkonce = 0;
 
+  struct MaoStringPiece link_arguments = { NULL, 0 };
+
   if (*input_line_pointer == ',')
     {
       /* Skip the comma.  */
       ++input_line_pointer;
       SKIP_WHITESPACE ();
 
-      struct MaoStringPiece arguments =
-          { input_line_pointer, strcspn(input_line_pointer, "\n") };
-      link_section(push, name, arguments);
-
       if (push && ISDIGIT (*input_line_pointer))
 	{
 	  /* .pushsection has an optional subsection.  */
 	  new_subsection = (subsegT) get_absolute_expression ();
-
 	  SKIP_WHITESPACE ();
 
 	  /* Stop if we don't see a comma.  */
@@ -966,6 +963,9 @@ obj_elf_section (int push)
 	  ++input_line_pointer;
 	  SKIP_WHITESPACE ();
 	}
+
+      link_arguments.data = input_line_pointer;
+      link_arguments.length = strcspn(input_line_pointer, "\n");
 
       if (*input_line_pointer == '"')
 	{
@@ -1072,15 +1072,16 @@ obj_elf_section (int push)
 	  --input_line_pointer;
 	}
     }
-  else
-    {
-      struct MaoStringPiece arguments =
-          { NULL, 0 };
-      link_section(push, name, arguments);
-    }
-
 
 done:
+
+  link_section(push, name, link_arguments);
+
+  if (new_subsection > -1) {
+    link_subsection_directive(new_subsection);
+  }
+
+
   demand_empty_rest_of_line ();
 
   obj_elf_change_section (name, type, attr, entsize, group_name, linkonce, push);
@@ -1158,6 +1159,8 @@ obj_elf_subsection (int ignore ATTRIBUTE_UNUSED)
   temp = get_absolute_expression ();
   subseg_set (now_seg, (subsegT) temp);
   demand_empty_rest_of_line ();
+
+  link_subsection_directive (temp);
 
 #ifdef md_elf_section_change_hook
   md_elf_section_change_hook ();

@@ -224,6 +224,7 @@ class DirectiveEntry : public MaoEntry {
   enum Opcode {
     FILE = 0,
     SECTION,
+    SUBSECTION,
     GLOBAL,
     LOCAL,
     WEAK,
@@ -651,13 +652,6 @@ class MaoUnit {
   // Returns a handle to the symbol table
   SymbolTable *GetSymbolTable() {return &symbol_table_;}
 
-  // Note that a given subsection identifier can occur in many places in the
-  // code. (.text, .data, .text.)
-  // This will be create several SubSection objects with .text in the
-  // sub_sections_ member.
-  bool SetSubSection(const char *section_name, unsigned int subsection_number,
-                     MaoEntry *entry);
-
   SubSection *GetSubSection(unsigned int subsection_number) {
     return sub_sections_[subsection_number];
   }
@@ -752,7 +746,7 @@ class MaoUnit {
   bool Is64BitMode() const { return arch_ == X86_64; }
   bool Is32BitMode() const { return arch_ == I386;   }
 
-  void PushCurrentSubSection();
+  void PushSubSection();
   void PopSubSection(int line_number);
   void SetPreviousSubSection(int line_number);
 
@@ -765,7 +759,8 @@ class MaoUnit {
   enum Arch arch_;
 
   // Create the section section_name if it does not already exists. Returns a
-  // pointer the section.
+  // pair with a boolean saying if a new section was craeted, and a pointer the
+  // section.
   std::pair<bool, Section *> FindOrCreateAndFind(const char *section_name);
 
   // Vector of the entries in the unit. The id of the entry
@@ -788,8 +783,9 @@ class MaoUnit {
   SubSection *current_subsection_;
   // Previous subsection is needed for the .previous directive
   SubSection *prev_subsection_;
-  std::stack<SubSection *> subsection_stack_;
-
+  // A stack of subsection is used to support push/popsection directives.
+  // each pair is the subsection, and the prev_subsection
+  std::stack<std::pair<SubSection *, SubSection *> > subsection_stack_;
 
   // One symbol table holds all symbols found in the assembly file.
   SymbolTable symbol_table_;
@@ -808,8 +804,14 @@ class MaoUnit {
 
   MaoOptions *mao_options_;
 
-
-
+  // Called when found a new subsection reference in the assembly.
+  // The following is done:
+  //   - If section_name does not exists, create it.
+  //   - Create a new subsection, and link it to the
+  //     other subsections in the section.
+  // Returns a pointer to the new subsection.
+  SubSection *AddNewSubSection(const char *section_name,
+                               unsigned int subsection_number, MaoEntry *entry);
 
   Stats stats_;
 };  // MaoUnit
@@ -1058,9 +1060,5 @@ class Section {
   // Store corresponding entry offsets
   MaoEntryIntMap *offsets_;
 };
-
-
-
-
 
 #endif  // MAOUNIT_H_

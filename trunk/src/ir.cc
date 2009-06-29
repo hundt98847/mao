@@ -150,7 +150,7 @@ void link_section(int push,
   MAO_ASSERT(maounit_);
 
   if (push) {
-    maounit_->PushCurrentSubSection();
+    maounit_->PushSubSection();
   }
 
   DirectiveEntry::OperandVector operands;
@@ -160,6 +160,18 @@ void link_section(int push,
     operands.push_back(new DirectiveEntry::Operand(arguments));
   link_directive_tail(DirectiveEntry::SECTION, operands);
 }
+
+void link_subsection_directive(int subsection_number) {
+  struct link_context_s link_context = get_link_context();
+
+  DirectiveEntry::OperandVector operands;
+  operands.push_back(new DirectiveEntry::Operand(
+                         subsection_number));
+  link_directive_tail(DirectiveEntry::SUBSECTION, operands);
+}
+
+
+
 
 void link_type(symbolS *symbol, SymbolType symbol_type,
                const char *line_verbatim) {
@@ -489,7 +501,9 @@ void link_struct_directive(long value) {
   DirectiveEntry::OperandVector operands;
   // ... the current section is actually the absolute section
   // from now on.
-  maounit_->PushCurrentSubSection();
+  // TODO(martint): Fix this bug. .struct does not actually
+  // push anything on the sectionstack.
+  maounit_->PushSubSection();
   operands.push_back(new DirectiveEntry::Operand(value));
   link_directive_tail(DirectiveEntry::STRUCT, operands);
 }
