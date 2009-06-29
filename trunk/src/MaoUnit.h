@@ -255,6 +255,7 @@ class DirectiveEntry : public MaoEntry {
     IDENT,
     SET,         // Same as .equ
     EQUIV,
+    EQV,
     WEAKREF,
     ARCH,
     LINEFILE,

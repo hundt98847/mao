@@ -99,6 +99,8 @@ extern "C" {
   void link_set_directive(symbolS *symbol, expressionS *expr);
   /// Link .equiv directives from gas
   void link_equiv_directive(symbolS *symbol, expressionS *expr);
+  /// Link .eqv directives from gas
+  void link_eqv_directive(symbolS *symbol, expressionS *expr);
   /// Link .weakref directives from gas
   void link_weakref_directive(struct MaoStringPiece alias,
                               struct MaoStringPiece target);
