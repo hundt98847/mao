@@ -573,9 +573,9 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
         MAO_ASSERT(subsection_op->type == DirectiveEntry::INT);
         int subsection_number = subsection_op->data.i;
         prev_subsection_ = current_subsection_;
-        current_subsection_ = AddNewSubSection(current_subsection_->name().c_str(),
-                                               subsection_number,
-                                               entry);
+        current_subsection_ = AddNewSubSection(
+            current_subsection_->name().c_str(),
+            subsection_number, entry);
       }
 
       if (directive_entry->op() == DirectiveEntry::SET) {
@@ -2395,6 +2395,8 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
   #define LONG_DOUBLE_MNEM_SUFFIX '\1'
   #endif
 
+  bool no_suffix = false;
+
   // fdiv and fsub have different opcodes in intel and at&t syntax. They
   // are also bug-compatible with older compilers/tools, making the
   // intel documentation wrong.
@@ -2447,7 +2449,7 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
       if (op() == OP_fld || op() == OP_fstp) {
         out->insert(out->end(), 't');
       }
-      return *out;
+      no_suffix = true;
     }
 
     const MaoOpcode opcode_needs_y_suffix[] = {
@@ -2516,55 +2518,58 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
          instruction_->suffix == YMMWORD_MNEM_SUFFIX) &&
         !IsInList(op(), opcode_needs_y_suffix,
                   sizeof(opcode_needs_y_suffix)/sizeof(MaoOpcode))) {
-      return *out;
+      no_suffix = true;
     }
 
     if ((instruction_->suffix == 'l') &&
         IsInList(op(), opcode_has_l_suffix,
                  sizeof(opcode_has_l_suffix)/sizeof(MaoOpcode))) {
-      return *out;
+      no_suffix = true;
     }
     if ((instruction_->suffix == 'w') &&
         IsInList(op(), opcode_has_w_suffix,
                  sizeof(opcode_has_w_suffix)/sizeof(MaoOpcode))) {
-      return *out;
+      no_suffix = true;
     }
     if ((instruction_->suffix == 'b') &&
         IsInList(op(), opcode_has_b_suffix,
                  sizeof(opcode_has_b_suffix)/sizeof(MaoOpcode))) {
-      return *out;
+      no_suffix = true;
     }
     if (instruction_->suffix == 'q' &&
         out->c_str()[out->length()-1] == 'q') {
-      return *out;
+      no_suffix = true;
     }
 
     // Do not print suffix for cpusse4_1 instructions
     //  e.g.: OP_extractps, OP_pextrb, OP_pextrd, OP_pinsrb, OP_pinsrd
     if (instruction_->tm.cpu_flags.bitfield.cpusse4_1) {
-      return *out;
+      no_suffix = true;
     }
     // Do not print suffix for cpusse4_2 instructions
     // except for OP_crc32
     if (instruction_->tm.cpu_flags.bitfield.cpusse4_2 &&
         !IsInList(op(), keep_sse4_2_suffix,
                   sizeof(keep_sse4_2_suffix)/sizeof(MaoOpcode))) {
-      return *out;
+      no_suffix = true;
     }
 
-    // Special case movslq.  For some reason gas lists its suffix as
+    // SPECIAL case movslq.  For some reason gas lists its suffix as
     // 'l' when it should be 'q'.
     if (instruction_->tm.base_opcode == 0x63 &&
         (GetRexPrefix() & REX_W) && instruction_->suffix == 'l') {
       out->append("q");
-      return *out;
+      no_suffix = true;
     }
 
     if (IsInList(op(), supress_suffix,
                  sizeof(supress_suffix)/sizeof(MaoOpcode))) {
-      return *out;
+      no_suffix = true;
     }
-    out->insert(out->end(), instruction_->suffix);
+
+    if (!no_suffix) {
+      out->insert(out->end(), instruction_->suffix);
+    }
   }
   return *out;
 }
@@ -2729,6 +2734,26 @@ std::string &InstructionEntry::InstructionToString(std::string *out) const {
   const MaoOpcode via_padlock_ops[] = {OP_xstorerng, OP_xcryptecb, OP_xcryptcbc,
                                        OP_xcryptcfb, OP_xcryptofb, OP_xstore,
                                        OP_montmul,   OP_xsha1,     OP_xsha256};
+
+  // TODO(martint): This is a workaround, until I can figure out
+  // how to write
+  //   .data16
+  //   jmp fword ptr [bx]
+  // in at&t syntax.
+  if ((IsJump()||IsCall()) && NumOperands() == 1
+      && HasBaseRegister()
+      && instruction_->types[0].bitfield.fword == 1
+      && code_flag_ == CODE_16BIT) {
+    out->append("\t.intel_syntax noprefix\n");
+    if (IsJump())
+      out->append("\tjmp     fword ptr [");
+    else if (IsCall())
+      out->append("\tcall     fword ptr [");
+    out->append(GetBaseRegister()->reg_name);
+    out->append("]\n");
+    out->append("\t.att_syntax\n");
+    return *out;
+  }
 
   // Prefixes
   out->append("\t");
