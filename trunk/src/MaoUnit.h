@@ -460,7 +460,7 @@ class InstructionEntry : public MaoEntry {
   bool IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
   bool IsPredicated() const;
 
-  int NumOperands() {
+  int NumOperands() const {
     return instruction()->operands;
   }
   bool IsMemOperand(const unsigned int op_index) {
@@ -519,7 +519,7 @@ class InstructionEntry : public MaoEntry {
   bool CompareMemOperand(int op1, InstructionEntry *i2, int op2);
   void SetOperand(int op1, InstructionEntry *i2, int op2);
 
-  i386_insn   *instruction() { return instruction_; }
+  i386_insn   *instruction() const { return instruction_; }
 
   const char  *GetRegisterOperandStr(const unsigned int op_index) {
     return instruction_->op[op_index].regs->reg_name;
