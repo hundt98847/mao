@@ -572,6 +572,7 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
             directive_entry->GetOperand(0);
         MAO_ASSERT(subsection_op->type == DirectiveEntry::INT);
         int subsection_number = subsection_op->data.i;
+        prev_subsection_ = current_subsection_;
         current_subsection_ = AddNewSubSection(current_subsection_->name().c_str(),
                                                subsection_number,
                                                entry);

@@ -640,8 +640,12 @@ void link_cfi_window_save_direcive() {
   link_directive_tail(DirectiveEntry::CFI_WINDOW_SAVE, operands);
 }
 
-void link_cfi_escape_direcive() {
-  MAO_ASSERT_MSG(false, "Unimplemented directive.");
+void link_cfi_escape_direcive(int num_expressions, expressionS *expr[]) {
+  DirectiveEntry::OperandVector operands;
+  for(int i = 0; i < num_expressions; ++i) {
+    operands.push_back(new DirectiveEntry::Operand(expr[i]));
+  }
+  link_directive_tail(DirectiveEntry::CFI_ESCAPE, operands);
 }
 void link_cfi_signal_frame_direcive() {
   DirectiveEntry::OperandVector operands;

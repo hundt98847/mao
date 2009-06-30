@@ -149,7 +149,7 @@ extern "C" {
   void link_cfi_remember_state_direcive();
   void link_cfi_restore_state_direcive();
   void link_cfi_window_save_direcive();
-  void link_cfi_escape_direcive();
+  void link_cfi_escape_direcive(int num_expressions, expressionS *expr[]);
   void link_cfi_signal_frame_direcive();
   void link_cfi_personality_direcive(long encoding, expressionS *expr);
   void link_cfi_lsda_direcive(long encoding, expressionS *expr);
