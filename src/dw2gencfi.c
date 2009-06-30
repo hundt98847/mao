@@ -684,6 +684,10 @@ dot_cfi_escape (int ignored ATTRIBUTE_UNUSED)
   struct cfi_escape_data *head, **tail, *e;
   struct cfi_insn_data *insn;
 
+  int num_expressions = 0;
+  expressionS *expr[64];
+
+
   if (frchain_now->frch_cfi_data == NULL)
     {
       as_bad (_("CFI instruction used without previous .cfi_startproc"));
@@ -704,6 +708,9 @@ dot_cfi_escape (int ignored ATTRIBUTE_UNUSED)
       do_parse_cons_expression (&e->exp, 1);
       *tail = e;
       tail = &e->next;
+      gas_assert(num_expressions < 64);
+      expr[num_expressions] = &e->exp;
+      num_expressions++;
     }
   while (*input_line_pointer++ == ',');
   *tail = NULL;
@@ -713,6 +720,9 @@ dot_cfi_escape (int ignored ATTRIBUTE_UNUSED)
   insn->u.esc = head;
 
   --input_line_pointer;
+
+  link_cfi_escape_direcive(num_expressions, expr);
+
   demand_empty_rest_of_line ();
 }
 
