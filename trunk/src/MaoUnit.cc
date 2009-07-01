@@ -1181,6 +1181,15 @@ const std::string &MaoEntry::RelocToString(const enum bfd_reloc_code_real reloc,
     case BFD_RELOC_32_PCREL:
       out->append("@GOTPCREL");
       break;
+    case BFD_RELOC_64:
+      out->append("@GOTOFF");
+      break;
+    case BFD_RELOC_64_PCREL:
+      out->append("@GOTPCREL");
+      break;
+    case BFD_RELOC_386_GOT32:
+      out->append("@GOT");
+      break;
     case   BFD_RELOC_NONE:
     case _dummy_first_bfd_reloc_code_real:
       break;

@@ -522,7 +522,12 @@ void link_incbin_directive(struct MaoStringPiece filename, long skip,
   std::string quoted_filename = quote_string_piece(filename);
   operands.push_back(new DirectiveEntry::Operand(quoted_filename));
   operands.push_back(new DirectiveEntry::Operand(skip));  // 0 is default
-  operands.push_back(new DirectiveEntry::Operand(count)); // 0 is default
+  // A count of 0 is used in binutils 2.19 to mean the whole file. If it is
+  // explicitly mentioned in the assembly, a warning is produced. Thus we
+  // suppress that argument here.
+  if (count != 0) {
+    operands.push_back(new DirectiveEntry::Operand(count));
+  }
   link_directive_tail(DirectiveEntry::INCBIN, operands);
 }
 
