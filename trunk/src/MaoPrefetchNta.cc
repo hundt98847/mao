@@ -39,7 +39,7 @@ MAO_OPTIONS_DEFINE(PREFNTA, 2) {
   OPTION_INT("ptype",   0, "Type of prefetch (0: nta, ..., 3: t2)"),
 };
 
-// Insert prefetch.nta before loads
+// Insert prefetch.nta before loads and stores
 //
 class PrefetchNtaPass : public MaoFunctionPass {
  public:
@@ -61,14 +61,24 @@ class PrefetchNtaPass : public MaoFunctionPass {
         if (!(*entry)->IsInstruction()) continue;
         InstructionEntry *insn = (*entry)->AsInstruction();
 
-        // Look for loads from memory
+        // Look for loads and stores from memory
         //
-        if (insn->IsOpMov() &&
+        if (insn->NumOperands()>1 &&
             insn->IsMemOperand(0)) {
           InstructionEntry *pref = unit_->CreatePrefetch(function_,
                                                          ptype_,
                                                          insn,
                                                          0, /* operand */
+                                                         offset_);
+          insn->LinkBefore(pref);
+          ++insertions_;
+        }
+        if (insn->NumOperands()>1 &&
+            insn->IsMemOperand(1)) {
+          InstructionEntry *pref = unit_->CreatePrefetch(function_,
+                                                         ptype_,
+                                                         insn,
+                                                         1, /* operand */
                                                          offset_);
           insn->LinkBefore(pref);
           ++insertions_;
