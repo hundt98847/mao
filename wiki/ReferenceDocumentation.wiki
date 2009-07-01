@@ -1,0 +1,9 @@
+#summary Links to useful documentation and references.
+
+= References =
+
+  * [http://docs.sun.com/app/docs/doc/817-5477/eqbub?a=view x86 Assembly Language Reference Manual - Sun]
+
+  * [http://www.intel.com/products/processor/manuals/ Intel® 64 and IA-32 Architectures Software Developer's Manuals]
+
+  * [http://sourceware.org/binutils/docs-2.19/as/Pseudo-Ops.html#Pseudo-Ops GNU Assembler 2.19.1 Directives]
