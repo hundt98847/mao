@@ -26,6 +26,8 @@
 #include "MaoDefs.h"
 #include "MaoUtil.h"
 
+#define LCD_HEIGHT_ADJUSTMENT 10
+#define HOT_REGISTER_BONUS 1
 
 // --------------------------------------------------------------------
 // Options
@@ -205,6 +207,7 @@ class SchedulerPass : public MaoFunctionPass {
     if (!profitable_)
       return true;
     CFG *cfg = CFG::GetCFG (unit_, function_);
+    FindBBsInStraightLineLoops ();
     FORALL_CFG_BB(cfg, bb_iterator) {
       MaoEntry *first = *((*bb_iterator)->EntryBegin());
       MaoEntry *last = *((*bb_iterator)->EntryEnd());
@@ -248,6 +251,11 @@ class SchedulerPass : public MaoFunctionPass {
   MaoEntry **entries_;
   bool profitable_;
   static int function_count_;
+  std::set<BasicBlock *> bbs_in_stline_loops_;
+
+  //An array used to keep track of instructions that
+  //are sources of some loop carried dependence
+  char *is_lcd_source_;
 
   BitString GetSrcRegisters (InstructionEntry *insn);
   BitString GetDestRegisters (InstructionEntry *insn);
@@ -262,12 +270,36 @@ class SchedulerPass : public MaoFunctionPass {
   MaoEntry* Schedule (DependenceDag *dag, int *dependence_heights, MaoEntry *head);
   void PrefixLocks (MaoEntry *first, MaoEntry* last);
   bool IsProfitable (Function *);
+  void FindBBsInStraightLineLoops();
+  void FindBBsInStraightLineLoops(SimpleLoop *loop);
+  void RemoveLocks (std::vector<MaoEntry*> *locks, BasicBlock *bb);
+  void InitializeLastWriter (BasicBlock *bb, int *last_writer);
 
 
 
 };
 
 int SchedulerPass::function_count_ = 0;
+
+
+void SchedulerPass::FindBBsInStraightLineLoops () {
+  LoopStructureGraph *loop_graph =  LoopStructureGraph::GetLSG(unit_, function_);
+  SimpleLoop *root = loop_graph->root();
+  FindBBsInStraightLineLoops(root);
+}
+
+void SchedulerPass::FindBBsInStraightLineLoops ( SimpleLoop *loop) {
+  if (loop->header() == loop->bottom() && loop->header() != NULL) {
+    bbs_in_stline_loops_.insert(loop->header());
+    //This must be an innermost loop
+    return;
+  }
+  //Recurse
+  for (SimpleLoop::LoopSet::iterator liter = loop->GetChildren()->begin();
+       liter != loop->GetChildren()->end(); ++liter)
+    FindBBsInStraightLineLoops (*liter);
+
+}
 
 MaoEntry* SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, MaoEntry *head) {
   char *scheduled = new char[dag->NodeCount()];
@@ -286,43 +318,32 @@ MaoEntry* SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, 
     //Schedule the successors depthwise till no further scheduling
     //can be done
     std::list<int> *successors = dag->GetSuccessors(node);
-    while (!successors->empty()) {
-      //Find that successor with the largest dependence height, all of
-      //whose predecessors are already scheduled
-      int best_height = -1, best_node = -1;
-      for (std::list<int>::iterator succ_iter = successors->begin();
-           succ_iter != successors->end(); ++succ_iter) {
-        int succ = *succ_iter;
-        std::list<int> *predecessors = dag->GetPredecessors(succ);
-        bool can_schedule=true;
-        for (std::list<int>::iterator pred_iter = predecessors->begin();
-             pred_iter != predecessors->end(); ++pred_iter) {
-          int pred = *pred_iter;
-          if(!scheduled[pred]) {
-            Trace (2, "Predecessor  %s of %s not scheduled ", insn_str_[pred].c_str(), insn_str_[succ].c_str());
-            can_schedule=false;
-            break;
-          }
-        }
-        if (can_schedule) {
-          ready->push_back(succ);
-          Trace (2, "Adding successor node (%d) %s  with dep %d and height %d to the ready queue", succ, insn_str_[succ].c_str(), dag->GetEdge(node, succ), dependence_heights[succ]);
-          if (dependence_heights[succ] > best_height &&
-              (dag->GetEdge(node, succ) & TRUE_DEP) ) {
-            best_height = dependence_heights[succ];
-            best_node = succ;
-            Trace (2, "New best node. Height = %d", best_height);
-          }
+    //Find that successor with the largest dependence height, all of
+    //whose predecessors are already scheduled
+    int best_height = -1, best_node = -1;
+    for (std::list<int>::iterator succ_iter = successors->begin();
+         succ_iter != successors->end(); ++succ_iter) {
+      int succ = *succ_iter;
+      std::list<int> *predecessors = dag->GetPredecessors(succ);
+      bool can_schedule=true;
+      for (std::list<int>::iterator pred_iter = predecessors->begin();
+           pred_iter != predecessors->end(); ++pred_iter) {
+        int pred = *pred_iter;
+        if(!scheduled[pred]) {
+          Trace (2, "Predecessor  %s of %s not scheduled ", insn_str_[pred].c_str(), insn_str_[succ].c_str());
+          can_schedule=false;
+          break;
         }
       }
-      if (best_node == -1)
-        break;
-      node = best_node;
-      ScheduleNode (node, &head);
-      scheduled[node]=1;
-      last_entry = entries_[node];
-      ready->remove (node);
-      successors = dag->GetSuccessors (node);
+      if (can_schedule) {
+        ready->push_back(succ);
+        Trace (2, "Adding successor node (%d) %s  with dep %d and height %d to the ready queue", succ, insn_str_[succ].c_str(), dag->GetEdge(node, succ), dependence_heights[succ]);
+        if (!IsMemOperation(entries_[node]->AsInstruction()) &&
+            (dag->GetEdge(node, succ) & TRUE_DEP) ) {
+          dependence_heights[succ] += HOT_REGISTER_BONUS;
+          Trace (2, "New best node. Height = %d", best_height);
+        }
+      }
     }
 
   }
@@ -341,8 +362,18 @@ void SchedulerPass::ScheduleNode (int node, MaoEntry **head) {
   //Don't do anything if the node to be scheduled is the head node
   if (entry == *head)
     return;
+  MaoEntry *prev_entry = entry->prev();
   entry->Unlink();
   (*head)->LinkAfter(entry);
+  if (prev_entry->IsDirective()) {
+    DirectiveEntry *insn = prev_entry->AsDirective();
+    if (insn->op() == DirectiveEntry::P2ALIGN ||
+        insn->op() == DirectiveEntry::P2ALIGNW ||
+        insn->op() == DirectiveEntry::P2ALIGNL) {
+        prev_entry->Unlink();
+        entry->LinkBefore (prev_entry);
+    }
+  }
   std::string str1, str2;
   (*head)->ToString (&str1);
   entry->ToString (&str2);
@@ -401,7 +432,11 @@ int *SchedulerPass::ComputeDependenceHeights (DependenceDag *dag) {
       if (reprocess)
         new_work_list->push_back (node);
       else {
+        //If the node is the exit of the dag, but there is a loop carried
+        //dependence originating from it, set the height to LCD_HEIGHT_ADJUSTMENT
+        //
         heights[node] = height;
+
         std::list<int> *pred_nodes = dag->GetPredecessors (node, TRUE_DEP|MEM_DEP);
         for (std::list<int>::iterator pred_iter = pred_nodes->begin();
              pred_iter != pred_nodes->end(); ++pred_iter) {
@@ -419,8 +454,14 @@ int *SchedulerPass::ComputeDependenceHeights (DependenceDag *dag) {
     work_list = new_work_list;
     new_work_list =  new std::list<int>;
   }
+  for (int i=0; i<dag->NodeCount(); i++)
+    if (is_lcd_source_[i])
+      heights[i] += LCD_HEIGHT_ADJUSTMENT;
+
   delete work_list;
   delete new_work_list;
+  delete [] is_lcd_source_;
+  is_lcd_source_ = NULL;
   return heights;
 
 
@@ -456,6 +497,48 @@ BitString SchedulerPass::GetDestRegisters (InstructionEntry *insn) {
   return def_mask;
 }
 
+void SchedulerPass::RemoveLocks (std::vector<MaoEntry*> *locks, BasicBlock *bb) {
+  //Remove any lock instructions in the original code
+  //lock acts more like a prefix in the sense that it applies to the
+  //immediately following isntruction. However, it has a separate entry
+  //in the code. To enforce the fact that the lock and the following
+  //instruction have to be adjacent even after the scheduling, the
+  //instructions following a lock are added to a separate set and the
+  //lock is removed from the original stream. During scheduling if the
+  //instruction is in lock_set_, a new lock instruction is created and
+  //prefixed to it.
+  for (std::vector<MaoEntry*>::iterator lock_iter=locks->begin();
+       lock_iter != locks->end(); ++lock_iter) {
+    MaoEntry *entry=*lock_iter;
+    if (entry == bb->first_entry())
+      bb->set_first_entry (entry->next());
+    entry->Unlink();
+  }
+}
+
+void SchedulerPass::InitializeLastWriter (BasicBlock *bb, int *last_writer) {
+  int insns_in_bb = 0;
+  for(SectionEntryIterator entry_iter = bb->EntryBegin();
+      entry_iter != bb->EntryEnd(); ++entry_iter) {
+    MaoEntry *entry = *entry_iter;
+    if (!entry->IsInstruction())
+      continue;
+    InstructionEntry *insn = entry->AsInstruction();
+
+    BitString dest_regs_mask = GetDestRegisters (insn);
+    /*Trace (2, "Dest  registers: ");
+    dest_regs_mask.Print();*/
+
+    int index=0;
+    while ((index = dest_regs_mask.NextSetBit(index)) != -1) {
+      //Trace (2, "dest reg = %d", index);
+      last_writer[index]=insns_in_bb;
+      index++;
+    }
+    insns_in_bb++;
+  }
+}
+
 SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) {
   int last_writer[MAX_REGS];
   std::vector<int> writers[MAX_REGS];
@@ -480,31 +563,23 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
   }
   if (insns_in_bb == 0)
     return NULL;
-  //Remove any lock instructions in the original code
-  //lock acts more like a prefix in the sense that it applies to the
-  //immediately following isntruction. However, it has a separate entry
-  //in the code. To enforce the fact that the lock and the following
-  //instruction have to be adjacent even after the scheduling, the
-  //instructions following a lock are added to a separate set and the
-  //lock is removed from the original stream. During scheduling if the
-  //instruction is in lock_set_, a new lock instruction is created and
-  //prefixed to it.
-  for (std::vector<MaoEntry*>::iterator lock_iter=locks.begin();
-       lock_iter != locks.end(); ++lock_iter) {
-    MaoEntry *entry=*lock_iter;
-    if (entry == bb->first_entry())
-      bb->set_first_entry (entry->next());
-    entry->Unlink();
-  }
+  RemoveLocks (&locks, bb);
 
   insn_str_ = new std::string[insns_in_bb];
   entries_ = new MaoEntry*[insns_in_bb];
+  is_lcd_source_ = new char[insns_in_bb];
+  memset (is_lcd_source_, 0, insns_in_bb*sizeof(char));
 
   DependenceDag *dag = new DependenceDag(insns_in_bb, insn_str_);
   insns_in_bb = 0;
   memset (last_writer,0xFF, MAX_REGS*sizeof(int));
   int prev_mem_operation = -1;
   std::vector<int> ctrl_dep_sources;
+  if (bbs_in_stline_loops_.find(bb) != bbs_in_stline_loops_.end()) {
+    //This BB forms a straightline loop
+    InitializeLastWriter (bb, last_writer);
+  }
+
   for(SectionEntryIterator entry_iter = bb->EntryBegin();
       entry_iter != bb->EntryEnd(); ++entry_iter) {
     MaoEntry *entry = *entry_iter;
@@ -540,7 +615,7 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
     int index=0;
     while ((index = src_regs_mask.NextSetBit(index)) != -1) {
       //Trace (2, "src reg = %d", index);
-      if (last_writer[index] >=0) {
+      if (last_writer[index] >=0 && last_writer[index] < insns_in_bb) {
         dag->AddEdge (last_writer[index], insns_in_bb, TRUE_DEP);
         // When an instruction uses a register, we know that the value written
         // by the last writer to that register is live. Now we can create
@@ -557,6 +632,8 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
         writers[index].clear();
         writers[index].push_back (last_writer[index]);
       }
+      else if (last_writer[index] >= insns_in_bb)
+        is_lcd_source_[last_writer[index]] = 1;
       index++;
     }
 
@@ -581,8 +658,8 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
           if (writer != last_writer[i])
             dag->AddEdge (writer, last_writer[i], OUTPUT_DEP);
         }
-        writers[i].clear();
       }
+      writers[i].clear();
   }
   SectionEntryIterator last_entry = bb->EntryEnd();
   SectionEntryIterator first_entry = bb->EntryBegin();
@@ -609,8 +686,9 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
     //Trace (2, "Instruction %d: %s\n", insns_in_bb, insn_str.c_str());
     while ((index = src_regs_mask.NextSetBit(index)) != -1) {
       //Trace (2, "src reg = %d", index);
-      if (last_writer[index] >=0)
-        dag->AddEdge (insns_in_bb, last_writer[index], ANTI_DEP);
+      for (std::vector<int>::iterator wr_iter = writers[index].begin();
+           wr_iter != writers[index].end(); ++wr_iter)
+        dag->AddEdge (insns_in_bb, *wr_iter, ANTI_DEP);
       index++;
     }
 
@@ -618,6 +696,7 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
     while ((index = dest_regs_mask.NextSetBit(index)) != -1) {
       //Trace (2, "dest reg = %d", index);
       last_writer[index]=insns_in_bb;
+      writers[index].push_back (insns_in_bb);
       index++;
     }
     insn_str.erase();
