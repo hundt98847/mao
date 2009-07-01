@@ -1091,6 +1091,8 @@ as_main (int argc, char ** argv)
   int macro_strip_at;
   int keep_it;
 
+  int running_mao = 1;
+
   start_time = get_run_time ();
 
 #if defined (HAVE_SETLOCALE) && defined (HAVE_LC_MESSAGES)
@@ -1158,7 +1160,12 @@ as_main (int argc, char ** argv)
 
   PROGRESS (1);
 
-  output_file_create (out_file_name);
+  if (!running_mao) {
+    output_file_create (out_file_name);
+  } else {
+    output_file_create ("/dev/null");
+  }
+
   gas_assert (stdoutput != 0);
 
 #ifdef tc_init_after_args
@@ -1237,8 +1244,8 @@ as_main (int argc, char ** argv)
      I didn't want to risk the change.  */
   subsegs_finish ();
 
-//   if (keep_it)
-//     write_object_file ();
+  if ((!running_mao) && keep_it)
+    write_object_file ();
 
   fflush (stderr);
 
