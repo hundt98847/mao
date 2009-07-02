@@ -422,7 +422,7 @@ class InstructionEntry : public MaoEntry {
  public:
   static const unsigned int kMaxRegisterNameLength = MAX_REGISTER_NAME_LENGTH;
 
-  InstructionEntry(i386_insn* instruction, enum flag_code entry_mode,
+  InstructionEntry(i386_insn* instruction, enum flag_code flag_code,
                    unsigned int line_number, const char* line_verbatim,
                    MaoUnit *maounit);
   ~InstructionEntry();
@@ -751,9 +751,14 @@ class MaoUnit {
   void PopSubSection(int line_number);
   void SetPreviousSubSection(int line_number);
 
+  // Set the default achiecture (32-bit vs 64-bit). Should only be called
+  // after GAS have parsed it arguments, since the flags --32 and --64
+  // change the architecture.
+  void SetDefaultArch();
  private:
 
   enum Arch {
+    UNKNOWN,
     I386,
     X86_64
   };

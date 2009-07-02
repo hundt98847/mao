@@ -187,6 +187,11 @@ static void handle_large_common (int small ATTRIBUTE_UNUSED);
 
 static const char *default_arch = DEFAULT_ARCH;
 
+// Allows MAO to query gas on what the default architecture is.
+const char *get_default_arch() {
+  return default_arch;
+}
+
 /* List of chars besides those in app.c:symbol_chars that can start an
    operand.  Used to prevent the scrubber eating vital white-space.  */
 const char extra_symbol_chars[] = "*%-(["
@@ -283,7 +288,7 @@ static int this_operand;
 /* We support four different modes.  FLAG_CODE variable is used to distinguish
    these.  */
 
-enum flag_code flag_code;
+static enum flag_code flag_code;
 
 static unsigned int object_64bit;
 static int use_rela_relocations = 0;

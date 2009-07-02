@@ -53,8 +53,8 @@ extern "C" {
   };
 
   // Link back an instruction from gas
-  void link_insn(struct _i386_insn *i, size_t SizeOfInsn,
-                 int entry_mode, const char *line_verbatim);
+  void link_insn(struct _i386_insn *i, size_t SizeOfInsn, int code_flag,
+                 const char *line_verbatim);
   // Link back a label from gas
   void link_label(const char *name, const char *line_verbatim);
   // Link back sections from gas (i.e. data, text, bss and section directives)
