@@ -231,6 +231,9 @@ bool ReadInputPass::Go() {
   // Use gas to parse input file.
   MAO_ASSERT(!as_main(argc_, const_cast<char**>(argv_)));
   unit_->FindFunctions();
+  // Now GAS have parsed it arguments, and we can find out the default
+  // architecture and operand size.
+  unit_->SetDefaultArch();
   return true;
 }
 

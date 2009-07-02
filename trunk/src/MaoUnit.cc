@@ -42,23 +42,13 @@
 // Default to no subsection selected
 // A default will be generated if necessary later on.
 MaoUnit::MaoUnit(MaoOptions *mao_options)
-    : current_subsection_(0), mao_options_(mao_options) {
+    : arch_(UNKNOWN), current_subsection_(0), mao_options_(mao_options) {
   entry_vector_.clear();
   sub_sections_.clear();
   sections_.clear();
   functions_.clear();
   entry_to_function_.clear();
   entry_to_subsection_.clear();
-
-  const char *arch_string = get_arch();
-  if (strcmp(arch_string, "i386") == 0 || strcmp(arch_string, "I386") == 0) {
-    arch_ = I386;
-  } else if (strcmp(arch_string, "x86_64") == 0 ||
-             strcmp(arch_string, "X86_64") == 0) {
-    arch_ = X86_64;
-  } else {
-    MAO_ASSERT_MSG(false, "Unsupported architecture: %s", arch_string);
-  }
 }
 
 MaoUnit::~MaoUnit() {
@@ -83,6 +73,18 @@ MaoUnit::~MaoUnit() {
            sections_.begin();
        iter != sections_.end(); ++iter) {
     delete iter->second;
+  }
+}
+
+void MaoUnit::SetDefaultArch() {
+  const char *arch_string = get_default_arch();
+  if (strcmp(arch_string, "i386") == 0 || strcmp(arch_string, "I386") == 0) {
+    arch_ = I386;
+  } else if (strcmp(arch_string, "x86_64") == 0 ||
+             strcmp(arch_string, "X86_64") == 0) {
+    arch_ = X86_64;
+  } else {
+    MAO_ASSERT_MSG(false, "Unsupported architecture: %s", arch_string);
   }
 }
 
@@ -553,56 +555,64 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
       // in ir.cc makes it possible to add the entry
       // when creating a new subsection.
       directive_entry = static_cast<DirectiveEntry *>(entry);
-      if (directive_entry->op() == DirectiveEntry::SECTION) {
-        // the name from operand
-        MAO_ASSERT(directive_entry->NumOperands() > 0);
-        const DirectiveEntry::Operand *section_name =
-            directive_entry->GetOperand(0);
-        MAO_ASSERT(section_name->type == DirectiveEntry::STRING);
-        std::string *s_section_name = section_name->data.str;
-        prev_subsection_ = current_subsection_;
-        current_subsection_ = AddNewSubSection(s_section_name->c_str(), 0,
-                                               entry);
-      }
-
-      if (directive_entry->op() == DirectiveEntry::SUBSECTION) {
-        // the name from operand
-        MAO_ASSERT(directive_entry->NumOperands() == 1);
-        const DirectiveEntry::Operand *subsection_op =
-            directive_entry->GetOperand(0);
-        MAO_ASSERT(subsection_op->type == DirectiveEntry::INT);
-        int subsection_number = subsection_op->data.i;
-        prev_subsection_ = current_subsection_;
-        current_subsection_ = AddNewSubSection(
-            current_subsection_->name().c_str(),
-            subsection_number, entry);
-      }
-
-      if (directive_entry->op() == DirectiveEntry::SET) {
-        // Get the symbols here!
-        MAO_ASSERT(directive_entry->NumOperands() == 2);
-        const DirectiveEntry::Operand *op_symbol =
-            directive_entry->GetOperand(0);
-
-        // Handle the first operand
-        MAO_ASSERT(op_symbol->type == DirectiveEntry::SYMBOL);
-        Symbol *op_mao_symbol = symbol_table_.Find(
-             S_GET_NAME(op_symbol->data.sym));
-        MAO_ASSERT(op_mao_symbol != NULL);
-
-        // Handle the second operand
-        const DirectiveEntry::Operand *op_expr = directive_entry->GetOperand(1);
-        if (op_expr->type == DirectiveEntry::EXPRESSION) {
-          expressionS *op_as_expr = op_expr->data.expr;
-          // make sure its a symbol..
-          if (op_as_expr->X_op == O_symbol) {
-            Symbol *op_symbol_2 =
-                symbol_table_.Find(S_GET_NAME(op_as_expr->X_add_symbol));
-            op_symbol_2->AddEqual(op_mao_symbol);
+      switch(directive_entry->op()) {
+        case DirectiveEntry::SECTION:
+          {
+            // the name from operand
+            MAO_ASSERT(directive_entry->NumOperands() > 0);
+            const DirectiveEntry::Operand *section_name =
+                directive_entry->GetOperand(0);
+            MAO_ASSERT(section_name->type == DirectiveEntry::STRING);
+            std::string *s_section_name = section_name->data.str;
+            prev_subsection_ = current_subsection_;
+            current_subsection_ = AddNewSubSection(s_section_name->c_str(), 0,
+                                                   entry);
+            break;
           }
-        }
-      }
+        case DirectiveEntry::SUBSECTION:
+          {
+            // the name from operand
+            MAO_ASSERT(directive_entry->NumOperands() == 1);
+            const DirectiveEntry::Operand *subsection_op =
+                directive_entry->GetOperand(0);
+            MAO_ASSERT(subsection_op->type == DirectiveEntry::INT);
+            int subsection_number = subsection_op->data.i;
+            prev_subsection_ = current_subsection_;
+            current_subsection_ = AddNewSubSection(
+                current_subsection_->name().c_str(),
+                subsection_number, entry);
+            break;
+          }
+        case DirectiveEntry::SET :
+          {
+            // Get the symbols here!
+            MAO_ASSERT(directive_entry->NumOperands() == 2);
+            const DirectiveEntry::Operand *op_symbol =
+                directive_entry->GetOperand(0);
 
+            // Handle the first operand
+            MAO_ASSERT(op_symbol->type == DirectiveEntry::SYMBOL);
+            Symbol *op_mao_symbol = symbol_table_.Find(
+                S_GET_NAME(op_symbol->data.sym));
+            MAO_ASSERT(op_mao_symbol != NULL);
+
+            // Handle the second operand
+            const DirectiveEntry::Operand *op_expr =
+                directive_entry->GetOperand(1);
+            if (op_expr->type == DirectiveEntry::EXPRESSION) {
+              expressionS *op_as_expr = op_expr->data.expr;
+              // make sure its a symbol..
+              if (op_as_expr->X_op == O_symbol) {
+                Symbol *op_symbol_2 =
+                    symbol_table_.Find(S_GET_NAME(op_as_expr->X_add_symbol));
+                op_symbol_2->AddEqual(op_mao_symbol);
+              }
+            }
+            break;
+          }
+        default:
+          break;
+      }
       break;
     default:
       // should never happen. Catch all cases above.
@@ -1186,9 +1196,6 @@ const std::string &MaoEntry::RelocToString(const enum bfd_reloc_code_real reloc,
       break;
     case BFD_RELOC_64_PCREL:
       out->append("@GOTPCREL");
-      break;
-    case BFD_RELOC_386_GOT32:
-      out->append("@GOT");
       break;
     case   BFD_RELOC_NONE:
     case _dummy_first_bfd_reloc_code_real:
