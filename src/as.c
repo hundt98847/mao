@@ -33,6 +33,8 @@
 
 #define COMMON
 
+#include <stdlib.h>
+
 #include "as.h"
 #include "subsegs.h"
 #include "output-file.h"
@@ -1156,11 +1158,17 @@ as_main (int argc, char ** argv)
 
   PROGRESS (1);
 
-  if (!running_mao) {
-    output_file_create (out_file_name);
-  } else {
-    output_file_create ("/dev/null");
+  // Create a temporary file for MAO so that we dont overwrite
+  // a.out. The file is never written to, but is needed for
+  // the bfd code in gas to work correctly.
+  char file_template[] = "mao.temp.XXXXXX";
+  if (running_mao) {
+    int retval = mkstemp(file_template);
+    gas_assert(retval != -1);
+    out_file_name = file_template;
   }
+
+  output_file_create (out_file_name);
 
   gas_assert (stdoutput != 0);
 
@@ -1228,7 +1236,8 @@ as_main (int argc, char ** argv)
      directives from the user or by the backend, emit it now.  */
   cfi_finish ();
 
-  if (seen_at_least_1_file ()
+  if (!running_mao
+      && seen_at_least_1_file ()
       && (flag_always_generate_output || had_errors () == 0))
     keep_it = 1;
   else
