@@ -692,8 +692,8 @@ sysret
 test   flags: SF ZF PF OF CF undef: AF
 
 # U
-ucomisd dest
-ucomiss dest
+ucomisd dest flags: ZF PF CF clear: OF AF SF
+ucomiss dest flags: ZF PF CF clear: OF AF SF
 ud2
 unpckhpd dest
 unpckhps dest

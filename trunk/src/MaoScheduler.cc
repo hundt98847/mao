@@ -221,7 +221,8 @@ class SchedulerPass : public MaoFunctionPass {
       DependenceDag *dag = FormDependenceDag(*bb_iterator);
       if (dag != NULL) {
         Trace (2, "Dag for new bb:");
-        dag->Print(stderr);
+        if (tracing_level() >= 2)
+          dag->Print(stderr);
         int *dependence_heights = ComputeDependenceHeights(dag);
         for (int i=0; i<dag->NodeCount(); i++) {
           Trace (2, "%s: %d", insn_str_[i].c_str(), dependence_heights[i]);
@@ -579,6 +580,7 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
     //This BB forms a straightline loop
     InitializeLastWriter (bb, last_writer);
   }
+  BitString rsp_mask = GetMaskForRegister("rsp");
 
   for(SectionEntryIterator entry_iter = bb->EntryBegin();
       entry_iter != bb->EntryEnd(); ++entry_iter) {
@@ -589,7 +591,21 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
     entries_[insns_in_bb] = insn;
     insn->ToString(&insn_str_[insns_in_bb]);
     Trace (2, "Instruction %d: %s\n", insns_in_bb, insn_str_[insns_in_bb].c_str());
-    if (IsMemOperation(insn)) {
+    BitString src_regs_mask = GetSrcRegisters (insn);
+    BitString dest_regs_mask = GetDestRegisters (insn);
+    char src_str[128], dest_str[128];
+    src_regs_mask.ToString (src_str);
+    dest_regs_mask.ToString (dest_str);
+
+    Trace (4, "Src registers: %s", src_str);
+    Trace (4, "Dest  registers: %s", dest_str);
+
+    //An instruction that modifies SP acts as a barrier for stack-relative
+    //memory operations. Here, we are being conservative by preventing
+    //reordering of other memory access operations around stack relative
+    //accesses
+    //
+    if (IsMemOperation(insn) || (dest_regs_mask & rsp_mask).IsNonNull()) {
       if (prev_mem_operation != -1)
         dag->AddEdge (prev_mem_operation, insns_in_bb, MEM_DEP);
       prev_mem_operation = insns_in_bb;
@@ -605,12 +621,6 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag (BasicBlock *bb) 
 
 
 
-    BitString src_regs_mask = GetSrcRegisters (insn);
-    BitString dest_regs_mask = GetDestRegisters (insn);
-    Trace (2, "Src registers: ");
-    src_regs_mask.Print();
-    Trace (2, "Dest  registers: ");
-    dest_regs_mask.Print();
 
     int index=0;
     while ((index = src_regs_mask.NextSetBit(index)) != -1) {
@@ -726,6 +736,7 @@ bool SchedulerPass::IsMemOperation (InstructionEntry *entry) {
     if (entry->HasPrefix (REPE_PREFIX_OPCODE) ||
         entry->HasPrefix (REPNE_PREFIX_OPCODE))
       return true;
+
 
     switch (entry->op())
     {
