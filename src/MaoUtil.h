@@ -151,6 +151,10 @@ class BitString {
 	    word[3], word[2], word[1], word[0] );
   }
 
+  void ToString( char *s) {
+    sprintf(s, "bits: %016llx:%016llx:%016llx:%016llx\n",
+	    word[3], word[2], word[1], word[0] );
+  }
   void PrintInitializer(FILE *f) {
     if (IsNull())
       fprintf(f, "BNULL");
