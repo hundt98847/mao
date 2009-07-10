@@ -1,0 +1,48 @@
+IAT README [BETA] - 7/9/2009
+This file serves as a quick guide to using the Instruction Analysis Tool (IAT).
+For more information: http://wiki.corp.google.com/twiki/bin/view/Main/SMoC
+(Wiki Update in Progress)
+Contacts: Casey Burkhardt and Sweta Mohapatra
+
+Please check the Wiki page for:
+  - Background and Description
+  - Design Plan
+  - Quality Requirements (Coming Soon)
+  - Current Status
+
+Project Structure:
+The project is currently divided into two sections, a Test Generator, which 
+generates assembly files to be ran, and a Runner, which uploads the assembly
+files to a remote server, compiles them, and uses analysis tools to record
+user-defined events related to execution.
+
+Building the Test Generator:
+The Test Generator is written in C++ and will be given a Makefile shortly,
+but for now simply run the BuildTG.sh script.
+# sh BuildTG.sh
+
+Running the Test Generator:
+# ./TestGenerator [--argument=value]
+Currently two optional command line arguments are available to alter the
+operation of the program:
+  --instructions=
+     - This argument specifies the number of instructions (currently add
+       instructions for testing) to add to the output assembly file.
+  --iterations=
+     - This argument specifies the number of times to iterate of the 
+       instructions added
+Failure to supply either of these command line arguments results in that value
+defaulting to 10,000.
+The test generate will place all generated assembly files in a subdirectory
+(Named with date and time) of the execution directory.
+
+Running the Runner:
+There are two runner scripts in the execution directory, but you need only run
+the first, "runner.sh".
+# sh runner.sh
+You will be prompted for the name of the directory that the Test Generator
+created and the pfmon events you would like to monitor.  Ignore any "X11 
+forwarding denied" error messages, these will be dealt with in a later release.
+The output from the Runner will be placed in a directory named identical to
+that of the Test Generator output directory with "Results" appended.  Pfmon
+output may be found in the files within that directory.
