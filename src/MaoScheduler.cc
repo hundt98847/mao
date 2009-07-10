@@ -311,6 +311,9 @@ MaoEntry* SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, 
   //Schedule the available instruction with the maximum height
   //as the first instruction of the function
   MaoEntry *last_entry=NULL;
+  int *num_scheduled_predecessors = new int[dag->NodeCount()];
+  memset (num_scheduled_predecessors, 0, dag->NodeCount()*sizeof(int));
+
   while (!ready->empty()) {
     int node = RemoveTallest (ready, dependence_heights);
     ScheduleNode (node, &head);
@@ -325,6 +328,8 @@ MaoEntry* SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, 
     for (std::list<int>::iterator succ_iter = successors->begin();
          succ_iter != successors->end(); ++succ_iter) {
       int succ = *succ_iter;
+      num_scheduled_predecessors[succ]++;
+      /*
       std::list<int> *predecessors = dag->GetPredecessors(succ);
       bool can_schedule=true;
       for (std::list<int>::iterator pred_iter = predecessors->begin();
@@ -336,7 +341,10 @@ MaoEntry* SchedulerPass::Schedule (DependenceDag *dag, int *dependence_heights, 
           break;
         }
       }
-      if (can_schedule) {
+      */
+      //If all the predecessors of this node is scheduled, this node can
+      //be added to the ready queue
+      if (num_scheduled_predecessors[succ] == dag->NumPredecessors (succ) ) {
         ready->push_back(succ);
         Trace (2, "Adding successor node (%d) %s  with dep %d and height %d to the ready queue", succ, insn_str_[succ].c_str(), dag->GetEdge(node, succ), dependence_heights[succ]);
         if (!IsMemOperation(entries_[node]->AsInstruction()) &&
