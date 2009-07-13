@@ -2,7 +2,7 @@
 
 = Build instructions =
 
-MAO relies on GNU Binutils (currenty v2.19) for parsing an input assembly 
+MAO relies on GNU Binutils (currenty v2.19.1) for parsing an input assembly 
 file. Make sure you download and build the correct version of binutils as indicated below. 
 
 These are the instructions for builing MAO for both i686 and x86_64,
@@ -13,25 +13,24 @@ for Linux and OSX. Note that --disable-nls might be needed when building binutil
 #Please note that when copying and pasting the following
 #commands, include the parentheses in the last command
 cd $DIR
-wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.tar.gz
-gzip -dc binutils-2.19.tar.gz | tar xvf -
-(cd binutils-2.19 && patch -p1  < ../data/binutils-2.19-mao.patch)
+wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.1.tar.gz
+gzip -dc binutils-2.19.1.tar.gz | tar xvf -
+(cd binutils-2.19.1 && patch -p1  < ../data/binutils-2.19.1-mao.patch)
 
 # For i686-linux
-mkdir binutils-2.19-obj-i686-linux 
-cd binutils-2.19-obj-i686-linux
-../binutils-2.19/configure --target=i686-linux
-make
+(mkdir binutils-2.19.1-obj-i686-linux 
+cd binutils-2.19.1-obj-i686-linux
+../binutils-2.19.1/configure --target=i686-linux
+make)
 
 # For x86_64 - you should be in the main directory
 # that was created when you checked out MAO
-mkdir binutils-2.19-obj-x86_64-linux
-cd binutils-2.19-obj-x86_64-linux
-../binutils-2.19/configure --target=x86_64-linux
-make
+(mkdir binutils-2.19.1-obj-x86_64-linux
+cd binutils-2.19.1-obj-x86_64-linux
+../binutils-2.19.1/configure --target=x86_64-linux
+make)
 
-#After completing either x86_64 or i686-linux
-cd ..
+#After building binutils for i686-linux and/or x86_64-linux
 cd src
 
 # Note that the Makefile in this directory specifies
@@ -46,7 +45,7 @@ make TARGET=x86_64-linux
 When building on MacOS X, the following flags might be necessary.
 {{{
 # When configuring binutils
-./binutils-2.19/configure --target=x86_64-linux --disable-nls
+./binutils-2.19.1/configure --target=x86_64-linux --disable-nls
 # Building mao
 make OS=MacOS
 }}}
