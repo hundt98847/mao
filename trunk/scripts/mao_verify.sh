@@ -67,9 +67,10 @@ fi
 IN_FILE=$2
 
 CC=gcc
-AS=${MAO_ROOT}/binutils-2.19-obj-${TARGET}/gas/as-new
-READELF=${MAO_ROOT}/binutils-2.19-obj-${TARGET}/binutils/readelf
-OBJDUMP=${MAO_ROOT}/binutils-2.19-obj-${TARGET}/binutils/objdump
+BINUTILS=binutils-2.19.1
+AS=${MAO_ROOT}/${BINUTILS}-obj-${TARGET}/gas/as-new
+READELF=${MAO_ROOT}/${BINUTILS}-obj-${TARGET}/binutils/readelf
+OBJDUMP=${MAO_ROOT}/${BINUTILS}-obj-${TARGET}/binutils/objdump
 MAO=${MAO_ROOT}/bin/mao-${TARGET}
 
 if [ "${MAO_ROOT}x" == "x" ]; then
