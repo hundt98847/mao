@@ -1161,9 +1161,28 @@ as_main (int argc, char ** argv)
   // Create a temporary file for MAO so that we dont overwrite
   // a.out. The file is never written to, but is needed for
   // the bfd code in gas to work correctly.
-  char file_template[] = "mao.temp.XXXXXX";
+  // First try to append a temporary string to
+  // the input file name. If this is unsucessful (for example
+  // due to permission, try to generate it in /tmp/.
+  // The reason we need to generate the code in the first place
+  // is the bfd code needs a file descriptor in the bfd object,
+  // and we want to avoid to change the bfd code..
   if (running_mao) {
+    // Our first try, append to filename.
+    char *file_template = malloc(strlen(out_file_name)+7);
+    file_template = strcpy(file_template, out_file_name);
+    file_template = strncat(file_template, ".XXXXXX", 7);
     int retval = mkstemp(file_template);
+    if (retval == -1) {
+      // Second try, put the file in /tmp/
+      char *file_tmp_template = malloc(strlen(out_file_name)+7+5);
+      file_tmp_template = strcpy(file_tmp_template, "/tmp/");
+      file_tmp_template = strcat(file_tmp_template, out_file_name);
+      file_tmp_template = strcat(file_tmp_template, ".XXXXXX");
+      free(file_template);
+      file_template = file_tmp_template;
+      retval = mkstemp(file_template);
+    }
     gas_assert(retval != -1);
     out_file_name = file_template;
   }
