@@ -39,8 +39,10 @@ operation of the program:
        instructions added
 Failure to supply either of these command line arguments results in that value
 defaulting to 10,000.
-The Test Generator will place all generated assembly files in a subdirectory
-(Named with date and time) of the execution directory.
+The Test Generator will place all generated assembly files, along with a
+baseline assembly file, which can be used as a comparison to mitigate the loop
+overhead, and an index in a subdirectory (Named with date and time) of the
+execution directory.
 
 Running the Runner:
 There are two runner scripts in the execution directory, but you only need to
@@ -48,13 +50,16 @@ run the first, "runner.sh".
 # sh runner.sh
 You will be prompted for the name of the directory that the Test Generator
 created and the pfmon events you would like to monitor.  Ignore any "X11 
-forwarding denied" error messages, these will be dealt with in a later release.
-The output from the Runner will be placed in a directory named identical to
-that of the Test Generator output directory with "Results" appended.  Pfmon
-output may be found in the files within that directory.  Sample pfmon
-commands may be found within the "pfmoncommands.txt" file. For further 
-questions or information on pfmon, please refer to the following website for details:
-http://perfmon2.sourceforge.net/pfmon_usersguide.html
+forwarding denied" error messages, these will be dealt with in a later
+release.  The output from the Runner will be placed in a directory named
+identical to that of the Test Generator output directory with "_Results"
+appended.  Pfmon output may be found in the files within that directory.
+Sample pfmon commands may be found within the "pfmoncommands.txt" file. For
+further questions or information on pfmon, please refer to the following
+website for details: http://perfmon2.sourceforge.net/pfmon_usersguide.html
 
 Questions/Contact:
 Please contact us for any questions unanswered by the README file. 
+  - Casey Burkhardt - caseyburkhardt@google.com
+  - Sweta Mohapatra - smohapatra@google.com
+

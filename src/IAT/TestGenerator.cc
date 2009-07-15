@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   // There will be a method later that determines this automagically determines
   // and sets this value based on a number of criteria.
   // TODO(caseyburkhardt): Programmatically generate number of tests
-  const int n = 1;
+  const int n = 2;
 
   // Command Line Argument Parsing
   // TODO(caseyburkhardt): Add argument for path to op-codes table
@@ -74,6 +74,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Holds the instances of Assembly Objects
+  // + 1 is for the initial baseline test.
   Assembly tests[n];
 
   // Generate Assembly Objects
@@ -83,16 +84,33 @@ int main(int argc, char* argv[]) {
   // from the op-codes table.
   // TODO(caseyburkhardt): Support multiple tests-instructions in op-codes table
 
+  // Generate the Initial Baseline Test
+  tests[0].set_instruction_name("");
+  tests[0].set_addressing_mode("");
+  tests[0].set_file_name("baseline.s");
+
+  // Append the instructions to the Initial Baseline Test
+  tests[0].append_instructions(GetBodyPrefix());
+  tests[0].append_instructions(GetBodyMain(tests[0], number_instructions,
+                                           number_iterations));
+  tests[0].append_instructions(GetBodySuffix());
+  tests[0].set_generation_complete(true);
+
+  // In the future, instructions will be determined based on the existance of
+  // a data file, instructions.dat, containing an instruciton name, and a test
+  // flag in the form "instruction, test" or "instruction, ignore".
+  // TODO(caseyburkhardt): Read instructions from instructions.dat file
+
   // In the future, tests will also be generated exhaustively for all reasonable
   // addressing modes.  The runner script will deal with compilation errors from
   // unsupported operands to the assembly instructions.
+  // TODO(caseyburkhardt): Add Operand and Instruction classes
   // TODO(caseyburkhardt): Exhaustively create tests for all addressing modes
-  for (int i = 0; i < n; ++i) {
-    tests[i].set_instruction_name("addl");
+  for (int i = 1; i < n; ++i) {
+    tests[i].set_instruction_name("add");
     tests[i].set_addressing_mode("1");
-    string file_name = tests[i].instruction_name() + "_" +
-        tests[i].addressing_mode() + ".s";
-    tests[i].set_file_name(file_name);
+    tests[i].set_file_name(tests[i].instruction_name() + "_" +
+                           tests[i].addressing_mode() + ".s");
 
     // Append the instructions to the assembly object
     tests[i].append_instructions(GetBodyPrefix());
@@ -192,8 +210,14 @@ string GetBodyMain(Assembly obj, int number_instructions,
   char charValue[kMaxBufferSize];
   sprintf(charValue, "%d", number_iterations);
 
-  for (int i = 0; i < number_instructions; ++i) {
-    result = result + " " + obj.instruction_name() + "  $1, -8(%rbp)" + "\n";
+  if (obj.instruction_name() != "") {
+    for (int i = 0; i < number_instructions; ++i) {
+      result = result + " " + obj.instruction_name() + "  $1, -8(%rbp)" + "\n";
+      // TODO(caseyburkhardt): Generate All Addressing Modes
+      // Ignore this next line, it's only an additional addressing mode.
+      // Next version will generate all possible addressing modes.
+      // result = result + " " + obj.instruction_name() + "  $1, %eax" + "\n";
+    }
   }
   result = result + "  add  $1, -4(%rbp)\n"
       ".L2:\n"

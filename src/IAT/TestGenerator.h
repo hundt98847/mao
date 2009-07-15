@@ -41,6 +41,7 @@ string GetBodySuffix();
 
 // Constants
 const char kIndexFileName[] = "index.txt";
+const char kBaselineFileName[] = "baseline.s";
 const char kInstructionCountFlag[] = "--instructions=";
 const char kIterationCountFlag[] = "--iterations=";
 const string kOutputDirectoryName = GetOutputDirectoryName();
