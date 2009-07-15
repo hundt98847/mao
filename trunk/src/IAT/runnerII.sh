@@ -40,17 +40,12 @@ for EXECUTABLEFILE in $(cat $INDEXFILE); do
     echo "$COMMAND" >> "$EXECUTABLEFILE"failedcommands.txt
   else
     pfmon -e "$COMMAND" ./"${EXECUTABLEFILE}".exe >> "$EXECUTABLEFILE"results.txt
-    echo "$COMMAND" >> "$EXECUTABLEFILE"successfulcommands.txt
   fi
  
   if [ -f "$EXECUTABLEFILE"failedcommands.txt ]; then
     mv "$EXECUTABLEFILE"failedcommands.txt ./results/
   fi
   
-  if [ -f "$EXECUTABLEFILE"successfulcommands.txt ]; then
-    mv "$EXECUTABLEFILE"successfulcommands.txt ./results/
-  fi
-
   if [ -f "$EXECUTABLEFILE"results.txt ]; then
     mv "$EXECUTABLEFILE"results.txt ./results/
   fi
