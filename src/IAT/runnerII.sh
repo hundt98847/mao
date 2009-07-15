@@ -1,37 +1,65 @@
+#############################################
+#
 #!/bin/bash
+#
+# IAT: runnerII.sh - part of IAT runner script
+# Move to directory on prod machine where files
+# are and remove files for cleanup after
+# variables are set
+#
+#############################################
 
-#move to directory where files are
-#and remove files for cleanup after
-#variables are set
+#check for needed tar files
 cd /export/hda3/smohapatra/
-chmod 755 *.txt
-EXECUTABLE=$(cat executable.txt)
-USER=$(cat user.txt)
-LOCATION=$(cat location.txt)
-MACHINE=$(cat machine.txt)
-RETURNLOCATION="$USER"@"$MACHINE":"$LOCATION"
-COMMANDSFILE=${EXECUTABLE}commands.txt
+chmod 755 *
+if [ -f infofiles.tar ]; then
+  tar -zxvf infofiles.tar
+else
+  echo "infofiles.tar: not found"
+  exit 1
+fi
+if [ -f executablefiles.tar ]; then
+  tar -zxvf executablefiles.tar
+else
+  echo "executablefiles.tar: not found"
+  exit 1
+fi
 
-#pfmon commands loop
-for CURRENTCOMMAND in $(cat $COMMANDSFILE); do
-  pfmon -e "$CURRENTCOMMAND" ./"${EXECUTABLE}" > /dev/null
+#pfmon loop
+INDEXFILE=./executablefiles.txt
+COMMAND=$(cat command.txt)
+
+mkdir results/
+
+for EXECUTABLEFILE in $(cat $INDEXFILE); do
+  pfmon -e "$COMMAND" ./"${EXECUTABLEFILE}".exe > /dev/null
+  
+  #TODO(smohapatra): find a way to check exit status w/o calling pfmon twice
   if [ $? -ne 0 ]; then
-    echo "$CURRENTCOMMAND: command failed"
-    echo "$CURRENTCOMMAND" >> ${EXECUTABLE}failedcommands.txt
+    echo "$COMMAND: command failed." 
+    echo "$COMMAND" >> "$EXECUTABLEFILE"failedcommands.txt
   else
-    pfmon -e "$CURRENTCOMMAND" ./"$EXECUTABLE" >> "$EXECUTABLE"Results.txt
+    pfmon -e "$COMMAND" ./"${EXECUTABLEFILE}".exe >> "$EXECUTABLEFILE"results.txt
+    echo "$COMMAND" >> "$EXECUTABLEFILE"successfulcommands.txt
+  fi
+ 
+  if [ -f "$EXECUTABLEFILE"failedcommands.txt ]; then
+    mv "$EXECUTABLEFILE"failedcommands.txt ./results/
+  fi
+  
+  if [ -f "$EXECUTABLEFILE"successfulcommands.txt ]; then
+    mv "$EXECUTABLEFILE"successfulcommands.txt ./results/
+  fi
+
+  if [ -f "$EXECUTABLEFILE"results.txt ]; then
+    mv "$EXECUTABLEFILE"results.txt ./results/
   fi
 done
 
-if [ ! -f ${EXECUTABLE}failedcommands.txt ]; then
-  echo "No failed commands!" > ${EXECUTABLE}failedcommands.txt
-  fi
-
-rm -rf executable.txt
-rm -rf user.txt
-rm -rf location.txt
-rm -rf machine.txt
-rm -rf ${EXECUTABLE}commands.txt
-rm -rf $EXECUTABLE
+#tar result files to rsync back
+cd ./results
+tar -czvf results.tar ./*
+mv results.tar ..
+cd ..
 
 exit 0
