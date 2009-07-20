@@ -54,7 +54,11 @@ class PrefetchNtaPass : public MaoFunctionPass {
   //
   bool Go() {
     CFG *cfg = CFG::GetCFG(unit_, function_);
-    if (!cfg->IsWellFormed()) return true;
+    if (!cfg->IsWellFormed()) {
+      Trace(3, "Function \"%s\" does not have a well formed CFG",
+            function_->name().c_str() );
+      return true;
+    }
 
     FORALL_CFG_BB(cfg,it) {
       FORALL_BB_ENTRY(it,entry) {

@@ -261,7 +261,7 @@ class CFG {
 
   // True if all jumps are resolved, and to labels within the function.
   bool IsWellFormed() const {
-    return !HasExternalJump() && !HasExternalJump();
+    return !HasExternalJump() && !HasUnresolvedIndirectJump();
   }
 
   // Updates the number of found external jumps
