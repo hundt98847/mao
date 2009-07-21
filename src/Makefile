@@ -7,7 +7,6 @@ BINUTILOBJ=$(BINUTILSRC)-obj-$(TARGET)
 PYTHON=../python-2.5.4
 PYTHONLIB=$(PYTHON)/usr/local/lib/python2.5/config/libpython2.5.a
 PYTHONINCL=/usr/local/include/python2.5
-REVDEF := -D'REV_NUM="$(shell svnversion -n .)"'
 
 ifeq ($(OS),Linux)
  PYTHONLDOPTS=-Xlinker -export-dynamic 
@@ -35,7 +34,6 @@ SRCDIR=.
 VPATH=$(SRCDIR)
 
 CFLAGS=						\
-	 $(REVDEF)                              \
 	-D_GNU_SOURCE				\
 	-I.					\
 	-I$(OBJDIR)				\
