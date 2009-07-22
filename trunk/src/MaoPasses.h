@@ -323,7 +323,6 @@ void InitRedundantMemMoveElimination();
 void InitScheduler();
 void InitMissDispElimination();
 void InitLongInstructionSplit();
-void InitLoopAlign();
 void InitBranchSeparate();
 void InitAddAddElimination();
 void InitAlignTinyLoops16();
