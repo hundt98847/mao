@@ -196,8 +196,9 @@ fisttpll
 
 hlt
 
-idiv      addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
-imul dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
+idiv      addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax undef: CF OF SF ZF AF PF
+imul dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax flags: CF OF undef: SF ZF AF PF
+
 in   dest
 inc  src
 
@@ -210,10 +211,12 @@ ins  rdi
 # insw rdi
 # insd rdi
 insertps dest
-int
-into
-invd
+#
+int rax rcx rdx rsi rdi r8 r9 r10 r11
+into rax rcx rdx rsi rdi r8 r9 r10 r11
+invd 
 invlpg
+#TODO iret
 iret
 # described in the Intel manual, but taken care of by the mode
 # append trick in mao/gas
@@ -682,7 +685,8 @@ subps dest
 subsd dest
 subss dest
 swapgs
-syscall rcx r11
+#Not sure if the def set of syscall is correct
+syscall rax rcx rdx rsi rdi r8 r9 r10 r11 flags: CF ZF SF OF PF AF
 sysenter
 sysexit
 sysret
