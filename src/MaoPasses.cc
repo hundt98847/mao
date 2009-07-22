@@ -428,7 +428,6 @@ void InitPasses() {
   InitRedundantTestElimination();
   InitRedundantMemMoveElimination();
   InitMissDispElimination();
-  InitLoopAlign();
   InitBranchSeparate();
   InitBackBranchAlign();
   InitAddAddElimination();
