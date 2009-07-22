@@ -123,7 +123,7 @@ cmps   ds es di si edi esi rsi rdi
 # cmpsw  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 # cmpsq  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 
-cmpxchg rax rbx rcx rdx
+cmpxchg rax exp
 cmpxchg8b edx eax ecx ebx
 cmpxchg16b rdx rax rcx rbx
 
@@ -383,7 +383,7 @@ subps exp
 subsd exp
 subss exp
 swapgs
-syscall rcx r11
+#syscall rcx r11
 sysenter
 sysexit
 sysret

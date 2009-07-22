@@ -67,7 +67,7 @@ class BitString {
     unsigned int word_pos = from_index/(sizeof(unsigned long long) * 8);
     unsigned int bit_pos = from_index%(sizeof(unsigned long long) * 8);
     while (word_pos < 4) {
-      while (bit_pos < (sizeof(unsigned long long) * 8)) {
+      while (word[word_pos] && (bit_pos < (sizeof(unsigned long long) * 8))) {
         if (word[word_pos]&(1ull << bit_pos))
           return word_pos*sizeof(unsigned long long)*8+bit_pos;
         bit_pos++;

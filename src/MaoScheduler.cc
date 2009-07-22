@@ -313,7 +313,12 @@ MaoEntry* SchedulerPass::Schedule(DependenceDag *dag,
   // as the first instruction of the function
   MaoEntry *last_entry = NULL;
   int *num_scheduled_predecessors = new int[dag->NodeCount()];
+  int *num_predecessors = new int[dag->NodeCount()];
   memset(num_scheduled_predecessors, 0, dag->NodeCount()*sizeof(int));
+  memset(num_predecessors, 0, dag->NodeCount()*sizeof(int));
+
+  for (int i = 0; i < dag->NodeCount(); i++)
+    num_predecessors[i] = dag->NumPredecessors(i);
 
   while (!ready->empty()) {
     int node = RemoveTallest(ready, dependence_heights);
@@ -325,7 +330,7 @@ MaoEntry* SchedulerPass::Schedule(DependenceDag *dag,
     std::list<int> *successors = dag->GetSuccessors(node);
     // Find that successor with the largest dependence height, all of
     // whose predecessors are already scheduled
-    int best_height = -1, best_node = -1;
+    int best_height = -1;
     for (std::list<int>::iterator succ_iter = successors->begin();
          succ_iter != successors->end(); ++succ_iter) {
       int succ = *succ_iter;
@@ -345,7 +350,7 @@ MaoEntry* SchedulerPass::Schedule(DependenceDag *dag,
       */
       // If all the predecessors of this node is scheduled, this node can
       // be added to the ready queue
-      if (num_scheduled_predecessors[succ] == dag->NumPredecessors(succ)) {
+      if (num_scheduled_predecessors[succ] == num_predecessors[succ]) {
         ready->push_back(succ);
         Trace(2, "Adding successor node (%d) %s  with dep %d and height %d to the ready queue",
               succ, insn_str_[succ].c_str(), dag->GetEdge(node, succ), dependence_heights[succ]);
@@ -357,6 +362,10 @@ MaoEntry* SchedulerPass::Schedule(DependenceDag *dag,
       }
     }
   }
+  delete [] num_scheduled_predecessors;
+  delete [] num_predecessors;
+  delete [] scheduled;
+
   return last_entry;
 }
 
@@ -373,6 +382,12 @@ void SchedulerPass::ScheduleNode(int node, MaoEntry **head) {
   if (entry == *head)
     return;
   MaoEntry *prev_entry = entry->prev();
+  // If the node to be scheduled is right after the head node
+  // just change head to point to the new node
+  if (prev_entry == *head) {
+    *head = entry;
+    return;
+  }
   entry->Unlink();
   (*head)->LinkAfter(entry);
   if (prev_entry->IsDirective()) {
@@ -759,6 +774,8 @@ bool SchedulerPass::IsMemOperation(InstructionEntry *entry) {
       case OP_stos:
       case OP_lods:
       case OP_scas:
+      case OP_xadd:
+      case OP_xchg:
 
         return true;
       default:
