@@ -1,12 +1,16 @@
-#############################################
-#
 #!/bin/bash
+#
+# $Id$
+# Copyright 2009 Google Inc. All Rights Reserved
+# Author: smohapatra@google.com (Sweta Mohapatra)
 #
 # IAT: cleaner.sh - part of IAT runner script
 # Removes all files on prod server
-#
-#############################################
 
-cd /export/hda3/smohapatra
-rm -rf *
+PFMONDIR=$1
+cd ${PFMONDIR}
+if [[ $? -eq 0 ]]; then
+  rm -rf *
+fi
+
 exit 0

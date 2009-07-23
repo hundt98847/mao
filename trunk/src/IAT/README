@@ -46,17 +46,35 @@ execution directory.
 
 Running the Runner:
 There are two runner scripts in the execution directory, but you only need to
-run the first, "runner.sh".
+run the first, "runner.sh". For example, you can run the following command:
+
 # sh runner.sh
-You will be prompted for the name of the directory that the Test Generator
-created and the pfmon events you would like to monitor.  Ignore any "X11 
-forwarding denied" error messages, these will be dealt with in a later
-release.  The output from the Runner will be placed in a directory named
+
+You will automatically be prompted to input the machine with pfmon on it,
+the username on that machine, the directory path on the pfmon machine on 
+which you want the files to be copied to (these files will be removed later 
+at the end of the script) as well as the directory to be tested and the CPU
+event you'd like to test for, but you can also put these as command line
+arguments in the following order:
+
+sh runner.sh [DIRECTORY TO BE TESTED] [PFMON EVENT] [PFMON MACHINE] \
+[PFMON USERNAME] [PFMON DIRECTORY PATH]
+
+The output from the Runner will be placed in a directory named
 identical to that of the Test Generator output directory with "_Results"
 appended.  Pfmon output may be found in the files within that directory.
 Sample pfmon commands may be found within the "pfmoncommands.txt" file. For
 further questions or information on pfmon, please refer to the following
 website for details: http://perfmon2.sourceforge.net/pfmon_usersguide.html
+
+
+NOTE: If root@yrnw8 requires login and breaks script,
+be sure to have the following code in your .profile textfile:
+               
+     if [ -x /usr/local/scripts/ssx-agents ] ; then
+       eval `/usr/local/scripts/ssx-agents $SHELL`
+     fi
+
 
 Questions/Contact:
 Please contact us for any questions unanswered by the README file. 
