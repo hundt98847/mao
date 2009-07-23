@@ -1,60 +1,49 @@
-#############################################
+#!/bin/bash -x
 #
-#!/bin/bash
+# $Id$
+# Copyright 2009 Google Inc. All Rights Reserved
+# Author: smohapatra@google.com (Sweta Mohapatra) 
 #
 # IAT: runnerII.sh - part of IAT runner script
 # Move to directory on prod machine where files
 # are and remove files for cleanup after
 # variables are set
-#
-#############################################
 
 #check for needed tar files
-cd /export/hda3/smohapatra/
-chmod 755 *
-if [ -f infofiles.tar ]; then
-  tar -zxvf infofiles.tar
+PFMONDIR=$1
+COMMAND=$2
+cd ${PFMONDIR}
+
+chmod o+x *
+if [[ -f allfiles.tar ]]; then
+  tar -zxvf allfiles.tar > /dev/null
 else
-  echo "infofiles.tar: not found"
-  exit 1
-fi
-if [ -f executablefiles.tar ]; then
-  tar -zxvf executablefiles.tar
-else
-  echo "executablefiles.tar: not found"
-  exit 1
+  echo 'allfiles.tar: not found'
+  exit 4 
 fi
 
 #pfmon loop
 INDEXFILE=./executablefiles.txt
-COMMAND=$(cat command.txt)
 
-mkdir results/
+if [[ ! -d results/ ]]; then 
+  mkdir results/
+fi
 
 for EXECUTABLEFILE in $(cat $INDEXFILE); do
-  pfmon -e "$COMMAND" ./"${EXECUTABLEFILE}".exe > /dev/null
+  pfmon -e "$COMMAND" ./"${EXECUTABLEFILE}".exe > success.txt
   
-  #TODO(smohapatra): find a way to check exit status w/o calling pfmon twice
-  if [ $? -ne 0 ]; then
+  if [[ $? -ne 0 ]]; then
     echo "$COMMAND: command failed." 
-    echo "$COMMAND" >> "$EXECUTABLEFILE"failedcommands.txt
+    echo "$COMMAND" >> ./results/"$EXECUTABLEFILE"_failedcommands.txt
   else
-    pfmon -e "$COMMAND" ./"${EXECUTABLEFILE}".exe >> "$EXECUTABLEFILE"results.txt
-  fi
- 
-  if [ -f "$EXECUTABLEFILE"failedcommands.txt ]; then
-    mv "$EXECUTABLEFILE"failedcommands.txt ./results/
-  fi
-  
-  if [ -f "$EXECUTABLEFILE"results.txt ]; then
-    mv "$EXECUTABLEFILE"results.txt ./results/
+    cat success.txt >> ./results/"$EXECUTABLEFILE"_results.txt
   fi
 done
 
 #tar result files to rsync back
 cd ./results
-tar -czvf results.tar ./*
-mv results.tar ..
+tar -czvf results.tar ./* > /dev/null
+mv results.tar ${PFMONDIR}
 cd ..
 
 exit 0
