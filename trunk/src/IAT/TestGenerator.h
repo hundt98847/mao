@@ -29,24 +29,43 @@
 #include <string>
 
 #include "./Assembly.h"
+#include "./Operation.h"
+#include "./Operand.h"
 
 using namespace std;
 
 // Function Prototypes
 int ParseCommandLineInt(const string arg, const string flag);
 string GetOutputDirectoryName();
+int CountUncommentedLines(string file_name, char comment_char);
+Operation GenerateOperation(char data[], const char delimiter[]);
+Operand GenerateOperand(char data[], const char delimiter[]);
+Assembly GenerateBaselineTest(int number_instructions, int number_iterations);
+int DetermineTestCount(int number_operations, int number_operands,
+                       Operation operations[], Operand operands[]);
+Assembly GenerateTest(int number_instructions, int number_iterations,
+                      int number_operands, Operation& operation,
+                      Operand operands[]);
 string GetBodyPrefix();
-string GetBodyMain(Assembly obj, int numberInstructions, int numberIterations);
+string GetBodyMain(Assembly& obj, int numberInstructions, int numberIterations);
 string GetBodySuffix();
 
 // Constants
 const char kIndexFileName[] = "index.txt";
 const char kBaselineFileName[] = "baseline.s";
+const char kOperationDataFileName[] = "operations.dat";
+const char kOperandDataFileName[] = "operands.dat";
 const char kInstructionCountFlag[] = "--instructions=";
 const char kIterationCountFlag[] = "--iterations=";
+const char kFileCommentCharacter = '#';
+const char kFileDelimiter[] = ", ";
 const string kOutputDirectoryName = GetOutputDirectoryName();
-const int kDefaultInstructionCount = 10000;
+const int kDefaultInstructionCount = 1000;
 const int kDefaultIterationCount = 10000;
 const int kMaxBufferSize = 512;
+const int kArgumentsInOperationDataFile = 4;
+const int kArgumentsInOperandDataFile = 3;
+const int kAbsoluteMinimumOperands = 0;
+const int kAbsoluteMaximumOperands = 3;
 
 #endif /* IAT_TESTGENERATOR_H_ */

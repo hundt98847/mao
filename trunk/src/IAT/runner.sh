@@ -5,12 +5,12 @@
 # Author: smohapatra@google.com (Sweta Mohapatra)
 #
 # IAT: Runner script - automatically compiles ASM files, 
-# runs the executable through pfmon,and stores results
+# runs the executable through pfmon, and stores results
 #
 # NOTE: This script is divided into three parts
 # which include runner.sh, runnerII.sh, and cleaner.sh
 # 
-# NOTE: If root@yrnw8 requires login and breaks script,
+# NOTE: If root@hostname requires login and breaks script,
 # be sure to have the following code in your .profile textfile:
 #		
 #    if [ -x /usr/local/scripts/ssx-agents ] ; then
@@ -108,7 +108,7 @@ for CURRENTFILE in $(cat $INDEXFILE); do
     continue
   else
     EXECUTABLEFILE="test_${CURRENTFILE//".s"/}"
-    gcc "$CURRENTFILE" -o "$EXECUTABLEFILE".exe
+    gcc "$CURRENTFILE" -o "$EXECUTABLEFILE".exe 2> /dev/null
     if [[ $? -ne 0 ]]; then
       echo $CURRENTFILE >> failedtocompile.txt
       continue
