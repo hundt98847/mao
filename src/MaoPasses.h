@@ -257,7 +257,6 @@ class ReadInputPass : public MaoPass {
 class AssemblyPass : public MaoPass {
  public:
   AssemblyPass(MaoOptionMap *options, MaoUnit *mao_unit);
-  void PrintAsmSymbolHeader(FILE *out);
   bool Go();
 };
 
