@@ -118,7 +118,7 @@ void MaoAction::set_da(const char *str) {
 }
 
 
-//PassDebugAction
+// PassDebugAction
 //
 class PassDebugAction : public MaoDebugAction {
  public:
@@ -218,8 +218,8 @@ class SourceDebugAction : public MaoDebugAction {
   }
 };
 
-ReadInputPass::ReadInputPass(int argc, const char *argv[], MaoOptionMap *options,
-                             MaoUnit *mao_unit)
+ReadInputPass::ReadInputPass(int argc, const char *argv[],
+                             MaoOptionMap *options, MaoUnit *mao_unit)
     : MaoPass("READ", options, mao_unit),
       argc_(argc), argv_(argv) { }
 
@@ -256,31 +256,12 @@ bool AssemblyPass::Go() {
   FILE *outfile = fopen(output_file_name, "w");
   MAO_ASSERT(outfile);
 
-  // Print out the code that makes sure that the symbol
-  // table is in the original order
-  PrintAsmSymbolHeader(outfile);
-
-  fprintf(outfile, "# MaoUnit:\n");
   unit_->PrintMaoUnit(outfile);
 
-fclose(outfile);
+  fclose(outfile);
   return true;
 }
 
-
-// TODO(martint): Finish this function and remove the redundant
-// directives from the IR (.type, .comm, .globl, ..)
-void AssemblyPass::PrintAsmSymbolHeader(FILE *out) {
-  // List of sections:
-  //   List of symbols in sections
-
-  // List of global symbols
-  // List of comm symbols
-
-  // List of .type directives
-
-  return;
-}
 
 
 // DumpIrPass
@@ -351,14 +332,14 @@ TestPass::TestPass(MaoOptionMap *options, MaoUnit *mao_unit,
   : MaoFunctionPass("TEST", options, mao_unit, function),
     cfg_(GetOptionBool("cfg")),
     lsg_(GetOptionBool("lsg")),
-    relax_(GetOptionBool("relax")) { 
+    relax_(GetOptionBool("relax")) {
 }
 
 bool TestPass::Go() {
   Trace(3, "Running TEST on function \"%s\" with options cfg=%d lsg=%d relax=%d"
 	,function_->name().c_str(), cfg_, lsg_, relax_);
 
-  if (cfg_) 
+  if (cfg_)
     CFG::GetCFG(unit_, function_);
   if (lsg_)
     LoopStructureGraph::GetLSG(unit_, function_);
