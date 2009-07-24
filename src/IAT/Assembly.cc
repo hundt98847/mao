@@ -34,6 +34,7 @@ Assembly::Assembly() {
   this->file_name_.clear();
   this->generation_complete_ = false;
   this->output_complete_ = false;
+  this->number_operands_ = 0;
 }
 
 // Destructor
@@ -72,6 +73,60 @@ void Assembly::set_file_name(string data) {
 
 string Assembly::file_name() {
   return this->file_name_;
+}
+
+int Assembly::number_operands() {
+  return this->number_operands_;
+}
+
+void Assembly::set_operation(Operation& operation) {
+  this->operation_ = &operation;
+}
+
+void Assembly::set_operands(Operand operands[], int number_operands) {
+  if (number_operands == 0) {
+    this->operand1_ = NULL;
+    this->operand2_ = NULL;
+    this->operand3_ = NULL;
+    this->number_operands_ = 0;
+  } else if (number_operands == 1) {
+    this->operand1_ = &operands[0];
+    this->operand2_ = NULL;
+    this->operand3_ = NULL;
+    this->number_operands_ = 1;
+  } else if (number_operands == 2) {
+    this->operand1_ = &operands[0];
+    this->operand2_ = &operands[1];
+    this->operand3_ = NULL;
+    this->number_operands_ = 2;
+  } else if (number_operands == 3) {
+    this->operand1_ = &operands[0];
+    this->operand2_ = &operands[1];
+    this->operand3_ = &operands[2];
+    this->number_operands_ = 3;
+  } else {
+    printf("Illegal Operation[Assembly::set_operands] - "
+        "Invalid Operand Count.\n");
+    exit(1);
+  }
+}
+
+Operand* Assembly::operand(int index) {
+  if (this->number_operands_ == 0) {
+    printf("Illegal Operation[Assembly::operand] - "
+        "Assembly Object has no operands.\n");
+    exit(1);
+  } else if (index == 0) {
+    return this->operand1_;
+  } else if (index == 1) {
+    return this->operand2_;
+  } else if (index == 2) {
+    return this->operand3_;
+  } else {
+    printf("Illegal Operation[Assembly::operand] - "
+        "Operand index out of bounds.\n");
+    exit(1);
+  }
 }
 
 void Assembly::set_generation_complete(bool status) {

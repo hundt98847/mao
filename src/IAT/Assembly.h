@@ -27,6 +27,8 @@
 #define IAT_ASSEMBLY_H_
 
 #include <string>
+#include "Operation.h"
+#include "Operand.h"
 
 using namespace std;
 
@@ -51,6 +53,11 @@ class Assembly {
   string addressing_mode();
   void set_file_name(string data);
   string file_name();
+  int number_operands();
+  void set_operation(Operation& operation);
+  Operation* operation();
+  void set_operands(Operand operands[], int number_operands);
+  Operand* operand(int index);
   void set_generation_complete(bool status);
   bool generation_complete();
   void set_output_complete(bool status);
@@ -64,6 +71,13 @@ class Assembly {
   string instruction_name_;
   string addressing_mode_;
   string file_name_;
+
+  int number_operands_;
+
+  Operation* operation_;
+  Operand* operand1_;
+  Operand* operand2_;
+  Operand* operand3_;
 
   // True when instructionBody contains full assembly file.
   bool generation_complete_;

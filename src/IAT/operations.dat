@@ -1,0 +1,12 @@
+# This file contains all x86 operations in the following format
+# operation_name, test/ignore, min_operands, max_operands
+# Legend:
+#   operation_name = The name of the operation. (add)
+#   test/ignore = "test" to generate tests for this operation
+#                 "ignore" to not load this operation into the Test Generator
+#   min_operands = The minimum number of operands for this operation
+#   max_operands = The maximum number of operands for this operation
+add, test, 0, 3
+sub, test, 0, 3
+lea, test, 0, 3
+inc, test, 0, 3
