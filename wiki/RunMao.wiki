@@ -36,7 +36,7 @@ Another example:
 will invoke the phases ZEE, REDTEST, REDMOV, LOOP16 and BACKBRALIGN in this sequence. This example is missing the ASM pass at the end, so there would be no output generated. This can be useful to run, e.g., analysis only passes.
 
 = Default Output =
-The default output of MAO goes to stdout via the pass ASM. To change the output file, the option 'o' to 'ASM' can be used. For example:
+The ASM pass is used to print the resulting assembly file. The default output of the pass is /dev/stdout. To change the output file, the option 'o' to 'ASM' can be used. For example:
 
 {{{
   # redirect output to stderr
