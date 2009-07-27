@@ -67,7 +67,7 @@ bound
 bsf dest flags: ZF undef: CF OF SF AF PF
 bsr dest flags: ZF undef: CF OF SF AF PF
 bswap src dest
-bt 
+bt flags: CF undef: OF SF AF PF ZF
 btc src dest flags: CF undef: OF SF ZF AF PF
 btr src dest flags: CF undef: OF SF ZF AF PF
 bts src dest flags: CF undef: OF SF ZF AF PF
@@ -76,12 +76,12 @@ call rax rcx rdx rsi rdi r8 r9 r10 r11 flags: CF ZF SF OF PF AF
 cbw  ax
 cwde eax
 cdqe rax
-clc
-cld
+clc clear: CF
+cld clear: DF
 clflush
-cli
+cli clear: IF VIF
 clts cr0
-cmc
+cmc flags: CF
 
 cmovo   dest
 cmovno  dest
@@ -171,7 +171,7 @@ cqo rdx rax
 daa al
 das al
 dec op0 flags: OF SF ZF AF PF
-div addr8: ax addr16: ax dx addr32: eax edx addr64: rax rdx
+div addr8: ax addr16: ax dx addr32: eax edx addr64: rax rdx undef: CF OF SF ZF AF PF
 divpd dest
 divps dest
 divsd dest
@@ -217,7 +217,7 @@ into rax rcx rdx rsi rdi r8 r9 r10 r11
 invd 
 invlpg
 #TODO iret
-iret
+#iret
 # described in the Intel manual, but taken care of by the mode
 # append trick in mao/gas
 # iretd
@@ -375,7 +375,7 @@ movzwq dest
 movzx dest
 
 mpsadbw dest
-mul   dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
+mul   dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax flags: OF CF undef: SF ZF AF PF
 mulpd dest
 mulps dest
 mulsd dest
@@ -696,8 +696,8 @@ sysret
 test   flags: SF ZF PF OF CF undef: AF
 
 # U
-ucomisd dest flags: ZF PF CF clear: OF AF SF
-ucomiss dest flags: ZF PF CF clear: OF AF SF
+ucomisd flags: ZF PF CF clear: OF AF SF
+ucomiss flags: ZF PF CF clear: OF AF SF
 ud2
 unpckhpd dest
 unpckhps dest
