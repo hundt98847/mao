@@ -77,6 +77,9 @@ bts exp
 
 #c
 #call rsp rip cs
+clc
+cld
+cli
 
 cmova   src flags: CF ZF
 cmovae  src flags: CF
@@ -164,7 +167,7 @@ cqo rax
 
 daa al flags: AF CF
 das al flags: AF CF
-dec exp
+dec src
 div exp addr8: ax addr16: ax dx addr32: eax edx addr64: rax rdx
 divpd exp
 divps exp
@@ -172,7 +175,12 @@ divsd exp
 divss exp
 dppd exp
 dpps exp
+# i
+idiv exp addr8: ax addr16: ax dx addr32: eax edx addr64: rax rdx
+imul exp addr8: ax addr16: ax addr32: eax addr64: rax
+inc src
 
+# j
 # jumpers
 jmp exp
 ljmp
@@ -284,7 +292,7 @@ movzbq src
 movzwq src
 movzx src
 
-mul   exp addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax
+mul   exp addr8: al addr16: ax addr32: eax addr64: rax
 
 mwait eax ecx
 
@@ -365,9 +373,9 @@ sqrtpd exp
 sqrtps exp
 sqrtsd exp
 sqrtss exp
-stc    flags: CF
-std    flags: DF
-sti    flags: IF VIF
+stc
+std
+sti
 stmxcsr exp
 stos  rax rdi di edi flags: DF
 # taken care of by mode append:

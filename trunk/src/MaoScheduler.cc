@@ -790,6 +790,7 @@ bool SchedulerPass::IsControlOperation(InstructionEntry *entry) {
     return true;
   switch (entry->op()) {
     case OP_leave:
+    case OP_hlt:
       return true;
     default:
       return false;
