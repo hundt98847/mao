@@ -35,7 +35,8 @@
 using namespace std;
 
 // Function Prototypes
-int ParseCommandLineInt(const string arg, const string flag);
+int main(int argc, char* argv[]);
+int ParseCommandLineInt(string arg, const string flag);
 string GetOutputDirectoryName();
 int CountUncommentedLines(string file_name, char comment_char);
 Operation GenerateOperation(char data[], const char delimiter[]);
@@ -55,6 +56,11 @@ const char kIndexFileName[] = "index.txt";
 const char kBaselineFileName[] = "baseline.s";
 const char kOperationDataFileName[] = "operations.dat";
 const char kOperandDataFileName[] = "operands.dat";
+const char kTestSetDataFileName[] = "test_set.dat";
+const char kTestSetDataFileHeader[] = "# This file was generated automatically "
+                                      "by the Test Generator.  It contains \n"
+                                      "# information specific to this test set"
+                                      "and should not be deleted.";
 const char kInstructionCountFlag[] = "--instructions=";
 const char kIterationCountFlag[] = "--iterations=";
 const char kFileCommentCharacter = '#';

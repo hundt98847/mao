@@ -146,7 +146,7 @@ bool Assembly::output_complete() {
 }
 
 string Assembly::OutputString() {
-  string result = "Instruction Name: " + this->instruction_name_ + "\n";
+  string result = "Operation Name: " + this->instruction_name_ + "\n";
   result = result + "Addressing Mode: " + this->addressing_mode_ + "\n";
   result = result + "Instruction Body: \n" + this->instruction_body_;
   return result;
