@@ -197,7 +197,11 @@ fisttpll
 hlt
 
 idiv      addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax undef: CF OF SF ZF AF PF
-imul dest addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax flags: CF OF undef: SF ZF AF PF
+
+#imul has a 3 operand form - an immediate and a register src and a register def. 'dest' is a synonym for
+#op1 and does not give the correct dest in the 3 operand case. So op2 is added in addition to dest making
+#the defs more conservative
+imul dest op2 addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax flags: CF OF undef: SF ZF AF PF
 
 in   dest
 inc  src
