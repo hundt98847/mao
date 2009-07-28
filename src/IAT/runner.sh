@@ -81,7 +81,12 @@ fi
 #create results dir and store location
 if [[ ! -d ${DIRECTORY}_Results ]]; then
   mkdir "${DIRECTORY}_Results"
-  fi
+fi
+cp "${DIRECTORY}/test_set.dat" "${DIRECTORY}_Results" 
+if [ $? -ne 0 ]; then
+  echo "Copy of necessary data failed."
+  exit 1
+fi
 cd "${DIRECTORY}_Results"
 pwd > location.txt
 mv ./location.txt ../${DIRECTORY}
