@@ -45,6 +45,7 @@ int main(int argc, char* argv[]) {
   // Variables and Objects used for file operations
   string file_name;
   FILE *file_in;
+  FILE *out_file;
   char line[kMaxBufferSize];
   int current_index = 0;
 
@@ -237,8 +238,7 @@ int main(int argc, char* argv[]) {
 
   // Write Assembly Files
   for (int i = 0; i < number_tests_generated; ++i) {
-    FILE *out_file;
-    string file_name = kOutputDirectoryName + "/" + tests[i].file_name();
+    file_name = kOutputDirectoryName + "/" + tests[i].file_name();
     if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
       perror("Unable to open output file.\n");
       exit(1);
@@ -255,7 +255,6 @@ int main(int argc, char* argv[]) {
   printf("Writing index to file system.\n");
 
   // Write Index File
-  FILE *out_file;
   file_name = kOutputDirectoryName + "/" + kIndexFileName;
   if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
     perror("Unable to open index file.\n");
@@ -269,6 +268,22 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
+  // Write test set data file
+  // This will be used with the analysis tool to keep track of instruction and
+  // iteration count values
+  file_name = kOutputDirectoryName + "/" + kTestSetDataFileName;
+  if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
+    perror("Unable to open test set data file.\n");
+    exit(1);
+  }
+    fprintf(out_file, "%s\n%s%d\n%s%d", kTestSetDataFileHeader,
+            kInstructionCountFlag, number_instructions, kIterationCountFlag,
+            number_iterations);
+  if (fclose(out_file) != 0) {
+    perror("Unable to close test set data file.\n");
+    exit(1);
+  }
+
   printf("Done.  All operations completed.\n");
 
   return(0);
@@ -276,10 +291,9 @@ int main(int argc, char* argv[]) {
 
 // This function returns the integer value of a command line argument, given the
 // actual argument and anticipated argument flag
-int ParseCommandLineInt(const string arg, const string flag) {
-  string str = arg;
-  str = str.substr(flag.length());
-  return atoi(str.c_str());
+int ParseCommandLineInt(string arg, const string flag) {
+  arg = arg.substr(flag.length());
+  return atoi(arg.c_str());
 }
 
 // This function determines the output directory named based on the current
@@ -310,7 +324,7 @@ int CountUncommentedLines(string file_name, char comment_char) {
   char line[kMaxBufferSize];
 
   if ((file_in = fopen(file_name.c_str(), "r")) == 0) {
-    perror("Unable to open operations data file.\n");
+    perror("Unable to open file.\n");
     exit(1);
   }
   while (fgets(line, sizeof(line), file_in) != NULL) {
@@ -319,7 +333,7 @@ int CountUncommentedLines(string file_name, char comment_char) {
     }
   }
   if (fclose(file_in) != 0) {
-    perror("Unable to close operations data file.\n");
+    perror("Unable to close file.\n");
     exit(1);
   }
   return result;
@@ -514,7 +528,6 @@ Assembly GenerateTest(int number_instructions, int number_iterations,
   result.set_operands(operands, number_operands);
 
   // Add some string formatting tricks to fix null character bug
-
   for (int i = 0; i < number_operands; i++) {
     addressing_mode += operands[i].operand_type();
     addressing_mode = addressing_mode.substr(0, addressing_mode.length() - 1);
