@@ -555,19 +555,18 @@ Assembly GenerateTest(int number_instructions, int number_iterations,
 }
 
 string GetBodyPrefix() {
-  return "  .file \"test1.c\"\n"
-      "  .text\n"
+  return ".file   \"baseline.c\"\n"
+      ".text\n"
       ".globl main\n"
-      "  .type main, @function\n"
+      ".type   main, @function\n"
       "main:\n"
       ".LFB2:\n"
-      "  pushq %rbp\n"
+      "pushq   %rbp\n"
       ".LCFI0:\n"
-      "  movq  %rsp, %rbp\n"
+      "movq    %rsp, %rbp\n"
       ".LCFI1:\n"
-      "  movl  $0, -8(%rbp)\n"
-      "  movl  $0, -4(%rbp)\n"
-      "  jmp .L2\n"
+      "movl    $0, -4(%rbp)\n"
+      "jmp     .L2\n"
       ".L3:";
 }
 
@@ -577,7 +576,7 @@ string GetBodyMain(Assembly& obj, int number_instructions,
 
   // Convert number_iterations to a character array
   char charValue[kMaxBufferSize];
-  sprintf(charValue, "%d", number_iterations);
+  sprintf(charValue, "%d", number_iterations -1);
 
   if (obj.instruction_name() != "") {
     for (int i = 0; i < number_instructions; ++i) {
@@ -609,49 +608,52 @@ string GetBodyMain(Assembly& obj, int number_instructions,
 }
 
 string GetBodySuffix() {
-  return "  jle .L3\n"
-      "  leave\n"
-      "  ret\n"
+  return "jle     .L3\n"
+      "movl    $0, %eax\n"
+      "leave\n"
+      "ret\n"
       ".LFE2:\n"
-      "  .size main, .-main\n"
-      "  .section  .eh_frame,\"a\",@progbits\n"
+      ".size   main, .-main\n"
+      ".section        .eh_frame,\"a\",@progbits\n"
       ".Lframe1:\n"
-      "  .long .LECIE1-.LSCIE1\n"
+      ".long   .LECIE1-.LSCIE1\n"
       ".LSCIE1:\n"
-      "  .long 0x0\n"
-      "  .byte 0x1\n"
-      "  .string \"zR\"\n"
-      "  .uleb128 0x1\n"
-      "  .sleb128 -8\n"
-      "  .byte 0x10\n"
-      "  .uleb128 0x1\n"
-      "  .byte 0x3\n"
-      "  .byte 0xc\n"
-      "  .uleb128 0x7\n"
-      "  .uleb128 0x8\n"
-      "  .byte 0x90\n"
-      "  .uleb128 0x1\n"
-      "  .align 8\n"
+      ".long   0x0\n"
+      ".byte   0x1\n"
+      ".string \"zR\"\n"
+      ".uleb128 0x1\n"
+      ".sleb128 -8\n"
+      ".byte   0x10\n"
+      ".uleb128 0x1\n"
+      ".byte   0x3\n"
+      ".byte   0xc\n"
+      ".uleb128 0x7\n"
+      ".uleb128 0x8\n"
+      ".byte   0x90\n"
+      ".uleb128 0x1\n"
+      ".align 8\n"
       ".LECIE1:\n"
       ".LSFDE1:\n"
-      "  .long .LEFDE1-.LASFDE1\n"
+      ".long   .LEFDE1-.LASFDE1\n"
       ".LASFDE1:\n"
-      "  .long .LASFDE1-.Lframe1\n"
-      "  .long .LFB2\n"
-      "  .long .LFE2-.LFB2\n"
-      "  .uleb128 0x0\n"
-      "  .byte 0x4\n"
-      "  .long .LCFI0-.LFB2\n"
-      "  .byte 0xe\n"
-      "  .uleb128 0x10\n"
-      "  .byte 0x86\n"
-      "  .uleb128 0x2\n"
-      "  .byte 0x4\n"
-      "  .long .LCFI1-.LCFI0\n"
-      "  .byte 0xd\n"
-      "  .uleb128 0x6\n"
-      "  .align 8\n"
+      ".long   .LASFDE1-.Lframe1\n"
+      ".long   .LFB2\n"
+      ".long   .LFE2-.LFB2\n"
+      ".uleb128 0x0\n"
+      ".byte   0x4\n"
+      ".long   .LCFI0-.LFB2\n"
+      ".byte   0xe\n"
+      ".uleb128 0x10\n"
+      ".byte   0x86\n"
+      ".uleb128 0x2\n"
+      ".byte   0x4\n"
+      ".long   .LCFI1-.LCFI0\n"
+      ".byte   0xd\n"
+      ".uleb128 0x6\n"
+      ".align 8\n"
       ".LEFDE1:\n"
-      "  .ident  \"GCC: (GNU) 4.2.4 (Ubuntu 4.2.4-1ubuntu3)\"\n"
-      "  .section  .note.GNU-stack,\"\",@progbits";
+      ".ident  \"GCC: (GNU) 4.2.4 (Ubuntu 4.2.4-1ubuntu4)\"\n"
+      ".section        .note.GNU-stack,\"\",@progbits";
 }
+
+
