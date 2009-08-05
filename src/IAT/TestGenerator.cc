@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
   int number_instructions = 0;
   int number_operations = 0;
   int number_operands = 0;
-  int number_tests = 0;
+  long int number_tests = 0;
   int number_tests_generated = 0;
 
   // Variables and Objects used for file operations
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   int current_index = 0;
 
   // Command Line Argument Parsing
-  // TODO(caseyburkahrdt): Add argument to display help menu
+  // TODO(caseyburkhardt): Add argument to display help menu
   // TODO(caseyburkhardt): Add argument to trigger verbose mode
   for (int i = 1; i < argc; ++i) {
     if (strncmp(argv[i], kInstructionCountFlag,
@@ -163,14 +163,14 @@ int main(int argc, char* argv[]) {
                                     operations, operands);
 
   // Holds the instances of Assembly Objects
-  Assembly tests[number_tests];
+  Assembly* tests = new Assembly[number_tests];
 
   // Generate Assembly Objects
   // Generate the Initial Baseline Test
   tests[0] = GenerateBaselineTest(number_instructions, number_iterations);
   ++number_tests_generated;
 
-  printf("Generating %d tests...\n", number_tests);
+  printf("Generating %ld tests...\n", number_tests);
 
   // By exhaustive means, generate all assembly tests.
   for (int i = 0; i < number_operations; ++i) {
@@ -284,6 +284,7 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
+  delete[] tests;
   printf("Done.  All operations completed.\n");
 
   return(0);
