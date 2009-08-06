@@ -47,18 +47,12 @@ function parse_args() {
         shift 1
       ;;
 
-      '-h')
-        wrapper_help=1
-        shift 1
-      ;;
-
       '--mao')
         mao_args[${#mao_args[*]}]="--mao=$2"
         invoke_mao=1
-	if [[ $2 = "-h" ]]; then
+	if [[ $2 == "-h" ||  $2 == "--help" ]]; then
 	  mao_help=1
 	fi
-
         shift 2
       ;;
 
@@ -127,9 +121,8 @@ mtune:,mmnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
   parse_args ${preprocessed_args}
 
   if [[ ${wrapper_help} = 1 ]]; then
-    echo -e "Mao usage :\n"
     ${mao_bin} --mao=-h
-    echo -e "\nAssembler usage :\n"
+    echo -e "\nAssembler specific options:\n"
     ${as_bin} --help
     exit 0
   fi
@@ -145,7 +138,7 @@ mtune:,mmnemonic:,msyntax:,mindex-reg,mnaked-reg,mold-gcc,msse2avx,msse-check:"
       echo "$0: Execution of ${mao_bin} failed with error code $?"
       exit 1
     fi
-    #If --mao=-h is called, as-orig should not be invoked
+    #If --mao=-h or --mao=--help is called, as-orig should not be invoked
     if [[ ${mao_help} = 1 ]]; then
       exit 0
     fi

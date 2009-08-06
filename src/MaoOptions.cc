@@ -37,10 +37,10 @@ static OptionVector *option_array_list;
 void MaoOptions::ProvideHelp(bool exit_after, bool always) {
   if (!help() && !always) return;
 
-  fprintf(stderr,
+  fprintf(stdout,
           "Mao %s\n",
           MAO_VERSION);
-  fprintf(stderr,
+  fprintf(stdout,
           "Usage: mao [--mao=mao-options]* "
           "[regular-assembler-options]* input-file \n"
           "\n'mao-options' specify passes and pass-specific options.\n"
@@ -48,10 +48,10 @@ void MaoOptions::ProvideHelp(bool exit_after, bool always) {
           "Pass-specific options are concatenated with '+'.\n\n"
           "To produce any output, the ASM pass must be specified.\n\n"
           "Common Options:\n"
-          "-h          display this help text\n"
-          "-v          verbose (set trace level to 3)\n"
-          "-T          output timing information for passes\n"
-          "--plugin    load the specified plugin\n"
+          "-h or --help  display this help text\n"
+          "-v            verbose (set trace level to 3)\n"
+          "-T            output timing information for passes\n"
+          "--plugin      load the specified plugin\n"
           "\n"
           "Passes are specified in execution order, following this pattern:\n"
           "  PASSES  := PASS[:PASS]*\n"
@@ -70,10 +70,10 @@ void MaoOptions::ProvideHelp(bool exit_after, bool always) {
 
   for (OptionVector::iterator it = option_array_list->begin();
        it != option_array_list->end(); ++it) {
-    fprintf(stderr, "Pass: %s\n", (*it)->name());
+    fprintf(stdout, "Pass: %s\n", (*it)->name());
     MaoOption *arr = (*it)->array();
     for (int i = 0; i < (*it)->num_entries(); i++) {
-      fprintf(stderr, "  %-10s: %7s %s\n",
+      fprintf(stdout, "  %-10s: %7s %s\n",
               arr[i].name(),
               arr[i].type() == OPT_INT ? "(int)   " :
               arr[i].type() == OPT_BOOL ? "(bool)  " :
@@ -352,6 +352,9 @@ void MaoOptions::Parse(const char *arg, bool collect,
       } else if (arg[0] == 'h') {
         set_help(true);
         ++arg;
+      } else if (strncmp(arg, "-help", 5) == 0) {
+        set_help(true);
+        arg += 5;
       } else if (arg[0] == 'T') {
         set_timer_print();
         ++arg;
