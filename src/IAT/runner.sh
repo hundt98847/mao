@@ -17,6 +17,7 @@
 #      eval `/usr/local/scripts/ssx-agents $SHELL`
 #    fi
 
+#command line args - see README
 if [[ "$1" != "" ]]; then
   DIRECTORY="$1"
 fi
@@ -60,6 +61,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 #move scripts over to prod machine
+echo "Relocating execution scripts."
 chmod o+x runnerII.sh
 chmod o+x cleaner.sh
 rsync --rsh="ssh -x" cleaner.sh ${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR} \
@@ -74,11 +76,17 @@ if [[ ! -n "$DIRECTORY" ]]; then
 fi
 
 if [[ ! -d $DIRECTORY ]]; then
- echo "$DIRECTORY : does not exist"
+  echo "$DIRECTORY : does not exist"
   exit 1
 fi
 
+#format handling
+if [[ "${DIRECTORY}" == */ ]]; then
+  DIRECTORY=$(echo "${DIRECTORY%/}")
+fi
+
 #create results dir and store location
+echo "Creating results directory"
 if [[ ! -d ${DIRECTORY}_Results ]]; then
   mkdir "${DIRECTORY}_Results"
 fi
@@ -87,15 +95,11 @@ if [ $? -ne 0 ]; then
   echo "Copy of necessary data failed."
   exit 1
 fi
-cd "${DIRECTORY}_Results"
-pwd > location.txt
-mv ./location.txt ../${DIRECTORY}
-cd ..
 
 #index.txt is the file where the names of all the
 #ASM files are stored; iterate through all names
 #cp ./runnerII.sh ./${DIRECTORY}/
-cd ./"$DIRECTORY"
+cd ./"${DIRECTORY}"
 INDEXFILE=index.txt
 if [[ ! -f $INDEXFILE ]]; then
   echo "$INDEXFILE: does not exist"
@@ -105,27 +109,23 @@ elif [[ ! -r $INDEXFILE ]]; then
   exit 3
 fi
 
-#compile all files
-for CURRENTFILE in $(cat $INDEXFILE); do
-  if [[ ! -f $CURRENTFILE ]]; then
-    echo "$CURRENTFILE: does not exist"
-    echo $CURRENTFILE >> failedtocompile.txt
-    continue
+#Compile all files using make
+echo "Compiling tests"
+make -k -s -j 16 2> /dev/null
+
+#Determine which files compiled successfully
+for CURRENTFILE in $(cat "${INDEXFILE}"); do
+  EXECUTABLEFILE="test_${CURRENTFILE//".s"/.exe}"
+  if [[ -f ${EXECUTABLEFILE} ]]; then
+    echo ${CURRENTFILE} >> successfullycompiled.txt
+    echo ${EXECUTABLEFILE//".exe"/} >> executablefiles.txt
   else
-    EXECUTABLEFILE="test_${CURRENTFILE//".s"/}"
-    gcc "$CURRENTFILE" -o "$EXECUTABLEFILE".exe 2> /dev/null
-    if [[ $? -ne 0 ]]; then
-      echo $CURRENTFILE >> failedtocompile.txt
-      continue
-    else
-      echo $CURRENTFILE >> successfullycompiled.txt
-    fi
-    echo "$EXECUTABLEFILE" >> executablefiles.txt
+    echo ${CURRENTFILE} >> failedtocompile.txt
   fi
 done
 
 if [[ -f ./successfullycompiled.txt ]]; then
-  cp ./successfullycompiled.txt ../${DIRECTORY}_Results
+  mv ./successfullycompiled.txt ../${DIRECTORY}_Results
 fi
 if [[ -f ./failedtocompile.txt ]]; then
   mv ./failedtocompile.txt ../${DIRECTORY}_Results
@@ -148,10 +148,9 @@ if [[ ! -n "$PFMONCOMMAND" ]]; then
 fi 
 
 #tar all files to be rsynced over
-echo "$USER" > user.txt
-hostname -s > machine.txt
-tar -czvf allfiles.tar ./* > /dev/null
-chmod o+x allfiles.tar
+echo "Gatering successfuly generated tests for analysis"
+tar -czvf allfiles.tar *.exe "./executablefiles.txt" > /dev/null
+echo "Transferring test binaries for analysis"
 rsync --rsh="ssh -x" allfiles.tar \
 ${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR} > /dev/null
 ssh -x ${PFMONUSER}@${PFMONMACHINE} \
@@ -159,10 +158,12 @@ ssh -x ${PFMONUSER}@${PFMONMACHINE} \
 
 #rsync results back if ssh was successful
 if [[ $? -eq 0 ]]; then
+  echo "Transferring execution results."
   rsync --rsh="ssh -x" ${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR}/results.tar \
 ../${DIRECTORY}_Results/ > /dev/null
   if [[ $? -eq 0 ]]; then
     cd ../${DIRECTORY}_Results/
+    echo "Distributing execution results."
     tar -zxvf results.tar > /dev/null
     rm -rf ../${DIRECTORY}_Results/results.tar
     cd ../${DIRECTORY}
@@ -173,13 +174,7 @@ else
 fi
 
 #clean up
-rm *.tar
-rm *.exe
-rm -rf executablefiles.txt
-rm -rf location.txt
-rm -rf machine.txt
-rm -rf successfullycompiled.txt
-rm -rf user.txt
+rm allfiles.tar
 ssh -x ${PFMONUSER}@${PFMONMACHINE} \
 "sh ${PFMONDIR}/cleaner.sh ${PFMONDIR} > /dev/null"
 

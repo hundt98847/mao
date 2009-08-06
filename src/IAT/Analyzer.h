@@ -46,7 +46,7 @@ int CalculateEventsPerInstruction(long int raw_events, int baseline_events,
 int CountUncommentedLines(string file_name, char comment_char);
 
 // Constants
-const char kResultIndexFileName[] = "successfullycompiled.txt";
+const char kResultIndexFileName[] = "successfulexecution.txt";
 const char kResultBaselineFileName[] = "test_baseline_results.txt";
 const char kTargetDirectoryFlag[] = "--results=";
 const char kInstructionCountFlag[] = "--instructions=";
