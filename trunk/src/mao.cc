@@ -63,6 +63,10 @@ int main(int argc, const char *argv[]) {
   // Static Initialization
   mao_options.ProvideHelp(!gas_help_requested);
 
+  if (gas_help_requested) {
+    fprintf(stdout, "\nAssembler specific options:\n\n");
+  }
+
   InitRegisters();
 
   MaoUnit mao_unit(&mao_options);
