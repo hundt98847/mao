@@ -34,7 +34,7 @@ static OptionVector *option_array_list;
 // Unprocessed flags are passed on to as_main (which is the GNU Assembler
 // main function). Everything else is handed to the MAO Option processor
 //
-void MaoOptions::ProvideHelp(bool always) {
+void MaoOptions::ProvideHelp(bool exit_after, bool always) {
   if (!help() && !always) return;
 
   fprintf(stderr,
@@ -82,7 +82,9 @@ void MaoOptions::ProvideHelp(bool always) {
               arr[i].description());
     }
   }
-  exit(0);
+  if (exit_after) {
+    exit(0);
+  }
 }
 
 void MaoOptions::TimerPrint() {
@@ -348,7 +350,7 @@ void MaoOptions::Parse(const char *arg, bool collect,
         set_verbose();
         ++arg;
       } else if (arg[0] == 'h') {
-        set_help();
+        set_help(true);
         ++arg;
       } else if (arg[0] == 'T') {
         set_timer_print();
