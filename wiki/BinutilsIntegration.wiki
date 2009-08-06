@@ -22,13 +22,13 @@ directory. See "MAO Specific Changes" below.
 ==Local patch==
 
 Changes to the local binutils directory:
- * Change name from assert() to gas_assert()
+  * Change name from assert() to gas_assert()
     * Patched already in current binutils.
- * Moved data structures to make it compile with c++
+  * Moved data structures to make it compile with c++
     * union gotplt_union
- * Changed name from template to insn_template
+  * Changed name from template to insn_template
     * to be patched
- * Moved data structures/types to header files to make them accessible from MAO
+  * Moved data structures/types to header files to make them accessible from MAO
     * modrm_byte
     * rex_byte
     * drex_byte
@@ -38,6 +38,7 @@ Changes to the local binutils directory:
     * i386_insn
     * flag_code
     * definitions of: WAIT_PREFIX, SEG_PREFIX, ADDR_PREFIX, DATA_PREFIX, LOCKREP_PREFIX, REX_PREFIX, MAX_PREFIXES
+  * Add support for [http://wiki.dwarfstd.org/index.php?title=Path_Discriminators Dwarf Path Discriminators] (Backported from binutils trunk)
 
 The following files are modified by a local patch:
   * binutils-2.19.1/bfd/elf-bfd.h
