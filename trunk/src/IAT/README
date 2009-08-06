@@ -69,7 +69,7 @@ the username on that machine, the directory path on the pfmon machine on
 which you want the files to be copied to (these files will be automatically
 removed) as well as the directory to be tested and the CPU event you'd
 like to test for.  These values can also be set as command line arguments.
-#sh runner.sh [DIRECTORY TO BE TESTED] [PFMON EVENT] [PFMON MACHINE] \
+#sh runner.sh [DIRECTORY TO BE TESTED] [PFMON EVENT] [PFMON MACHINE]
 [PFMON USERNAME] [PFMON DIRECTORY PATH]
 
 The output from the Runner will be placed in a directory named

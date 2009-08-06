@@ -252,7 +252,7 @@ int main(int argc, char* argv[]) {
   }
 
   printf("Done.  Wrote %d tests to file system.\n", number_tests_generated);
-  printf("Writing index to file system.\n");
+  printf("Writing index to file system...\n");
 
   // Write Index File
   file_name = kOutputDirectoryName + "/" + kIndexFileName;
@@ -268,6 +268,8 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
+  printf("Done.  Wrote index file to file system.\n");
+  printf("Writing test set data file to file system...\n");
   // Write test set data file
   // This will be used with the analysis tool to keep track of instruction and
   // iteration count values
@@ -281,6 +283,48 @@ int main(int argc, char* argv[]) {
             number_iterations);
   if (fclose(out_file) != 0) {
     perror("Unable to close test set data file.\n");
+    exit(1);
+  }
+
+  printf("Done.  Wrote test set data file to file system.\n");
+  printf("Writing makefile to file system.\n");
+
+  // Write makefile
+  file_name = kOutputDirectoryName + "/" + kMakeFileName;
+  if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
+    perror("Unable to open makefile.\n");
+    exit(1);
+  }
+  fprintf(out_file, "all:");
+  for (int i = 0; i < number_tests_generated; ++i) {
+    if (tests[i].instruction_name() != "") {
+      // Baseline Test
+      fprintf(out_file, " %s%s_%s%s", kExecutableFileNamePrefix,
+              tests[i].instruction_name().c_str(),
+              tests[i].addressing_mode().c_str(), kExecutableFileNameSuffix);
+    } else {
+      fprintf(out_file, " %sbaseline%s", kExecutableFileNamePrefix,
+              kExecutableFileNameSuffix);
+    }
+  }
+  fprintf(out_file, "\n\n");
+  for (int i = 0; i < number_tests_generated; ++i) {
+    if (tests[i].instruction_name() != "") {
+      fprintf(out_file, " %s%s_%s%s: %s\n\tgcc %s -o %s%s_%s%s\n\n",
+              kExecutableFileNamePrefix, tests[i].instruction_name().c_str(),
+              tests[i].addressing_mode().c_str(), kExecutableFileNameSuffix,
+              tests[i].file_name().c_str(), tests[i].file_name().c_str(),
+              kExecutableFileNamePrefix, tests[i].instruction_name().c_str(),
+              tests[i].addressing_mode().c_str(), kExecutableFileNameSuffix);
+    } else {
+      fprintf(out_file, " %sbaseline%s: %s\n\tgcc %s -o %sbaseline%s\n\n",
+              kExecutableFileNamePrefix, kExecutableFileNameSuffix,
+              tests[i].file_name().c_str(), tests[i].file_name().c_str(),
+              kExecutableFileNamePrefix, kExecutableFileNameSuffix);
+    }
+  }
+  if (fclose(out_file) != 0) {
+    perror("Unable to close makefile.\n");
     exit(1);
   }
 

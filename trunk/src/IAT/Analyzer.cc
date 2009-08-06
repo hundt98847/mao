@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
                                          kFileCommentCharacter);
 
   // Holds the instances of Results Objects
-  Result results[number_results];
+  Result* results = new Result[number_results];
 
   // Iterate over all files in the successfully compiled index and calculate
   // actual event counts per instruction and populate Result object data
@@ -170,6 +170,8 @@ int main(int argc, char* argv[]) {
     perror("Unable to close results output file.\n");
     exit(1);
   }
+
+  delete[] results;
 }
 
 // This function returns the string value of a command line argument, given the

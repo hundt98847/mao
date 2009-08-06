@@ -30,12 +30,13 @@ if [[ ! -d results/ ]]; then
 fi
 
 for EXECUTABLEFILE in $(cat $INDEXFILE); do
+  LOGENTRY=${EXECUTABLEFILE:5}
+  LOGENTRY=${LOGENTRY//".exe"/}.s
   pfmon -e "$COMMAND" ./"${EXECUTABLEFILE}".exe > success.txt
-  
   if [[ $? -ne 0 ]]; then
-    echo "$COMMAND: command failed." 
-    echo "$COMMAND" >> ./results/"$EXECUTABLEFILE"_failedcommands.txt
+    echo ${LOGENTRY} >> ./results/failedexecutables.txt
   else
+    echo ${LOGENTRY} >> ./results/successfulexecution.txt
     cat success.txt >> ./results/"$EXECUTABLEFILE"_results.txt
   fi
 done

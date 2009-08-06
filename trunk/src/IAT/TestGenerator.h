@@ -57,6 +57,9 @@ const char kBaselineFileName[] = "baseline.s";
 const char kOperationDataFileName[] = "operations.dat";
 const char kOperandDataFileName[] = "operands.dat";
 const char kTestSetDataFileName[] = "test_set.dat";
+const char kMakeFileName[] = "makefile";
+const char kExecutableFileNamePrefix[] = "test_";
+const char kExecutableFileNameSuffix[] = ".exe";
 const char kTestSetDataFileHeader[] = "# This file was generated automatically "
                                       "by the Test Generator.  It contains \n"
                                       "# information specific to this test set"
