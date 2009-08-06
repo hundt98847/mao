@@ -18,7 +18,6 @@
 #ifndef MAO_H_
 #define MAO_H_
 #define MAO_REVISION "$Rev$"
-//#define MAO_VERSION "0.1 r" REV_NUM
 #define MAO_VERSION "0.1 " MAO_REVISION
 
 // gas main entry point

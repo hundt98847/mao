@@ -41,17 +41,27 @@ int main(int argc, const char *argv[]) {
   // Parse any mao-specific command line flags (start with --mao=)
   const char **new_argv = new const char*[argc];
   int    new_argc = 0;
+  int    gas_help_requested = false;
 
   mao_options.Parse(getenv("MAOOPTS"));
   for (int i = 0; i < argc; i++) {
+    if (strncmp(argv[i], "--help", 6) == 0) {
+      gas_help_requested = true;
+    }
+
     if (strncmp(argv[i], "--mao=", 6) == 0)
       mao_options.Parse(&argv[i][6]);
     else
       new_argv[new_argc++] = argv[i];
   }
 
+  // If gas help is requested, make sure the MAO options are printed first.
+  if (gas_help_requested && !mao_options.help()) {
+    mao_options.ProvideHelp(false, true);
+  }
+
   // Static Initialization
-  mao_options.ProvideHelp();
+  mao_options.ProvideHelp(!gas_help_requested);
 
   InitRegisters();
 

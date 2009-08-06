@@ -163,7 +163,7 @@ class MaoOptions {
   void        Parse(const char *arg, bool collect = true,
                     MaoUnit *unit = NULL, MaoPassManager *pass_man = NULL);
   void        Reparse(MaoUnit *unit = NULL, MaoPassManager *pass_man = NULL);
-  void        ProvideHelp(bool always = false);
+  void        ProvideHelp(bool exit_after, bool always = false);
   static void SetOption(const char *pass_name,
                         const char *option_name,
                         int         value);
@@ -183,7 +183,7 @@ class MaoOptions {
   const bool verbose() const { return verbose_; }
 
   void set_verbose() { verbose_ = true; }
-  void set_help() { help_ = true; }
+  void set_help(bool value) { help_ = value; }
   void set_timer_print() { timer_print_ = true; }
 
  private:
