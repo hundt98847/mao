@@ -1,6 +1,6 @@
 diff -upr binutils-2.19.1-orig/bfd/elf-bfd.h binutils-2.19.1/bfd/elf-bfd.h
---- binutils-2.19.1-orig/bfd/elf-bfd.h	2009-07-13 11:43:41.031080000 -0700
-+++ binutils-2.19.1/bfd/elf-bfd.h	2009-07-13 11:58:08.014515000 -0700
+--- binutils-2.19.1-orig/bfd/elf-bfd.h	2009-07-30 14:35:49.428205000 -0700
++++ binutils-2.19.1/bfd/elf-bfd.h	2009-07-30 15:19:26.106531000 -0700
 @@ -81,6 +81,14 @@ struct elf_strtab_hash;
  struct got_entry;
  struct plt_entry;
@@ -32,8 +32,8 @@ diff -upr binutils-2.19.1-orig/bfd/elf-bfd.h binutils-2.19.1/bfd/elf-bfd.h
    /* Same, but tracks a procedure linkage table entry.  */
    union gotplt_union plt;
 diff -upr binutils-2.19.1-orig/gas/app.c binutils-2.19.1/gas/app.c
---- binutils-2.19.1-orig/gas/app.c	2009-07-13 11:43:57.570739000 -0700
-+++ binutils-2.19.1/gas/app.c	2009-07-13 11:58:08.064546000 -0700
+--- binutils-2.19.1-orig/gas/app.c	2009-07-30 14:35:55.177706000 -0700
++++ binutils-2.19.1/gas/app.c	2009-07-30 15:19:26.133558000 -0700
 @@ -294,7 +294,7 @@ app_pop (char *arg)
      saved_input = NULL;
    else
@@ -44,8 +44,8 @@ diff -upr binutils-2.19.1-orig/gas/app.c binutils-2.19.1/gas/app.c
        saved_input = input_buffer;
        saved_input_len = saved->saved_input_len;
 diff -upr binutils-2.19.1-orig/gas/as.c binutils-2.19.1/gas/as.c
---- binutils-2.19.1-orig/gas/as.c	2009-07-13 11:43:57.606736000 -0700
-+++ binutils-2.19.1/gas/as.c	2009-07-13 11:58:08.104512000 -0700
+--- binutils-2.19.1-orig/gas/as.c	2009-07-30 14:35:55.211719000 -0700
++++ binutils-2.19.1/gas/as.c	2009-07-30 15:19:26.141594000 -0700
 @@ -1154,7 +1154,7 @@ main (int argc, char ** argv)
    PROGRESS (1);
  
@@ -56,8 +56,8 @@ diff -upr binutils-2.19.1-orig/gas/as.c binutils-2.19.1/gas/as.c
  #ifdef tc_init_after_args
    tc_init_after_args ();
 diff -upr binutils-2.19.1-orig/gas/as.h binutils-2.19.1/gas/as.h
---- binutils-2.19.1-orig/gas/as.h	2009-07-13 11:43:57.648727000 -0700
-+++ binutils-2.19.1/gas/as.h	2009-07-13 11:58:08.147492000 -0700
+--- binutils-2.19.1-orig/gas/as.h	2009-07-30 14:35:55.225686000 -0700
++++ binutils-2.19.1/gas/as.h	2009-07-30 15:19:26.171535000 -0700
 @@ -137,7 +137,7 @@ typedef int * va_list;
  #if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 6)
  #define __PRETTY_FUNCTION__  ((char*)0)
@@ -68,8 +68,8 @@ diff -upr binutils-2.19.1-orig/gas/as.h binutils-2.19.1/gas/as.h
  #undef abort
  #define abort()		as_abort (__FILE__, __LINE__, __PRETTY_FUNCTION__)
 diff -upr binutils-2.19.1-orig/gas/atof-generic.c binutils-2.19.1/gas/atof-generic.c
---- binutils-2.19.1-orig/gas/atof-generic.c	2009-07-13 11:43:57.692751000 -0700
-+++ binutils-2.19.1/gas/atof-generic.c	2009-07-13 11:58:08.180496000 -0700
+--- binutils-2.19.1-orig/gas/atof-generic.c	2009-07-30 14:35:55.236697000 -0700
++++ binutils-2.19.1/gas/atof-generic.c	2009-07-30 15:19:26.206552000 -0700
 @@ -101,7 +101,7 @@ atof_generic (/* return pointer to just 
    int seen_significant_digit;
  
@@ -80,8 +80,8 @@ diff -upr binutils-2.19.1-orig/gas/atof-generic.c binutils-2.19.1/gas/atof-gener
  #define IS_DECIMAL_MARK(c)	((c) == '.')
  #else
 diff -upr binutils-2.19.1-orig/gas/cgen.c binutils-2.19.1/gas/cgen.c
---- binutils-2.19.1-orig/gas/cgen.c	2009-07-13 11:43:57.784751000 -0700
-+++ binutils-2.19.1/gas/cgen.c	2009-07-13 11:58:08.222506000 -0700
+--- binutils-2.19.1-orig/gas/cgen.c	2009-07-30 14:35:55.252684000 -0700
++++ binutils-2.19.1/gas/cgen.c	2009-07-30 15:19:26.216565000 -0700
 @@ -1034,7 +1034,7 @@ gas_cgen_tc_gen_reloc (section, fixP)
        return NULL;
      }
@@ -97,8 +97,8 @@ diff -upr binutils-2.19.1-orig/gas/cgen.c binutils-2.19.1/gas/cgen.c
  }
 -
 diff -upr binutils-2.19.1-orig/gas/config/atof-ieee.c binutils-2.19.1/gas/config/atof-ieee.c
---- binutils-2.19.1-orig/gas/config/atof-ieee.c	2009-07-13 11:43:48.933892000 -0700
-+++ binutils-2.19.1/gas/config/atof-ieee.c	2009-07-13 11:58:08.285512000 -0700
+--- binutils-2.19.1-orig/gas/config/atof-ieee.c	2009-07-30 14:35:52.754894000 -0700
++++ binutils-2.19.1/gas/config/atof-ieee.c	2009-07-30 15:19:26.244554000 -0700
 @@ -784,7 +784,7 @@ ieee_md_atof (int type,
        return _("Unrecognized or unsupported floating point constant");
      }
@@ -109,8 +109,8 @@ diff -upr binutils-2.19.1-orig/gas/config/atof-ieee.c binutils-2.19.1/gas/config
    t = atof_ieee (input_line_pointer, type, words);
    if (t)
 diff -upr binutils-2.19.1-orig/gas/config/obj-aout.c binutils-2.19.1/gas/config/obj-aout.c
---- binutils-2.19.1-orig/gas/config/obj-aout.c	2009-07-13 11:43:49.243896000 -0700
-+++ binutils-2.19.1/gas/config/obj-aout.c	2009-07-13 11:58:08.315493000 -0700
+--- binutils-2.19.1-orig/gas/config/obj-aout.c	2009-07-30 14:35:52.940907000 -0700
++++ binutils-2.19.1/gas/config/obj-aout.c	2009-07-30 15:19:26.249546000 -0700
 @@ -132,7 +132,7 @@ obj_aout_frob_file_before_fix (void)
      x = bfd_set_section_contents (stdoutput, data_section, &b, (file_ptr) 0,
  				  (bfd_size_type) 1);
@@ -121,8 +121,8 @@ diff -upr binutils-2.19.1-orig/gas/config/obj-aout.c binutils-2.19.1/gas/config/
  
  static void
 diff -upr binutils-2.19.1-orig/gas/config/obj-coff.c binutils-2.19.1/gas/config/obj-coff.c
---- binutils-2.19.1-orig/gas/config/obj-coff.c	2009-07-13 11:43:49.310902000 -0700
-+++ binutils-2.19.1/gas/config/obj-coff.c	2009-07-13 11:58:08.343536000 -0700
+--- binutils-2.19.1-orig/gas/config/obj-coff.c	2009-07-30 14:35:52.955877000 -0700
++++ binutils-2.19.1/gas/config/obj-coff.c	2009-07-30 15:19:26.275555000 -0700
 @@ -183,7 +183,7 @@ fetch_coff_debug_section (void)
        const asymbol *s;
  
@@ -180,8 +180,8 @@ diff -upr binutils-2.19.1-orig/gas/config/obj-coff.c binutils-2.19.1/gas/config/
    /* Store the values.  */
    p = fragp->fr_literal;
 diff -upr binutils-2.19.1-orig/gas/config/obj-ecoff.c binutils-2.19.1/gas/config/obj-ecoff.c
---- binutils-2.19.1-orig/gas/config/obj-ecoff.c	2009-07-13 11:43:49.350893000 -0700
-+++ binutils-2.19.1/gas/config/obj-ecoff.c	2009-07-13 11:58:08.365539000 -0700
+--- binutils-2.19.1-orig/gas/config/obj-ecoff.c	2009-07-30 14:35:52.972863000 -0700
++++ binutils-2.19.1/gas/config/obj-ecoff.c	2009-07-30 15:19:26.286542000 -0700
 @@ -146,7 +146,7 @@ ecoff_frob_file (void)
    char *set;
  
@@ -192,8 +192,8 @@ diff -upr binutils-2.19.1-orig/gas/config/obj-ecoff.c binutils-2.19.1/gas/config
    ecoff_build_debug (hdr, &buf, debug_swap);
  
 diff -upr binutils-2.19.1-orig/gas/config/obj-elf.c binutils-2.19.1/gas/config/obj-elf.c
---- binutils-2.19.1-orig/gas/config/obj-elf.c	2009-07-13 11:43:49.404903000 -0700
-+++ binutils-2.19.1/gas/config/obj-elf.c	2009-07-13 11:58:08.385539000 -0700
+--- binutils-2.19.1-orig/gas/config/obj-elf.c	2009-07-30 14:35:53.008885000 -0700
++++ binutils-2.19.1/gas/config/obj-elf.c	2009-07-30 15:19:26.330563000 -0700
 @@ -459,7 +459,7 @@ obj_elf_visibility (int visibility)
        bfdsym = symbol_get_bfdsym (symbolP);
        elfsym = elf_symbol_from (bfd_asymbol_bfd (bfdsym), bfdsym);
@@ -231,8 +231,8 @@ diff -upr binutils-2.19.1-orig/gas/config/obj-elf.c binutils-2.19.1/gas/config/o
        know (!stdoutput->output_has_begun);
  
 diff -upr binutils-2.19.1-orig/gas/config/obj-som.c binutils-2.19.1/gas/config/obj-som.c
---- binutils-2.19.1-orig/gas/config/obj-som.c	2009-07-13 11:43:49.532905000 -0700
-+++ binutils-2.19.1/gas/config/obj-som.c	2009-07-13 11:58:08.403528000 -0700
+--- binutils-2.19.1-orig/gas/config/obj-som.c	2009-07-30 14:35:53.064864000 -0700
++++ binutils-2.19.1/gas/config/obj-som.c	2009-07-30 15:19:26.336540000 -0700
 @@ -280,7 +280,7 @@ adjust_stab_sections (bfd *abfd, asectio
    nsyms = bfd_section_size (abfd, sec) / 12 - 1;
  
@@ -243,8 +243,8 @@ diff -upr binutils-2.19.1-orig/gas/config/obj-som.c binutils-2.19.1/gas/config/o
    bfd_h_put_16 (abfd, (bfd_vma) nsyms, (bfd_byte *) p + 6);
    bfd_h_put_32 (abfd, (bfd_vma) strsz, (bfd_byte *) p + 8);
 diff -upr binutils-2.19.1-orig/gas/config/tc-alpha.c binutils-2.19.1/gas/config/tc-alpha.c
---- binutils-2.19.1-orig/gas/config/tc-alpha.c	2009-07-13 11:43:49.659902000 -0700
-+++ binutils-2.19.1/gas/config/tc-alpha.c	2009-07-13 11:58:08.423533000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-alpha.c	2009-07-30 14:35:53.126874000 -0700
++++ binutils-2.19.1/gas/config/tc-alpha.c	2009-07-30 15:19:26.369542000 -0700
 @@ -1227,7 +1227,7 @@ load_expression (int targreg,
  
  	assemble_tokens_to_insn ("ldq", newtok, 3, &insn);
@@ -457,8 +457,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-alpha.c binutils-2.19.1/gas/config/
  #ifdef OBJ_ECOFF
    if (fixp->fx_r_type == BFD_RELOC_ALPHA_LITERAL)
 diff -upr binutils-2.19.1-orig/gas/config/tc-arc.c binutils-2.19.1/gas/config/tc-arc.c
---- binutils-2.19.1-orig/gas/config/tc-arc.c	2009-07-13 11:43:49.749889000 -0700
-+++ binutils-2.19.1/gas/config/tc-arc.c	2009-07-13 11:58:08.431515000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-arc.c	2009-07-30 14:35:53.174906000 -0700
++++ binutils-2.19.1/gas/config/tc-arc.c	2009-07-30 15:19:26.379540000 -0700
 @@ -889,7 +889,7 @@ arc_common (int localScope)
        as_warn (_("length of symbol \"%s\" already %ld, ignoring %d"),
  	       S_GET_NAME (symbolP), (long) S_GET_VALUE (symbolP), size);
@@ -503,8 +503,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-arc.c binutils-2.19.1/gas/config/tc
    /* Set addend to account for PC being advanced one insn before the
       target address is computed.  */
 diff -upr binutils-2.19.1-orig/gas/config/tc-arm.c binutils-2.19.1/gas/config/tc-arm.c
---- binutils-2.19.1-orig/gas/config/tc-arm.c	2009-07-13 11:43:49.881784000 -0700
-+++ binutils-2.19.1/gas/config/tc-arm.c	2009-07-13 11:58:08.896363000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-arm.c	2009-07-30 14:35:53.298896000 -0700
++++ binutils-2.19.1/gas/config/tc-arm.c	2009-07-30 15:19:26.460552000 -0700
 @@ -3390,7 +3390,7 @@ s_arm_unwind_save_vfp_armv6 (void)
  
    /* Generate opcode for registers numbered in the range 0 .. 15.  */
@@ -724,8 +724,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-arm.c binutils-2.19.1/gas/config/tc
          {
            bfd_vma insn;
 diff -upr binutils-2.19.1-orig/gas/config/tc-bfin.c binutils-2.19.1/gas/config/tc-bfin.c
---- binutils-2.19.1-orig/gas/config/tc-bfin.c	2009-07-13 11:43:50.012773000 -0700
-+++ binutils-2.19.1/gas/config/tc-bfin.c	2009-07-13 11:58:08.911355000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-bfin.c	2009-07-30 14:35:53.328900000 -0700
++++ binutils-2.19.1/gas/config/tc-bfin.c	2009-07-30 15:19:26.486528000 -0700
 @@ -933,7 +933,7 @@ INSTR_T
  note_reloc (INSTR_T code, Expr_Node * symbol, int reloc, int pcrel)
  {
@@ -736,8 +736,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-bfin.c binutils-2.19.1/gas/config/t
    return note_reloc1 (code, symbol->value.s_value, reloc, pcrel);
  
 diff -upr binutils-2.19.1-orig/gas/config/tc-cr16.c binutils-2.19.1/gas/config/tc-cr16.c
---- binutils-2.19.1-orig/gas/config/tc-cr16.c	2009-07-13 11:43:50.129749000 -0700
-+++ binutils-2.19.1/gas/config/tc-cr16.c	2009-07-13 11:58:08.918349000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-cr16.c	2009-07-30 14:35:53.368900000 -0700
++++ binutils-2.19.1/gas/config/tc-cr16.c	2009-07-30 15:19:26.511578000 -0700
 @@ -563,7 +563,7 @@ tc_gen_reloc (asection *section ATTRIBUT
          }
      }
@@ -757,8 +757,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-cr16.c binutils-2.19.1/gas/config/t
    return reloc;
  }
 diff -upr binutils-2.19.1-orig/gas/config/tc-cris.c binutils-2.19.1/gas/config/tc-cris.c
---- binutils-2.19.1-orig/gas/config/tc-cris.c	2009-07-13 11:43:50.230779000 -0700
-+++ binutils-2.19.1/gas/config/tc-cris.c	2009-07-13 11:58:08.927361000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-cris.c	2009-07-30 14:35:53.403884000 -0700
++++ binutils-2.19.1/gas/config/tc-cris.c	2009-07-30 15:19:26.527553000 -0700
 @@ -3879,7 +3879,7 @@ tc_gen_reloc (asection *section ATTRIBUT
      }
  
@@ -769,8 +769,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-cris.c binutils-2.19.1/gas/config/t
    *relP->sym_ptr_ptr = symbol_get_bfdsym (fixP->fx_addsy);
    relP->address = fixP->fx_frag->fr_address + fixP->fx_where;
 diff -upr binutils-2.19.1-orig/gas/config/tc-crx.c binutils-2.19.1/gas/config/tc-crx.c
---- binutils-2.19.1-orig/gas/config/tc-crx.c	2009-07-13 11:43:50.303791000 -0700
-+++ binutils-2.19.1/gas/config/tc-crx.c	2009-07-13 11:58:08.933413000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-crx.c	2009-07-30 14:35:53.435867000 -0700
++++ binutils-2.19.1/gas/config/tc-crx.c	2009-07-30 15:19:26.569551000 -0700
 @@ -351,7 +351,7 @@ tc_gen_reloc (asection *section ATTRIBUT
  	}
      }
@@ -790,8 +790,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-crx.c binutils-2.19.1/gas/config/tc
    return reloc;
  }
 diff -upr binutils-2.19.1-orig/gas/config/tc-d30v.c binutils-2.19.1/gas/config/tc-d30v.c
---- binutils-2.19.1-orig/gas/config/tc-d30v.c	2009-07-13 11:43:50.458752000 -0700
-+++ binutils-2.19.1/gas/config/tc-d30v.c	2009-07-13 11:58:08.941342000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-d30v.c	2009-07-30 14:35:53.471887000 -0700
++++ binutils-2.19.1/gas/config/tc-d30v.c	2009-07-30 15:19:26.582594000 -0700
 @@ -1516,7 +1516,7 @@ d30v_align (int n, char *pfill, symbolS 
        valueT       old_value;
        valueT       new_value;
@@ -807,8 +807,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-d30v.c binutils-2.19.1/gas/config/t
  };
 -
 diff -upr binutils-2.19.1-orig/gas/config/tc-dlx.c binutils-2.19.1/gas/config/tc-dlx.c
---- binutils-2.19.1-orig/gas/config/tc-dlx.c	2009-07-13 11:43:50.520825000 -0700
-+++ binutils-2.19.1/gas/config/tc-dlx.c	2009-07-13 11:58:08.946379000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-dlx.c	2009-07-30 14:35:53.496863000 -0700
++++ binutils-2.19.1/gas/config/tc-dlx.c	2009-07-30 15:19:26.605538000 -0700
 @@ -1203,7 +1203,7 @@ tc_gen_reloc (asection *section ATTRIBUT
        return NULL;
      }
@@ -824,8 +824,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-dlx.c binutils-2.19.1/gas/config/tc
  }
 -
 diff -upr binutils-2.19.1-orig/gas/config/tc-hppa.c binutils-2.19.1/gas/config/tc-hppa.c
---- binutils-2.19.1-orig/gas/config/tc-hppa.c	2009-07-13 11:43:50.779807000 -0700
-+++ binutils-2.19.1/gas/config/tc-hppa.c	2009-07-13 11:58:08.956398000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-hppa.c	2009-07-30 14:35:53.593876000 -0700
++++ binutils-2.19.1/gas/config/tc-hppa.c	2009-07-30 15:19:26.653533000 -0700
 @@ -1375,8 +1375,8 @@ tc_gen_reloc (asection *section, fixS *f
    if (fixp->fx_addsy == 0)
      return &no_relocs;
@@ -892,8 +892,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-hppa.c binutils-2.19.1/gas/config/t
    /* Ensure we emit a relocation for global symbols so that dynamic
       linking works.  */
 diff -upr binutils-2.19.1-orig/gas/config/tc-i370.c binutils-2.19.1/gas/config/tc-i370.c
---- binutils-2.19.1-orig/gas/config/tc-i370.c	2009-07-13 11:43:50.846679000 -0700
-+++ binutils-2.19.1/gas/config/tc-i370.c	2009-07-13 11:58:08.962396000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-i370.c	2009-07-30 14:35:53.609854000 -0700
++++ binutils-2.19.1/gas/config/tc-i370.c	2009-07-30 15:19:26.661573000 -0700
 @@ -1923,7 +1923,7 @@ md_assemble (char *str)
      {
        const struct i370_macro *macro;
@@ -909,8 +909,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-i370.c binutils-2.19.1/gas/config/t
  };
 -
 diff -upr binutils-2.19.1-orig/gas/config/tc-i386.c binutils-2.19.1/gas/config/tc-i386.c
---- binutils-2.19.1-orig/gas/config/tc-i386.c	2009-07-13 11:43:50.902663000 -0700
-+++ binutils-2.19.1/gas/config/tc-i386.c	2009-07-13 11:58:08.976342000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-i386.c	2009-07-30 14:35:53.635842000 -0700
++++ binutils-2.19.1/gas/config/tc-i386.c	2009-07-30 15:19:26.756553000 -0700
 @@ -97,23 +97,11 @@
    */
  typedef struct
@@ -1396,8 +1396,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-i386.c binutils-2.19.1/gas/config/t
        input_line_pointer = saved_input;
      }
 diff -upr binutils-2.19.1-orig/gas/config/tc-i386.h binutils-2.19.1/gas/config/tc-i386.h
---- binutils-2.19.1-orig/gas/config/tc-i386.h	2009-07-13 11:43:50.923597000 -0700
-+++ binutils-2.19.1/gas/config/tc-i386.h	2009-07-13 11:58:08.980332000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-i386.h	2009-07-30 14:35:53.642850000 -0700
++++ binutils-2.19.1/gas/config/tc-i386.h	2009-07-30 15:19:26.767538000 -0700
 @@ -232,4 +232,135 @@ void tc_pe_dwarf2_emit_offset (symbolS *
  
  #endif /* TE_PE */
@@ -1535,8 +1535,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-i386.h binutils-2.19.1/gas/config/t
 +
  #endif /* TC_I386 */
 diff -upr binutils-2.19.1-orig/gas/config/tc-i860.c binutils-2.19.1/gas/config/tc-i860.c
---- binutils-2.19.1-orig/gas/config/tc-i860.c	2009-07-13 11:43:50.993605000 -0700
-+++ binutils-2.19.1/gas/config/tc-i860.c	2009-07-13 11:58:08.986341000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-i860.c	2009-07-30 14:35:53.669793000 -0700
++++ binutils-2.19.1/gas/config/tc-i860.c	2009-07-30 15:19:26.802534000 -0700
 @@ -261,7 +261,7 @@ md_assemble (char *str)
    int i;
    struct i860_it pseudo[3];
@@ -1552,8 +1552,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-i860.c binutils-2.19.1/gas/config/t
  }
 -
 diff -upr binutils-2.19.1-orig/gas/config/tc-i960.c binutils-2.19.1/gas/config/tc-i960.c
---- binutils-2.19.1-orig/gas/config/tc-i960.c	2009-07-13 11:43:51.068626000 -0700
-+++ binutils-2.19.1/gas/config/tc-i960.c	2009-07-13 11:58:08.994348000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-i960.c	2009-07-30 14:35:53.688781000 -0700
++++ binutils-2.19.1/gas/config/tc-i960.c	2009-07-30 15:19:26.840532000 -0700
 @@ -2644,7 +2644,7 @@ tc_gen_reloc (asection *section ATTRIBUT
        return NULL;
      }
@@ -1564,8 +1564,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-i960.c binutils-2.19.1/gas/config/t
    reloc->sym_ptr_ptr = xmalloc (sizeof (asymbol *));
    *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixP->fx_addsy);
 diff -upr binutils-2.19.1-orig/gas/config/tc-ia64.c binutils-2.19.1/gas/config/tc-ia64.c
---- binutils-2.19.1-orig/gas/config/tc-ia64.c	2009-07-13 11:43:51.168627000 -0700
-+++ binutils-2.19.1/gas/config/tc-ia64.c	2009-07-13 11:58:09.026358000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-ia64.c	2009-07-30 14:35:53.713775000 -0700
++++ binutils-2.19.1/gas/config/tc-ia64.c	2009-07-30 15:19:26.891541000 -0700
 @@ -2809,7 +2809,7 @@ ia64_estimate_size_before_relax (fragS *
  
    /* fr_var carries the max_chars that we created the fragment with.
@@ -1603,8 +1603,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-ia64.c binutils-2.19.1/gas/config/t
  	}
        else
 diff -upr binutils-2.19.1-orig/gas/config/tc-iq2000.c binutils-2.19.1/gas/config/tc-iq2000.c
---- binutils-2.19.1-orig/gas/config/tc-iq2000.c	2009-07-13 11:43:51.273658000 -0700
-+++ binutils-2.19.1/gas/config/tc-iq2000.c	2009-07-13 11:58:09.033333000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-iq2000.c	2009-07-30 14:35:53.746784000 -0700
++++ binutils-2.19.1/gas/config/tc-iq2000.c	2009-07-30 15:19:26.903545000 -0700
 @@ -534,7 +534,7 @@ iq2000_record_hi16 (int    reloc_type,
  {
    struct iq2000_hi_fixup * hi_fixup;
@@ -1642,8 +1642,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-iq2000.c binutils-2.19.1/gas/config
  	as_warn (_(".end symbol does not match .ent symbol."));
      }
 diff -upr binutils-2.19.1-orig/gas/config/tc-m32c.c binutils-2.19.1/gas/config/tc-m32c.c
---- binutils-2.19.1-orig/gas/config/tc-m32c.c	2009-07-13 11:43:51.361682000 -0700
-+++ binutils-2.19.1/gas/config/tc-m32c.c	2009-07-13 11:58:09.043334000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-m32c.c	2009-07-30 14:35:53.784804000 -0700
++++ binutils-2.19.1/gas/config/tc-m32c.c	2009-07-30 15:19:26.945535000 -0700
 @@ -910,7 +910,7 @@ md_convert_frag (bfd *   abfd ATTRIBUTE_
  			 && operand != M32C_OPERAND_LAB32_JMP_S)))
      {
@@ -1654,8 +1654,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-m32c.c binutils-2.19.1/gas/config/t
  				    where,
  				    fragP->fr_cgen.insn,
 diff -upr binutils-2.19.1-orig/gas/config/tc-m32r.c binutils-2.19.1/gas/config/tc-m32r.c
---- binutils-2.19.1-orig/gas/config/tc-m32r.c	2009-07-13 11:43:51.448650000 -0700
-+++ binutils-2.19.1/gas/config/tc-m32r.c	2009-07-13 11:58:09.073383000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-m32r.c	2009-07-30 14:35:53.807813000 -0700
++++ binutils-2.19.1/gas/config/tc-m32r.c	2009-07-30 15:19:27.004501000 -0700
 @@ -1809,8 +1809,8 @@ md_convert_frag (bfd *abfd ATTRIBUTE_UNU
      {
        fixS *fixP;
@@ -1695,8 +1695,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-m32r.c binutils-2.19.1/gas/config/t
  		  *pf = l->fixp->fx_next;
  
 diff -upr binutils-2.19.1-orig/gas/config/tc-m68hc11.c binutils-2.19.1/gas/config/tc-m68hc11.c
---- binutils-2.19.1-orig/gas/config/tc-m68hc11.c	2009-07-13 11:43:51.550639000 -0700
-+++ binutils-2.19.1/gas/config/tc-m68hc11.c	2009-07-13 11:58:09.082385000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-m68hc11.c	2009-07-30 14:35:53.841814000 -0700
++++ binutils-2.19.1/gas/config/tc-m68hc11.c	2009-07-30 15:19:27.017551000 -0700
 @@ -1522,9 +1522,9 @@ build_jump_insn (struct m68hc11_opcode *
  
    /* The relative branch conversion is not supported for
@@ -1845,8 +1845,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-m68hc11.c binutils-2.19.1/gas/confi
  	  fragP->fr_subtype = ENCODE_RELAX (STATE_CONDITIONAL_BRANCH_6812,
  					    STATE_BYTE);
 diff -upr binutils-2.19.1-orig/gas/config/tc-m68k.c binutils-2.19.1/gas/config/tc-m68k.c
---- binutils-2.19.1-orig/gas/config/tc-m68k.c	2009-07-13 11:43:51.689653000 -0700
-+++ binutils-2.19.1/gas/config/tc-m68k.c	2009-07-13 11:58:09.094370000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-m68k.c	2009-07-30 14:35:53.871813000 -0700
++++ binutils-2.19.1/gas/config/tc-m68k.c	2009-07-30 15:19:27.044464000 -0700
 @@ -1206,7 +1206,7 @@ tc_gen_reloc (asection *section ATTRIBUT
  #endif
  
@@ -1892,8 +1892,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-m68k.c binutils-2.19.1/gas/config/t
        buffer_address[-1] = 0x30;
        fixP = fix_new (fragP, (int) (fragP->fr_fix), 4, fragP->fr_symbol,
 diff -upr binutils-2.19.1-orig/gas/config/tc-maxq.c binutils-2.19.1/gas/config/tc-maxq.c
---- binutils-2.19.1-orig/gas/config/tc-maxq.c	2009-07-13 11:43:51.763612000 -0700
-+++ binutils-2.19.1/gas/config/tc-maxq.c	2009-07-13 11:58:09.105367000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-maxq.c	2009-07-30 14:35:53.892777000 -0700
++++ binutils-2.19.1/gas/config/tc-maxq.c	2009-07-30 15:19:27.093444000 -0700
 @@ -276,7 +276,7 @@ tc_gen_reloc (asection *section ATTRIBUT
  
        /* Set howto to a garbage value so that we can keep going.  */
@@ -1904,8 +1904,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-maxq.c binutils-2.19.1/gas/config/t
  
    return rel;
 diff -upr binutils-2.19.1-orig/gas/config/tc-mcore.c binutils-2.19.1/gas/config/tc-mcore.c
---- binutils-2.19.1-orig/gas/config/tc-mcore.c	2009-07-13 11:43:51.866558000 -0700
-+++ binutils-2.19.1/gas/config/tc-mcore.c	2009-07-13 11:58:09.114373000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-mcore.c	2009-07-30 14:35:53.912800000 -0700
++++ binutils-2.19.1/gas/config/tc-mcore.c	2009-07-30 15:19:27.132471000 -0700
 @@ -2135,7 +2135,7 @@ md_pcrel_from_section (fixS * fixp, segT
  	  || (S_GET_SEGMENT (fixp->fx_addsy) != sec)))
  
@@ -1925,8 +1925,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-mcore.c binutils-2.19.1/gas/config/
  
    return rel;
 diff -upr binutils-2.19.1-orig/gas/config/tc-mep.c binutils-2.19.1/gas/config/tc-mep.c
---- binutils-2.19.1-orig/gas/config/tc-mep.c	2009-07-13 11:43:51.978523000 -0700
-+++ binutils-2.19.1/gas/config/tc-mep.c	2009-07-13 11:58:09.123387000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-mep.c	2009-07-30 14:35:53.927771000 -0700
++++ binutils-2.19.1/gas/config/tc-mep.c	2009-07-30 15:19:27.180498000 -0700
 @@ -1411,7 +1411,7 @@ md_convert_frag (bfd *abfd  ATTRIBUTE_UN
    if (S_GET_SEGMENT (fragP->fr_symbol) != sec
        || operand == MEP_OPERAND_PCABS24A2)
@@ -1955,8 +1955,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-mep.c binutils-2.19.1/gas/config/tc
  		  * pf = l->fixp->fx_next;
  
 diff -upr binutils-2.19.1-orig/gas/config/tc-mips.c binutils-2.19.1/gas/config/tc-mips.c
---- binutils-2.19.1-orig/gas/config/tc-mips.c	2009-07-13 11:43:52.170517000 -0700
-+++ binutils-2.19.1/gas/config/tc-mips.c	2009-07-13 11:58:09.158361000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-mips.c	2009-07-30 14:35:54.000796000 -0700
++++ binutils-2.19.1/gas/config/tc-mips.c	2009-07-30 15:19:27.306473000 -0700
 @@ -2212,7 +2212,7 @@ insn_uses_reg (const struct mips_cl_insn
  {
    if (class == MIPS16_REG)
@@ -2526,8 +2526,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-mips.c binutils-2.19.1/gas/config/t
  
        /* Write the symbol.  */
 diff -upr binutils-2.19.1-orig/gas/config/tc-mmix.c binutils-2.19.1/gas/config/tc-mmix.c
---- binutils-2.19.1-orig/gas/config/tc-mmix.c	2009-07-13 11:43:52.318503000 -0700
-+++ binutils-2.19.1/gas/config/tc-mmix.c	2009-07-13 11:58:09.167331000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-mmix.c	2009-07-30 14:35:54.022779000 -0700
++++ binutils-2.19.1/gas/config/tc-mmix.c	2009-07-30 15:19:27.374490000 -0700
 @@ -2842,7 +2842,7 @@ tc_gen_reloc (asection *section ATTRIBUT
      }
  
@@ -2538,8 +2538,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-mmix.c binutils-2.19.1/gas/config/t
    *relP->sym_ptr_ptr = baddsy;
    relP->address = fixP->fx_frag->fr_address + fixP->fx_where;
 diff -upr binutils-2.19.1-orig/gas/config/tc-mn10300.c binutils-2.19.1/gas/config/tc-mn10300.c
---- binutils-2.19.1-orig/gas/config/tc-mn10300.c	2009-07-13 11:43:52.457466000 -0700
-+++ binutils-2.19.1/gas/config/tc-mn10300.c	2009-07-13 11:58:09.173355000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-mn10300.c	2009-07-30 14:35:54.074797000 -0700
++++ binutils-2.19.1/gas/config/tc-mn10300.c	2009-07-30 15:19:27.412478000 -0700
 @@ -2322,7 +2322,7 @@ md_apply_fix (fixS * fixP, valueT * valP
    int size = 0;
    int value = (int) * valP;
@@ -2550,8 +2550,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-mn10300.c binutils-2.19.1/gas/confi
    /* This should never happen.  */
    if (seg->flags & SEC_ALLOC)
 diff -upr binutils-2.19.1-orig/gas/config/tc-ns32k.c binutils-2.19.1/gas/config/tc-ns32k.c
---- binutils-2.19.1-orig/gas/config/tc-ns32k.c	2009-07-13 11:43:52.675511000 -0700
-+++ binutils-2.19.1/gas/config/tc-ns32k.c	2009-07-13 11:58:09.179333000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-ns32k.c	2009-07-30 14:35:54.123783000 -0700
++++ binutils-2.19.1/gas/config/tc-ns32k.c	2009-07-30 15:19:27.503448000 -0700
 @@ -712,7 +712,7 @@ get_addr_mode (char *ptr, addr_modeS *ad
        addr_modeP->am_size += 1;
      }
@@ -2571,8 +2571,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-ns32k.c binutils-2.19.1/gas/config/
  	{
  	  /* There is a displacement.  */
 diff -upr binutils-2.19.1-orig/gas/config/tc-pj.c binutils-2.19.1/gas/config/tc-pj.c
---- binutils-2.19.1-orig/gas/config/tc-pj.c	2009-07-13 11:43:52.892361000 -0700
-+++ binutils-2.19.1/gas/config/tc-pj.c	2009-07-13 11:58:09.182349000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-pj.c	2009-07-30 14:35:54.164796000 -0700
++++ binutils-2.19.1/gas/config/tc-pj.c	2009-07-30 15:19:27.553520000 -0700
 @@ -490,7 +490,7 @@ tc_gen_reloc (asection *section ATTRIBUT
  		    bfd_get_reloc_code_name (r_type));
        /* Set howto to a garbage value so that we can keep going.  */
@@ -2583,8 +2583,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-pj.c binutils-2.19.1/gas/config/tc-
  
    return rel;
 diff -upr binutils-2.19.1-orig/gas/config/tc-ppc.c binutils-2.19.1/gas/config/tc-ppc.c
---- binutils-2.19.1-orig/gas/config/tc-ppc.c	2009-07-13 11:43:53.004388000 -0700
-+++ binutils-2.19.1/gas/config/tc-ppc.c	2009-07-13 11:58:09.191340000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-ppc.c	2009-07-30 14:35:54.187797000 -0700
++++ binutils-2.19.1/gas/config/tc-ppc.c	2009-07-30 15:19:27.668464000 -0700
 @@ -2475,7 +2475,7 @@ md_assemble (char *str)
  		 explain.  */
  	      if (ex.X_op == O_symbol)
@@ -2604,8 +2604,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-ppc.c binutils-2.19.1/gas/config/tc
        /* Determine a BFD reloc value based on the operand information.
  	 We are only prepared to turn a few of the operands into
 diff -upr binutils-2.19.1-orig/gas/config/tc-s390.c binutils-2.19.1/gas/config/tc-s390.c
---- binutils-2.19.1-orig/gas/config/tc-s390.c	2009-07-13 11:43:53.089364000 -0700
-+++ binutils-2.19.1/gas/config/tc-s390.c	2009-07-13 11:58:09.196358000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-s390.c	2009-07-30 14:35:54.201803000 -0700
++++ binutils-2.19.1/gas/config/tc-s390.c	2009-07-30 15:19:27.701442000 -0700
 @@ -2220,7 +2220,7 @@ tc_gen_reloc (asection *seg ATTRIBUTE_UN
  		    bfd_get_reloc_code_name (code));
        /* Set howto to a garbage value so that we can keep going.  */
@@ -2616,8 +2616,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-s390.c binutils-2.19.1/gas/config/t
    reloc->addend = fixp->fx_offset;
  
 diff -upr binutils-2.19.1-orig/gas/config/tc-score.c binutils-2.19.1/gas/config/tc-score.c
---- binutils-2.19.1-orig/gas/config/tc-score.c	2009-07-13 11:43:48.841957000 -0700
-+++ binutils-2.19.1/gas/config/tc-score.c	2009-07-13 11:58:09.206344000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-score.c	2009-07-30 14:35:52.697867000 -0700
++++ binutils-2.19.1/gas/config/tc-score.c	2009-07-30 15:19:27.737497000 -0700
 @@ -3938,7 +3938,7 @@ do_macro_la_rdi32 (char *str)
  		}
  	      else
@@ -2669,8 +2669,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-score.c binutils-2.19.1/gas/config/
  };
 -
 diff -upr binutils-2.19.1-orig/gas/config/tc-sh.c binutils-2.19.1/gas/config/tc-sh.c
---- binutils-2.19.1-orig/gas/config/tc-sh.c	2009-07-13 11:43:53.203328000 -0700
-+++ binutils-2.19.1/gas/config/tc-sh.c	2009-07-13 11:58:09.212396000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-sh.c	2009-07-30 14:35:54.260777000 -0700
++++ binutils-2.19.1/gas/config/tc-sh.c	2009-07-30 15:19:27.768444000 -0700
 @@ -4375,7 +4375,7 @@ tc_gen_reloc (asection *section ATTRIBUT
  		    bfd_get_reloc_code_name (r_type));
        /* Set howto to a garbage value so that we can keep going.  */
@@ -2681,8 +2681,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-sh.c binutils-2.19.1/gas/config/tc-
  #ifdef OBJ_ELF
    else if (rel->howto->type == R_SH_IND12W)
 diff -upr binutils-2.19.1-orig/gas/config/tc-sparc.c binutils-2.19.1/gas/config/tc-sparc.c
---- binutils-2.19.1-orig/gas/config/tc-sparc.c	2009-07-13 11:43:53.412343000 -0700
-+++ binutils-2.19.1/gas/config/tc-sparc.c	2009-07-13 11:58:09.220404000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-sparc.c	2009-07-30 14:35:54.299797000 -0700
++++ binutils-2.19.1/gas/config/tc-sparc.c	2009-07-30 15:19:27.798483000 -0700
 @@ -1352,7 +1352,7 @@ md_assemble (char *str)
  	   The workaround is to add an fmovs of the destination register to
  	   itself just after the instruction.  This was true on machines
@@ -2720,8 +2720,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-sparc.c binutils-2.19.1/gas/config/
    if (now_seg == absolute_section)
      {
 diff -upr binutils-2.19.1-orig/gas/config/tc-spu.c binutils-2.19.1/gas/config/tc-spu.c
---- binutils-2.19.1-orig/gas/config/tc-spu.c	2009-07-13 11:43:53.509366000 -0700
-+++ binutils-2.19.1/gas/config/tc-spu.c	2009-07-13 11:58:09.224352000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-spu.c	2009-07-30 14:35:54.323791000 -0700
++++ binutils-2.19.1/gas/config/tc-spu.c	2009-07-30 15:19:27.811457000 -0700
 @@ -268,7 +268,7 @@ md_assemble (char *op)
    struct spu_insn insn;
    int i;
@@ -2732,8 +2732,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-spu.c binutils-2.19.1/gas/config/tc
    /* skip over instruction to find parameters */
  
 diff -upr binutils-2.19.1-orig/gas/config/tc-tic30.c binutils-2.19.1/gas/config/tc-tic30.c
---- binutils-2.19.1-orig/gas/config/tc-tic30.c	2009-07-13 11:43:53.604326000 -0700
-+++ binutils-2.19.1/gas/config/tc-tic30.c	2009-07-13 11:58:09.229380000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-tic30.c	2009-07-30 14:35:54.363799000 -0700
++++ binutils-2.19.1/gas/config/tc-tic30.c	2009-07-30 15:19:27.832470000 -0700
 @@ -1388,7 +1388,7 @@ tc_gen_reloc (asection *section ATTRIBUT
  #undef F
  
@@ -2749,8 +2749,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-tic30.c binutils-2.19.1/gas/config/
  }
 -
 diff -upr binutils-2.19.1-orig/gas/config/tc-vax.c binutils-2.19.1/gas/config/tc-vax.c
---- binutils-2.19.1-orig/gas/config/tc-vax.c	2009-07-13 11:43:54.075206000 -0700
-+++ binutils-2.19.1/gas/config/tc-vax.c	2009-07-13 11:58:09.244383000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-vax.c	2009-07-30 14:35:54.450803000 -0700
++++ binutils-2.19.1/gas/config/tc-vax.c	2009-07-30 15:19:27.865471000 -0700
 @@ -2401,7 +2401,7 @@ tc_gen_reloc (asection *section ATTRIBUT
  #endif
  
@@ -2761,8 +2761,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-vax.c binutils-2.19.1/gas/config/tc
    return reloc;
  }
 diff -upr binutils-2.19.1-orig/gas/config/tc-xtensa.c binutils-2.19.1/gas/config/tc-xtensa.c
---- binutils-2.19.1-orig/gas/config/tc-xtensa.c	2009-07-13 11:43:54.402163000 -0700
-+++ binutils-2.19.1/gas/config/tc-xtensa.c	2009-07-13 11:58:09.262380000 -0700
+--- binutils-2.19.1-orig/gas/config/tc-xtensa.c	2009-07-30 14:35:54.562772000 -0700
++++ binutils-2.19.1/gas/config/tc-xtensa.c	2009-07-30 15:19:27.942446000 -0700
 @@ -1031,7 +1031,7 @@ use_transform (void)
  {
    /* After md_end, you should be checking frag by frag, rather
@@ -4006,8 +4006,8 @@ diff -upr binutils-2.19.1-orig/gas/config/tc-xtensa.c binutils-2.19.1/gas/config
  }
  
 diff -upr binutils-2.19.1-orig/gas/config/xtensa-relax.c binutils-2.19.1/gas/config/xtensa-relax.c
---- binutils-2.19.1-orig/gas/config/xtensa-relax.c	2009-07-13 11:43:55.649038000 -0700
-+++ binutils-2.19.1/gas/config/xtensa-relax.c	2009-07-13 11:58:09.267389000 -0700
+--- binutils-2.19.1-orig/gas/config/xtensa-relax.c	2009-07-30 14:35:54.836689000 -0700
++++ binutils-2.19.1/gas/config/xtensa-relax.c	2009-07-30 15:19:27.967495000 -0700
 @@ -518,8 +518,8 @@ append_transition (TransitionTable *tt,
    TransitionList *tl = (TransitionList *) xmalloc (sizeof (TransitionList));
    TransitionList *prev;
@@ -4029,8 +4029,8 @@ diff -upr binutils-2.19.1-orig/gas/config/xtensa-relax.c binutils-2.19.1/gas/con
  }
  
 diff -upr binutils-2.19.1-orig/gas/dw2gencfi.c binutils-2.19.1/gas/dw2gencfi.c
---- binutils-2.19.1-orig/gas/dw2gencfi.c	2009-07-13 11:43:58.815551000 -0700
-+++ binutils-2.19.1/gas/dw2gencfi.c	2009-07-13 11:58:09.273344000 -0700
+--- binutils-2.19.1-orig/gas/dw2gencfi.c	2009-07-30 14:35:55.363742000 -0700
++++ binutils-2.19.1/gas/dw2gencfi.c	2009-07-30 15:19:28.001441000 -0700
 @@ -284,7 +284,7 @@ cfi_add_CFA_offset (unsigned regno, offs
  {
    unsigned int abs_data_align;
@@ -4041,9 +4041,87 @@ diff -upr binutils-2.19.1-orig/gas/dw2gencfi.c binutils-2.19.1/gas/dw2gencfi.c
  
    abs_data_align = (DWARF2_CIE_DATA_ALIGNMENT < 0
 diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.c binutils-2.19.1/gas/dwarf2dbg.c
---- binutils-2.19.1-orig/gas/dwarf2dbg.c	2009-07-13 11:43:58.869506000 -0700
-+++ binutils-2.19.1/gas/dwarf2dbg.c	2009-07-13 11:58:09.277345000 -0700
-@@ -874,7 +874,7 @@ emit_inc_line_addr (int line_delta, addr
+--- binutils-2.19.1-orig/gas/dwarf2dbg.c	2009-07-30 14:35:55.389692000 -0700
++++ binutils-2.19.1/gas/dwarf2dbg.c	2009-07-30 15:17:35.322108000 -0700
+@@ -25,7 +25,8 @@
+ 
+ 	.file FILENO "file.c"
+ 	.loc  FILENO LINENO [COLUMN] [basic_block] [prologue_end] \
+-	      [epilogue_begin] [is_stmt VALUE] [isa VALUE]
++	      [epilogue_begin] [is_stmt VALUE] [isa VALUE] \
++	      [discriminator VALUE]
+ */
+ 
+ #include "as.h"
+@@ -182,7 +183,8 @@ bfd_boolean dwarf2_loc_mark_labels;
+ /* Current location as indicated by the most recent .loc directive.  */
+ static struct dwarf2_line_info current = {
+   1, 1, 0, 0,
+-  DWARF2_LINE_DEFAULT_IS_STMT ? DWARF2_FLAG_IS_STMT : 0
++  DWARF2_LINE_DEFAULT_IS_STMT ? DWARF2_FLAG_IS_STMT : 0,
++  0
+ };
+ 
+ /* The size of an address on the target.  */
+@@ -319,6 +321,7 @@ dwarf2_where (struct dwarf2_line_info *l
+       line->column = 0;
+       line->flags = DWARF2_FLAG_IS_STMT;
+       line->isa = current.isa;
++      line->discriminator = current.discriminator;
+     }
+   else
+     *line = current;
+@@ -367,6 +370,7 @@ dwarf2_consume_line_info (void)
+   current.flags &= ~(DWARF2_FLAG_BASIC_BLOCK
+ 		     | DWARF2_FLAG_PROLOGUE_END
+ 		     | DWARF2_FLAG_EPILOGUE_BEGIN);
++  current.discriminator = 0;
+ }
+ 
+ /* Called for each (preferably code) label.  If dwarf2_loc_mark_labels
+@@ -567,6 +571,7 @@ dwarf2_directive_loc (int dummy ATTRIBUT
+ 
+   current.filenum = filenum;
+   current.line = line;
++  current.discriminator = 0;
+ 
+ #ifndef NO_LISTING
+   if (listing)
+@@ -645,6 +650,18 @@ dwarf2_directive_loc (int dummy ATTRIBUT
+ 	      return;
+ 	    }
+ 	}
++      else if (strcmp (p, "discriminator") == 0)
++	{
++	  *input_line_pointer = c;
++	  value = get_absolute_expression ();
++	  if (value >= 0)
++	    current.discriminator = value;
++	  else
++	    {
++	      as_bad (_("discriminator less than zero"));
++	      return;
++	    }
++	}
+       else
+ 	{
+ 	  as_bad (_("unknown .loc sub-directive `%s'"), p);
+@@ -734,6 +751,14 @@ out_uleb128 (addressT value)
+   output_leb128 (frag_more (sizeof_leb128 (value, 0)), value, 0);
+ }
+ 
++/* Emit a signed "little-endian base 128" number.  */
++
++static void
++out_leb128 (addressT value)
++{
++  output_leb128 (frag_more (sizeof_leb128 (value, 1)), value, 1);
++}
++
+ /* Emit a tuple for .debug_abbrev.  */
+ 
+ static inline void
+@@ -874,7 +899,7 @@ emit_inc_line_addr (int line_delta, addr
  
    /* Line number sequences cannot go backward in addresses.  This means
       we've incorrectly ordered the statements in the sequence.  */
@@ -4052,7 +4130,7 @@ diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.c binutils-2.19.1/gas/dwarf2dbg.c
  
    /* Scale the address delta by the minimum instruction length.  */
    scale_addr_delta (&addr_delta);
-@@ -955,7 +955,7 @@ emit_inc_line_addr (int line_delta, addr
+@@ -955,7 +980,7 @@ emit_inc_line_addr (int line_delta, addr
      *p++ = tmp;
  
   done:
@@ -4061,7 +4139,7 @@ diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.c binutils-2.19.1/gas/dwarf2dbg.c
  }
  
  /* Handy routine to combine calls to the above two routines.  */
-@@ -1013,7 +1013,7 @@ emit_fixed_inc_line_addr (int line_delta
+@@ -1013,7 +1038,7 @@ emit_fixed_inc_line_addr (int line_delta
  
    /* Line number sequences cannot go backward in addresses.  This means
       we've incorrectly ordered the statements in the sequence.  */
@@ -4070,7 +4148,7 @@ diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.c binutils-2.19.1/gas/dwarf2dbg.c
  
    /* INT_MAX is a signal that this is actually a DW_LNE_end_sequence.  */
    if (line_delta != INT_MAX)
-@@ -1035,7 +1035,7 @@ emit_fixed_inc_line_addr (int line_delta
+@@ -1035,7 +1060,7 @@ emit_fixed_inc_line_addr (int line_delta
        symbolS *to_sym;
        expressionS expr;
  
@@ -4079,7 +4157,7 @@ diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.c binutils-2.19.1/gas/dwarf2dbg.c
        to_sym = exp->X_add_symbol;
  
        *p++ = DW_LNS_extended_op;
-@@ -1065,7 +1065,7 @@ emit_fixed_inc_line_addr (int line_delta
+@@ -1065,7 +1090,7 @@ emit_fixed_inc_line_addr (int line_delta
    else
      *p++ = DW_LNS_copy;
  
@@ -4088,7 +4166,7 @@ diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.c binutils-2.19.1/gas/dwarf2dbg.c
  }
  
  /* Generate a variant frag that we can use to relax address/line
-@@ -1144,7 +1144,7 @@ dwarf2dbg_convert_frag (fragS *frag)
+@@ -1144,7 +1169,7 @@ dwarf2dbg_convert_frag (fragS *frag)
    /* fr_var carries the max_chars that we created the fragment with.
       fr_subtype carries the current expected length.  We must, of
       course, have allocated enough memory earlier.  */
@@ -4097,7 +4175,22 @@ diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.c binutils-2.19.1/gas/dwarf2dbg.c
  
    if (DWARF2_USE_FIXED_ADVANCE_PC)
      emit_fixed_inc_line_addr (frag->fr_offset, addr_diff, frag,
-@@ -1696,7 +1696,7 @@ dwarf2_finish (void)
+@@ -1194,6 +1219,14 @@ process_entries (segT seg, struct line_e
+ 	  out_uleb128 (column);
+ 	}
+ 
++      if (e->loc.discriminator != 0)
++	{
++	  out_opcode (DW_LNS_extended_op);
++	  out_leb128 (1 + sizeof_leb128 (e->loc.discriminator, 0));
++	  out_opcode (DW_LNE_set_discriminator);
++	  out_uleb128 (e->loc.discriminator);
++	}
++
+       if (isa != e->loc.isa)
+ 	{
+ 	  isa = e->loc.isa;
+@@ -1696,7 +1729,7 @@ dwarf2_finish (void)
        segT aranges_seg;
        segT ranges_seg;
  
@@ -4107,9 +4200,17 @@ diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.c binutils-2.19.1/gas/dwarf2dbg.c
        info_seg = subseg_new (".debug_info", 0);
        abbrev_seg = subseg_new (".debug_abbrev", 0);
 diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.h binutils-2.19.1/gas/dwarf2dbg.h
---- binutils-2.19.1-orig/gas/dwarf2dbg.h	2009-07-13 11:43:58.892471000 -0700
-+++ binutils-2.19.1/gas/dwarf2dbg.h	2009-07-13 11:58:09.280356000 -0700
-@@ -81,12 +81,12 @@ extern void dwarf2_emit_label (symbolS *
+--- binutils-2.19.1-orig/gas/dwarf2dbg.h	2009-07-30 14:35:55.395733000 -0700
++++ binutils-2.19.1/gas/dwarf2dbg.h	2009-07-30 15:19:47.853744000 -0700
+@@ -34,6 +34,7 @@ struct dwarf2_line_info {
+   unsigned int column;
+   unsigned int isa;
+   unsigned int flags;
++  unsigned int discriminator;
+ };
+ 
+ /* Implements the .file FILENO "FILENAME" directive.  FILENO can be 0
+@@ -81,12 +82,12 @@ extern void dwarf2_emit_label (symbolS *
  
  /* True when we've seen a .loc directive recently.  Used to avoid
     doing work when there's nothing to do.  */
@@ -4125,8 +4226,8 @@ diff -upr binutils-2.19.1-orig/gas/dwarf2dbg.h binutils-2.19.1/gas/dwarf2dbg.h
  extern void dwarf2_finish (void);
  
 diff -upr binutils-2.19.1-orig/gas/ehopt.c binutils-2.19.1/gas/ehopt.c
---- binutils-2.19.1-orig/gas/ehopt.c	2009-07-13 11:43:57.621754000 -0700
-+++ binutils-2.19.1/gas/ehopt.c	2009-07-13 14:17:02.402460000 -0700
+--- binutils-2.19.1-orig/gas/ehopt.c	2009-07-30 14:35:55.216743000 -0700
++++ binutils-2.19.1/gas/ehopt.c	2009-07-30 15:19:47.862742000 -0700
 @@ -474,7 +474,7 @@ eh_frame_estimate_size_before_relax (fra
  
    diff = resolve_symbol_value (frag->fr_symbol);
@@ -4165,8 +4266,8 @@ diff -upr binutils-2.19.1-orig/gas/ehopt.c binutils-2.19.1/gas/ehopt.c
        md_number_to_chars (frag->fr_literal + frag->fr_fix, diff, 2);
        break;
 diff -upr binutils-2.19.1-orig/gas/expr.c binutils-2.19.1/gas/expr.c
---- binutils-2.19.1-orig/gas/expr.c	2009-07-13 11:43:59.200482000 -0700
-+++ binutils-2.19.1/gas/expr.c	2009-07-13 11:58:09.297381000 -0700
+--- binutils-2.19.1-orig/gas/expr.c	2009-07-30 14:35:55.469739000 -0700
++++ binutils-2.19.1/gas/expr.c	2009-07-30 15:19:47.871756000 -0700
 @@ -404,7 +404,7 @@ integer_constant (int radix, expressionS
        if (num_little_digits > SIZE_OF_LARGE_NUMBER - 1)
  	num_little_digits = SIZE_OF_LARGE_NUMBER - 1;
@@ -4186,8 +4287,8 @@ diff -upr binutils-2.19.1-orig/gas/expr.c binutils-2.19.1/gas/expr.c
  }
  
 diff -upr binutils-2.19.1-orig/gas/frags.c binutils-2.19.1/gas/frags.c
---- binutils-2.19.1-orig/gas/frags.c	2009-07-13 11:43:59.366484000 -0700
-+++ binutils-2.19.1/gas/frags.c	2009-07-13 11:58:09.302356000 -0700
+--- binutils-2.19.1-orig/gas/frags.c	2009-07-30 14:35:55.510711000 -0700
++++ binutils-2.19.1/gas/frags.c	2009-07-30 15:19:47.895744000 -0700
 @@ -137,12 +137,12 @@ frag_new (int old_frags_var_max_size
    fragS *former_last_fragP;
    frchainS *frchP;
@@ -4224,8 +4325,8 @@ diff -upr binutils-2.19.1-orig/gas/frags.c binutils-2.19.1/gas/frags.c
    frag_now->fr_next = NULL;
  }
 diff -upr binutils-2.19.1-orig/gas/input-file.c binutils-2.19.1/gas/input-file.c
---- binutils-2.19.1-orig/gas/input-file.c	2009-07-13 11:43:59.444479000 -0700
-+++ binutils-2.19.1/gas/input-file.c	2009-07-13 11:58:09.306340000 -0700
+--- binutils-2.19.1-orig/gas/input-file.c	2009-07-30 14:35:55.539721000 -0700
++++ binutils-2.19.1/gas/input-file.c	2009-07-30 15:19:47.899756000 -0700
 @@ -124,7 +124,7 @@ input_file_open (char *filename, /* "" m
  
    preprocess = pre;
@@ -4236,8 +4337,8 @@ diff -upr binutils-2.19.1-orig/gas/input-file.c binutils-2.19.1/gas/input-file.c
      {
        f_in = fopen (filename, FOPEN_RT);
 diff -upr binutils-2.19.1-orig/gas/read.c binutils-2.19.1/gas/read.c
---- binutils-2.19.1-orig/gas/read.c	2009-07-13 11:43:59.794409000 -0700
-+++ binutils-2.19.1/gas/read.c	2009-07-13 11:58:09.314348000 -0700
+--- binutils-2.19.1-orig/gas/read.c	2009-07-30 14:35:55.683615000 -0700
++++ binutils-2.19.1/gas/read.c	2009-07-30 15:19:47.913748000 -0700
 @@ -3445,7 +3445,7 @@ s_weakref (int ignore ATTRIBUTE_UNUSED)
  	{
  	  expressionS *expP = symbol_get_value_expression (symp);
@@ -4248,8 +4349,8 @@ diff -upr binutils-2.19.1-orig/gas/read.c binutils-2.19.1/gas/read.c
  	  symp = expP->X_add_symbol;
  	}
 diff -upr binutils-2.19.1-orig/gas/sb.c binutils-2.19.1/gas/sb.c
---- binutils-2.19.1-orig/gas/sb.c	2009-07-13 11:43:59.829376000 -0700
-+++ binutils-2.19.1/gas/sb.c	2009-07-13 11:58:09.317381000 -0700
+--- binutils-2.19.1-orig/gas/sb.c	2009-07-30 14:35:55.707616000 -0700
++++ binutils-2.19.1/gas/sb.c	2009-07-30 15:19:47.934731000 -0700
 @@ -59,7 +59,7 @@ sb_build (sb *ptr, int size)
    /* See if we can find one to allocate.  */
    sb_element *e;
@@ -4260,8 +4361,8 @@ diff -upr binutils-2.19.1-orig/gas/sb.c binutils-2.19.1/gas/sb.c
    e = free_list.size[size];
    if (!e)
 diff -upr binutils-2.19.1-orig/gas/subsegs.c binutils-2.19.1/gas/subsegs.c
---- binutils-2.19.1-orig/gas/subsegs.c	2009-07-13 11:43:59.888317000 -0700
-+++ binutils-2.19.1/gas/subsegs.c	2009-07-13 11:58:09.321338000 -0700
+--- binutils-2.19.1-orig/gas/subsegs.c	2009-07-30 14:35:55.727615000 -0700
++++ binutils-2.19.1/gas/subsegs.c	2009-07-30 15:19:47.939752000 -0700
 @@ -84,7 +84,7 @@ subseg_set_rest (segT seg, subsegT subse
    if (frag_now && frchain_now)
      frchain_now->frch_frag_now = frag_now;
@@ -4281,8 +4382,8 @@ diff -upr binutils-2.19.1-orig/gas/subsegs.c binutils-2.19.1/gas/subsegs.c
  
  /*
 diff -upr binutils-2.19.1-orig/gas/symbols.c binutils-2.19.1/gas/symbols.c
---- binutils-2.19.1-orig/gas/symbols.c	2009-07-13 11:43:59.935312000 -0700
-+++ binutils-2.19.1/gas/symbols.c	2009-07-13 11:58:09.327344000 -0700
+--- binutils-2.19.1-orig/gas/symbols.c	2009-07-30 14:35:55.754599000 -0700
++++ binutils-2.19.1/gas/symbols.c	2009-07-30 15:19:47.968728000 -0700
 @@ -217,7 +217,7 @@ local_symbol_convert (struct local_symbo
  {
    symbolS *ret;
@@ -4352,8 +4453,8 @@ diff -upr binutils-2.19.1-orig/gas/symbols.c binutils-2.19.1/gas/symbols.c
        /* Format the thing.  */
        sprintf (concat_string, 
 diff -upr binutils-2.19.1-orig/gas/write.c binutils-2.19.1/gas/write.c
---- binutils-2.19.1-orig/gas/write.c	2009-07-13 11:44:00.006342000 -0700
-+++ binutils-2.19.1/gas/write.c	2009-07-13 11:58:09.333338000 -0700
+--- binutils-2.19.1-orig/gas/write.c	2009-07-30 14:35:55.767618000 -0700
++++ binutils-2.19.1/gas/write.c	2009-07-30 15:19:47.975756000 -0700
 @@ -386,7 +386,7 @@ chain_frchains_together_1 (segT section,
      {
        prev_frag->fr_next = frchp->frch_root;
@@ -4429,9 +4530,20 @@ diff -upr binutils-2.19.1-orig/gas/write.c binutils-2.19.1/gas/write.c
    symbol_table_frozen = 1;
  }
  
+diff -upr binutils-2.19.1-orig/include/elf/dwarf2.h binutils-2.19.1/include/elf/dwarf2.h
+--- binutils-2.19.1-orig/include/elf/dwarf2.h	2009-07-30 14:36:26.651012000 -0700
++++ binutils-2.19.1/include/elf/dwarf2.h	2009-07-30 15:53:48.452393000 -0700
+@@ -709,6 +709,7 @@ enum dwarf_line_number_x_ops
+     DW_LNE_end_sequence = 1,
+     DW_LNE_set_address = 2,
+     DW_LNE_define_file = 3,
++    DW_LNE_set_discriminator = 4,
+     /* HP extensions.  */
+     DW_LNE_HP_negate_is_UV_update      = 0x11,
+     DW_LNE_HP_push_context             = 0x12,
 diff -upr binutils-2.19.1-orig/opcodes/i386-opc.h binutils-2.19.1/opcodes/i386-opc.h
---- binutils-2.19.1-orig/opcodes/i386-opc.h	2009-07-13 11:45:24.153191000 -0700
-+++ binutils-2.19.1/opcodes/i386-opc.h	2009-07-13 11:58:09.370350000 -0700
+--- binutils-2.19.1-orig/opcodes/i386-opc.h	2009-07-30 14:36:29.763677000 -0700
++++ binutils-2.19.1/opcodes/i386-opc.h	2009-07-30 15:19:47.998753000 -0700
 @@ -513,7 +513,7 @@ typedef union i386_operand_type
    unsigned int array[OTNumOfUints];
  } i386_operand_type;
@@ -4454,8 +4566,8 @@ diff -upr binutils-2.19.1-orig/opcodes/i386-opc.h binutils-2.19.1/opcodes/i386-o
  /* these are for register name --> number & type hash lookup */
  typedef struct
 diff -upr binutils-2.19.1-orig/opcodes/i386-tbl.h binutils-2.19.1/opcodes/i386-tbl.h
---- binutils-2.19.1-orig/opcodes/i386-tbl.h	2009-07-13 11:45:24.660141000 -0700
-+++ binutils-2.19.1/opcodes/i386-tbl.h	2009-07-13 11:58:09.424348000 -0700
+--- binutils-2.19.1-orig/opcodes/i386-tbl.h	2009-07-30 14:36:30.036730000 -0700
++++ binutils-2.19.1/opcodes/i386-tbl.h	2009-07-30 15:19:48.200680000 -0700
 @@ -20,7 +20,7 @@
  
  /* i386 opcode table.  */
