@@ -516,6 +516,16 @@ class InstructionEntry : public MaoEntry {
     return instruction_->types[op_index].bitfield.regxmm;
   }
 
+  bool HasDisplacement(const int op_index) {
+    MAO_ASSERT(op_index < NumOperands());
+    return instruction_->op[op_index].disps != NULL;
+  }
+
+  expressionS *GetDisplacement(const int op_index) {
+    MAO_ASSERT(HasDisplacement(op_index));
+    return instruction_->op[op_index].disps;
+  }
+
   bool CompareMemOperand(int op1, InstructionEntry *i2, int op2);
   void SetOperand(int op1, InstructionEntry *i2, int op2);
 

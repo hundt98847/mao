@@ -3,8 +3,4 @@ zero.s
 redmov1.s
 redmov2.s
 redmov3.s
-loops-1.s
-long-jump.s
-long-jump-space.s
-relax-function-end.s
 addadd.s

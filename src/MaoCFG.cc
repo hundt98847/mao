@@ -465,15 +465,19 @@ bool CFGBuilder::IsTailCall(InstructionEntry *entry) const {
 
 // Identifies the pattern below. If it is found, it returns
 // true and puts the label LBL in out_label.
+// Assumes that *entry is a jump instruction.
 //
 //  jmp  .L112(,%rax,8)
 bool CFGBuilder::IsTablePattern1(InstructionEntry *entry,
                                  LabelEntry **out_label) const {
-  if (entry->IsMemOperand(0)) {
+  MAO_ASSERT(entry->IsIndirectJump());
+  if (entry->NumOperands() == 1 &&
+      entry->IsMemOperand(0) &&
+      entry->HasDisplacement(0)) {
     const char *label_name = NULL;
     // Get the name of the label from the expression
     label_name = entry->GetSymbolnameFromExpression(
-        entry->instruction()->op[0].disps);
+        entry->GetDisplacement(0));
     if (label_name != NULL) {
       *out_label = unit_->GetLabelEntry(label_name);
       MAO_ASSERT_MSG(*out_label != NULL,
@@ -496,17 +500,18 @@ bool CFGBuilder::IsTablePattern2(InstructionEntry *entry,
     MaoEntry *prev = entry->prev();
     InstructionEntry *prev_inst = (prev && prev->IsInstruction())?
         prev->AsInstruction():NULL;
-     if (entry->IsRegisterOperand(0) &&
+    if (entry->IsRegisterOperand(0) &&
         prev_inst &&
         prev_inst->IsOpMov() &&             // Is previous instruction a move?
         prev_inst->NumOperands() == 2 &&    // target register matches the jump
         prev_inst->IsRegisterOperand(1) &&  // register?
         prev_inst->IsMemOperand(0) &&
-        prev_inst->GetRegisterOperand(1) == entry->GetRegisterOperand(0)) {
+        prev_inst->GetRegisterOperand(1) == entry->GetRegisterOperand(0) &&
+        prev_inst->HasDisplacement(0)) {
        // Now get the label from the expression, if we found any!
        const char *label_name = NULL;
        label_name = prev_inst->GetSymbolnameFromExpression(
-           prev_inst->instruction()->op[0].disps);
+           prev_inst->GetDisplacement(0));
        if (label_name) {
          *out_label = unit_->GetLabelEntry(label_name);
          MAO_ASSERT_MSG(*out_label != NULL,
@@ -592,11 +597,12 @@ bool CFGBuilder::IsTablePattern3(InstructionEntry *entry,
         insts[current_inst]->IsRegisterOperand(1) &&
         insts[current_inst]->GetRegisterOperand(1) == r_rb;
 
-    if (good_so_far) {
+    if (good_so_far &&
+        insts[current_inst]->HasDisplacement(0)) {
       const char *label_name = NULL;
       // get the label from the instruction
       label_name = insts[current_inst]->GetSymbolnameFromExpression(
-          insts[current_inst]->instruction()->op[0].disps);
+          insts[current_inst]->GetDisplacement(0));
       if (label_name) {
         *out_label = unit_->GetLabelEntry(label_name);
         MAO_ASSERT_MSG(*out_label != NULL,
@@ -703,7 +709,7 @@ bool CFGBuilder::IsTablePattern4(InstructionEntry *entry,
         MAO_ASSERT(def_inst != NULL);
         const char *label_name = NULL;
         label_name = def_inst->GetSymbolnameFromExpression(
-            def_inst->instruction()->op[0].disps);
+            def_inst->GetDisplacement(0));
         if (label_name) {
           *out_label = unit_->GetLabelEntry(label_name);
           MAO_ASSERT_MSG(*out_label != NULL,

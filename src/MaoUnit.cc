@@ -1549,6 +1549,9 @@ void MaoEntry::AlignTo(int power_of_2_alignment,
 const char *MaoEntry::GetSymbolnameFromExpression(expressionS *expr) const {
   const char *label_name = NULL;
   // TODO(martint): support all expression
+
+  MAO_ASSERT(expr != NULL);
+
   switch (expr->X_op) {
     case O_constant:
       if (expr->X_add_symbol) {
