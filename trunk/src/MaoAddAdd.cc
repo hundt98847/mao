@@ -17,7 +17,8 @@
 //   51 Franklin Street, Fifth Floor,
 //   Boston, MA  02110-1301, USA.
 
-// Zero Extension Elimination
+// Add Add identifier
+// TODO(martint): Make sure that the eflags of the first insn are not used.
 #include "MaoDebug.h"
 #include "MaoUnit.h"
 #include "MaoPasses.h"
@@ -155,10 +156,10 @@ class AddAddElimPass : public MaoFunctionPass {
             // we should continue looking up or not.
 
             // There is a conflict in the defs
-            if (!(pmask & imask).IsNull()) {
+            BitString emask =  GetMaskForRegister("eflags");
+            if ( (!(pmask & imask).IsNull()) && !((pmask & imask) == emask )) {
               break;
             }
-
             // The register is used here. In order to remove any of the add/sub
             // instruction, this will probably need to be updated. The simple
             // solution is to stop check here and look for another pattern
