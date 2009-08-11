@@ -146,7 +146,9 @@ void CFG::DumpVCG(const char *fname) const {
 MAO_OPTIONS_DEFINE(CFG, 3) {
   OPTION_BOOL("callsplit", false, "Split Basic Blocks at call sites"),
   OPTION_BOOL("vcg", false, "Dump VCG after CFG construction"),
-  OPTION_BOOL("stat", false, "Collect and print statistics about CFG"),
+  OPTION_BOOL("collect_stats", false,
+              "Collect and print a table with information about direct "
+              "and indirect jumps for all processed CFGs."),
 };
 
 
@@ -155,7 +157,7 @@ CFGBuilder::CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG)
     : MaoFunctionPass("CFG", GetStaticOptionPass("CFG"), mao_unit, function),
       CFG_(CFG), next_id_(0) {
   split_basic_blocks_ = GetOptionBool("callsplit");
-  collect_stat_ = GetOptionBool("stat");
+  collect_stat_ = GetOptionBool("collect_stats");
   dump_vcg_ = GetOptionBool("vcg");
   if (collect_stat_) {
     // check if a stat object already exists?

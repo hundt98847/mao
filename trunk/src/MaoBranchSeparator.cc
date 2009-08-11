@@ -122,8 +122,8 @@ class BranchSeparatorPass : public MaoFunctionPass {
 MAO_OPTIONS_DEFINE(BRSEP, 4) {
   OPTION_INT("min_branch_distance", 16, "Minimum distance required between "
                               "any two branches"),
-  OPTION_BOOL("stat", false, "Collect and print(trace) "
-                             "statistics about loops."),
+  OPTION_BOOL("collect_stats", false, "Collect and print a table with "
+                                      "statistics about all processed loops."),
   OPTION_BOOL("last_byte", false, "Align based on the "
                              "last byte of the branch"),
   OPTION_STR("function_list", "",
@@ -136,7 +136,7 @@ BranchSeparatorPass::BranchSeparatorPass(MaoOptionMap *options, MaoUnit *mao,
                                          Function *function)
     : MaoFunctionPass("BRSEP", options, mao, function), sizes_(NULL) {
 
-  collect_stat_      = GetOptionBool("stat");
+  collect_stat_      = GetOptionBool("collect_stats");
   last_byte_= GetOptionBool("last_byte");
   min_branch_distance_ = GetOptionInt("min_branch_distance");
   profitable = IsProfitable (function);
