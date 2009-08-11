@@ -48,7 +48,9 @@ extern "C" {
 // Options
 // --------------------------------------------------------------------
 MAO_OPTIONS_DEFINE(RELAX, 3) {
-  OPTION_BOOL("stat", false, "Collect and print statistics about relaxer"),
+  OPTION_BOOL("collect_stats", false,
+              "Collect and print a table with statistics about relaxer "
+              "from all the processed functions."),
   OPTION_BOOL("dump_sizemap", false, "Dump the sizemap to stderr"),
   OPTION_BOOL("dump_function_stat", false, "Dump information about each function"
               " to stderr"),
@@ -60,7 +62,7 @@ MaoRelaxer::MaoRelaxer(MaoUnit *mao_unit, Section *section,
                        MaoEntryIntMap *size_map, MaoEntryIntMap *offset_map)
     : MaoPass("RELAX",  GetStaticOptionPass("RELAX"), mao_unit),
       section_(section), size_map_(size_map), offset_map_(offset_map) {
-  collect_stat_ = GetOptionBool("stat");
+  collect_stat_ = GetOptionBool("collect_stats");
   dump_sizemap_ = GetOptionBool("dump_sizemap");
   dump_function_stat_ = GetOptionBool("dump_function_stat");
   if (collect_stat_) {
