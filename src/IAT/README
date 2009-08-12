@@ -62,15 +62,27 @@ execution directory.
 Running the Runner:
 There are two runner scripts in the execution directory, but you only need to
 run the first, "runner.sh". For example, you can run the following command:
+
 # sh runner.sh
 
-You will automatically be prompted to input the machine with pfmon on it,
-the username on that machine, the directory path on the pfmon machine on 
-which you want the files to be copied to (these files will be automatically
-removed) as well as the directory to be tested and the CPU event you'd
-like to test for.  These values can also be set as command line arguments.
-#sh runner.sh [DIRECTORY TO BE TESTED] [PFMON EVENT] [PFMON MACHINE]
-[PFMON USERNAME] [PFMON DIRECTORY PATH]
+You will need to put define the following arguments using these flags:
+  --testdir, -t
+    The name of the directory to be tested.
+
+  --cpuevent, -c
+    The name of the CPU event/pfmon command to test for
+
+  --pfmonmachine, -m
+    The name of the machine that has pfmon on it
+
+  --pfmonuser, -u
+    The username to use on the pfmon machine
+
+  --pfmondirectory, -d
+    The path of the directory to use on the pfmon machine
+
+Should one of these arguments not be defined, the script will
+automatically terminate.
 
 The output from the Runner will be placed in a directory named
 identical to that of the Test Generator output directory with "_Results"

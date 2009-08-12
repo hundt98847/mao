@@ -17,47 +17,209 @@
 #      eval `/usr/local/scripts/ssx-agents $SHELL`
 #    fi
 
+#######################################
+# Error message to be printed on failure
+#
+# Arguments:
+#   Error message 
+# Returns:
+#   None
+#######################################
+
+function error() {
+  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: ${@}" >&2
+}
+
+#######################################
+# Prints error message and exits program
+#
+# Arguments:
+#   Error message 
+# Returns:
+#   Return value greater than 0 for failure
+#######################################
+
+function fatal() {
+  error ${@}
+  exit 1
+}
+
+#######################################
+# Parse arguments to define test directory, pfmon command,
+# machine w/pfmon on it, username on pfmon machine, and
+# directory to use on pfmon machine (See README).
+#
+# Arguments:
+#   arguments processed by getopt
+# Returns:
+#   None
+#######################################
+
+function parse_args() {
+  while [[ $# -gt 1 ]]; do
+    case $1
+    in
+      '-t')
+        DIRECTORY=$2
+        shift 2
+      ;;
+
+      '-c')
+        PFMONCOMMAND=$2
+        shift 2
+      ;;
+
+      '-m')
+        PFMONMACHINE=$2
+        shift 2
+      ;;
+
+      '-u')
+        PFMONUSER=$2
+        shift 2
+      ;;
+
+      '-d')
+        PFMONDIR=$2
+        shift 2
+      ;;
+
+      '-h')
+        echo "Running the Runner
+You will need to put define the following arguments using these flags:
+  
+  --testdir, -t
+    The name of the directory to be tested.
+
+  --cpuevent, -c
+    The name of the CPU event/pfmon command to test for
+
+  --pfmonmachine, -m
+    The name of the machine that has pfmon on it
+
+  --pfmonuser, -u
+    The username to use on the pfmon machine
+
+  --pfmondirectory, -d
+    The path of the directory to use on the pfmon machine
+
+Should one of these arguments not be defined, the script will
+automatically terminate.
+
+The output from the Runner will be placed in a directory named
+identical to that of the Test Generator output directory with "_Results"
+appended.  Pfmon output may be found in the files within that directory.
+Sample pfmon commands may be found within the "pfmoncommands.txt" file. For
+further questions or information on pfmon, please refer to the following
+website for details: http://perfmon2.sourceforge.net/pfmon_usersguide.html
+
+SPECIAL NOTE: If authentication to the remote server via SSH requires
+password authentication, the script will fail.  Instead, be sure that you
+have automatic authentication setup between the local and remote hosts." 
+       exit 0
+     ;;
+
+      '--testdir')
+        DIRECTORY=$2
+        shift 2
+      ;;
+     
+      '--cpuevent')
+        PFMONCOMMAND=$2
+        shift 2
+      ;;
+
+      '--pfmonmachine')
+        PFMONMACHINE=$2
+        shift 2
+      ;;
+ 
+      '--pfmonuser')
+        PFMONUSER=$2
+        shift 2
+      ;;
+
+      '--pfmondir')
+        PFMONDIR=$2
+        shift 2
+      ;;
+      
+      '--help')
+        echo "Running the Runner
+You will need to put define the following arguments using these flags:
+  
+  --testdir, -t
+    The name of the directory to be tested.
+
+  --cpuevent, -c
+    The name of the CPU event/pfmon command to test for
+
+  --pfmonmachine, -m
+    The name of the machine that has pfmon on it
+
+  --pfmonuser, -u
+    The username to use on the pfmon machine
+
+  --pfmondirectory, -d
+    The path of the directory to use on the pfmon machine
+
+Should one of these arguments not be defined, the script will
+automatically terminate.
+
+The output from the Runner will be placed in a directory named
+identical to that of the Test Generator output directory with "_Results"
+appended.  Pfmon output may be found in the files within that directory.
+Sample pfmon commands may be found within the "pfmoncommands.txt" file. For
+further questions or information on pfmon, please refer to the following
+website for details: http://perfmon2.sourceforge.net/pfmon_usersguide.html
+
+SPECIAL NOTE: If authentication to the remote server via SSH requires
+password authentication, the script will fail.  Instead, be sure that you
+have automatic authentication setup between the local and remote hosts." 
+       exit 0
+     ;;
+
+      *)
+        fatal "Illegal argument."
+    esac
+  done
+}
+
 #command line args - see README
-if [[ "$1" != "" ]]; then
-  DIRECTORY="$1"
+LONGOPTS="testdir:,cpuevent:,pfmonmachine:,pfmonuser:,pfmondir:,help"
+SHORTOPTS="t:c:m:u:d:h"
+PROCESSEDARGS="$(getopt -u -a -o${SHORTOPTS} -l${LONGOPTS} -- $@)"
+RETVAL=$?
+if [[ ${RETVAL} -eq 1 ]]; then
+  fatal "$0: Unable to parse options" 
+elif [[ ${RETVAL} -eq 2 ]]; then
+  fatal "$0: getopt does not understand its own parameters" 
+elif [[ ${RETVAL} -eq 3 ]]; then
+  fatal "$0: Internal error in getopt" 
 fi
 
-if [[ "$2" != "" ]]; then
-  PFMONCOMMAND="$2"
+parse_args ${PROCESSEDARGS}
+
+#format handling
+if [[ "${DIRECTORY}" == */ ]]; then
+  DIRECTORY=$(echo "${DIRECTORY%/}")
 fi
 
-if [[ "$3" != "" ]]; then
-  PFMONMACHINE="$3"
-fi
-
-if [[ "$4" != "" ]]; then
-  PFMONUSER="$4"
-fi
-
-if [[ "$5" != "" ]]; then
-  PFMONDIR="$5"
-fi
-
-#define variables for sshing into pfmon machine
-if [[ ! -n "${PFMONMACHINE}" ]]; then
-  echo 'Please enter the machine to test ASM files on (has pfmon on it)'
-  read PFMONMACHINE
-fi
-
-if [[ ! -n "${PFMONUSER}" ]]; then
-  echo 'Please enter the username on the machine to test ASM files on'
-  read PFMONUSER
-fi
-
-if [[ ! -n "${PFMONDIR}" ]]; then
-  echo 'Please enter directory to copy files to for testing'
-  read PFMONDIR
+if [[ ! "${DIRECTORY}" ]]; then
+  fatal "Directory to test undefined."
+elif [[ ! "${PFMONCOMMAND}" ]]; then
+  fatal "Command for pfmon undefined."
+elif [[ ! "${PFMONUSER}" ]]; then
+  fatal "Username for machine w/pfmon undefined."
+elif [[ ! "${PFMONMACHINE}" ]]; then
+  fatal "Machine w/pfmon not given."
+elif [[ ! "${PFMONDIR}" ]]; then
+  fatal "Directory on pfmon machine undefined."
 fi
 
 ssh -xt "${PFMONUSER}@${PFMONMACHINE}" "cd ${PFMONDIR}" > /dev/null
 if [[ $? -ne 0 ]]; then
-  echo "${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR} not available."
-  exit 1
+  fatal "${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR} not available."
 fi
 
 #move scripts over to prod machine
@@ -70,30 +232,18 @@ rsync --rsh="ssh -x" runnerII.sh ${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR} \
 > /dev/null
 
 #input: file to test
-if [[ ! -n "$DIRECTORY" ]]; then
-  echo 'Please enter the name of the directory you wish to test'
-  read DIRECTORY
-fi
-
 if [[ ! -d $DIRECTORY ]]; then
-  echo "$DIRECTORY : does not exist"
-  exit 1
-fi
-
-#format handling
-if [[ "${DIRECTORY}" == */ ]]; then
-  DIRECTORY=$(echo "${DIRECTORY%/}")
+  fatal "$DIRECTORY : does not exist"
 fi
 
 #create results dir and store location
 echo "Creating results directory"
-if [[ ! -d ${DIRECTORY}_Results ]]; then
-  mkdir "${DIRECTORY}_Results"
+if [[ ! -d ${DIRECTORY}_results ]]; then
+  mkdir "${DIRECTORY}_results"
 fi
-cp "${DIRECTORY}/test_set.dat" "${DIRECTORY}_Results" 
+cp "${DIRECTORY}/test_set.dat" "${DIRECTORY}_results" 
 if [ $? -ne 0 ]; then
-  echo "Copy of necessary data failed."
-  exit 1
+  fatal "Copy of necessary data failed."
 fi
 
 #index.txt is the file where the names of all the
@@ -102,11 +252,9 @@ fi
 cd ./"${DIRECTORY}"
 INDEXFILE=index.txt
 if [[ ! -f $INDEXFILE ]]; then
-  echo "$INDEXFILE: does not exist"
-  exit 2
+  fatal "$INDEXFILE: does not exist"
 elif [[ ! -r $INDEXFILE ]]; then
-  echo "$INDEXFILE: cannot read"
-  exit 3
+  fatal "$INDEXFILE: cannot read"
 fi
 
 #Compile all files using make
@@ -125,30 +273,15 @@ for CURRENTFILE in $(cat "${INDEXFILE}"); do
 done
 
 if [[ -f ./successfullycompiled.txt ]]; then
-  mv ./successfullycompiled.txt ../${DIRECTORY}_Results
+  mv ./successfullycompiled.txt ../${DIRECTORY}_results
 fi
+  
 if [[ -f ./failedtocompile.txt ]]; then
-  mv ./failedtocompile.txt ../${DIRECTORY}_Results
+  mv ./failedtocompile.txt ../${DIRECTORY}_results
 fi
-
-#pfmon commands
-if [[ ! -n "$PFMONCOMMAND" ]]; then
-  PFMONCOMMAND=" "
-  EXIT=""
-    
-  echo "Enter the event you would like to test for in all caps
-   (include all necessary parameters and flags as needed).
-   Press enter to exit."
-  read PFMONCOMMAND 
-fi
-
-if [[ ! -n "$PFMONCOMMAND" ]]; then
-  echo "No pfmon command was specified"
-  exit 1
-fi 
 
 #tar all files to be rsynced over
-echo "Gatering successfuly generated tests for analysis"
+echo "Gathering successfuly generated tests for analysis"
 tar -czvf allfiles.tar *.exe "./executablefiles.txt" > /dev/null
 echo "Transferring test binaries for analysis"
 rsync --rsh="ssh -x" allfiles.tar \
@@ -160,12 +293,12 @@ ssh -x ${PFMONUSER}@${PFMONMACHINE} \
 if [[ $? -eq 0 ]]; then
   echo "Transferring execution results."
   rsync --rsh="ssh -x" ${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR}/results.tar \
-../${DIRECTORY}_Results/ > /dev/null
+../${DIRECTORY}_results/ > /dev/null
   if [[ $? -eq 0 ]]; then
-    cd ../${DIRECTORY}_Results/
+    cd ../${DIRECTORY}_results/
     echo "Distributing execution results."
     tar -zxvf results.tar > /dev/null
-    rm -rf ../${DIRECTORY}_Results/results.tar
+    rm -rf ../${DIRECTORY}_results/results.tar
     cd ../${DIRECTORY}
   fi
 else

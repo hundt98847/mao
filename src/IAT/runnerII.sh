@@ -9,6 +9,33 @@
 # are and remove files for cleanup after
 # variables are set
 
+#######################################
+# Error message to be printed on failure
+#
+# Arguments:
+#   Error message 
+# Returns:
+#   None
+#######################################
+
+function error() {
+  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: ${@}" >&2
+}
+
+#######################################
+# Prints error message and exits program
+#
+# Arguments:
+#   Error message 
+# Returns:
+#   Return value greater than 0 for failure
+#######################################
+
+function fatal() {
+  error ${@}
+  exit 1
+}
+
 #check for needed tar files
 PFMONDIR=$1
 COMMAND=$2
@@ -18,8 +45,7 @@ chmod o+x *
 if [[ -f allfiles.tar ]]; then
   tar -zxvf allfiles.tar > /dev/null
 else
-  echo 'allfiles.tar: not found'
-  exit 4 
+  fatal 'allfiles.tar: not found'
 fi
 
 #pfmon loop
