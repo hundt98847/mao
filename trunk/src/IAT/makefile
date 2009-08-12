@@ -1,22 +1,22 @@
-CFLAGS=-g -c
+CFLAGS=-g -c -O3
 LDFLAGS=-g -o
 
 all: TestGenerator Analyzer
 
-TestGenerator: TestGenerator.o Assembly.o Operation.o Operand.o
-	g++ $(LDFLAGS) "TestGenerator" Operation.o Operand.o Assembly.o TestGenerator.o
+TestGenerator: TestGenerator.o Assembly.o
+	g++ $(LDFLAGS) "TestGenerator" TestGenerator.o
 
-TestGenerator.o: TestGenerator.cc TestGenerator.h
+TestGenerator.o: TestGenerator.cc
 	g++ $(CFLAGS) TestGenerator.cc
 
-Assembly.o: Assembly.cc Assembly.h
-	g++ $(CFLAGS) Assembly.cc
+Assembly.o: Assembly.h
+	g++ $(CFLAGS) Assembly.h
 
-Operation.o: Operation.cc Operation.h
-	g++ $(CFLAGS) Operation.cc
+Operation.o: Operation.h
+	g++ $(CFLAGS) Operation.h
 
-Operand.o: Operand.cc Operand.h
-	g++ $(CFLAGS) Operand.cc
+Operand.o: Operand.h
+	g++ $(CFLAGS) Operand.h
 
 Analyzer: Analyzer.o Result.o
 	g++ $(LDFLAGS) "Analyzer" Result.o Analyzer.o
@@ -28,4 +28,4 @@ Result.o: Result.cc Result.h
 	g++ $(CFLAGS) Result.cc
 
 clean:
-	rm *.o TestGenerator Analyzer
+	rm *.o *.gch TestGenerator Analyzer

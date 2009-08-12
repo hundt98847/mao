@@ -22,15 +22,14 @@
 //              file to be written to the file system by the test generator.
 //
 
-
 #ifndef IAT_ASSEMBLY_H_
 #define IAT_ASSEMBLY_H_
 
 #include <string>
+#include <vector>
+
 #include "Operation.h"
 #include "Operand.h"
-
-using namespace std;
 
 // Assembly class represents an abstracted version of an assembly file which is
 // to be written to the file system by the test generator.  It appears to be
@@ -38,52 +37,61 @@ using namespace std;
 // arguments and add the information as it is determined in the test generator.
 class Assembly {
  public:
-  // Constructor
-  Assembly();
+    inline Assembly(const std::string instruction_name,
+                    const std::string addressing_mode,
+                    const std::string instruction_body,
+                    const std::string file_name,
+                    int number_operands, Operation* operation,
+                    std::vector<Operand*> operands) :
+                      instruction_name_(instruction_name),
+                      addressing_mode_(addressing_mode),
+                      instruction_body_(instruction_body),
+                      file_name_(file_name) {
+      this->number_operands_ = number_operands;
+      this->operation_ = operation;
+      this->operands_ = operands;
+    }
 
-  // Destructor
-  virtual ~Assembly();
+    ~Assembly() {
+      // TODO(caseyburkhardt): Implement Destructor
+    }
 
-  // Accessors and Mutators
-  void append_instructions(string data);
-  string instruction_body();
-  void set_instruction_name(string data);
-  string instruction_name();
-  void set_addressing_mode(string data);
-  string addressing_mode();
-  void set_file_name(string data);
-  string file_name();
-  int number_operands();
-  void set_operation(Operation& operation);
-  Operation* operation();
-  void set_operands(Operand operands[], int number_operands);
-  Operand* operand(int index);
-  void set_generation_complete(bool status);
-  bool generation_complete();
-  void set_output_complete(bool status);
-  bool output_complete();
+    inline const std::string& instruction_body() {
+      return this->instruction_body_;
+    }
 
-  // Debug
-  string OutputString();
+    inline const std::string& instruction_name() {
+      return this->instruction_name_;
+    }
+
+    inline const std::string& addressing_mode() {
+      return this->addressing_mode_;
+    }
+
+    inline const std::string& file_name() {
+      return this->file_name_;
+    }
+
+    inline int number_operands() {
+      return this->operands_.size();
+    }
+
+    inline Operation* operation() {
+      return this->operation_;
+    }
+
+    inline std::vector<Operand*> operands() {
+      return this->operands_;
+    }
 
  private:
-  string instruction_body_;
-  string instruction_name_;
-  string addressing_mode_;
-  string file_name_;
-
-  int number_operands_;
-
-  Operation* operation_;
-  Operand* operand1_;
-  Operand* operand2_;
-  Operand* operand3_;
-
-  // True when instructionBody contains full assembly file.
-  bool generation_complete_;
-
-  // True when file has been written to tests directory.
-  bool output_complete_;
+    const std::string instruction_name_;
+    const std::string addressing_mode_;
+    const std::string instruction_body_;
+    const std::string file_name_;
+    int number_operands_;
+    Operation* operation_;
+    std::vector<Operand*> operands_;
 };
 
 #endif /* IAT_ASSEMBLY_H_ */

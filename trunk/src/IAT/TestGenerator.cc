@@ -26,580 +26,49 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 #include <math.h>
-#include <string>
+#include <time.h>
 #include <sstream>
+#include <strstream>
+#include <string>
+#include <vector>
 
-#include "./TestGenerator.h"
+#include "Assembly.h"
+#include "Operation.h"
+#include "Operand.h"
 
-int main(int argc, char* argv[]) {
-  // Variables used for array size declaration
-  int number_iterations = 0;
-  int number_instructions = 0;
-  int number_operations = 0;
-  int number_operands = 0;
-  long int number_tests = 0;
-  int number_tests_generated = 0;
+// Constants
+const char kIndexFileName[] = "index.txt";
+const char kBaselineFileName[] = "baseline.s";
+const char kOperationDataFileName[] = "operations.dat";
+const char kOperandDataFileName[] = "operands.dat";
+const char kTestSetDataFileName[] = "test_set.dat";
+const char kMakeFileName[] = "makefile";
+const char kExecutableFileNamePrefix[] = "test_";
+const char kExecutableFileNameSuffix[] = ".exe";
+const char kTestSetDataFileHeader[] = "# This file was generated automatically "
+                                      "by the Test Generator.  It contains \n"
+                                      "# information specific to this test set"
+                                      "and should not be deleted.";
+const char kInstructionCountFlag[] = "--instructions=";
+const char kIterationCountFlag[] = "--iterations=";
+const char kVerbosityFlag[] = "--verbose";
+const char kHelpFlag[] = "--help";
+const char kHelpText[] = "Go check the README...\n";
+const char kFileCommentCharacter = '#';
+const char kFileDelimiter[] = ", ";
+const char kTestEnabledKeyword[] = "test";
+const int kDefaultInstructionCount = 1000;
+const int kDefaultIterationCount = 10000;
+const int kMaxBufferSize = 512;
+const int kArgumentsInOperationDataFile = 4;
+const int kArgumentsInOperandDataFile = 3;
+const int kAbsoluteMinimumOperands = 0;
+const int kAbsoluteMaximumOperands = 3;
 
-  // Variables and Objects used for file operations
-  string file_name;
-  FILE *file_in;
-  FILE *out_file;
-  char line[kMaxBufferSize];
-  int current_index = 0;
+bool verbose = false;
 
-  // Command Line Argument Parsing
-  // TODO(caseyburkhardt): Add argument to display help menu
-  // TODO(caseyburkhardt): Add argument to trigger verbose mode
-  for (int i = 1; i < argc; ++i) {
-    if (strncmp(argv[i], kInstructionCountFlag,
-                strlen(kInstructionCountFlag)) == 0) {
-      number_instructions = ParseCommandLineInt(argv[i], kInstructionCountFlag);
-    } else if (strncmp(argv[i], kIterationCountFlag,
-                    strlen(kIterationCountFlag)) == 0) {
-      number_iterations = ParseCommandLineInt(argv[i], kIterationCountFlag);
-    } else {
-      printf("Ignoring Unknown Command Line Argument: %s\n", argv[i]);
-    }
-  }
-
-  // Check (and replace if necessary) Command Line Argument Values
-  if (number_instructions <= 0) {
-    number_instructions = kDefaultInstructionCount;
-    printf("Instruction Count Flag Missing or Invalid - Defaulting to: %d\n",
-           kDefaultInstructionCount);
-  } else {
-    printf("Instruction Count Set to: %d\n", number_instructions);
-  }
-  if (number_iterations <= 0) {
-    number_iterations = kDefaultIterationCount;
-    printf("Iteration Count Flag Missing or Invalid - Defaulting to: %d\n",
-           kDefaultIterationCount);
-  } else {
-    printf("Iteration Count Set to: %d\n", number_iterations);
-  }
-
-  // Process Operations
-  // Determines the number of Operation Objects by counting the number of non-
-  // commented lines in the operations data file, kOperationDataFileName
-  // This is an estimated value as some lines may not be processed.
-  number_operations = CountUncommentedLines(kOperationDataFileName,
-                                            kFileCommentCharacter);
-
-  // Holds the instances of Operation Objects
-  Operation operations[number_operations];
-
-  // Set all members for all Operation Objects
-  file_name = kOperationDataFileName;
-  current_index = 0;
-
-  if ((file_in = fopen(file_name.c_str(), "r")) == 0) {
-    perror("Unable to open operations data file.\n");
-    exit(1);
-  }
-  while (fgets(line, sizeof(line), file_in) != NULL) {
-    if (line[0] != kFileCommentCharacter) {
-      operations[current_index] = GenerateOperation(line, kFileDelimiter);
-      if (operations[current_index].operation_name() == "") {
-        printf("Ignored operation or data syntax error in %s: Ignoring: %s\n",
-               kOperationDataFileName, line);
-      } else {
-        printf("Successfully processed operation: %s\n",
-               operations[current_index].operation_name().c_str());
-        ++current_index;
-      }
-    }
-  }
-  if (fclose(file_in) != 0) {
-    perror("Unable to close operations data file.\n");
-    exit(1);
-  }
-  number_operations = current_index;
-  printf("Successfully proceed %d operations.\n", number_operations);
-
-
-  // Process Operands
-  // Determines the number of Operand Objects by counting the number of non-
-  // commented lines in the operands data file, kOperandDataFileName
-  // This is an estimated value as some lines may not be processed.
-  number_operands = CountUncommentedLines(kOperandDataFileName,
-                                            kFileCommentCharacter);
-
-  // Holds the instances of Operand Objects
-  Operand operands[number_operands];
-
-  // Set all members for all Operation Objects
-  current_index = 0;
-  file_name = kOperandDataFileName;
-
-  if ((file_in = fopen(file_name.c_str(), "r")) == 0) {
-    perror("Unable to open operands data file.\n");
-    exit(1);
-  }
-  while (fgets(line, sizeof(line), file_in) != NULL) {
-    if (line[0] != kFileCommentCharacter) {
-      operands[current_index] = GenerateOperand(line, kFileDelimiter);
-      if (operands[current_index].operand_value() == "") {
-        printf("Ignored operand or data syntax error in %s: Ignoring: %s\n",
-               kOperandDataFileName, line);
-      } else {
-        printf("Successfully processed operand: %s\n",
-               operands[current_index].operand_value().c_str());
-        ++current_index;
-      }
-    }
-  }
-  if (fclose(file_in) != 0) {
-    perror("Unable to close operations data file.\n");
-    exit(1);
-  }
-  number_operands = current_index;
-  printf("Successfully proceed %d operands.\n", number_operands);
-
-  // Before Assembly Objects can be generated, the total number of objects to
-  // be generated must first be determined.
-  number_tests = DetermineTestCount(number_operations, number_operands,
-                                    operations, operands);
-
-  // Holds the instances of Assembly Objects
-  Assembly* tests = new Assembly[number_tests];
-
-  // Generate Assembly Objects
-  // Generate the Initial Baseline Test
-  tests[0] = GenerateBaselineTest(number_instructions, number_iterations);
-  ++number_tests_generated;
-
-  printf("Generating %ld tests...\n", number_tests);
-
-  // By exhaustive means, generate all assembly tests.
-  for (int i = 0; i < number_operations; ++i) {
-    if (operations[i].min_operands() <= 0
-        && operations[i].max_operands() >= 0) {
-      // Operation can have 0 operands.
-      tests[number_tests_generated] = GenerateTest(number_instructions,
-                                                   number_iterations, 0,
-                                                   operations[i], NULL);
-      ++number_tests_generated;
-    }
-    if (operations[i].min_operands() <= 1
-        && operations[i].max_operands() >= 1) {
-      // Operation can have 1 operand.
-      for (int j = 0; j < number_operands; ++j) {
-        Operand pass_operands[] = {operands[j]};
-        tests[number_tests_generated] = GenerateTest(number_instructions,
-                                                     number_iterations, 1,
-                                                     operations[i],
-                                                     pass_operands);
-        ++number_tests_generated;
-      }
-    }
-    if (operations[i].min_operands() <= 2
-        && operations[i].max_operands() >= 2) {
-      // Operation can have 2 operands.
-      for (int j = 0; j < number_operands; ++j) {
-        for (int k = 0; k < number_operands; ++k) {
-          Operand pass_operands[] = {operands[j], operands[k]};
-          tests[number_tests_generated] = GenerateTest(number_instructions,
-                                                       number_iterations, 2,
-                                                       operations[i],
-                                                       pass_operands);
-          ++number_tests_generated;
-        }
-      }
-    }
-    if (operations[i].min_operands() <= 2
-        && operations[i].max_operands() >= 2) {
-      // Operation can have 3 operands.
-      for (int j = 0; j < number_operands; ++j) {
-        for (int k = 0; k < number_operands; ++k) {
-          for (int l = 0; l < number_operands; ++l) {
-            Operand pass_operands[] = {operands[j], operands[k], operands[l]};
-            tests[number_tests_generated] = GenerateTest(number_instructions,
-                                                         number_iterations, 3,
-                                                         operations[i],
-                                                         pass_operands);
-            ++number_tests_generated;
-          }
-        }
-      }
-    }
-  }
-
-  printf("Done.  Generated %d Tests.\n", number_tests_generated);
-
-  // Create Assembly Output Directory
-  if (mkdir(kOutputDirectoryName.c_str(), 0777) == -1) {
-    perror("Unable to create output directory.\n");
-    exit(1);
-  }
-
-  printf("Writing %d tests to file system...\n", number_tests_generated);
-
-  // Write Assembly Files
-  for (int i = 0; i < number_tests_generated; ++i) {
-    file_name = kOutputDirectoryName + "/" + tests[i].file_name();
-    if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
-      perror("Unable to open output file.\n");
-      exit(1);
-    }
-    fprintf(out_file, "%s", tests[i].instruction_body().c_str());
-    if (fclose(out_file) != 0) {
-      perror("Unable to close output file.\n");
-      exit(1);
-    }
-    tests[i].set_output_complete(true);
-  }
-
-  printf("Done.  Wrote %d tests to file system.\n", number_tests_generated);
-  printf("Writing index to file system...\n");
-
-  // Write Index File
-  file_name = kOutputDirectoryName + "/" + kIndexFileName;
-  if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
-    perror("Unable to open index file.\n");
-    exit(1);
-  }
-  for (int i = 0; i < number_tests_generated; ++i) {
-    fprintf(out_file, "%s\n", tests[i].file_name().c_str());
-  }
-  if (fclose(out_file) != 0) {
-    perror("Unable to close index file.\n");
-    exit(1);
-  }
-
-  printf("Done.  Wrote index file to file system.\n");
-  printf("Writing test set data file to file system...\n");
-  // Write test set data file
-  // This will be used with the analysis tool to keep track of instruction and
-  // iteration count values
-  file_name = kOutputDirectoryName + "/" + kTestSetDataFileName;
-  if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
-    perror("Unable to open test set data file.\n");
-    exit(1);
-  }
-    fprintf(out_file, "%s\n%s%d\n%s%d", kTestSetDataFileHeader,
-            kInstructionCountFlag, number_instructions, kIterationCountFlag,
-            number_iterations);
-  if (fclose(out_file) != 0) {
-    perror("Unable to close test set data file.\n");
-    exit(1);
-  }
-
-  printf("Done.  Wrote test set data file to file system.\n");
-  printf("Writing makefile to file system.\n");
-
-  // Write makefile
-  file_name = kOutputDirectoryName + "/" + kMakeFileName;
-  if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
-    perror("Unable to open makefile.\n");
-    exit(1);
-  }
-  fprintf(out_file, "all:");
-  for (int i = 0; i < number_tests_generated; ++i) {
-    if (tests[i].instruction_name() != "") {
-      // Baseline Test
-      fprintf(out_file, " %s%s_%s%s", kExecutableFileNamePrefix,
-              tests[i].instruction_name().c_str(),
-              tests[i].addressing_mode().c_str(), kExecutableFileNameSuffix);
-    } else {
-      fprintf(out_file, " %sbaseline%s", kExecutableFileNamePrefix,
-              kExecutableFileNameSuffix);
-    }
-  }
-  fprintf(out_file, "\n\n");
-  for (int i = 0; i < number_tests_generated; ++i) {
-    if (tests[i].instruction_name() != "") {
-      fprintf(out_file, " %s%s_%s%s: %s\n\tgcc %s -o %s%s_%s%s\n\n",
-              kExecutableFileNamePrefix, tests[i].instruction_name().c_str(),
-              tests[i].addressing_mode().c_str(), kExecutableFileNameSuffix,
-              tests[i].file_name().c_str(), tests[i].file_name().c_str(),
-              kExecutableFileNamePrefix, tests[i].instruction_name().c_str(),
-              tests[i].addressing_mode().c_str(), kExecutableFileNameSuffix);
-    } else {
-      fprintf(out_file, " %sbaseline%s: %s\n\tgcc %s -o %sbaseline%s\n\n",
-              kExecutableFileNamePrefix, kExecutableFileNameSuffix,
-              tests[i].file_name().c_str(), tests[i].file_name().c_str(),
-              kExecutableFileNamePrefix, kExecutableFileNameSuffix);
-    }
-  }
-  if (fclose(out_file) != 0) {
-    perror("Unable to close makefile.\n");
-    exit(1);
-  }
-
-  delete[] tests;
-  printf("Done.  All operations completed.\n");
-
-  return(0);
-}
-
-// This function returns the integer value of a command line argument, given the
-// actual argument and anticipated argument flag
-int ParseCommandLineInt(string arg, const string flag) {
-  arg = arg.substr(flag.length());
-  return atoi(arg.c_str());
-}
-
-// This function determines the output directory named based on the current
-// date and time of the system clock.  Due to some undefined behavior with the
-// asctime function, the last character needed to be truncated, and all ' 's and
-// ':'s were replaced with '_'s.
-string GetOutputDirectoryName() {
-  time_t raw_time;
-  string result;
-  struct tm * time_info;
-
-  time(&raw_time);
-  time_info = localtime(&raw_time);
-  result = asctime(time_info);
-  for (unsigned int i = 0; i < result.length(); ++i) {
-    if (result[i] == ' ' || result[i] == ':')
-      result[i] = '_';
-  }
-  return result.substr(0, result.length() - 1);
-}
-
-// This function returns the number of uncommented lines within a file.  This is
-// used to determine the size of the array used to hold the Operation and
-// Operand objects.
-int CountUncommentedLines(string file_name, char comment_char) {
-  int result = 0;
-  FILE *file_in;
-  char line[kMaxBufferSize];
-
-  if ((file_in = fopen(file_name.c_str(), "r")) == 0) {
-    perror("Unable to open file.\n");
-    exit(1);
-  }
-  while (fgets(line, sizeof(line), file_in) != NULL) {
-    if (line[0] != comment_char) {
-      ++result;
-    }
-  }
-  if (fclose(file_in) != 0) {
-    perror("Unable to close file.\n");
-    exit(1);
-  }
-  return result;
-}
-
-// This function is intended to check the validity of the syntax of a line from
-// the operations data file, which is supposed to be of the following format:
-// operation_name, test/ignore, min_operands, max_operands
-//   Legend:
-//   (Note: Function short-circuits in this order as well)
-//     operation_name = The name of the operation. (add)
-//     test/ignore = "test" to generate tests for this operation
-//                   "ignore" to not load this operation into the Test Generator
-//     min_operands = The minimum number of operands for this operation
-//     max_operands = The maximum number of operands for this operation
-//
-// If the sanity check passes, the function will return fully provisioned object
-// of type Operation, otherwise it will return an Operand object with a
-// NULL ("") operation_name_ member.
-Operation GenerateOperation(char data[], const char delimiter[]) {
-  // The resulting operation object
-  Operation result;
-
-  // String array to hold tokenized data from a single line of the operations
-  // data file.
-  string args[kArgumentsInOperationDataFile];
-  // Min/Max Operands Value
-  int min_operands = 0;
-  int max_operands = 0;
-
-  // Populate the string array by tokenizing the line.
-  // First argument
-  args[0] = strtok(data, delimiter);
-  // Following Arguments
-  for (int i = 1; i < kArgumentsInOperationDataFile; ++i) {
-    args[i] = strtok(NULL, delimiter);
-  }
-
-  // Check Argument 0: Operation Name
-  if (args[0] == "") {
-    return result;
-  }
-  // Check Argument 1: Operation Status
-  // Value of "test" will result in sanity check passing.  Other values will
-  // cause failure.  "ignore" values also cause failure because the object
-  // isn't needed anyway.
-  if (args[1] == "") {
-    return result;
-  } else if (args[1].compare("test") != 0) {
-    return result;
-  }
-  // Check Argument 2: Minimum Number of Operands
-  if (args[2] == "") {
-    return result;
-  }
-  min_operands = atoi(args[2].c_str());
-  if (min_operands < kAbsoluteMinimumOperands ||
-      min_operands > kAbsoluteMaximumOperands) {
-    return result;
-  }
-  // Check Argument 3: Maximum Number of Operands
-  if (args[3] == "") {
-    return result;
-  }
-  max_operands = atoi(args[3].c_str());
-  if (max_operands < min_operands ||
-      max_operands > kAbsoluteMaximumOperands) {
-    return result;
-  }
-  // All sanity checks passed.
-  // Add data from file to Operation Object
-  result.set_operation_name(args[0]);
-  result.set_min_operands(min_operands);
-  result.set_max_operands(max_operands);
-  return result;
-}
-
-// This function is intended to check the validity of the syntax of a line from
-// the operands data file, which is supposed to be of the following format:
-// operand_value, test/ignore, operand_type
-// Legend:
-//   operation_value = The value of the operand when output to an assembly file
-//   test/ignore = "test" to generate tests for this operand
-//                 "ignore" to not load this operand into the Test Generator
-//   operand_type = The type of the operand and its size
-//
-// If the sanity check passes, the function will return fully provisioned object
-// of type Operand, otherwise it will return an Operand object with a NULL ("")
-// operand_value_ member.
-Operand GenerateOperand(char data[], const char delimiter[]) {
-  // The resulting operand object
-  Operand result;
-
-  // String array to hold tokenized data from a single line of the operations
-  // data file.
-  string args[kArgumentsInOperandDataFile];
-  // Min/Max Operands Value
-
-  // Populate the string array by tokenizing the line.
-  // First argument
-  args[0] = strtok(data, delimiter);
-  // Following Arguments
-  for (int i = 1; i < kArgumentsInOperandDataFile; ++i) {
-    args[i] = strtok(NULL, delimiter);
-  }
-
-  // Check Argument 0: Operand Value
-  if (args[0] == "") {
-    return result;
-  }
-  // Check Argument 1: Operand Status
-  // Value of "test" will result in sanity check passing.  Other values will
-  // cause failure.  "ignore" values also cause failure because the object
-  // isn't needed anyway.
-  if (args[1] == "") {
-    return result;
-  } else if (args[1].compare("test") != 0) {
-    return result;
-  }
-  // Check Argument 2: Operand Type
-  if (args[2] == "") {
-    return result;
-  }
-
-  // All sanity checks passed.
-  // Add data from file to Operation Object
-  result.set_operand_value(args[0]);
-  result.set_operand_type(args[2]);
-  return result;
-}
-
-Assembly GenerateBaselineTest(int number_instructions, int number_iterations) {
-  Assembly result;
-  // Set Baseline Data Members
-  result.set_instruction_name("");
-  result.set_addressing_mode("");
-  result.set_file_name(kBaselineFileName);
-
-  // Append the instructions to the Baseline Test
-  result.append_instructions(GetBodyPrefix());
-  result.append_instructions(GetBodyMain(result, number_instructions,
-                                           number_iterations));
-  result.append_instructions(GetBodySuffix());
-  result.set_generation_complete(true);
-
-  return result;
-}
-
-int DetermineTestCount(int number_operations, int number_operands,
-                       Operation operations[], Operand operands[]) {
-  int result = 0;
-  for (int i = 0; i < number_operations; ++i) {
-    if (operations[i].min_operands() <= 0
-        && operations[i].max_operands() >= 0) {
-      // Operation can have 0 operands.  This constitutes a single test.
-      result += 1;
-    }
-    if (operations[i].min_operands() <= 1
-        && operations[i].max_operands() >= 1) {
-      // Operation can have 1 operand.  This constitutes a number_operands^1
-      // tests.
-      result += number_operands;
-    }
-    if (operations[i].min_operands() <= 2
-        && operations[i].max_operands() >= 2) {
-      // Operation can have 2 operands.  This constitutes a number_operands^2
-      // tests.
-      result += pow(number_operands, 2);
-    }
-    if (operations[i].min_operands() <= 3
-        && operations[i].max_operands() >= 3) {
-      // Operation can have 3 operands.  This constitutes a number_operands^3
-      // tests.
-      result += pow(number_operands, 3);
-    }
-  }
-  // Add 1 for the baseline test
-  ++result;
-  return result;
-}
-
-// Generates an Assembly Object
-Assembly GenerateTest(int number_instructions, int number_iterations,
-                      int number_operands, Operation& operation,
-                      Operand operands[]) {
-  Assembly result;
-  string addressing_mode = "";
-
-  // Set Assembly data members
-  result.set_instruction_name(operation.operation_name());
-  result.set_operation(operation);
-  result.set_operands(operands, number_operands);
-
-  // Add some string formatting tricks to fix null character bug
-  for (int i = 0; i < number_operands; i++) {
-    addressing_mode += operands[i].operand_type();
-    addressing_mode = addressing_mode.substr(0, addressing_mode.length() - 1);
-    addressing_mode += "_";
-  }
-  addressing_mode = addressing_mode.substr(0, addressing_mode.length() - 1);
-  result.set_addressing_mode(addressing_mode);
-
-  if (number_operands > 0) {
-    result.set_file_name(result.instruction_name() + "_"
-                       + result.addressing_mode() + ".s");
-  } else {
-    result.set_file_name(result.instruction_name() + ".s");
-  }
-
-  printf("Generating Test: %s\n", result.file_name().c_str());
-
-  // Append the instructions to the assembly object
-  result.append_instructions(GetBodyPrefix());
-  result.append_instructions(GetBodyMain(result, number_instructions,
-                                           number_iterations));
-  result.append_instructions(GetBodySuffix());
-  result.set_generation_complete(true);
-  return result;
-}
-
-string GetBodyPrefix() {
+std::string GetBodyPrefix() {
   return ".file   \"baseline.c\"\n"
       ".text\n"
       ".globl main\n"
@@ -611,48 +80,37 @@ string GetBodyPrefix() {
       "movq    %rsp, %rbp\n"
       ".LCFI1:\n"
       "movl    $0, -4(%rbp)\n"
+      "sub    $0x8, %rsp\n"
+      "leal -74(%rbp), %ebx\n"
       "jmp     .L2\n"
       ".L3:";
 }
 
-string GetBodyMain(Assembly& obj, int number_instructions,
-                   int number_iterations) {
-  string result;
+std::string GetBodyMain(std::string instruction_name, int number_operands,
+                        std::vector<Operand*> operands, int number_instructions,
+                        int number_iterations) {
+  std::stringstream result;
 
-  // Convert number_iterations to a character array
-  char charValue[kMaxBufferSize];
-  sprintf(charValue, "%d", number_iterations -1);
-
-  if (obj.instruction_name() != "") {
+  if (instruction_name != "") {
     for (int i = 0; i < number_instructions; ++i) {
-      result = result + " " + obj.instruction_name();
-      if (obj.number_operands() == 0) {
-        result = result + "\n";
-      } else if (obj.number_operands() == 1) {
-        Operand operand1 = *obj.operand(0);
-        result = result + "  " + operand1.operand_value() + "\n";
-      } else if (obj.number_operands() == 2) {
-        Operand operand1 = *obj.operand(0);
-        Operand operand2 = *obj.operand(1);
-        result = result + "  " + operand1.operand_value() + ", "
-        + operand2.operand_value() + "\n";
-      } else if (obj.number_operands() == 3) {
-        Operand operand1 = *obj.operand(0);
-        Operand operand2 = *obj.operand(1);
-        Operand operand3 = *obj.operand(2);
-        result = result + "  " + operand1.operand_value() + ", "
-        + operand2.operand_value() + ", " + operand3.operand_value()
-        + "\n";
+      result << " " << instruction_name;
+      for (int j = 0; j < number_operands; ++j) {
+        if (j == 0) {
+          result << "  " << operands[j]->operand_value();
+        } else {
+          result << ", " << operands[j]->operand_value();
+        }
       }
+      result << std::endl;
     }
   }
-  result = result + "  add  $1, -4(%rbp)\n"
+  result << "  add  $1, -4(%rbp)\n"
       ".L2:\n"
-      "cmpl  $" + charValue + ", -4(%rbp)";
-  return result;
+      "cmpl  $" << number_iterations << ", -4(%rbp)";
+  return result.str();
 }
 
-string GetBodySuffix() {
+std::string GetBodySuffix() {
   return "jle     .L3\n"
       "movl    $0, %eax\n"
       "leave\n"
@@ -701,4 +159,539 @@ string GetBodySuffix() {
       ".section        .note.GNU-stack,\"\",@progbits";
 }
 
+// This function returns the integer value of a command line argument, given the
+// actual argument and anticipated argument flag
+int ParseCommandLineInt(std::string arg, const std::string flag) {
+  arg = arg.substr(flag.length());
+  return atoi(arg.c_str());
+}
 
+// This function determines the output directory named based on the current
+// date and time of the system clock.  Due to some undefined behavior with the
+// asctime function, the last character needed to be truncated, and all ' 's and
+// ':'s were replaced with '_'s.
+std::string GetOutputDirectoryName() {
+  time_t raw_time;
+  std::string result;
+  struct tm * time_info;
+
+  time(&raw_time);
+  time_info = localtime(&raw_time);
+  result = asctime(time_info);
+  for (unsigned int i = 0; i < result.length(); ++i) {
+    if (result[i] == ' ' || result[i] == ':')
+      result[i] = '_';
+  }
+  return result.substr(0, result.length() - 1);
+}
+
+// This function returns the number of uncommented lines within a file.  This is
+// used to determine the size of the array used to hold the Operation and
+// Operand objects.
+int CountUncommentedLines(std::string file_name, char comment_char) {
+  int result = 0;
+  FILE *file_in;
+  char line[kMaxBufferSize];
+
+  if ((file_in = fopen(file_name.c_str(), "r")) == 0) {
+    perror("Unable to open file.\n");
+    exit(1);
+  }
+  while (fgets(line, sizeof(line), file_in) != NULL) {
+    if (line[0] != comment_char) {
+      ++result;
+    }
+  }
+  if (fclose(file_in) != 0) {
+    perror("Unable to close file.\n");
+    exit(1);
+  }
+  return result;
+}
+
+// This function is intended to check the validity of the syntax of a line from
+// the operations data file, which is supposed to be of the following format:
+// operation_name, test/ignore, min_operands, max_operands
+//   Legend:
+//   (Note: Function short-circuits in this order as well)
+//     operation_name = The name of the operation. (add)
+//     test/ignore = "test" to generate tests for this operation
+//                   "ignore" to not load this operation into the Test Generator
+//     min_operands = The minimum number of operands for this operation
+//     max_operands = The maximum number of operands for this operation
+//
+// If the sanity check passes, the function will return fully provisioned object
+// of type Operation, otherwise it will return an Operand object with a
+// NULL ("") operation_name_ member.
+Operation* GenerateOperation(char data[], const char delimiter[]) {
+  // String array to hold tokenized data from a single line of the operations
+  // data file.
+  std::string args[kArgumentsInOperationDataFile];
+
+  // Min/Max Operands Value
+  int min_operands = 0;
+  int max_operands = 0;
+
+  // Populate the string array by tokenizing the line.
+  // First argument
+  args[0] = strtok(data, delimiter);
+  // Following Arguments
+  for (int i = 1; i < kArgumentsInOperationDataFile; ++i) {
+    args[i] = strtok(NULL, delimiter);
+  }
+
+  // Check Argument 0: Operation Name
+  if (args[0] == "") {
+    return NULL;
+  }
+  // Check Argument 1: Operation Status
+  // Value of "test" will result in sanity check passing.  Other values will
+  // cause failure.  "ignore" values also cause failure because the object
+  // isn't needed anyway.
+  if (args[1] == "") {
+    return NULL;
+  } else if (args[1].compare(kTestEnabledKeyword) != 0) {
+    return NULL;
+  }
+  // Check Argument 2: Minimum Number of Operands
+  if (args[2] == "") {
+    return NULL;
+  }
+  min_operands = atoi(args[2].c_str());
+  if (min_operands < kAbsoluteMinimumOperands ||
+      min_operands > kAbsoluteMaximumOperands) {
+    return NULL;
+  }
+  // Check Argument 3: Maximum Number of Operands
+  if (args[3] == "") {
+    return NULL;
+  }
+  max_operands = atoi(args[3].c_str());
+  if (max_operands < min_operands ||
+      max_operands > kAbsoluteMaximumOperands) {
+    return NULL;
+  }
+  // All sanity checks passed.
+  // Create and return the resulting Operation Object
+  Operation* result = new Operation(args[0], min_operands, max_operands);
+  return result;
+}
+
+// This function is intended to check the validity of the syntax of a line from
+// the operands data file, which is supposed to be of the following format:
+// operand_value, test/ignore, operand_type
+// Legend:
+//   operation_value = The value of the operand when output to an assembly file
+//   test/ignore = "test" to generate tests for this operand
+//                 "ignore" to not load this operand into the Test Generator
+//   operand_type = The type of the operand and its size
+//
+// If the sanity check passes, the function will return fully provisioned object
+// of type Operand, otherwise it will return an Operand object with a NULL ("")
+// operand_value_ member.
+Operand* GenerateOperand(char data[], const char delimiter[]) {
+  // String array to hold tokenized data from a single line of the operations
+  // data file.
+  std::string args[kArgumentsInOperandDataFile];
+  // Min/Max Operands Value
+
+  // Populate the string array by tokenizing the line.
+  // First argument
+  args[0] = strtok(data, delimiter);
+  // Following Arguments
+  for (int i = 1; i < kArgumentsInOperandDataFile; ++i) {
+    args[i] = strtok(NULL, delimiter);
+  }
+
+  // Check Argument 0: Operand Value
+  if (args[0] == "") {
+    return NULL;
+  }
+  // Check Argument 1: Operand Status
+  // Value of "test" will result in sanity check passing.  Other values will
+  // cause failure.  "ignore" values also cause failure because the object
+  // isn't needed anyway.
+  if (args[1] == "") {
+    return NULL;
+  } else if (args[1].compare("test") != 0) {
+    return NULL;
+  }
+  // Check Argument 2: Operand Type
+  if (args[2] == "") {
+    return NULL;
+  }
+
+  // All sanity checks passed.
+  // Add data from file to Operation Object
+  Operand* result = new Operand(args[0], args[2]);
+  return result;
+}
+
+Assembly* GenerateBaselineTest(int number_instructions, int number_iterations) {
+  // Set Baseline Data Members
+  std::stringstream instruction_body;
+  std::vector<Operand*> blank_operands;
+
+  // Append the instructions to the Baseline Test
+  instruction_body << GetBodyPrefix();
+  instruction_body << GetBodyMain("", 0, blank_operands, number_instructions, number_iterations);
+  instruction_body << GetBodySuffix();
+
+  Assembly* result = new Assembly("", "", instruction_body.str(), kBaselineFileName, 0, NULL, blank_operands);
+
+  return result;
+}
+
+int DetermineTestCount(int number_operations, int number_operands,
+                       Operation operations[], Operand operands[]) {
+  int result = 0;
+  for (int i = 0; i < number_operations; ++i) {
+    if (operations[i].min_operands() <= 0
+        && operations[i].max_operands() >= 0) {
+      // Operation can have 0 operands.  This constitutes a single test.
+      result += 1;
+    }
+    if (operations[i].min_operands() <= 1
+        && operations[i].max_operands() >= 1) {
+      // Operation can have 1 operand.  This constitutes a number_operands^1
+      // tests.
+      result += number_operands;
+    }
+    if (operations[i].min_operands() <= 2
+        && operations[i].max_operands() >= 2) {
+      // Operation can have 2 operands.  This constitutes a number_operands^2
+      // tests.
+      result += pow(number_operands, 2);
+    }
+    if (operations[i].min_operands() <= 3
+        && operations[i].max_operands() >= 3) {
+      // Operation can have 3 operands.  This constitutes a number_operands^3
+      // tests.
+      result += pow(number_operands, 3);
+    }
+  }
+  // Add 1 for the baseline test
+  ++result;
+  return result;
+}
+
+// Generates an Assembly Object
+Assembly* GenerateTest(int number_instructions, int number_iterations,
+                      int number_operands, Operation* operation,
+                      Operand* operands[]) {
+
+  std::string addressing_mode = "";
+  std::string file_name = "";
+  std::stringstream instruction_body;
+
+  // Generate Operands Vector
+  std::vector<Operand*> v_operands;
+  for (int i = 0; i < number_operands; ++i) {
+    v_operands.push_back(operands[i]);
+  }
+
+  // Add some string formatting tricks to fix null character bug
+  for (int i = 0; i < number_operands; i++) {
+    addressing_mode += operands[i]->operand_type();
+    addressing_mode = addressing_mode.substr(0, addressing_mode.length() - 1);
+    addressing_mode += "_";
+  }
+  addressing_mode = addressing_mode.substr(0, addressing_mode.length() - 1);
+
+  if (number_operands > 0) {
+    file_name = operation->operation_name() + "_" + addressing_mode + ".s";
+  } else {
+    file_name = operation->operation_name() + ".s";
+  }
+  if (verbose) {
+    printf("Generating Test: %s\n", file_name.c_str());
+  }
+
+  // Append the instructions to the assembly object
+  instruction_body << GetBodyPrefix();
+  instruction_body << GetBodyMain(operation->operation_name(), number_operands, v_operands, number_instructions, number_iterations);
+  instruction_body << GetBodySuffix();
+
+  Assembly* result = new Assembly(operation->operation_name(), addressing_mode, instruction_body.str(), file_name, number_operands, operation, v_operands);
+  return result;
+}
+
+bool ArgumentHasFlag(std::string argument, std::string flag) {
+  return strncmp(argument.c_str(), flag.c_str(), flag.length()) == 0;
+}
+
+int main(int argc, char* argv[]) {
+  // Variables used for array size declaration
+  int number_iterations = 0;
+  int number_instructions = 0;
+
+  // Variables and Objects used for file operations
+  std::string file_name;
+  FILE *file_in;
+  FILE *out_file;
+  char line[kMaxBufferSize];
+  Operation* current_operation;
+  Operand* current_operand;
+
+  // Command Line Argument Parsing
+  // TODO(caseyburkhardt): Add argument to display help menu
+  for (int i = 1; i < argc; ++i) {
+    if (ArgumentHasFlag(argv[i], kInstructionCountFlag)) {
+      number_instructions = ParseCommandLineInt(argv[i], kInstructionCountFlag);
+    } else if (ArgumentHasFlag(argv[i], kIterationCountFlag)) {
+      number_iterations = ParseCommandLineInt(argv[i], kIterationCountFlag);
+    } else if (ArgumentHasFlag(argv[i], kVerbosityFlag)) {
+      verbose = true;
+    } else if (ArgumentHasFlag(argv[i], kHelpFlag)) {
+          printf("%s\n", kHelpText);
+          exit(0);
+    } else {
+      fprintf(stderr, "Ignoring Unknown Command Line Argument: %s\n", argv[i]);
+    }
+  }
+
+  // Check (and replace if necessary) Command Line Argument Values
+  if (number_instructions <= 0) {
+    number_instructions = kDefaultInstructionCount;
+    fprintf(stderr,
+            "Instruction Count Flag Missing or Invalid - Defaulting to: %d\n",
+            kDefaultInstructionCount);
+  } else {
+    printf("Instruction Count Set to: %d\n", number_instructions);
+  }
+  if (number_iterations <= 0) {
+    number_iterations = kDefaultIterationCount;
+    fprintf(stderr,
+            "Iteration Count Flag Missing or Invalid - Defaulting to: %d\n",
+            kDefaultIterationCount);
+  } else {
+    printf("Iteration Count Set to: %d\n", number_iterations);
+  }
+
+  // Process Operations
+  // Holds the instances of Operation Objects
+  std::vector<Operation*> operations;
+
+  // Set all members for all Operation Objects
+  current_operation = NULL;
+
+  if ((file_in = fopen(kOperationDataFileName, "r")) == 0) {
+    perror("Unable to open operations data file.\n");
+    exit(1);
+  }
+  while (fgets(line, sizeof(line), file_in) != NULL) {
+    if (line[0] != kFileCommentCharacter) {
+      current_operation = GenerateOperation(line, kFileDelimiter);
+      if (current_operation == NULL) {
+        fprintf(stderr,
+                "Ignored operation or data syntax error in %s: Ignoring: %s\n",
+                kOperationDataFileName, line);
+      } else {
+        operations.push_back(current_operation);
+        if (verbose) {
+          printf("Successfully processed operation: %s\n",
+                 current_operation->operation_name().c_str());
+        }
+      }
+    }
+  }
+  if (fclose(file_in) != 0) {
+    perror("Unable to close operations data file.\n");
+    exit(1);
+  }
+  // TODO(caseyburkhardt): Check to see if size_t warning is appropriate.
+  printf("Successfully processed %d operations.\n", operations.size());
+
+  // Process Operands
+  // Holds the instances of Operand Objects
+  std::vector<Operand*> operands;
+
+  // Set all members for all Operation Objects
+  current_operand = NULL;
+
+  if ((file_in = fopen(kOperandDataFileName, "r")) == 0) {
+    perror("Unable to open operands data file.\n");
+    exit(1);
+  }
+  while (fgets(line, sizeof(line), file_in) != NULL) {
+    if (line[0] != kFileCommentCharacter) {
+      current_operand = GenerateOperand(line, kFileDelimiter);
+      if (current_operand == NULL) {
+        fprintf(stderr,
+                "Ignored operand or data syntax error in %s: Ignoring: %s\n",
+                kOperandDataFileName, line);
+      } else {
+        operands.push_back(current_operand);
+       if (verbose) {
+         printf("Successfully processed operand: %s\n",
+                current_operand->operand_value().c_str());
+       }
+      }
+    }
+  }
+  if (fclose(file_in) != 0) {
+    perror("Unable to close operations data file.\n");
+    exit(1);
+  }
+  // TODO(caseyburkhardt): Check size_t warning is appropriate.
+  printf("Successfully processed %d operands.\n", operands.size());
+
+  // Holds the instances of Assembly Objects
+  std::vector<Assembly*> tests;
+
+  // Generate Assembly Objects
+  // Generate the Initial Baseline Test
+  tests.push_back(GenerateBaselineTest(number_instructions, number_iterations));
+
+  printf("Generating tests...\n");
+  // By exhaustive means, generate all assembly tests.
+  // TODO(caseyburkhardt): Determine a way to perm. the number of operands
+  for (int i = 0; i < operations.size(); ++i) {
+    if (operations[i]->min_operands() <= 0
+        && operations[i]->max_operands() >= 0) {
+      // Operation can have 0 operands.
+      tests.push_back(GenerateTest(number_instructions, number_iterations, 0,
+                                   operations[i], NULL));
+    }
+    if (operations[i]->min_operands() <= 1
+        && operations[i]->max_operands() >= 1) {
+      // Operation can have 1 operand.
+      for (int j = 0; j < operands.size(); ++j) {
+        Operand* pass_operands[] = {operands[j]};
+        tests.push_back(GenerateTest(number_instructions, number_iterations, 1,
+                                     operations[i], pass_operands));
+      }
+    }
+    if (operations[i]->min_operands() <= 2
+        && operations[i]->max_operands() >= 2) {
+      // Operation can have 2 operands.
+      for (int j = 0; j < operands.size(); ++j) {
+        for (int k = 0; k < operands.size(); ++k) {
+          Operand* pass_operands[] = {operands[j], operands[k]};
+          tests.push_back(GenerateTest(number_instructions, number_iterations,
+                                       2, operations[i], pass_operands));
+        }
+      }
+    }
+    if (operations[i]->min_operands() <= 3
+        && operations[i]->max_operands() >= 3) {
+      // Operation can have 3 operands.
+      for (int j = 0; j < operands.size(); ++j) {
+        for (int k = 0; k < operands.size(); ++k) {
+          for (int l = 0; l < operands.size(); ++l) {
+            Operand* pass_operands[] = {operands[j], operands[k], operands[l]};
+            tests.push_back(GenerateTest(number_instructions, number_iterations,
+                                         3, operations[i], pass_operands));
+          }
+        }
+      }
+    }
+  }
+
+  printf("Done.  Generated %d Tests.\n", tests.size());
+
+  // Create Assembly Output Directory
+  std::string OutputDirectoryName = GetOutputDirectoryName();
+  if (mkdir(OutputDirectoryName.c_str(), 0777) == -1) {
+    perror("Unable to create output directory.\n");
+    exit(1);
+  }
+
+  printf("Writing %d tests to file system...\n", tests.size());
+
+  // Write Assembly Files
+  for (int i = 0; i < tests.size(); ++i) {
+    file_name = OutputDirectoryName + "/" + tests[i]->file_name();
+    if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
+      perror("Unable to open output file.\n");
+      exit(1);
+    }
+    fprintf(out_file, "%s", tests[i]->instruction_body().c_str());
+    if (fclose(out_file) != 0) {
+      perror("Unable to close output file.\n");
+      exit(1);
+    }
+  }
+
+  printf("Done.  Wrote %d tests to file system.\n", tests.size());
+  printf("Writing index to file system...\n");
+
+  // Write Index File
+  file_name = OutputDirectoryName + "/" + kIndexFileName;
+  if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
+    perror("Unable to open index file.\n");
+    exit(1);
+  }
+  for (int i = 0; i < tests.size(); ++i) {
+    fprintf(out_file, "%s\n", tests[i]->file_name().c_str());
+  }
+  if (fclose(out_file) != 0) {
+    perror("Unable to close index file.\n");
+    exit(1);
+  }
+
+  printf("Done.  Wrote index file to file system.\n");
+  printf("Writing test set data file to file system...\n");
+  // Write test set data file
+  // This will be used with the analysis tool to keep track of instruction and
+  // iteration count values
+  file_name = OutputDirectoryName + "/" + kTestSetDataFileName;
+  if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
+    perror("Unable to open test set data file.\n");
+    exit(1);
+  }
+    fprintf(out_file, "%s\n%s%d\n%s%d", kTestSetDataFileHeader,
+            kInstructionCountFlag, number_instructions, kIterationCountFlag,
+            number_iterations);
+  if (fclose(out_file) != 0) {
+    perror("Unable to close test set data file.\n");
+    exit(1);
+  }
+
+  printf("Done.  Wrote test set data file to file system.\n");
+  printf("Writing makefile to file system.\n");
+
+  // Write makefile
+  file_name = OutputDirectoryName + "/" + kMakeFileName;
+  if ((out_file = fopen(file_name.c_str(), "w")) == 0) {
+    perror("Unable to open makefile.\n");
+    exit(1);
+  }
+  fprintf(out_file, "all:");
+  for (int i = 0; i < tests.size(); ++i) {
+    if (tests[i]->instruction_name() != "") {
+      // Baseline Test
+      fprintf(out_file, " %s%s_%s%s", kExecutableFileNamePrefix,
+              tests[i]->instruction_name().c_str(),
+              tests[i]->addressing_mode().c_str(), kExecutableFileNameSuffix);
+    } else {
+      fprintf(out_file, " %sbaseline%s", kExecutableFileNamePrefix,
+              kExecutableFileNameSuffix);
+    }
+  }
+  fprintf(out_file, "\n\n");
+  for (int i = 0; i < tests.size(); ++i) {
+    if (tests[i]->instruction_name() != "") {
+      fprintf(out_file, " %s%s_%s%s: %s\n\tgcc %s -o %s%s_%s%s\n\n",
+              kExecutableFileNamePrefix, tests[i]->instruction_name().c_str(),
+              tests[i]->addressing_mode().c_str(), kExecutableFileNameSuffix,
+              tests[i]->file_name().c_str(), tests[i]->file_name().c_str(),
+              kExecutableFileNamePrefix, tests[i]->instruction_name().c_str(),
+              tests[i]->addressing_mode().c_str(), kExecutableFileNameSuffix);
+    } else {
+      fprintf(out_file, " %sbaseline%s: %s\n\tgcc %s -o %sbaseline%s\n\n",
+              kExecutableFileNamePrefix, kExecutableFileNameSuffix,
+              tests[i]->file_name().c_str(), tests[i]->file_name().c_str(),
+              kExecutableFileNamePrefix, kExecutableFileNameSuffix);
+    }
+  }
+  if (fclose(out_file) != 0) {
+    perror("Unable to close makefile.\n");
+    exit(1);
+  }
+
+  // TODO(caseyburkhardt): Clear Vectors?
+  printf("Done.  All operations completed.\n");
+
+  return(0);
+}

@@ -29,31 +29,31 @@
 
 #include <string>
 
-using namespace std;
-
 // Operand class represents an abstracted version of an assembly operand,
 // such as '%eax'.  The operations will be read in from a file and objects will
 // be instantiated and members set from within the Test Generator.
 class Operand {
  public:
-  // Constructor
-  Operand();
+    inline Operand(const std::string operand_value,
+                   const std::string operand_type) :
+                    operand_value_(operand_value), operand_type_(operand_type) {
+    }
 
-  // Destructor
-  virtual ~Operand();
+    inline ~Operand() {
+      // TODO(caseyburkhardt): Implement Destructor
+    }
 
-  // Accessors and Mutators
-  void set_operand_value(string data);
-  string operand_value();
-  void set_operand_type(string data);
-  string operand_type();
+    inline const std::string& operand_value() {
+      return this->operand_value_;
+    }
 
-  // Debug
-  string OutputString();
+    inline const std::string& operand_type() {
+      return this->operand_type_;
+    }
 
  private:
-  string operand_value_;
-  string operand_type_;
+    const std::string operand_value_;
+    const std::string operand_type_;
 };
 
 #endif /* IAT_ASSEMBLY_H_ */
