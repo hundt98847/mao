@@ -187,6 +187,11 @@ This pass inserts a prefetchnta instruction right before a list of specified ins
 
 Experiments show quite interesting results. We were able to reduce last level cache misses by a significant percentage by inserting a very small number of prefetchnta instructions in a program. However, these added instructions have some overhead and the overall performance (time) could not be improved, but it does show some promise.
 
+Input arguments: instn_list[filename]
+
+Sample entry in the input file:
+Filename[TAB]FunctionName+Offset[RETRUN]
+
 === Extensions ===
 
 
