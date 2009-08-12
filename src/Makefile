@@ -112,6 +112,7 @@ CCSRCS=						\
 	MaoPasses.cc				\
 	MaoPlugin.cc				\
 	MaoPrefetchNta.cc			\
+	MaoInsertPrefNta.cc			\
 	MaoProfile.cc				\
 	MaoRedundantTestElim.cc			\
 	MaoRedundantMemMove.cc			\
