@@ -18,6 +18,21 @@
 #    fi
 
 #######################################
+# Print status message
+#
+# Arguments:
+#   Status message 
+# Returns:
+#   None
+#######################################
+
+function statmessage() {
+  if [[ ! "${SILENT}" ]]; then
+    echo "${@}" 
+  fi
+}
+
+#######################################
 # Error message to be printed on failure
 #
 # Arguments:
@@ -106,6 +121,11 @@ You will need to put define the following arguments using these flags:
 Should one of these arguments not be defined, the script will
 automatically terminate.
 
+Optional flag(s):
+
+  --silent, -s
+    Silent mode: runner will not print status messages
+
 The output from the Runner will be placed in a directory named
 identical to that of the Test Generator output directory with "_Results"
 appended.  Pfmon output may be found in the files within that directory.
@@ -116,8 +136,13 @@ website for details: http://perfmon2.sourceforge.net/pfmon_usersguide.html
 SPECIAL NOTE: If authentication to the remote server via SSH requires
 password authentication, the script will fail.  Instead, be sure that you
 have automatic authentication setup between the local and remote hosts." 
-       exit 0
-     ;;
+        exit 0
+      ;;
+
+      '-s')
+        SILENT=1
+        shift 1
+      ;;
 
       '--testdir')
         DIRECTORY=$2
@@ -166,6 +191,11 @@ You will need to put define the following arguments using these flags:
 Should one of these arguments not be defined, the script will
 automatically terminate.
 
+Optional flag(s):
+
+  --silent, -s
+  Silent mode: runner will not print status messages.
+
 The output from the Runner will be placed in a directory named
 identical to that of the Test Generator output directory with "_Results"
 appended.  Pfmon output may be found in the files within that directory.
@@ -179,6 +209,11 @@ have automatic authentication setup between the local and remote hosts."
        exit 0
      ;;
 
+     '--silent')
+       SILENT=1
+       shift 1
+     ;;
+
       *)
         fatal "Illegal argument."
     esac
@@ -186,8 +221,8 @@ have automatic authentication setup between the local and remote hosts."
 }
 
 #command line args - see README
-LONGOPTS="testdir:,cpuevent:,pfmonmachine:,pfmonuser:,pfmondir:,help"
-SHORTOPTS="t:c:m:u:d:h"
+LONGOPTS="testdir:,cpuevent:,pfmonmachine:,pfmonuser:,pfmondir:,help,silent"
+SHORTOPTS="t:c:m:u:d:hs"
 PROCESSEDARGS="$(getopt -u -a -o${SHORTOPTS} -l${LONGOPTS} -- $@)"
 RETVAL=$?
 if [[ ${RETVAL} -eq 1 ]]; then
@@ -223,7 +258,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 #move scripts over to prod machine
-echo "Relocating execution scripts."
+statmessage "Relocating execution scripts."
 chmod o+x runnerII.sh
 chmod o+x cleaner.sh
 rsync --rsh="ssh -x" cleaner.sh ${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR} \
@@ -237,7 +272,7 @@ if [[ ! -d $DIRECTORY ]]; then
 fi
 
 #create results dir and store location
-echo "Creating results directory"
+statmessage "Creating results directory"
 if [[ ! -d ${DIRECTORY}_results ]]; then
   mkdir "${DIRECTORY}_results"
 fi
@@ -258,7 +293,7 @@ elif [[ ! -r $INDEXFILE ]]; then
 fi
 
 #Compile all files using make
-echo "Compiling tests"
+statmessage "Compiling tests"
 make -k -s -j 16 2> /dev/null
 
 #Determine which files compiled successfully
@@ -281,9 +316,9 @@ if [[ -f ./failedtocompile.txt ]]; then
 fi
 
 #tar all files to be rsynced over
-echo "Gathering successfuly generated tests for analysis"
+statmessage "Gathering successfuly generated tests for analysis"
 tar -czvf allfiles.tar *.exe "./executablefiles.txt" > /dev/null
-echo "Transferring test binaries for analysis"
+statmessage "Transferring test binaries for analysis"
 rsync --rsh="ssh -x" allfiles.tar \
 ${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR} > /dev/null
 ssh -x ${PFMONUSER}@${PFMONMACHINE} \
@@ -291,22 +326,23 @@ ssh -x ${PFMONUSER}@${PFMONMACHINE} \
 
 #rsync results back if ssh was successful
 if [[ $? -eq 0 ]]; then
-  echo "Transferring execution results."
+  statmessage "Transferring execution results."
   rsync --rsh="ssh -x" ${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR}/results.tar \
 ../${DIRECTORY}_results/ > /dev/null
   if [[ $? -eq 0 ]]; then
     cd ../${DIRECTORY}_results/
-    echo "Distributing execution results."
+    statmessage "Distributing execution results."
     tar -zxvf results.tar > /dev/null
     rm -rf ../${DIRECTORY}_results/results.tar
     cd ../${DIRECTORY}
   fi
 else
-  echo "ssh into ${PFMONUSER}@${PFMONMACHINE} failed."
+  statmessage "ssh into ${PFMONUSER}@${PFMONMACHINE} failed."
   continue
 fi
 
 #clean up
+statmessage "Clean up."
 rm allfiles.tar
 ssh -x ${PFMONUSER}@${PFMONMACHINE} \
 "sh ${PFMONDIR}/cleaner.sh ${PFMONDIR} > /dev/null"

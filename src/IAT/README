@@ -84,6 +84,13 @@ You will need to put define the following arguments using these flags:
 Should one of these arguments not be defined, the script will
 automatically terminate.
 
+Other flags: 
+  --help
+    Prints out the instructions for running the runner along with the list of flags
+
+  --silent, -s
+    Silent mode; runner does not print status messages. 
+
 The output from the Runner will be placed in a directory named
 identical to that of the Test Generator output directory with "_Results"
 appended.  Pfmon output may be found in the files within that directory.
