@@ -177,7 +177,7 @@ This technique yielded interesting performance results. As expected almost all b
 We ran experiments with the various prefetch types and offsets to a given load, but couldn't materialize performance gains. We suspect the number of prefetches is just too high for our systems.
 === Extensions ===
 
-== INSPREFNTA - Simple Prefetch Insertion for Specified Instructions==
+== INSPREFNTA - Prefetchnta Insertion for Specified Instructions==
 === Source ===
 {{{
   MaoInsPrefNta.cc
