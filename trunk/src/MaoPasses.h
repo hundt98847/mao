@@ -326,6 +326,7 @@ void InitBranchSeparate();
 void InitAddAddElimination();
 void InitAlignTinyLoops16();
 void InitPrefetchNta();
+void InitInsertPrefetchNta();
 void InitBackBranchAlign();
 
 

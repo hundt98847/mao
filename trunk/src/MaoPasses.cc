@@ -403,6 +403,7 @@ void InitPasses() {
   InitDCE();
   InitNopKiller();
   InitPrefetchNta();
+  InitInsertPrefetchNta();
   InitNopinizer();
   InitZEE();
   InitRATFinder();
