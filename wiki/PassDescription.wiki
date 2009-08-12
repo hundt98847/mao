@@ -180,7 +180,7 @@ We ran experiments with the various prefetch types and offsets to a given load, 
 == INSPREFNTA - Prefetchnta Insertion for Specified Instructions==
 === Source ===
 {{{
-  MaoInsPrefNta.cc
+  MaoInsertPrefNta.cc
 }}}
 === Description ===
 This pass inserts a prefetchnta instruction right before a list specified instructions. Instructions are specified in a file as a list of (file name, function, offset) tuple. 
