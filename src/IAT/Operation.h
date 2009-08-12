@@ -29,34 +29,39 @@
 
 #include <string>
 
-using namespace std;
-
 // Operation class represents an abstracted version of an assembly operation,
 // such as 'add'.  The operations will be read in from a file and objects will
 // be instantiated and members set from within the Test Generator.
 class Operation {
  public:
-  // Constructor
-  Operation();
+    inline Operation(const std::string& operation_name, int min, int max) :
+      operation_name_(operation_name) {
+      this->min_operands_ = min;
+      this->max_operands_ = max;
+    }
 
   // Destructor
-  virtual ~Operation();
+    inline ~Operation() {
+      // TODO(caseyburkhardt): Implement Destructor
+    }
 
   // Accessors and Mutators
-  void set_operation_name(string data);
-  string operation_name();
-  void set_min_operands(int value);
-  int min_operands();
-  void set_max_operands(int value);
-  int max_operands();
+    inline const std::string& operation_name() {
+      return this->operation_name_;
+    }
 
-  // Debug
-  string OutputString();
+    inline int min_operands() {
+      return this->min_operands_;
+    }
+
+    inline int max_operands() {
+      return this->max_operands_;
+    }
 
  private:
-  string operation_name_;
-  int min_operands_;
-  int max_operands_;
+    const std::string operation_name_;
+    int min_operands_;
+    int max_operands_;
 };
 
 #endif /* IAT_ASSEMBLY_H_ */
