@@ -42,6 +42,11 @@ operation of the program:
        instructions added.
      - Failure to supply this command line argument results in the value
        defaulting to 10,000.
+  --verbose
+     - This argument triggers verbose mode, printing a notification to
+       stdout each time an operation, operand, or test is processed.
+  --help
+     - Prints help message.
 
 The Test Generator generates assembly instructions by using two data files.
 See the data files' comments for more information on usage and formatting.
