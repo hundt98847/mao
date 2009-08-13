@@ -29,7 +29,6 @@
 #include <math.h>
 #include <time.h>
 #include <sstream>
-#include <strstream>
 #include <string>
 #include <vector>
 
@@ -54,7 +53,18 @@ const char kInstructionCountFlag[] = "--instructions=";
 const char kIterationCountFlag[] = "--iterations=";
 const char kVerbosityFlag[] = "--verbose";
 const char kHelpFlag[] = "--help";
-const char kHelpText[] = "Go check the README...\n";
+const char kHelpText[] =
+"Usage: TestGenerator [ARGUMENT=VALUE]... [ARGUMENT]...\n"
+"Exhaustively generates assembly file tests based on operations and operands\n"
+"data files.\n\n"
+"All command line arguments are optional.\n"
+"  --instructions=     The number of instructions contained within the body\n"
+"                        loop of each assembly test.\n"
+"  --iterations=       The number of times each assembly test should iterate\n"
+"                        over the body instructions.\n"
+"  --verbose           Display status messages for each processed operation, \n"
+"                        operand, and test.\n"
+"  --help              Display this help message";
 const char kFileCommentCharacter = '#';
 const char kFileDelimiter[] = ", ";
 const char kTestEnabledKeyword[] = "test";
@@ -69,8 +79,7 @@ const int kAbsoluteMaximumOperands = 3;
 bool verbose = false;
 
 std::string GetBodyPrefix() {
-  return ".file   \"baseline.c\"\n"
-      ".text\n"
+  return ".text\n"
       ".globl main\n"
       ".type   main, @function\n"
       "main:\n"
@@ -220,9 +229,9 @@ int CountUncommentedLines(std::string file_name, char comment_char) {
 //     min_operands = The minimum number of operands for this operation
 //     max_operands = The maximum number of operands for this operation
 //
-// If the sanity check passes, the function will return fully provisioned object
-// of type Operation, otherwise it will return an Operand object with a
-// NULL ("") operation_name_ member.
+// If the sanity check passes, the function will return a pointer to a fully
+// provisioned object of type Operation, otherwise it will return a null
+// pointer.
 Operation* GenerateOperation(char data[], const char delimiter[]) {
   // String array to hold tokenized data from a single line of the operations
   // data file.
@@ -272,7 +281,7 @@ Operation* GenerateOperation(char data[], const char delimiter[]) {
     return NULL;
   }
   // All sanity checks passed.
-  // Create and return the resulting Operation Object
+  // Initialize Operation Object and return pointer.
   Operation* result = new Operation(args[0], min_operands, max_operands);
   return result;
 }
@@ -286,14 +295,12 @@ Operation* GenerateOperation(char data[], const char delimiter[]) {
 //                 "ignore" to not load this operand into the Test Generator
 //   operand_type = The type of the operand and its size
 //
-// If the sanity check passes, the function will return fully provisioned object
-// of type Operand, otherwise it will return an Operand object with a NULL ("")
-// operand_value_ member.
+// If the sanity check passes, the function will return a pointer to a fully
+// provisioned object of type Operand, otherwise it will return a null pointer.
 Operand* GenerateOperand(char data[], const char delimiter[]) {
   // String array to hold tokenized data from a single line of the operations
   // data file.
   std::string args[kArgumentsInOperandDataFile];
-  // Min/Max Operands Value
 
   // Populate the string array by tokenizing the line.
   // First argument
@@ -322,22 +329,27 @@ Operand* GenerateOperand(char data[], const char delimiter[]) {
   }
 
   // All sanity checks passed.
-  // Add data from file to Operation Object
+  // Initialize Operand Object and return pointer.
   Operand* result = new Operand(args[0], args[2]);
   return result;
 }
 
+// This function generates a baseline test, an assembly object that contains no
+// instruction or addressing mode.  It returns a pointer to the Assembly object
+// generated.
 Assembly* GenerateBaselineTest(int number_instructions, int number_iterations) {
   // Set Baseline Data Members
   std::stringstream instruction_body;
   std::vector<Operand*> blank_operands;
 
   // Append the instructions to the Baseline Test
-  instruction_body << GetBodyPrefix();
-  instruction_body << GetBodyMain("", 0, blank_operands, number_instructions, number_iterations);
-  instruction_body << GetBodySuffix();
+  instruction_body << GetBodyPrefix() + "\n";
+  instruction_body << GetBodyMain("", 0, blank_operands, number_instructions,
+                                  number_iterations) << std::endl;
+  instruction_body << GetBodySuffix() << std::endl;
 
-  Assembly* result = new Assembly("", "", instruction_body.str(), kBaselineFileName, 0, NULL, blank_operands);
+  Assembly* result = new Assembly("", "", instruction_body.str(),
+                                  kBaselineFileName, 0, NULL, blank_operands);
 
   return result;
 }
@@ -375,14 +387,15 @@ int DetermineTestCount(int number_operations, int number_operands,
   return result;
 }
 
-// Generates an Assembly Object
+// This function initializes and returns a pointer to a fully populated
+// Assembly object, representing an assembly test.
 Assembly* GenerateTest(int number_instructions, int number_iterations,
                       int number_operands, Operation* operation,
                       Operand* operands[]) {
 
   std::string addressing_mode = "";
   std::string file_name = "";
-  std::stringstream instruction_body;
+  std::string instruction_body;
 
   // Generate Operands Vector
   std::vector<Operand*> v_operands;
@@ -408,14 +421,20 @@ Assembly* GenerateTest(int number_instructions, int number_iterations,
   }
 
   // Append the instructions to the assembly object
-  instruction_body << GetBodyPrefix();
-  instruction_body << GetBodyMain(operation->operation_name(), number_operands, v_operands, number_instructions, number_iterations);
-  instruction_body << GetBodySuffix();
+  instruction_body = GetBodyPrefix() + "\n";
+  instruction_body += GetBodyMain(operation->operation_name(), number_operands,
+                                  v_operands, number_instructions,
+                                  number_iterations) + "\n";
+  instruction_body += GetBodySuffix() + "\n";
 
-  Assembly* result = new Assembly(operation->operation_name(), addressing_mode, instruction_body.str(), file_name, number_operands, operation, v_operands);
+  Assembly* result = new Assembly(operation->operation_name(), addressing_mode,
+                                  instruction_body, file_name, number_operands,
+                                  operation, v_operands);
   return result;
 }
 
+// Checks to see if a given command line flag is present within a given command
+// line argument.
 bool ArgumentHasFlag(std::string argument, std::string flag) {
   return strncmp(argument.c_str(), flag.c_str(), flag.length()) == 0;
 }
@@ -434,7 +453,6 @@ int main(int argc, char* argv[]) {
   Operand* current_operand;
 
   // Command Line Argument Parsing
-  // TODO(caseyburkhardt): Add argument to display help menu
   for (int i = 1; i < argc; ++i) {
     if (ArgumentHasFlag(argv[i], kInstructionCountFlag)) {
       number_instructions = ParseCommandLineInt(argv[i], kInstructionCountFlag);
@@ -533,7 +551,6 @@ int main(int argc, char* argv[]) {
     perror("Unable to close operations data file.\n");
     exit(1);
   }
-  // TODO(caseyburkhardt): Check size_t warning is appropriate.
   printf("Successfully processed %d operands.\n", operands.size());
 
   // Holds the instances of Assembly Objects
@@ -690,7 +707,7 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  // TODO(caseyburkhardt): Clear Vectors?
+  // TODO(caseyburkhardt): Clear Vectors
   printf("Done.  All operations completed.\n");
 
   return(0);
