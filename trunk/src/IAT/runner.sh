@@ -127,7 +127,7 @@ Optional flag(s):
     Silent mode: runner will not print status messages
 
 The output from the Runner will be placed in a directory named
-identical to that of the Test Generator output directory with "_Results"
+identical to that of the Test Generator output directory with "_results"
 appended.  Pfmon output may be found in the files within that directory.
 Sample pfmon commands may be found within the "pfmoncommands.txt" file. For
 further questions or information on pfmon, please refer to the following
@@ -197,7 +197,7 @@ Optional flag(s):
   Silent mode: runner will not print status messages.
 
 The output from the Runner will be placed in a directory named
-identical to that of the Test Generator output directory with "_Results"
+identical to that of the Test Generator output directory with "_results"
 appended.  Pfmon output may be found in the files within that directory.
 Sample pfmon commands may be found within the "pfmoncommands.txt" file. For
 further questions or information on pfmon, please refer to the following
@@ -272,7 +272,7 @@ if [[ ! -d $DIRECTORY ]]; then
 fi
 
 #create results dir and store location
-statmessage "Creating results directory"
+statmessage "Creating results directory."
 if [[ ! -d ${DIRECTORY}_results ]]; then
   mkdir "${DIRECTORY}_results"
 fi
@@ -287,9 +287,9 @@ fi
 cd ./"${DIRECTORY}"
 INDEXFILE=index.txt
 if [[ ! -f $INDEXFILE ]]; then
-  fatal "$INDEXFILE: does not exist"
+  fatal "$INDEXFILE: does not exist."
 elif [[ ! -r $INDEXFILE ]]; then
-  fatal "$INDEXFILE: cannot read"
+  fatal "$INDEXFILE: cannot read."
 fi
 
 #Compile all files using make
@@ -316,9 +316,9 @@ if [[ -f ./failedtocompile.txt ]]; then
 fi
 
 #tar all files to be rsynced over
-statmessage "Gathering successfuly generated tests for analysis"
+statmessage "Gathering successfully generated tests for analysis."
 tar -czvf allfiles.tar *.exe "./executablefiles.txt" > /dev/null
-statmessage "Transferring test binaries for analysis"
+statmessage "Transferring test binaries for analysisi."
 rsync --rsh="ssh -x" allfiles.tar \
 ${PFMONUSER}@${PFMONMACHINE}:${PFMONDIR} > /dev/null
 ssh -x ${PFMONUSER}@${PFMONMACHINE} \

@@ -97,7 +97,7 @@ Other flags:
     Silent mode; runner does not print status messages. 
 
 The output from the Runner will be placed in a directory named
-identical to that of the Test Generator output directory with "_Results"
+identical to that of the Test Generator output directory with "_results"
 appended.  Pfmon output may be found in the files within that directory.
 Sample pfmon commands may be found within the "pfmoncommands.txt" file. For
 further questions or information on pfmon, please refer to the following
@@ -136,5 +136,5 @@ See that file for information on the formatting of its contents.
 
 Questions/Contact:
 Please contact us for any questions unanswered by the README file. 
-  - Casey Burkhardt - caseyburkhardt@google.com
-  - Sweta Mohapatra - smohapatra@google.com
+  - Casey Burkhardt - casey.burkhardt@gmail.com
+  - Sweta Mohapatra - s.moha526@gmail.com
