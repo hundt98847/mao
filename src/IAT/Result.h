@@ -27,39 +27,49 @@
 
 #include <string>
 
-using namespace std;
-
 // Result class represents an abstracted version of a single result generated
 // by the runner script.  It appears to be most logical to create a result
 // object with a constructor with no arguments and add the information as it is
 // determined in the Analyzer.
 class Result {
  public:
-  // Constructor
-  Result();
+    // Constructor
+    inline Result(const std::string operation_name,
+                  const std::string addressing_mode, int events_per_instruction,
+                  long int raw_instruction_count) :
+                    operation_name_(operation_name),
+                    addressing_mode_(addressing_mode) {
+      this->events_per_instruction_ = events_per_instruction;
+      this->raw_instruction_count_ = raw_instruction_count;
+    }
 
-  // Destructor
-  virtual ~Result();
+    // Destructor
+    inline ~Result() {
+      // TODO(caseyburkhardt): Implement Destructor
+    }
 
-  // Accessors and Mutators
-  void set_operation_name(string data);
-  string operation_name();
-  void set_addressing_mode(string data);
-  string addressing_mode();
-  void set_events_per_instruction(int value);
-  int events_per_instruction();
-  void set_raw_event_count(long int value);
-  long int raw_event_count();
+    inline const std::string& operation_name() {
+      return this->operation_name_;
+    }
 
-  // Debug
-  string OutputString();
+    inline const std::string& addressing_mode() {
+      return this->addressing_mode_;
+    }
+
+    int events_per_instruction() {
+      return this->events_per_instruction_;
+    }
+
+    long int raw_event_count() {
+      return this->raw_instruction_count_;
+    }
 
  private:
-  string operation_name_;
-  string addressing_mode_;
+    const std::string operation_name_;
+    const std::string addressing_mode_;
 
-  int events_per_instruction_;
-  long int raw_instruction_count_;
+    int events_per_instruction_;
+    long int raw_instruction_count_;
 };
 
 #endif /* IAT_RESULT_H_ */
