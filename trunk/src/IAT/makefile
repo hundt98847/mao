@@ -18,14 +18,14 @@ Operation.o: Operation.h
 Operand.o: Operand.h
 	g++ $(CFLAGS) Operand.h
 
-Analyzer: Analyzer.o Result.o
-	g++ $(LDFLAGS) "Analyzer" Result.o Analyzer.o
+Analyzer: Analyzer.o
+	g++ $(LDFLAGS) "Analyzer" Analyzer.o
 
-Analyzer.o: Analyzer.cc Analyzer.h
+Analyzer.o: Analyzer.cc
 	g++ $(CFLAGS) Analyzer.cc
 
-Result.o: Result.cc Result.h
-	g++ $(CFLAGS) Result.cc
+Result.o: Result.h
+	g++ $(CFLAGS) Result.h
 
 clean:
 	rm *.o *.gch TestGenerator Analyzer

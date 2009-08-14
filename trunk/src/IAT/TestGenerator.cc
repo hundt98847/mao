@@ -68,7 +68,7 @@ const char kHelpText[] =
 const char kFileCommentCharacter = '#';
 const char kFileDelimiter[] = ", ";
 const char kTestEnabledKeyword[] = "test";
-const int kDefaultInstructionCount = 1000;
+const int kDefaultInstructionCount = 100;
 const int kDefaultIterationCount = 10000;
 const int kMaxBufferSize = 512;
 const int kArgumentsInOperationDataFile = 4;
@@ -392,7 +392,6 @@ int DetermineTestCount(int number_operations, int number_operands,
 Assembly* GenerateTest(int number_instructions, int number_iterations,
                       int number_operands, Operation* operation,
                       Operand* operands[]) {
-
   std::string addressing_mode = "";
   std::string file_name = "";
   std::string instruction_body;
