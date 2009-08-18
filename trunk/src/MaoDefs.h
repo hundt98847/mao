@@ -70,9 +70,11 @@ extern UseEntry use_entries[];
 class InstructionEntry;
 
 void InitRegisters();
-BitString  GetRegisterDefMask(InstructionEntry *insn);
+BitString  GetRegisterDefMask(InstructionEntry *insn,
+                              bool expand_mask = false);
 
-BitString  GetRegisterUseMask(InstructionEntry *insn);
+BitString  GetRegisterUseMask(InstructionEntry *insn,
+                              bool expand_mask = false);
 
 std::set<const reg_entry *> GetDefinedRegisters(InstructionEntry *insn);
 std::set<const reg_entry *> GetUsedRegisters(InstructionEntry *insn);

@@ -330,7 +330,10 @@ BitString GetMaskForRegister(const char *reg) {
 // operands and if they define a register, add
 // the masks to the results.
 //
-BitString GetRegisterDefMask(InstructionEntry *insn) {
+// If expand_mask is true, the mask includes all parent and child registers
+// of the defined registers.
+BitString GetRegisterDefMask(InstructionEntry *insn,
+                             bool expand_mask) {
   DefEntry *e = &def_entries[insn->op()];
   MAO_ASSERT(e->opcode == insn->op());
 
@@ -378,8 +381,10 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
     BitString prefix_mask = prefix_entry->reg_mask;
     mask = mask | prefix_mask;
   }
-  FillSubRegs (&mask);
-  FillParentRegs (&mask);
+  if (expand_mask) {
+    FillSubRegs (&mask);
+    FillParentRegs (&mask);
+  }
   return mask;
 }
 
@@ -387,7 +392,10 @@ BitString GetRegisterDefMask(InstructionEntry *insn) {
 // operands and if they use a register, add
 // the masks to the results.
 //
-BitString GetRegisterUseMask(InstructionEntry *insn) {
+// If expand_mask is true, the mask includes all parent and child registers
+// of the defined registers.
+BitString GetRegisterUseMask(InstructionEntry *insn,
+                             bool expand_mask) {
   UseEntry *e = &use_entries[insn->op()];
   MAO_ASSERT(e->opcode == insn->op());
 
@@ -430,8 +438,10 @@ BitString GetRegisterUseMask(InstructionEntry *insn) {
     BitString prefix_mask = prefix_entry->reg_mask;
     mask = mask | prefix_mask;
   }
-  FillSubRegs (&mask);
-  FillParentRegs (&mask);
+  if (expand_mask) {
+    FillSubRegs (&mask);
+    FillParentRegs (&mask);
+  }
   return mask;
 }
 

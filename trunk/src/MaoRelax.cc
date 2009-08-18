@@ -698,8 +698,6 @@ struct frag *MaoRelaxer::HandleFill(DirectiveEntry *entry,
   int size = size_opnd->data.i;
   MAO_ASSERT(size >= 1);
 
-  fprintf(stderr, "inside fill...\n");
-
   if (repeat_exp->X_op == O_constant) {
     frag->fr_fix +=  size * repeat_exp->X_add_number;
     (*size_map)[entry] = size * repeat_exp->X_add_number;

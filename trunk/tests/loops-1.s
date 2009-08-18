@@ -1,4 +1,4 @@
-#Option: --mao=LFIND=lsg --mao=LOOPALIGN
+#Option: --mao=LFIND=lsg --mao=TEST
 #grep    loop-1 2
         
       	.file	"hello-loop.c"
