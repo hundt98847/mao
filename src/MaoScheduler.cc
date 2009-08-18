@@ -491,7 +491,7 @@ int *SchedulerPass::ComputeDependenceHeights(DependenceDag *dag) {
 }
 
 BitString SchedulerPass::GetSrcRegisters(InstructionEntry *insn) {
-  BitString use_mask = GetRegisterUseMask(insn);
+  BitString use_mask = GetRegisterUseMask(insn, true);
 
   return use_mask;
   /*
@@ -516,7 +516,7 @@ BitString SchedulerPass::GetSrcRegisters(InstructionEntry *insn) {
 }
 
 BitString SchedulerPass::GetDestRegisters(InstructionEntry *insn) {
-  BitString def_mask = GetRegisterDefMask(insn);
+  BitString def_mask = GetRegisterDefMask(insn, true);
   return def_mask;
 }
 

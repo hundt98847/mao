@@ -1,4 +1,4 @@
-#Option:  --mao=RELAX=stat[1] --mao=LOOPALIGN
+#Option:  --mao=RELAX=collect_stats[1] --mao=TEST
 #grep MaoRelax.*foo.*2 1
 # In order to report the correct size, the align directive should not be
 # part of the function sizes.
