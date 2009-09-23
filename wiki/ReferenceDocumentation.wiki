@@ -7,3 +7,5 @@
   * [http://www.intel.com/products/processor/manuals/ Intel® 64 and IA-32 Architectures Software Developer's Manuals]
 
   * [http://sourceware.org/binutils/docs-2.19/as/Pseudo-Ops.html#Pseudo-Ops GNU Assembler 2.19.1 Directives]
+
+  * [http://agner.org/optimize/ Agner Software Optimization Resources, with Instruction Tables]
