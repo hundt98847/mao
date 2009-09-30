@@ -1,6 +1,6 @@
 #summary Description of code reviews for MAO
 
-MAO uses an instance of the free tool [http://codereview.appspot Rietveld] for its code-review, deployed at http://maoreview.appspot.com
+MAO uses an instance of the free tool [http://codereview.appspot.com Rietveld] for its code-review, deployed at http://maoreview.appspot.com
 
 Information about the review tool can be found [http://code.google.com/p/rietveld/wiki/CodeReviewHelp here], but here are some basic instructions to get started.
 
