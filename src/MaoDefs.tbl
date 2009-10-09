@@ -42,7 +42,8 @@
 #
 #    all:  switches back to default mask and def assignment.
 #
-aaa   ax flags: AF CF
+#a
+aaa   ax flags: AF CF undef: OF SF ZF PF
 aad   ax flags: SF ZF PF undef: OF AF CF
 aam   ax flags: SF ZF PF undef: OF AF CF
 aas   ax flags: AF CF undef: OF SF ZF PF
@@ -52,6 +53,8 @@ addpd dest
 addps dest
 addsd dest
 addss dest
+addsubpd dest
+addsubps dest
 and   dest flags: SF ZF PF clear: OF CF undef: AF
 andpd dest
 andps dest
@@ -59,19 +62,22 @@ andnpd dest
 andnps dest
 arpl dest flags: ZF
 
+#b
 blendpd dest
 blendps dest
 blendvpd dest
 blendvps dest
+#bound can throw an exception
 bound 
 bsf dest flags: ZF undef: CF OF SF AF PF
 bsr dest flags: ZF undef: CF OF SF AF PF
-bswap src dest
+bswap op0
 bt flags: CF undef: OF SF AF PF ZF
 btc src dest flags: CF undef: OF SF ZF AF PF
 btr src dest flags: CF undef: OF SF ZF AF PF
 bts src dest flags: CF undef: OF SF ZF AF PF
 
+#c
 call rax rcx rdx rsi rdi r8 r9 r10 r11 flags: CF ZF SF OF PF AF
 cbw  ax
 cwde eax
@@ -83,34 +89,34 @@ cli clear: IF VIF
 clts cr0
 cmc flags: CF
 
-cmovo   dest
-cmovno  dest
-cmovb   dest
-cmovc   dest
-cmovnae dest
-cmovae  dest
-cmovnc  dest
-cmovnb  dest
-cmove   dest
-cmovz   dest
-cmovne  dest
-cmovnz  dest
-cmovbe  dest
-cmovna  dest
 cmova   dest
-cmovnbe dest
-cmovs   dest
-cmovns  dest
-cmovp   dest
-cmovnp  dest
-cmovl   dest
-cmovnge dest
-cmovge  dest
-cmovnl  dest
-cmovle  dest
-cmovng  dest
+cmovae  dest
+cmovb   dest
+cmovbe  dest
+cmovc   dest
+cmove   dest
 cmovg   dest
+cmovge  dest
+cmovl   dest
+cmovle  dest
+cmovna  dest
+cmovnae dest
+cmovnb  dest
+cmovnbe dest
+cmovnc  dest
+cmovne  dest
+cmovng  dest
+cmovnge dest
+cmovnl  dest
 cmovnle dest
+cmovno  dest
+cmovns  dest
+cmovnp  dest
+cmovnz  dest
+cmovo   dest
+cmovp   dest
+cmovs   dest
+cmovz   dest
 
 #TODO: Refine the cmp instruction into various cmpcc forms
 cmp   flags: CF OF SF PF AF ZF
@@ -122,7 +128,6 @@ cmpps dest
 #good way to determine the addr size (without looking at the opcode).
 #So conservatively assume all registers are defed in all modes
 cmps   di si edi esi rsi rdi flags: CF OF AF ZF SF PF
-cmpsd  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 
 # these three are mentioned in the Intel manual, but don't have
 # an explicit entry in the opcode tables.
@@ -130,11 +135,11 @@ cmpsd  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 # cmpsw  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 # cmpsq  addr8: di si addr16: di si addr32: edi esi addr64: rsi rdi
 
-cmpxchg dest addr8: al addr16: ax addr32: eax addr64: rax
-cmpxchg8b dest edx eax ecx ebx
-cmpxchg16b dest rdx rax rcx rbx
-comisd
-comiss
+cmpxchg dest addr8: al addr16: ax addr32: eax addr64: rax flags: ZF undef: CF PF AF OF SF
+cmpxchg8b dest edx eax ecx ebx flags: ZF undef: CF PF AF OF SF
+cmpxchg16b dest rdx rax rcx rbx flags: ZF undef: CF PF AF OF SF
+comisd flags: ZF PF CF clear: OF AF SF
+comiss flags: ZF PF CF clear: OF AF SF
 cpuid eax ebx ecx edx
 crc32 dest
 cvtdq2pd dest
@@ -165,11 +170,12 @@ cvttps2dq dest
 cvttps2dq dest
 
 cwd dx ax
-cdq edx eax 
+cdq edx eax
 cqo rdx rax
 
-daa al
-das al
+#d
+daa al flags: CF AF SF ZF PF undef: OF
+das al flags: CF AF SF ZF PF undef: OF
 dec op0 flags: OF SF ZF AF PF
 div addr8: ax addr16: ax dx addr32: eax edx addr64: rax rdx undef: CF OF SF ZF AF PF
 divpd dest
@@ -179,7 +185,8 @@ divss dest
 dppd dest
 dpps dest
 
-emms
+#e
+#emms
 
 # can be refined by compilation mode (16/32/64)
 enter rbp rsp
@@ -187,15 +194,21 @@ extractps dest
 
 # floating point instructions
 # f*
-# ignore for now, escept:
+# ignore for now, except:
 fist
 fistp
 fistpll
 fisttp
 fisttpll
 
+#h
+haddpd dest
+haddps dest
 hlt
+hsubpd dest
+hsubps dest
 
+#i
 idiv      addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax undef: CF OF SF ZF AF PF
 
 #imul has a 3 operand form - an immediate and a register src and a register def. 'dest' is a synonym for
@@ -204,7 +217,7 @@ idiv      addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax undef: CF OF S
 imul dest op2 addr8: ax addr16: ax dx addr32: eax edx addr64: rdx rax flags: CF OF undef: SF ZF AF PF
 
 in   dest
-inc  src
+inc  op0 flags: OF SF ZF AF PF
 
 # can be refined by mode
 ins  rdi 
@@ -218,8 +231,8 @@ insertps dest
 #
 int rax rcx rdx rsi rdi r8 r9 r10 r11
 into rax rcx rdx rsi rdi r8 r9 r10 r11
-invd 
-invlpg
+#invd 
+#invlpg
 #TODO iret
 #iret
 # described in the Intel manual, but taken care of by the mode
@@ -262,11 +275,10 @@ jg
 
 jcxz
 jecxz
-jecxz
 jrcxz
 
 lahf  ah
-lar   dest
+lar   dest flags: ZF
 lddqu dest
 
 ldmxcsr mxcsr
@@ -278,13 +290,15 @@ lgs dest gs
 
 lea   dest
 leave rsp rbp
-lfence 
-lgdt
-lidt
-lldt
-lmsw src
+lfence
+#How to specify regs like GDTR,IDTR,... ?
+#lgdt
+#lidt
+#lldt
+
+lmsw cr0
 lock
-lods  addr8: al addr16: ax addr32: eax addr64: rax
+lods  addr8: al si addr16: ax si addr32: eax esi addr64: rax rsi
 # these are in the Intel manual, but taken care of by the mode
 # append trick in mao/gas
 # lodsb al
@@ -300,9 +314,11 @@ loopz  rcx
 loopnz rcx
 
 lsl dest
-ltr src
-maskmovdqu dest
-maskmovq dest
+ltr tr0 tr1 tr2 tr3 tr4 tr5 tr6 tr7
+
+#m
+maskmovdqu
+maskmovq
 maxpd dest
 maxps dest
 maxsd dest
@@ -317,7 +333,7 @@ monitor
 mov  dest
 movapd dest
 movaps dest
-movabs dest
+movbe dest
 movd dest
 movddup dest
 movdqa dest
@@ -340,17 +356,26 @@ movntq dest
 movq dest
 movq2dq dest
 
-movsd  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
-movs   dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movs   ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 # taken care of by mode append
 # movsb  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 # movsw  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 # movsq  dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 
-movsbl dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
-movsbw dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
-movswl dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
-movslq dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movsd  dest
+movshdup dest
+movsldup dest
+movss   src
+
+# various sign extent moves.
+movsbl dest
+movsbw dest
+movswl dest
+movslq dest
+movsbq dest
+movswq dest
+movsx dest
+movsxd dest
 
 # there is a floating point movsd as well?
 # movsd
@@ -358,16 +383,7 @@ movslq dest ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 movupd dest
 movups dest
 
-# various zero and sign extent moves.
-movbe dest
-movsbl dest
-movsbw dest
-movswl dest
-movsbq dest
-movswq dest
-movslq dest
-movsx dest
-movsxd dest
+# various zero extent moves.
 
 movzbl dest
 movzbw dest
@@ -387,23 +403,12 @@ mulss dest
 
 mwait
 
-# SSE3 instructions
-# TODO: sort them in...
-addsubpd dest
-addsubps dest
-haddpd dest
-haddps dest
-hsubpd dest
-hsubps dest
-lddqu dest
-movddup dest
-movshdup dest
-movsldup dest
+#ER: verified till this point
 
 
 # N
 neg  op0  flags: CF OF SF ZF AF PF
-nop       flags: 
+nop
 not  op0
 
 # O
@@ -411,7 +416,7 @@ or   dest flags: SF ZF PF clear: OF CF undef: AF
 orpd dest
 orps dest
 out       flags:
-outs  addr8: si addr16: si addr32: esi addr64: rsi  flags:
+outs  addr8: si addr16: si addr32: esi addr64: rsi
 # taken care of by mode append:
 # outsb addr8: si addr16: si addr32: esi addr64: rsi  flags:
 # outsw addr8: si addr16: si addr32: esi addr64: rsi  flags:
@@ -421,34 +426,34 @@ outs  addr8: si addr16: si addr32: esi addr64: rsi  flags:
 pabsb dest
 pabsw dest
 pabsd dest
-packsswb dest  flags:
-packssdw dest  flags:
-packusdw dest  flags:
-packuswb dest  flags:
-paddb    dest  flags:
-paddw    dest  flags:
-paddd    dest  flags:
-paddq    dest  flags:
-paddsb   dest  flags:
-paddsw   dest  flags:
-paddusb  dest  flags:
-paddusw  dest  flags:
-palignr  dest  flags:
-pand     dest  flags:
-pandn    dest  flags:
-pause          flags:
-pavgb    dest  flags:
-pavgw    dest  flags:
-pblendvb dest  flags:
-pblendw  dest  flags:
-pcmpeqb  dest  flags:
-pcmpeqw  dest  flags:
-pcmpeqd  dest  flags:
-pcmpeqq  dest  flags:
-pcmpestri dest eax ecx edx xmm0 addr64: rax rdx xmm0 flags:
-pcmpestrm dest eax ecx edx xmm0 addr64: rax rdx xmm0 flags:
-pcmpistri addr8: ecx addr16: ecx addr32: ecx addr64: rcx flags:
-pcmpistrm xmm0 flags:
+packsswb dest
+packssdw dest
+packusdw dest
+packuswb dest
+paddb    dest
+paddw    dest
+paddd    dest
+paddq    dest
+paddsb   dest
+paddsw   dest
+paddusb  dest
+paddusw  dest
+palignr  dest
+pand     dest
+pandn    dest
+pause
+pavgb    dest
+pavgw    dest
+pblendvb dest
+pblendw  dest
+pcmpeqb  dest
+pcmpeqw  dest
+pcmpeqd  dest
+pcmpeqq  dest
+pcmpestri addr8: ecx addr16: ecx addr32: ecx addr64: rcx flags: CF ZF SF OF clear: AF PF
+pcmpestrm xmm0 flags: CF ZF SF OF clear: AF PF
+pcmpistri addr8: ecx addr16: ecx addr32: ecx addr64: rcx flags: CF ZF SF OF clear: AF PF
+pcmpistrm xmm0 flags: CF ZF SF OF clear: AF PF
 pcmpgtb  dest
 pcmpgtw  dest
 pcmpgtd  dest
@@ -482,8 +487,8 @@ pminsw    dest
 pminub    dest
 pminud    dest
 pminuw    dest
-pmovmskb  dest
 
+pmovmskb  dest
 pmovsxbw  dest
 pmovsxbd  dest
 pmovsxbq  dest
@@ -508,7 +513,7 @@ pmullw    dest
 pmuludq   dest
 pop   rsp op0
 
-popa  rsp  di  si  bp  bx  dx  cx  ax  flags:
+popa  rsp  edi  esi  ebp  ebx  edx  ecx  eax
 # taken care of by mode append
 # popad rsp edi esi ebp ebx edx ecx eax  flags:
 
@@ -523,11 +528,11 @@ por    dest
 # These three prefetches are named differently in the Intel manual:
 # prefetch0, prefetch1, prefetch2
 #
-prefetcht0 dest
-prefetcht1 dest
-prefetcht2 dest
+prefetcht0
+prefetcht1
+prefetcht2
+prefetchnta
 
-prefetchnta dest
 psadbw  dest
 pshufb  dest
 pshufd  dest
@@ -600,18 +605,22 @@ rdtscp edx eax ecx flags:
 #on what follows the rep. Handle them conservatively
 #Further complicated by th fact that registers used depends
 #on REX prefix
-rep  cx ecx rcx
-repe  cx ecx rcx
-repz  cx ecx rcx
-repne  cx ecx rcx
-repnz  cx ecx rcx
+rep  cx ecx rcx rsi rdi
+repe  cx ecx rcx rsi rdi
+repz  cx ecx rcx rsi rdi
+repne  cx ecx rcx rsi rdi
+repnz  cx ecx rcx rsi rdi
 
+#The data deps for ret is probably not very useful. Every insn
+#uses and defs rip, but it is not specified. So there won't be
+#any data deps on rip
 ret   rip rsp
+
 roundpd  dest
 roundps  dest
 roundsd  dest
 roundss  dest
-rsm
+#rsm defs all regs. So no need to have an entry
 rsqrtps  dest
 rsqrtss  dest
 
@@ -659,13 +668,13 @@ setnle src
 setg src
 
 sfence
-sgdt src
-shld dest
-shrd dest
+sgdt
+shld op2 flags: CF SF ZF OF PF AF
+shrd op2 flags: CF SF ZF OF PF AF
 shufpd dest
 shufps dest
-sidt dest
-sldt dest
+sidt
+sldt
 smsw src
 sqrtpd dest
 sqrtps dest
@@ -688,12 +697,12 @@ subpd dest
 subps dest
 subsd dest
 subss dest
-swapgs
-#Not sure if the def set of syscall is correct
-syscall rax rcx rdx rsi rdi r8 r9 r10 r11 flags: CF ZF SF OF PF AF
-sysenter
-sysexit
-sysret
+#swapgs
+#Not sure if the def set of sys* is correct
+#syscall rax rcx rdx rsi rdi r8 r9 r10 r11 flags: CF ZF SF OF PF AF
+#sysenter
+#sysexit
+#sysret
 
 
 # T
@@ -702,7 +711,7 @@ test   flags: SF ZF PF OF CF undef: AF
 # U
 ucomisd flags: ZF PF CF clear: OF AF SF
 ucomiss flags: ZF PF CF clear: OF AF SF
-ud2
+#ud2 -undefined ins!
 unpckhpd dest
 unpckhps dest
 unpcklpd dest
@@ -713,13 +722,15 @@ verr  flags: ZF
 verw  flags: ZF
 
 # W
-wait
-fwait
+# wait and fwait are FP related and affects FP flags
+#wait
+#fwait
 wbinvd
+#How to specify the dependence between wrmsr and rdmsr through MSRs?
 wrmsr
 
 # X
-xadd dest  flags: CF PF AF SF ZF OF
+xadd src dest  flags: CF PF AF SF ZF OF
 xchg src dest
 xgetbv edx eax
 xlat  al
@@ -728,6 +739,6 @@ xlat  al
 xor dest flags: SF ZF PF clear: OF CF undef: AF
 xorpd dest
 xorps dest
-xrstor src
-xsave src
+#xrstor - restores processor state and hence could touch all regs
+xsave
 xsetbv

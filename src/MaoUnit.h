@@ -982,7 +982,7 @@ class Function {
   // analysis results.
   CFG *cfg() const {return cfg_;}
   void set_cfg(CFG *cfg);
-  friend CFG *CFG::GetCFG(MaoUnit *mao, Function *function);
+  friend CFG *CFG::GetCFG(MaoUnit *mao, Function *function, bool);
   friend CFG *CFG::GetCFGIfExists(const MaoUnit *mao, Function *function);
   friend void CFG::InvalidateCFG(Function *function);
 

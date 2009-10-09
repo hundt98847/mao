@@ -65,11 +65,11 @@ bool BasicBlock::DirectlyFollows(const BasicBlock *basicblock) const {
           basicblock->first_entry()->prev() == last_entry());
 }
 
-CFG *CFG::GetCFG(MaoUnit *mao, Function *function) {
+CFG *CFG::GetCFG(MaoUnit *mao, Function *function, bool conservative) {
   if (function->cfg() == NULL) {
     // Build it!
     CFG *cfg = new CFG(mao);
-    CreateCFG(mao, function, cfg);
+    CreateCFG(mao, function, cfg, conservative);
     function->set_cfg(cfg);
   }
   MAO_ASSERT(function->cfg());
@@ -143,8 +143,10 @@ void CFG::DumpVCG(const char *fname) const {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(CFG, 3) {
+MAO_OPTIONS_DEFINE(CFG, 4) {
   OPTION_BOOL("callsplit", false, "Split Basic Blocks at call sites"),
+  OPTION_BOOL("respect_orig_labels", false, "Create a BB whenever the "
+              "input file has a label directive"),
   OPTION_BOOL("vcg", false, "Dump VCG after CFG construction"),
   OPTION_BOOL("collect_stats", false,
               "Collect and print a table with information about direct "
@@ -153,12 +155,16 @@ MAO_OPTIONS_DEFINE(CFG, 3) {
 
 
 // --------------------------------------------------------------------
-CFGBuilder::CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG)
+CFGBuilder::CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG,
+                       bool conservative)
     : MaoFunctionPass("CFG", GetStaticOptionPass("CFG"), mao_unit, function),
       CFG_(CFG), next_id_(0) {
   split_basic_blocks_ = GetOptionBool("callsplit");
+  respect_orig_labels_= GetOptionBool("respect_orig_labels");
   collect_stat_ = GetOptionBool("collect_stats");
   dump_vcg_ = GetOptionBool("vcg");
+  if (conservative)
+    respect_orig_labels_ = true;
   if (collect_stat_) {
     // check if a stat object already exists?
     if (unit_->GetStats()->HasStat("CFG")) {
@@ -202,7 +208,8 @@ bool CFGBuilder::Go() {
 
     // If the current entry starts a new basic block, end the previous one
     if (current && entry->Type() == MaoEntry::LABEL &&
-        CFG_->FindBasicBlock(static_cast<LabelEntry*>(entry)->name()) != NULL) {
+        (respect_orig_labels_ ||
+         CFG_->FindBasicBlock(static_cast<LabelEntry*>(entry)->name()) != NULL)) {
       create_fall_through = true;
       previous = current;
       current = NULL;
@@ -951,8 +958,9 @@ void BasicBlock::Print(FILE *f, MaoEntry *from, MaoEntry *to) {
   to->PrintEntry(f);
 }
 
-void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg) {
-  CFGBuilder builder(mao_unit, function, cfg);
+void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg,
+               bool conservative) {
+  CFGBuilder builder(mao_unit, function, cfg, conservative);
   builder.Go();
 }
 

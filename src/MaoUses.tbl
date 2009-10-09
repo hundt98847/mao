@@ -42,7 +42,6 @@
 #    undef: indicate which flags are left undefined.
 #
 #    all:  switches back to default mask and def assignment.
-
 #a
 aaa   al flags: AF
 aad   ax
@@ -54,6 +53,8 @@ addpd exp
 addps exp
 addsd exp
 addss exp
+addsubpd exp
+addsubps exp
 and   exp
 andpd exp
 andps exp
@@ -77,9 +78,15 @@ bts exp
 
 #c
 #call rsp rip cs
+cbw  al
+cwde ax
+cdqe eax
 clc
 cld
+clflush
 cli
+clts
+cmc flags: CF
 
 cmova   src flags: CF ZF
 cmovae  src flags: CF
@@ -134,37 +141,38 @@ comisd exp
 comiss exp
 cpuid eax ecx
 crc32 exp
-cvtdq2pd exp
-cvtdq2pd exp
-cvtpd2dq exp
-cvtpd2dq exp
-cvtdq2ps exp
-cvtdq2ps exp
-cvtpd2pi exp
-cvtpd2ps exp
-cvtpd2ps exp
-cvtps2pd exp
-cvtps2pd exp
-cvtps2dq exp
-cvtps2dq exp
-cvtsd2si exp
-cvtsd2si exp
-cvtsd2ss exp
-cvtsd2ss exp
-cvtss2sd exp
-cvtss2sd exp
-cvttpd2pi exp
-cvttsd2si exp
-cvttsd2si exp
-cvttpd2dq exp
-cvttpd2dq exp
-cvttps2dq exp
-cvttps2dq exp
+cvtdq2pd src
+cvtdq2pd src
+cvtpd2dq src
+cvtpd2dq src
+cvtdq2ps src
+cvtdq2ps src
+cvtpd2pi src
+cvtpd2ps src
+cvtpd2ps src
+cvtps2pd src
+cvtps2pd src
+cvtps2dq src
+cvtps2dq src
+cvtsd2si src
+cvtsd2si src
+cvtsd2ss src
+cvtsd2ss src
+cvtss2sd src
+cvtss2sd src
+cvttpd2pi src
+cvttsd2si src
+cvttsd2si src
+cvttpd2dq src
+cvttpd2dq src
+cvttps2dq src
+cvttps2dq src
 
 cwd ax
-cdq eax 
+cdq eax
 cqo rax
 
+#d
 daa al flags: AF CF
 das al flags: AF CF
 dec src
@@ -175,10 +183,35 @@ divsd exp
 divss exp
 dppd exp
 dpps exp
+
+#e
+#emms
+enter rbp rsp
+extractps src
+
+#f
+#Ignore FP related stuff for now
+
+#h
+haddpd exp
+haddps exp
+hlt
+hsubpd exp
+hsubps exp
+
 # i
 idiv exp addr8: ax addr16: ax dx addr32: eax edx addr64: rax rdx
 imul exp addr8: ax addr16: ax addr32: eax addr64: rax
+in dx
 inc src
+ins dx rdi flags: df
+
+insertps exp
+#TODO
+#int
+#invd
+#invlpg
+#iret
 
 # j
 # jumpers
@@ -220,14 +253,27 @@ jecxz ecx
 jrcxz rcx
 
 #L
+lahf flags: SF ZF AF PF OF CF
+lar src
+lddqu
+ldmxcsr
 
+lds
+lss
+les
+lfs
+lgs
 # lea uses only base and index regs which are included by default
 lea
 
 leave rsp rbp
+lfence
+lgdt
+lidt
+lldt
 
 lmsw src
-lods  ds addr16: si addr32: esi addr64: rsi
+lods  ds flags: DF  addr16: si addr32: esi addr64: rsi
 # these are in the Intel manual, but taken care of by the mode
 # append trick in mao/gas
 # lodsb al
@@ -235,12 +281,33 @@ lods  ds addr16: si addr32: esi addr64: rsi
 # lodsd eax
 # lodsq rax
 
+loop   rcx
+loope  rcx flags: ZF
+loopne rcx flags: ZF
+loopz  rcx flags: ZF
+loopnz rcx flags: ZF
+
+lsl src
+ltr src
+#m
+maskmovdqu exp ds edi
+maskmovq exp ds edi
+maxpd exp
+maxps exp
+maxsd exp
+maxss exp
+mfence
+minpd exp
+minps exp
+minsd exp
+minss exp
+monitor ds rax
 
 mov  src
 
 movapd src
 movaps src
-movabs src
+movbe src
 movd src
 movddup src
 movdqa src
@@ -263,11 +330,12 @@ movntq src
 movq src
 movq2dq src
 
-movs   ds es addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
-# There are two movsd in the manual. One seems to be movs with mode set to
-# 32 and another is an xmm move. I don't know which one is this, so I'm
-# treating it conservatively
-movs   src ds es addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+movs   ecx ds es addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
+
+movsd   src
+movshdup src
+movsldup src
+movss   src
 
 
 movupd src
@@ -278,9 +346,9 @@ movbe src
 movsbl src
 movsbw src
 movswl src
+movslq src
 movsbq src
 movswq src
-movslq src
 movsx src
 movsxd src
 
@@ -292,21 +360,208 @@ movzbq src
 movzwq src
 movzx src
 
+mpsadbw exp
+
 mul   exp addr8: al addr16: ax addr32: eax addr64: rax
 
+mulpd exp
+mulps exp
+mulsd exp
+mulss exp
+
 mwait eax ecx
+#ER: verified till this point
+
+#N
+neg src
+nop
+not src
 
 #O
 or exp
+orpd exp
+orps exp
+out eax dx
+outs dx flags: DF addr8: si addr16: si addr32: esi addr64: rsi
+pabsb src
+pabsw src
+pabsd src
+packsswb exp
+packssdw exp
+packusdw exp
+packuswb exp
+paddb    exp
+paddw    exp
+paddd    exp
+paddq    exp
+paddsb   exp
+paddsw   exp
+paddusb  exp
+paddusw  exp
+palignr  exp
+pand     exp
+pandn    exp
+pause
+pavgb    exp
+pavgw    exp
+pblendvb exp
+pblendw  exp
+pcmpeqb  exp
+pcmpeqw  exp
+pcmpeqd  exp
+pcmpeqq  exp
+pcmpestri exp eax edx rax rdx
+pcmpestrm exp eax edx rax rdx
+pcmpistri exp
+pcmpistrm exp
+pcmpgtb  exp
+pcmpgtw  exp
+pcmpgtd  exp
+pcmpgtq  exp
+pcmpgtb  exp
+pcmpgtw  exp
+pcmpgtd  exp
+pcmpgtq  exp
+pextrb   exp
+pextrd   exp
+pextrq   exp
+pextrw   exp
+phaddw   exp
+phaddd   exp
+phaddsw  exp
+phminposuw exp
+phsubw   exp
+phsubd   exp
+phsubsw  exp
+pinsrb   exp
+pinsrd   exp
+pinsrq   exp
+pinsrw   exp
+pmaddubsw exp
+pmaddwd   exp
+pmaxsb    exp
+pmaxsd    exp
+pmaxsw    exp
+pmaxub    exp
+pmaxud    exp
+pmaxuw    exp
+pminsb    exp
+pminsd    exp
+pminsw    exp
+pminub    exp
+pminud    exp
+pminuw    exp
+
+pmovmskb  exp
+pmovsxbw  exp
+pmovsxbd  exp
+pmovsxbq  exp
+
+pmovsxwd  exp
+pmovsxwq  exp
+pmovsxdq  exp
+
+pmovzxbw  exp
+pmovzxbd  exp
+pmovzxbq  exp
+pmovzxwd  exp
+pmovzxwq  exp
+pmovzxdq  exp
+
+pmuldq    exp
+pmulhrsw  exp
+pmulhuw   exp
+pmulhw    exp
+pmulld    exp
+pmullw    exp
+pmuludq   exp
+pop rsp
+popa rsp
+# taken care of by mode append
+#popad rsp
+popcnt src
+popf rsp
+
+# taken care of by mode append
+# popfd rsp
+# popfq rsp
+
+por src
+# These three prefetches are named differently in the Intel manual:
+# prefetch0, prefetch1, prefetch2
+#
+prefetcht0
+prefetcht1
+prefetcht2
+prefetchnta
+
+psadbw  exp
+pshufb  exp
+pshufd  exp
+pshufhw exp
+pshuflw exp
+pshufw  exp
+psignb  exp
+psignw  exp
+psignd  exp
+pslldq  exp
+psllw   exp
+pslld   exp
+psllq   exp
+psraw   exp
+psrad   exp
+psrldq  exp
+psrlw   exp
+psrld   exp
+psrlq   exp
+psubb   exp
+psubw   exp
+psubd   exp
+psubq   exp
+psubsb  exp
+psubsw  exp
+psubusb  exp
+psubusw  exp
+ptest exp
+# For punpckh.. and punpckl.., Intel and AT&T differ in the final
+# characters.
+#
+punpckhbw  exp
+punpckhdq  exp
+punpckhwd  exp
+
+punpcklbw  exp
+punpckldq  exp
+punpcklwd  exp
+
+punpckhqdq exp
+punpcklqdq exp
+
+# TODO: refine by build model
+push   rsp src
+pusha  rsp  edi  esi  ebp  ebx  edx  ecx  eax
+# taken care of by mode append:
+# pushad rsp  edi  esi  ebp  ebx  edx  ecx  eax
+
+pushf  rsp eflags
+# taken care of by mode append:
+# pushfd rsp eflags
+# pushfq rsp eflags
+
+pxor  exp 
 
 # R
-rcl exp flags: CF OF
-rcr exp flags: CF OF
-rol exp flags: CF OF
-ror exp flags: CF OF
+rcl exp cl flags: CF
+rcr exp cl flags: CF
+rol exp cl flags: CF
+ror exp cl flags: CF
+rcpps src
+rcpps src
 
 rdmsr ecx
 rdpmc ecx
+rdtsc
+rdtscp
 
 #reps are tricky to handle since their operands is based
 #on what follows the rep. Handle them conservatively
@@ -318,10 +573,26 @@ repz  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
 repne  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
 repnz  exp ds es ax eax rax cx ecx rcx si esi rsi di edi rdi flags: ZF
 
-ret rsp
+#The data deps for ret is probably not very useful. Every insn
+#uses and defs rip, but it is not specified. So there won't be
+#any data deps on rip
+ret rip rsp
+
+roundpd  src
+roundps  src
+roundsd  src
+roundss  src
+rsm
+rsqrtps  src
+rsqrtss  src
 
 # S
 sahf ah
+sal exp cl
+sar exp cl
+shl exp cl
+shr exp cl
+
 sbb exp flags: CF
 scas  es rdi rax
 
@@ -355,77 +626,79 @@ setz   flags: ZF
 setnz  flags: ZF
 setpe  flags: PF
 setpo  flags: PF
+sfence
 
-sgdt src
-sal exp
-sar exp
-shl exp
-shr exp
+sgdt
 
-shld exp
-shrd exp
+shld exp cl
+shrd exp cl
 shufpd exp
 shufps exp
-sidt exp
-sldt exp
-smsw src
-sqrtpd exp
-sqrtps exp
-sqrtsd exp
-sqrtss exp
+sidt
+sldt
+smsw
+sqrtpd src
+sqrtps src
+sqrtsd src
+sqrtss src
 stc
 std
 sti
-stmxcsr exp
-stos  rax rdi di edi flags: DF
+stmxcsr mxcsr
+stos  rax addr8: di addr16: di addr32: edi addr64: rdi flags: DF
 # taken care of by mode append:
-# stosb src addr8: di addr16: di addr32: edi addr64: rdi
-# stosw src addr8: di addr16: di addr32: edi addr64: rdi
-# stosd src addr8: di addr16: di addr32: edi addr64: rdi
-# stosq src addr8: di addr16: di addr32: edi addr64: rdi
+# stosb src addr8: di addr16: di addr32: edi addr64: rdi flags: DF
+# stosw src addr8: di addr16: di addr32: edi addr64: rdi flags: DF
+# stosd src addr8: di addr16: di addr32: edi addr64: rdi flags: DF
+# stosq src addr8: di addr16: di addr32: edi addr64: rdi flags: DF
 
-str   src
-sub   exp
+str tr0 tr1 tr2 tr3 tr4 tr5 tr6 tr7
+
+sub   exp addr8: al addr16: ax addr32: eax addr64: rax
 subpd exp
 subps exp
 subsd exp
 subss exp
-swapgs
-#syscall rcx r11
-sysenter
-sysexit
-sysret
+#swapgs
+#Not sure about the use set of the sys* ins
+#syscall rip eflags
+#sysenter
+#sysexit
+#sysret
 
 
 # T
-test exp
+test exp addr8: al addr16: ax addr32: eax addr64: rax
 
 # U
 ucomisd exp
 ucomiss exp
-ud2
+#ud2 -undefined ins!
 unpckhpd exp
 unpckhps exp
 unpcklpd exp
 unpcklps exp
 
+#V
+verr src
+verw src
 
 # W
 wait
 fwait
 wbinvd
-wrmsr
+wrmsr edx eax ecx
 
 # X
-xadd exp  flags: CF PF AF SF ZF OF
-xchg src exp
-xgetbv edx eax
-xlat  al
+xadd exp
+xchg exp addr8: ax addr16: ax addr32: eax addr64: rax
+xgetbv ecx
+xlat  ds rbx al
 # taken care of by mode append
 # xlatb al
-xor exp
+xor exp addr8: al addr16: ax addr32: eax addr64: rax
 xorpd exp
 xorps exp
-xrstor src
-xsave src
-xsetbv
+xrstor edx eax
+#xsave - could save all of processor state
+xsetbv edx eax ecx
