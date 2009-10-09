@@ -201,7 +201,8 @@ class CFG {
 
   // Get the CFG for the given function, build
   // if it necessary.
-  static CFG *GetCFG(MaoUnit *mao, Function *function);
+  static CFG *GetCFG(MaoUnit *mao, Function *function,
+                     bool conservative = false);
   static CFG *GetCFGIfExists(const MaoUnit *mao, Function *function);
   static void InvalidateCFG(Function *function);
 
@@ -301,7 +302,8 @@ class CFG {
 
 class CFGBuilder : public MaoFunctionPass {
  public:
-  CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG);
+  CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG,
+             bool conservative = false);
   bool Go();
 
  private:
@@ -346,6 +348,7 @@ class CFGBuilder : public MaoFunctionPass {
   BasicBlockID  next_id_;
   CFG::LabelToBBMap label_to_bb_map_;
   bool      split_basic_blocks_ : 1;
+  bool      respect_orig_labels_ : 1;
   bool      dump_vcg_ : 1;
 
 
@@ -383,6 +386,7 @@ class CFGBuilder : public MaoFunctionPass {
   CFGStat *cfg_stat_;
 };
 
-void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg);
+void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg,
+               bool conservative = false);
 
 #endif  // MAOCFG_H_

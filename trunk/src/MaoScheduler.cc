@@ -33,16 +33,22 @@
 // Options
 // --------------------------------------------------------------------
 MAO_OPTIONS_DEFINE(SCHEDULER, 4) {
+  // The next four options are helpful in debugging the scheduler
+  // by limiting  the functions to which the transformation is applied
   OPTION_STR("function_list", "",
-             "A comma separated list of mangled function names"
-             " on which this pass is applied."
-             " An empty string means the pass is applied on all functions"),
+             "A comma separated list of mangled function names "
+             "on which this pass is applied. "
+             "An empty string means the pass is applied on all functions"),
   OPTION_STR("functions_file", "",
-             " "),
+             "A file with a list of mangled function names. "
+             "The position in this file gives a unique number to the "
+             "functions"),
   OPTION_INT("start_func", 0,
-             "Number of the first function that is optimized"),
+             "Number of the first function in functions_file "
+             "that is optimized."),
   OPTION_INT("end_func", 1000000000,
-             "Number of the last  function that is optimized"),
+             "Number of the last  function in functions_file "
+             "that is optimized"),
 };
 
 #define MAX_REGS 256
@@ -56,6 +62,9 @@ MAO_OPTIONS_DEFINE(SCHEDULER, 4) {
 #define ALL_DEPS (~NO_DEP)
 class SchedulerPass : public MaoFunctionPass {
  public:
+  /* A simple graph data structure to represent dependence graphs in basic
+   * blocks. Uses an adjacency matrix representation.
+   */
   class DependenceDag {
    public:
     DependenceDag(int num_instructions, std::string *insn_str) {
@@ -186,6 +195,10 @@ class SchedulerPass : public MaoFunctionPass {
     int start_func = GetOptionInt("start_func");
     int end_func = GetOptionInt("end_func");
     const char* functions_file = GetOptionString("functions_file");
+
+
+    // Read the functions_file and find the position of the current function
+    // in the file. If it is out of the binary-search range, do nothing.
     FILE *fp = NULL;
     if (strcmp(functions_file, "")) {
       fp = fopen(functions_file, "r");
@@ -208,8 +221,13 @@ class SchedulerPass : public MaoFunctionPass {
     }
     if (!profitable_)
       return true;
-    CFG *cfg = CFG::GetCFG(unit_, function_);
+
+    CFG *cfg = CFG::GetCFG(unit_, function_, true);
+    // Compute the set of trivial (single BB) loops. Useful
+    // when computing the cost function later.
     FindBBsInStraightLineLoops();
+
+    // Schedule each BB in the function
     FORALL_CFG_BB(cfg, bb_iterator) {
       MaoEntry *first = *((*bb_iterator)->EntryBegin());
       MaoEntry *last = *((*bb_iterator)->EntryEnd());
@@ -230,6 +248,9 @@ class SchedulerPass : public MaoFunctionPass {
         for (int i = 0; i < dag->NodeCount(); i++) {
           Trace(2, "%s: %d", insn_str_[i].c_str(), dependence_heights[i]);
         }
+
+        // The head should point to the entry before the first
+        // instruction in the BB. 
         MaoEntry *head = (*bb_iterator)->first_entry();
         if (head->IsInstruction()) {
           head = head->prev();
@@ -239,6 +260,10 @@ class SchedulerPass : public MaoFunctionPass {
         }
 
         MaoEntry *last_entry = Schedule(dag, dependence_heights, head);
+        // binutils (sometimes?) treats lock as a separate instruction and
+        // not as a prefix. To avoid the scheduler messing up with the locks,
+        // they are removed from the instruction stream before scheduling.
+        // So they need to be reattached to the corresponding instructions.
         PrefixLocks(head->next(), last_entry);
       }
     }
@@ -252,6 +277,7 @@ class SchedulerPass : public MaoFunctionPass {
   MaoEntry **entries_;
   bool profitable_;
   static int function_count_;
+  // The set of BBs that form a single BB loops
   std::set<BasicBlock *> bbs_in_stline_loops_;
 
   // An array used to keep track of instructions that
@@ -289,10 +315,12 @@ void SchedulerPass::FindBBsInStraightLineLoops() {
   FindBBsInStraightLineLoops(root);
 }
 
+// If a loop has a single BB, add it to bbs_in_stline_loops_.
+// Recursively apply the method to inner loops
 void SchedulerPass::FindBBsInStraightLineLoops(SimpleLoop *loop) {
   if (loop->header() == loop->bottom() && loop->header() != NULL) {
     bbs_in_stline_loops_.insert(loop->header());
-    // This must be an innermost loop
+    // This must be an innermost loop since it has a single BB
     return;
   }
   // Recurse
@@ -301,6 +329,8 @@ void SchedulerPass::FindBBsInStraightLineLoops(SimpleLoop *loop) {
     FindBBsInStraightLineLoops(*liter);
 }
 
+// Given a dependence dag and the dependence height (from sink) of nodes
+// in the dag, apply the scheduling heuristic
 MaoEntry* SchedulerPass::Schedule(DependenceDag *dag,
                                   int *dependence_heights,
                                   MaoEntry *head) {
@@ -352,8 +382,12 @@ MaoEntry* SchedulerPass::Schedule(DependenceDag *dag,
       // be added to the ready queue
       if (num_scheduled_predecessors[succ] == num_predecessors[succ]) {
         ready->push_back(succ);
-        Trace(2, "Adding successor node (%d) %s  with dep %d and height %d to the ready queue",
-              succ, insn_str_[succ].c_str(), dag->GetEdge(node, succ), dependence_heights[succ]);
+        Trace(2, "Adding successor node (%d) %s  with dep %d and height"
+              "%d to the ready queue",
+              succ,
+              insn_str_[succ].c_str(),
+              dag->GetEdge(node, succ),
+              dependence_heights[succ]);
         if (!IsMemOperation(entries_[node]->AsInstruction()) &&
             (dag->GetEdge(node, succ) & TRUE_DEP) ) {
           dependence_heights[succ] += HOT_REGISTER_BONUS;
@@ -750,7 +784,7 @@ bool SchedulerPass::IsMemOperation(InstructionEntry *entry) {
         entry->HasPrefix(REPNE_PREFIX_OPCODE))
       return true;
 
-
+//Add others which have an implicit base/disp registers
     switch (entry->op()) {
       case OP_cmpxchg:
       case OP_cmpxchg8b:
@@ -759,6 +793,7 @@ bool SchedulerPass::IsMemOperation(InstructionEntry *entry) {
       case OP_mfence:
       case OP_sfence:
       case OP_lock:
+      case OP_maskmovdqu:
       case OP_push:
       case OP_pusha:
       case OP_pushf:
@@ -771,11 +806,13 @@ bool SchedulerPass::IsMemOperation(InstructionEntry *entry) {
       case OP_repne:
       case OP_repnz:
       case OP_cmps:
+      case OP_ins:
       case OP_stos:
       case OP_lods:
       case OP_scas:
       case OP_xadd:
       case OP_xchg:
+      case OP_movs:
 
         return true;
       default:
