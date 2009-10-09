@@ -101,6 +101,7 @@ CCSRCS=						\
 	MaoDCE.cc				\
 	MaoDefs.cc				\
 	MaoDebug.cc				\
+        MaoEnableFunctionHijacking.cc           \
 	Maoi386Size.cc				\
 	MaoLoop16.cc				\
 	MaoLoops.cc				\

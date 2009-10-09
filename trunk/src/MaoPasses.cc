@@ -401,6 +401,7 @@ void InitPasses() {
 
   // Function passes
   InitDCE();
+  InitEnableFunctionHijacking();
   InitNopKiller();
   InitPrefetchNta();
   InitInsertPrefetchNta();

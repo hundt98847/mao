@@ -356,6 +356,36 @@ InstructionEntry *MaoUnit::CreateNop(Function *function) {
   return e;
 }
 
+InstructionEntry *MaoUnit::Create2ByteNop(Function *function) {
+  #define WORD_MNEM_SUFFIX  'w'
+  InstructionEntry *e = CreateInstruction("xchg", 0x90, function);
+
+  i386_insn *insn = e->instruction();
+  insn->operands = 2;
+  insn->reg_operands = 2;
+
+  insn->suffix = WORD_MNEM_SUFFIX;
+
+  insn->types[0].bitfield.acc = 1;
+  insn->types[1].bitfield.acc = 1;
+
+  const reg_entry *r = GetRegFromName("ax");
+  insn->op[0].regs = r;
+  insn->op[1].regs = r;
+  insn->types[0] = r->reg_type;
+  insn->types[1] = r->reg_type;
+
+  // next free ID for the entry
+  EntryID entry_index = entry_vector_.size();
+  e->set_id(entry_index);
+
+  e->set_op(OP_nop);
+
+  // Add the entry to the compilation unit
+  entry_vector_.push_back(e);
+  return e;
+}
+
 InstructionEntry *MaoUnit::CreateLock(Function *function) {
   InstructionEntry *e = CreateInstruction("lock", 0xf0, function);
 

@@ -313,6 +313,7 @@ void InitPasses();
 void InitProfileAnnotation();
 
 void InitDCE();
+void InitEnableFunctionHijacking();
 void InitNopKiller();
 void InitNopinizer();
 void InitZEE();
