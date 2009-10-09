@@ -6,7 +6,7 @@ Information about the review tool can be found [http://code.google.com/p/rietvel
 
 == Basic instructions ==
 
-To request a code reivew, just run [http://maoreview.appspot.com/static/upload.py upload.py] from your svn directory. You will be promoted for username and password the first time you use it. You can use the same account that is used for http://code.google.com/p/mao
+To request a code reivew, just run [http://maoreview.appspot.com/static/upload.py upload.py] from your svn directory. You will be prompted for username and password the first time you use it. You can use the same account that is used for http://code.google.com/p/mao
 
 You can either use the web interface or options to upload.py to select reviewers and set cc addresses. Please use mao-project@googlegroups.com as a cc for all MAO issues.
 
