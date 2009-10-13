@@ -298,6 +298,7 @@ class SchedulerPass : public MaoFunctionPass {
   bool CanReorder(InstructionEntry *entry);
   bool IsMemOperation(InstructionEntry *entry);
   bool IsControlOperation(InstructionEntry *entry);
+  bool IsPredicateOperation(InstructionEntry *entry);
   bool IsLock(InstructionEntry *entry);
   int *ComputeDependenceHeights(DependenceDag *dag);
   int RemoveTallest(std::list<int> *list, int *heights);
@@ -666,6 +667,22 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag(BasicBlock *bb) {
           insns_in_bb, insn_str_[insns_in_bb].c_str());
     BitString src_regs_mask = GetSrcRegisters(insn);
     BitString dest_regs_mask = GetDestRegisters(insn);
+    /* Predicate operations require stricter WAW dependence enforcement.
+     * Consider the sequence:
+     *   mov  %edx, %ebx (1)
+     *   cmov %eax, %ebx (2)
+     *   test
+     *   cmov %ecx, %ebx (3)
+     *   <use of %ebx>
+     *
+     *  The scheduler could swap 1 and 2 since they only have a WAW dependence
+     *  and are followed by another write of %ebx before the use of %ebx. To
+     *  enforce a stricter dependence, treat as if (2) also reads %ebx so that
+     *  (1) and (2) never gets reordered.
+     */
+    if (IsPredicateOperation (insn)) {
+      src_regs_mask = src_regs_mask | dest_regs_mask;
+    }
     char src_str[128], dest_str[128];
     src_regs_mask.ToString(src_str);
     dest_regs_mask.ToString(dest_str);
@@ -836,6 +853,44 @@ bool SchedulerPass::IsMemOperation(InstructionEntry *entry) {
     }
 
     return false;
+}
+
+bool SchedulerPass::IsPredicateOperation(InstructionEntry *entry) {
+  switch (entry->op()) {
+    case OP_cmovo:
+    case OP_cmovno:
+    case OP_cmovb:
+    case OP_cmovc:
+    case OP_cmovnae:
+    case OP_cmovae:
+    case OP_cmovnc:
+    case OP_cmovnb:
+    case OP_cmove:
+    case OP_cmovz:
+    case OP_cmovne:
+    case OP_cmovnz:
+    case OP_cmovbe:
+    case OP_cmovna:
+    case OP_cmova:
+    case OP_cmovnbe:
+    case OP_cmovs:
+    case OP_cmovns:
+    case OP_cmovp:
+    case OP_cmovnp:
+    case OP_cmovl:
+    case OP_cmovnge:
+    case OP_cmovge:
+    case OP_cmovnl:
+    case OP_cmovle:
+    case OP_cmovng:
+    case OP_cmovg:
+    case OP_cmovnle:
+    case OP_leave:
+      return true;
+    default:
+      return false;
+  }
+  return false;
 }
 
 bool SchedulerPass::IsControlOperation(InstructionEntry *entry) {
