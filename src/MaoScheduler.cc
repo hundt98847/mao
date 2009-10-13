@@ -32,7 +32,7 @@
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(SCHEDULER, 4) {
+MAO_OPTIONS_DEFINE(SCHEDULER, 5) {
   // The next four options are helpful in debugging the scheduler
   // by limiting  the functions to which the transformation is applied
   OPTION_STR("function_list", "",
@@ -49,6 +49,9 @@ MAO_OPTIONS_DEFINE(SCHEDULER, 4) {
   OPTION_INT("end_func", 1000000000,
              "Number of the last  function in functions_file "
              "that is optimized"),
+  OPTION_INT("max_steps", 1000000000,
+             "Maximum number of scheduling operations performed in "
+             "any function"),
 };
 
 #define MAX_REGS 256
@@ -194,6 +197,8 @@ class SchedulerPass : public MaoFunctionPass {
   bool Go() {
     int start_func = GetOptionInt("start_func");
     int end_func = GetOptionInt("end_func");
+    max_steps_ = GetOptionInt("max_steps");
+    num_steps_ = 0;
     const char* functions_file = GetOptionString("functions_file");
 
 
@@ -258,8 +263,9 @@ class SchedulerPass : public MaoFunctionPass {
           while (!head->next()->IsInstruction())
             head = head->next();
         }
+        MaoEntry *last_entry = (*bb_iterator)->last_entry();
 
-        MaoEntry *last_entry = Schedule(dag, dependence_heights, head);
+        last_entry = Schedule(dag, dependence_heights, head, last_entry);
         // binutils (sometimes?) treats lock as a separate instruction and
         // not as a prefix. To avoid the scheduler messing up with the locks,
         // they are removed from the instruction stream before scheduling.
@@ -267,6 +273,7 @@ class SchedulerPass : public MaoFunctionPass {
         PrefixLocks(head->next(), last_entry);
       }
     }
+    Trace (1, "Number of scheduler operations : %d ", num_steps_);
     return true;
   }
 
@@ -275,6 +282,7 @@ class SchedulerPass : public MaoFunctionPass {
   std::set<MaoEntry *> lock_set_;
   std::string *insn_str_;
   MaoEntry **entries_;
+  int num_steps_, max_steps_;
   bool profitable_;
   static int function_count_;
   // The set of BBs that form a single BB loops
@@ -293,10 +301,11 @@ class SchedulerPass : public MaoFunctionPass {
   bool IsLock(InstructionEntry *entry);
   int *ComputeDependenceHeights(DependenceDag *dag);
   int RemoveTallest(std::list<int> *list, int *heights);
-  void ScheduleNode(int node, MaoEntry **head);
+  void ScheduleNode(int node, MaoEntry **head, MaoEntry **last);
   MaoEntry* Schedule(DependenceDag *dag,
                      int *dependence_heights,
-                     MaoEntry *head);
+                     MaoEntry *head,
+                     MaoEntry *last);
   void PrefixLocks(MaoEntry *first, MaoEntry* last);
   bool IsProfitable(Function *function);
   void FindBBsInStraightLineLoops();
@@ -333,7 +342,8 @@ void SchedulerPass::FindBBsInStraightLineLoops(SimpleLoop *loop) {
 // in the dag, apply the scheduling heuristic
 MaoEntry* SchedulerPass::Schedule(DependenceDag *dag,
                                   int *dependence_heights,
-                                  MaoEntry *head) {
+                                  MaoEntry *head,
+                                  MaoEntry *last_entry) {
   char *scheduled = new char[dag->NodeCount()];
   memset(scheduled, 0, dag->NodeCount());
   // Get instructions that are ready to be scheduled
@@ -341,7 +351,6 @@ MaoEntry* SchedulerPass::Schedule(DependenceDag *dag,
 
   // Schedule the available instruction with the maximum height
   // as the first instruction of the function
-  MaoEntry *last_entry = NULL;
   int *num_scheduled_predecessors = new int[dag->NodeCount()];
   int *num_predecessors = new int[dag->NodeCount()];
   memset(num_scheduled_predecessors, 0, dag->NodeCount()*sizeof(int));
@@ -352,9 +361,12 @@ MaoEntry* SchedulerPass::Schedule(DependenceDag *dag,
 
   while (!ready->empty()) {
     int node = RemoveTallest(ready, dependence_heights);
-    ScheduleNode(node, &head);
+    ScheduleNode(node, &head, &last_entry);
     scheduled[node]=1;
-    last_entry = entries_[node];
+    num_steps_++;
+    //Stop scheduling if we have reached the scheduling threshold
+    if (num_steps_ >= max_steps_)
+      break;
     // Schedule the successors depthwise till no further scheduling
     // can be done
     std::list<int> *successors = dag->GetSuccessors(node);
@@ -410,7 +422,7 @@ void SchedulerPass::PrefixLocks(MaoEntry *first, MaoEntry *last) {
       entry->LinkBefore(unit_->CreateLock(function_));
   }
 }
-void SchedulerPass::ScheduleNode(int node, MaoEntry **head) {
+void SchedulerPass::ScheduleNode(int node, MaoEntry **head, MaoEntry **last) {
   MaoEntry *entry = entries_[node];
   // Don't do anything if the node to be scheduled is the head node
   if (entry == *head)
@@ -421,6 +433,10 @@ void SchedulerPass::ScheduleNode(int node, MaoEntry **head) {
   if (prev_entry == *head) {
     *head = entry;
     return;
+  }
+  //If we are scheduling the last entry in the BB, recompute the new last entry
+  if (entry == *last) {
+    *last = entry->prev();
   }
   entry->Unlink();
   (*head)->LinkAfter(entry);

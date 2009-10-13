@@ -365,7 +365,7 @@ movs   ecx addr8: si di addr16: si di addr32: esi edi addr64: rsi rdi
 movsd  dest
 movshdup dest
 movsldup dest
-movss   src
+movss   dest
 
 # various sign extent moves.
 movsbl dest
@@ -535,10 +535,10 @@ prefetchnta
 
 psadbw  dest
 pshufb  dest
-pshufd  dest
-pshufhw dest
-pshuflw dest
-pshufw  dest
+pshufd  op2 
+pshufhw op2
+pshuflw op2
+pshufw  op2
 psignb  dest
 psignw  dest
 psignd  dest
@@ -671,8 +671,8 @@ sfence
 sgdt
 shld op2 flags: CF SF ZF OF PF AF
 shrd op2 flags: CF SF ZF OF PF AF
-shufpd dest
-shufps dest
+shufpd op2
+shufps op2
 sidt
 sldt
 smsw src
