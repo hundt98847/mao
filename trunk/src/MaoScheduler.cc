@@ -885,7 +885,6 @@ bool SchedulerPass::IsPredicateOperation(InstructionEntry *entry) {
     case OP_cmovng:
     case OP_cmovg:
     case OP_cmovnle:
-    case OP_leave:
       return true;
     default:
       return false;
