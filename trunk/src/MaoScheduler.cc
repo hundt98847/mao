@@ -813,6 +813,15 @@ bool SchedulerPass::IsMemOperation(InstructionEntry *entry) {
       return false;
     if (entry->HasBaseRegister() || entry->HasIndexRegister())
       return true;
+    /* The above does not handle the case where memory operand is a constant.
+     * The code below takes care of that.
+     * TODO: Confirm if the below code subsumes the above check and remove the
+     * above
+     */
+    for (int i = 0; i < entry->NumOperands(); i++) {
+      if (entry->IsMemOperand(i))
+        return true;
+    }
     if (entry->HasPrefix(REPE_PREFIX_OPCODE) ||
         entry->HasPrefix(REPNE_PREFIX_OPCODE))
       return true;
