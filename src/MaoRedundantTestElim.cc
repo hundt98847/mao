@@ -136,11 +136,4 @@ class RedTestElimPass : public MaoFunctionPass {
   }
 };
 
-
-// External Entry Point
-//
-void InitRedundantTestElimination() {
-  RegisterFunctionPass(
-      "REDTEST",
-      MaoFunctionPassManager::GenericPassCreator<RedTestElimPass>);
-}
+REGISTER_FUNC_PASS("REDTEST", RedTestElimPass)

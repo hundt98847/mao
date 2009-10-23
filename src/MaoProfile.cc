@@ -386,8 +386,4 @@ bool ProfileAnnotationPass::Go() {
   return true;
 }
 
-void InitProfileAnnotation() {
-  RegisterUnitPass(
-      "PROFILE",
-      MaoPassManager::GenericPassCreator<ProfileAnnotationPass>);
-}
+REGISTER_UNIT_PASS("PROFILE", ProfileAnnotationPass)

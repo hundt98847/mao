@@ -134,11 +134,4 @@ class RedMemMovElimPass : public MaoFunctionPass {
   int        look_ahead_;
 };
 
-
-// External Entry Point
-//
-void InitRedundantMemMoveElimination() {
-  RegisterFunctionPass(
-      "REDMOV",
-      MaoFunctionPassManager::GenericPassCreator<RedMemMovElimPass>);
-}
+REGISTER_FUNC_PASS("REDMOV", RedMemMovElimPass)

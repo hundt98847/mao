@@ -310,28 +310,27 @@ class TestPass : public MaoFunctionPass {
 void InitPasses();
 
 // Pass Initialization Entry Points.
-void InitProfileAnnotation();
-
-void InitDCE();
-void InitEnableFunctionHijacking();
-void InitNopKiller();
-void InitNopinizer();
-void InitZEE();
-void InitRATFinder();
-void InitRedundantTestElimination();
-void InitRedundantMemMoveElimination();
-void InitScheduler();
-void InitMissDispElimination();
-void InitLongInstructionSplit();
-void InitBranchSeparate();
-void InitAddAddElimination();
-void InitAlignTinyLoops16();
-void InitPrefetchNta();
-void InitInsertPrefetchNta();
-void InitBackBranchAlign();
-
-
 void InitCFG();
 void InitRelax();
 void InitLoops();
+
+
+class PassInitializer {
+  public:
+    PassInitializer (const char *name, MaoFunctionPassManager::PassCreator creator) {
+      RegisterFunctionPass (name, creator);
+    }
+    PassInitializer (const char *name, MaoPassManager::PassCreator creator) {
+      RegisterUnitPass (name, creator);
+    }
+
+};
+
+#define REGISTER_FUNC_PASS(name, classname)  \
+    static PassInitializer classname##Init(name, MaoFunctionPassManager::GenericPassCreator<classname>);
+
+#define REGISTER_UNIT_PASS(name, classname)  \
+    static PassInitializer classname##Init(name, MaoPassManager::GenericPassCreator<classname>);
+
+
 #endif   // MAP_PASSES_H_INCLUDED_

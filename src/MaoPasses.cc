@@ -348,6 +348,7 @@ bool TestPass::Go() {
 
   return true;
 }
+REGISTER_FUNC_PASS("TEST", TestPass)
 
 // MaoFunctionPassManager
 //
@@ -391,50 +392,33 @@ void InitPasses() {
   InitRelax();
   InitLoops();
 
-  // Unit passes
-  InitProfileAnnotation();
-  RegisterUnitPass("ASM", MaoPassManager::GenericPassCreator<AssemblyPass>);
-  RegisterUnitPass("IR", MaoPassManager::GenericPassCreator<DumpIrPass>);
-  RegisterUnitPass("SYMBOLTABLE",
-                   MaoPassManager::GenericPassCreator<DumpSymbolTablePass>);
-
-
-  // Function passes
-  InitDCE();
-  InitEnableFunctionHijacking();
-  InitNopKiller();
-  InitPrefetchNta();
-  InitInsertPrefetchNta();
-  InitNopinizer();
-  InitZEE();
-  InitRATFinder();
-  InitRedundantTestElimination();
-  InitRedundantMemMoveElimination();
-  InitMissDispElimination();
-  InitBranchSeparate();
-  InitBackBranchAlign();
-  InitAddAddElimination();
-  InitAlignTinyLoops16();
-  InitScheduler();
-
-
-  RegisterFunctionPass(
-      "TEST", MaoFunctionPassManager::GenericPassCreator<TestPass>);
 }
 
 // Code to maintain the set of available passes
-static RegisteredUnitPassesMap       registered_unit_passes;
-static RegisteredFunctionPassesMap   registered_function_passes;
 static RegisteredStaticOptionPassMap registered_static_option_passes;
+
+RegisteredFunctionPassesMap& GetRegisteredFunctionPasses () {
+  static RegisteredFunctionPassesMap *map =
+      new RegisteredFunctionPassesMap();
+  return *map;
+}
+
+RegisteredUnitPassesMap& GetRegisteredUnitPasses () {
+  static RegisteredUnitPassesMap *map =
+      new RegisteredUnitPassesMap();
+  return *map;
+}
 
 void RegisterUnitPass(const char *name,
                       MaoPassManager::PassCreator creator) {
-  registered_unit_passes[name] = creator;
+  RegisteredUnitPassesMap &map = GetRegisteredUnitPasses();
+  map[name] = creator;
 }
 
 void RegisterFunctionPass(const char *name,
                           MaoFunctionPassManager::PassCreator creator) {
-  registered_function_passes[name] = creator;
+  RegisteredFunctionPassesMap &map = GetRegisteredFunctionPasses();
+  map[name] = creator;
 }
 
 void RegisterStaticOptionPass(const char *name, MaoOptionMap *options) {
@@ -442,17 +426,19 @@ void RegisterStaticOptionPass(const char *name, MaoOptionMap *options) {
 }
 
 MaoPassManager::PassCreator GetUnitPass(const char *name) {
+  RegisteredUnitPassesMap &map = GetRegisteredUnitPasses();
   RegisteredUnitPassesMap::iterator iter =
-      registered_unit_passes.find(name);
-  if (iter == registered_unit_passes.end())
+      map.find(name);
+  if (iter == map.end())
     return NULL;
   return iter->second;
 }
 
 MaoFunctionPassManager::PassCreator GetFunctionPass(const char *name) {
+  RegisteredFunctionPassesMap &map = GetRegisteredFunctionPasses();
   RegisteredFunctionPassesMap::iterator iter =
-      registered_function_passes.find(name);
-  if (iter == registered_function_passes.end())
+      map.find(name);
+  if (iter == map.end())
     return NULL;
   return iter->second;
 }
@@ -468,3 +454,7 @@ MaoOptionMap *GetStaticOptionPass(const char *name) {
 const RegisteredStaticOptionPassMap &GetStaticOptionPasses() {
   return registered_static_option_passes;
 }
+
+REGISTER_UNIT_PASS("ASM", AssemblyPass)
+REGISTER_UNIT_PASS("IR", DumpIrPass)
+REGISTER_UNIT_PASS("SYMBOLTABLE", DumpSymbolTablePass)

@@ -349,10 +349,4 @@ class BackBranchAlign : public MaoFunctionPass {
   int       align_limit_;
 };
 
-// External Entry Point
-//
-void InitBackBranchAlign() {
-  RegisterFunctionPass(
-      "BACKBRALIGN",
-      MaoFunctionPassManager::GenericPassCreator<BackBranchAlign>);
-}
+REGISTER_FUNC_PASS("BACKBRALIGN", BackBranchAlign)

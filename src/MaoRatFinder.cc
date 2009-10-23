@@ -186,11 +186,4 @@ class RatFinderPass : public MaoFunctionPass {
   }
 };
 
-
-// External Entry Point
-//
-void InitRATFinder() {
-  RegisterFunctionPass(
-      "RATFINDER",
-      MaoFunctionPassManager::GenericPassCreator<RatFinderPass>);
-}
+REGISTER_FUNC_PASS("RATFINDER", RatFinderPass)

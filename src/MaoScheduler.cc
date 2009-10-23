@@ -541,9 +541,9 @@ int *SchedulerPass::ComputeDependenceHeights(DependenceDag *dag) {
   return heights;
 }
 
+
 BitString SchedulerPass::GetSrcRegisters(InstructionEntry *insn) {
   BitString use_mask = GetRegisterUseMask(insn, true);
-
   return use_mask;
   /*
   int operands = insn->NumOperands();
@@ -957,11 +957,4 @@ bool SchedulerPass::IsProfitable(Function *function) {
   }
 }
 
-// External Entry Point
-//
-
-void InitScheduler() {
-  RegisterFunctionPass(
-      "SCHEDULER",
-      MaoFunctionPassManager::GenericPassCreator<SchedulerPass>);
-}
+REGISTER_FUNC_PASS("SCHEDULER", SchedulerPass)

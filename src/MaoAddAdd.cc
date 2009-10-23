@@ -185,11 +185,4 @@ class AddAddElimPass : public MaoFunctionPass {
   }
 };
 
-
-// External Entry Point
-//
-void InitAddAddElimination() {
-  RegisterFunctionPass(
-      "ADDADD",
-      MaoFunctionPassManager::GenericPassCreator<AddAddElimPass>);
-}
+REGISTER_FUNC_PASS("ADDADD", AddAddElimPass)

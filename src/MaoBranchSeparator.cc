@@ -316,10 +316,4 @@ bool BranchSeparatorPass::IsProfitable(Function *function) {
       return true;
     }
 }
-
-// External Entry Point
-void InitBranchSeparate() {
-  RegisterFunctionPass(
-      "BRSEP",
-      MaoFunctionPassManager::GenericPassCreator<BranchSeparatorPass>);
-}
+REGISTER_FUNC_PASS("BRSEP", BranchSeparatorPass)

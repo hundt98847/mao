@@ -78,10 +78,4 @@ class MissDispElimPass : public MaoFunctionPass {
 };
 
 
-// External Entry Point
-//
-void InitMissDispElimination() {
-  RegisterFunctionPass(
-      "MISSDISP",
-      MaoFunctionPassManager::GenericPassCreator<MissDispElimPass>);
-}
+REGISTER_FUNC_PASS("MISSDISP", MissDispElimPass)

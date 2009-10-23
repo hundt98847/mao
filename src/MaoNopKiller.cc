@@ -91,11 +91,4 @@ class NopKillerElimPass : public MaoFunctionPass {
 };
 
 
-// External Entry Point
-//
-
-void InitNopKiller() {
-  RegisterFunctionPass(
-      "NOPKILL",
-      MaoFunctionPassManager::GenericPassCreator<NopKillerElimPass>);
-}
+REGISTER_FUNC_PASS("NOPKILL", NopKillerElimPass)
