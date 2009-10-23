@@ -588,10 +588,13 @@ rsqrtss  src
 
 # S
 sahf ah
-sal exp cl
-sar exp cl
-shl exp cl
-shr exp cl
+# for shift instructions with CL as shift amount
+# no need to add cl as an implicit reg - it has
+# to be an explicit operand
+sal exp
+sar exp
+shl exp
+shr exp
 
 sbb exp flags: CF
 scas  es rdi rax
@@ -630,8 +633,8 @@ sfence
 
 sgdt
 
-shld exp cl
-shrd exp cl
+shld exp
+shrd exp
 shufpd exp
 shufps exp
 sidt

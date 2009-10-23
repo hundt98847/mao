@@ -100,6 +100,13 @@ class BitString {
     return bs;
   }
 
+  //Flip the bits
+  BitString operator ~ () {
+    BitString bs(~word[0], ~word[1],
+                 ~word[2], ~word[3]);
+    return bs;
+  }
+
   // Remove bits
   BitString operator - (const BitString &b) {
     BitString bs(word[0] & !b.word[0],
