@@ -109,10 +109,4 @@ class PrefetchNtaPass : public MaoFunctionPass {
   int insertions_;
 };
 
-// External Entry Point
-//
-void InitPrefetchNta() {
-  RegisterFunctionPass(
-      "PREFNTA",
-      MaoFunctionPassManager::GenericPassCreator<PrefetchNtaPass>);
-}
+REGISTER_FUNC_PASS("PREFNTA", PrefetchNtaPass)

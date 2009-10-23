@@ -129,12 +129,4 @@ class EnableFunctionHijackingPass : public MaoFunctionPass {
   bool  hijack_fn_return_;
 };
 
-
-// External Entry Point
-//
-
-void InitEnableFunctionHijacking() {
-  RegisterFunctionPass(
-      kPassName,
-      MaoFunctionPassManager::GenericPassCreator<EnableFunctionHijackingPass>);
-}
+REGISTER_FUNC_PASS(kPassName, EnableFunctionHijackingPass)

@@ -82,12 +82,4 @@ class NopInizerPass : public MaoFunctionPass {
   int             thick_;
 };
 
-
-// External Entry Point
-//
-
-void InitNopinizer() {
-  RegisterFunctionPass(
-      "NOPIN",
-      MaoFunctionPassManager::GenericPassCreator<NopInizerPass>);
-}
+REGISTER_FUNC_PASS("NOPIN", NopInizerPass)

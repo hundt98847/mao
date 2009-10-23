@@ -97,11 +97,4 @@ class DeadCodeElimPass : public MaoFunctionPass {
   }
 };
 
-
-// External Entry Point
-//
-void InitDCE() {
-  RegisterFunctionPass(
-      "DCE",
-      MaoFunctionPassManager::GenericPassCreator<DeadCodeElimPass>);
-}
+REGISTER_FUNC_PASS("DCE", DeadCodeElimPass)

@@ -121,11 +121,4 @@ class ZeroExtentElimPass : public MaoFunctionPass {
   }
 };
 
-
-// External Entry Point
-//
-void InitZEE() {
-  RegisterFunctionPass(
-      "ZEE",
-      MaoFunctionPassManager::GenericPassCreator<ZeroExtentElimPass>);
-}
+REGISTER_FUNC_PASS("ZEE", ZeroExtentElimPass)
