@@ -332,6 +332,13 @@ InstructionEntry *MaoUnit::CreateInstruction(const char *opcode_str,
   }
 
   InstructionEntry *e = new InstructionEntry(&insn, flag, 0, NULL, this);
+  // next free ID for the entry
+  EntryID entry_index = entry_vector_.size();
+  e->set_id(entry_index);
+
+  // Add the entry to the compilation unit
+  entry_vector_.push_back(e);
+
   SubSection *subsection = function->GetSubSection();
   if (function) {
     entry_to_function_[e] = function;
@@ -345,14 +352,8 @@ InstructionEntry *MaoUnit::CreateInstruction(const char *opcode_str,
 InstructionEntry *MaoUnit::CreateNop(Function *function) {
   InstructionEntry *e = CreateInstruction("nop", 0x90, function);
 
-  // next free ID for the entry
-  EntryID entry_index = entry_vector_.size();
-  e->set_id(entry_index);
-
   e->set_op(OP_nop);
 
-  // Add the entry to the compilation unit
-  entry_vector_.push_back(e);
   return e;
 }
 
@@ -375,28 +376,15 @@ InstructionEntry *MaoUnit::Create2ByteNop(Function *function) {
   insn->types[0] = r->reg_type;
   insn->types[1] = r->reg_type;
 
-  // next free ID for the entry
-  EntryID entry_index = entry_vector_.size();
-  e->set_id(entry_index);
-
   e->set_op(OP_nop);
 
-  // Add the entry to the compilation unit
-  entry_vector_.push_back(e);
   return e;
 }
 
 InstructionEntry *MaoUnit::CreateLock(Function *function) {
   InstructionEntry *e = CreateInstruction("lock", 0xf0, function);
 
-  // next free ID for the entry
-  EntryID entry_index = entry_vector_.size();
-  e->set_id(entry_index);
-
   e->set_op(OP_lock);
-
-  // Add the entry to the compilation unit
-  entry_vector_.push_back(e);
   return e;
 }
 
@@ -423,9 +411,6 @@ InstructionEntry *MaoUnit::CreatePrefetch(Function *function,
   InstructionEntry *e = CreateInstruction(
     prefetch_opcode_strings[type], 0xf18, function);
 
-  // next free ID for the entry
-  EntryID entry_index = entry_vector_.size();
-  e->set_id(entry_index);
   e->set_op(prefetch_opcodes[type]);
 
   i386_insn *in_insn = e->instruction();
@@ -439,8 +424,6 @@ InstructionEntry *MaoUnit::CreatePrefetch(Function *function,
   if (offset && in_insn->op[0].disps)
     in_insn->op[0].disps->X_add_number += offset;
 
-  // Add the entry to the compilation unit
-  entry_vector_.push_back(e);
   return e;
 }
 
@@ -474,14 +457,8 @@ InstructionEntry *MaoUnit::CreateUncondJump(LabelEntry *label,
 
 
 
-  // next free ID for the entry
-  EntryID entry_index = entry_vector_.size();
-  e->set_id(entry_index);
-
   e->set_op(OP_jmp);
 
-  // Add the entry to the compilation unit
-  entry_vector_.push_back(e);
   return e;
 }
 
