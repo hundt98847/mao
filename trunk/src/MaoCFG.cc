@@ -523,8 +523,10 @@ bool CFGBuilder::IsTablePattern2(InstructionEntry *entry,
            prev_inst->GetDisplacement(0));
        if (label_name) {
          *out_label = unit_->GetLabelEntry(label_name);
-         MAO_ASSERT_MSG(*out_label != NULL,
-                        "Unable to find label: %s", label_name);
+         if (*out_label == NULL) {
+           // The label is not defined in this assembly file.
+           return false;
+         }
          return true;
        }
      }
