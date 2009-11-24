@@ -848,6 +848,8 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
       // We were unable to fully understand the target! Dont flag
       // if as processed..
       Trace(2, "Unable to identify the targets in jump table");
+      CFG_->IncreaseNumUnresolvedJumps();
+      if (collect_stat_) cfg_stat_->FoundUnresolvedJump();
     }
     if (collect_stat_ && processed) cfg_stat_->FoundJumpTablePattern();
   }
@@ -881,27 +883,18 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
 
   if (insn_entry->IsIndirectJump() && !processed) {
     CFG_->IncreaseNumExternalJumps();
-    Trace(2, "Unable to find targets for indirect jump.");
-    // Print out info so we can locate the problem:
-    std::string s;
-    insn_entry->InstructionToString(&s);
-    insn_entry->ProfileToString(&s);
-    insn_entry->SourceInfoToString(&s);
-    Trace(2, "%s", s.c_str());
+    CFG_->IncreaseNumUnresolvedJumps();
+    if (collect_stat_) cfg_stat_->FoundUnresolvedJump();
+    if (tracing_level() >1) {
+      Trace(2, "Unable to find targets for indirect jump.");
 
-//     // Dump the program!
-//     for (std::vector<SubSection *>::const_iterator iter = unit_->sub_sections_.begin();
-//          iter != unit_->sub_sections_.end(); ++iter) {
-//       SubSection *ss = *iter;
-//       for (SectionEntryIterator e_iter = ss->EntryBegin();
-//            e_iter != ss->EntryEnd();
-//            ++e_iter) {
-//         MaoEntry *e = *e_iter;
-//         std::string s;
-//         e->ToString(&s);
-//         Trace(2, "%s", s.c_str());
-//       }
-//     }
+      // Print out info so we can locate the problem:
+      std::string s;
+      insn_entry->InstructionToString(&s);
+      insn_entry->ProfileToString(&s);
+      insn_entry->SourceInfoToString(&s);
+      Trace(2, "%s", s.c_str());
+    }
   }
 }
 
