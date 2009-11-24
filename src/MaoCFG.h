@@ -252,7 +252,7 @@ class CFG {
 
   // True if function has unresolved jumps
   bool HasUnresolvedIndirectJump() const {
-    return false;
+    return num_unresolved_indirect_jumps_ > 0;
   }
 
   // True if functuion has external jumps
@@ -356,7 +356,7 @@ class CFGBuilder : public MaoFunctionPass {
    public:
     CFGStat() : number_of_direct_jumps_(0), number_of_indirect_jumps_(0),
                 number_of_jump_table_patterns_(0), number_of_vaarg_patterns_(0),
-                number_of_tail_calls_(0)
+                number_of_tail_calls_(0), number_of_unresolved_jumps_(0)
     {;}
     ~CFGStat() {;}
     void FoundDirectJump()        { ++number_of_direct_jumps_; }
@@ -364,11 +364,13 @@ class CFGBuilder : public MaoFunctionPass {
     void FoundJumpTablePattern()  { ++number_of_jump_table_patterns_; }
     void FoundVaargPattern()      { ++number_of_vaarg_patterns_; }
     void FoundTailCall()          { ++number_of_tail_calls_; }
+    void FoundUnresolvedJump()    { ++number_of_unresolved_jumps_; }
 
 
     virtual void Print(FILE *out) {
       fprintf(out, "Direct  jumps:      %7d\n", number_of_direct_jumps_);
-      fprintf(out, "Indirect jumps:     %7d\n", number_of_indirect_jumps_);
+      fprintf(out, "Indirect jumps:     %7d (%d unresolved)\n",
+              number_of_indirect_jumps_, number_of_unresolved_jumps_);
       fprintf(out, "Jump table patterns:%7d\n", number_of_jump_table_patterns_);
       fprintf(out, "VA_ARG patterns    :%7d\n", number_of_vaarg_patterns_);
       fprintf(out, "Tail calls         :%7d\n", number_of_tail_calls_);
@@ -380,6 +382,7 @@ class CFGBuilder : public MaoFunctionPass {
     int number_of_jump_table_patterns_;
     int number_of_vaarg_patterns_;
     int number_of_tail_calls_;
+    int number_of_unresolved_jumps_;
   };
 
   bool collect_stat_;
