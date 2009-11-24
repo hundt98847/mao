@@ -189,6 +189,7 @@ $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) GenOpcodes.cc MaoDefs.h MaoDefs.tbl MaoUses.tbl MaoUtil.h Makefile
+	mkdir -p $(OBJDIR)
 	$(CC) $(CFLAGS) -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
 
 $(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes
@@ -278,7 +279,7 @@ stamp-obj-$(TARGET):
 	touch stamp-obj-$(TARGET)
 
 clean : 
-	-rm -f $(OBJDIR)/*
+	-rm -rf $(OBJDIR)
 	-rm -f $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(PLUGIN_TARGETS) $(BINDIR)/mao
 
 allclean : 
