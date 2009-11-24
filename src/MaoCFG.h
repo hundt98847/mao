@@ -366,15 +366,7 @@ class CFGBuilder : public MaoFunctionPass {
     void FoundTailCall()          { ++number_of_tail_calls_; }
     void FoundUnresolvedJump()    { ++number_of_unresolved_jumps_; }
 
-
-    virtual void Print(FILE *out) {
-      fprintf(out, "Direct  jumps:      %7d\n", number_of_direct_jumps_);
-      fprintf(out, "Indirect jumps:     %7d (%d unresolved)\n",
-              number_of_indirect_jumps_, number_of_unresolved_jumps_);
-      fprintf(out, "Jump table patterns:%7d\n", number_of_jump_table_patterns_);
-      fprintf(out, "VA_ARG patterns    :%7d\n", number_of_vaarg_patterns_);
-      fprintf(out, "Tail calls         :%7d\n", number_of_tail_calls_);
-    }
+    virtual void Print(FILE *out);
 
    private:
     int number_of_direct_jumps_;
@@ -385,7 +377,6 @@ class CFGBuilder : public MaoFunctionPass {
     int number_of_unresolved_jumps_;
   };
 
-  bool collect_stat_;
   CFGStat *cfg_stat_;
 };
 
