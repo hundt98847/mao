@@ -158,14 +158,13 @@ MAO_OPTIONS_DEFINE(CFG, 4) {
 CFGBuilder::CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG,
                        bool conservative)
     : MaoFunctionPass("CFG", GetStaticOptionPass("CFG"), mao_unit, function),
-      CFG_(CFG), next_id_(0) {
+      CFG_(CFG), next_id_(0), cfg_stat_(NULL) {
   split_basic_blocks_ = GetOptionBool("callsplit");
   respect_orig_labels_= GetOptionBool("respect_orig_labels");
-  collect_stat_ = GetOptionBool("collect_stats");
   dump_vcg_ = GetOptionBool("vcg");
   if (conservative)
     respect_orig_labels_ = true;
-  if (collect_stat_) {
+  if (GetOptionBool("collect_stats")) {
     // check if a stat object already exists?
     if (unit_->GetStats()->HasStat("CFG")) {
       cfg_stat_ = static_cast<CFGStat *>(unit_->GetStats()->GetStat("CFG"));
@@ -804,7 +803,7 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
   MAO_ASSERT(entry->Type() == MaoEntry::INSTRUCTION);
   InstructionEntry *insn_entry = static_cast<InstructionEntry *>(entry);
 
-  if (collect_stat_ && insn_entry->IsIndirectJump()) {
+  if (cfg_stat_ && insn_entry->IsIndirectJump()) {
     cfg_stat_->FoundIndirectJump();
   }
 
@@ -816,13 +815,13 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
       // Direct branch instructions
       *iter++ = insn_entry->GetTarget();
       processed = true;
-      if (collect_stat_) cfg_stat_->FoundDirectJump();
+      if (cfg_stat_) cfg_stat_->FoundDirectJump();
     }
   }
 
   // Is this a tail call?
   if (!processed && IsTailCall(insn_entry)) {
-    if (collect_stat_) cfg_stat_->FoundTailCall();
+    if (cfg_stat_) cfg_stat_->FoundTailCall();
     // No edges added in this case.
     processed = true;
   }
@@ -849,9 +848,9 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
       // if as processed..
       Trace(2, "Unable to identify the targets in jump table");
       CFG_->IncreaseNumUnresolvedJumps();
-      if (collect_stat_) cfg_stat_->FoundUnresolvedJump();
+      if (cfg_stat_) cfg_stat_->FoundUnresolvedJump();
     }
-    if (collect_stat_ && processed) cfg_stat_->FoundJumpTablePattern();
+    if (cfg_stat_ && processed) cfg_stat_->FoundJumpTablePattern();
   }
 
   // Pattern two: Look for va_arg patterns!
@@ -878,13 +877,13 @@ void CFGBuilder::GetTargets(MaoEntry *entry, OutputIterator iter,
       }
       processed = true;
     }
-    if (collect_stat_ && processed) cfg_stat_->FoundVaargPattern();
+    if (cfg_stat_ && processed) cfg_stat_->FoundVaargPattern();
   }
 
   if (insn_entry->IsIndirectJump() && !processed) {
     CFG_->IncreaseNumExternalJumps();
     CFG_->IncreaseNumUnresolvedJumps();
-    if (collect_stat_) cfg_stat_->FoundUnresolvedJump();
+    if (cfg_stat_) cfg_stat_->FoundUnresolvedJump();
     if (tracing_level() >1) {
       Trace(2, "Unable to find targets for indirect jump.");
 
@@ -961,4 +960,19 @@ void CreateCFG(MaoUnit *mao_unit, Function *function, CFG *cfg,
 
 void InitCFG() {
   RegisterStaticOptionPass("CFG", new MaoOptionMap);
+}
+
+
+void CFGBuilder::CFGStat::Print(FILE *out) {
+  if (number_of_direct_jumps_)
+    fprintf(out, "CFG: Direct  jumps:      %7d\n", number_of_direct_jumps_);
+  if (number_of_indirect_jumps_)
+    fprintf(out, "CFG: Indirect jumps:     %7d (%d unresolved)\n",
+            number_of_indirect_jumps_, number_of_unresolved_jumps_);
+  if (number_of_jump_table_patterns_)
+    fprintf(out, "CFG: Jump table patterns:%7d\n", number_of_jump_table_patterns_);
+  if (number_of_vaarg_patterns_)
+    fprintf(out, "CFG: VA_ARG patterns    :%7d\n", number_of_vaarg_patterns_);
+  if (number_of_tail_calls_)
+    fprintf(out, "CFG: Tail calls         :%7d\n", number_of_tail_calls_);
 }
