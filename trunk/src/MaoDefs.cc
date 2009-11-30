@@ -515,24 +515,19 @@ BitString GetCallingConventionDefMask() {
 }
 
 
-// Print register mask. Caution: Pretty slow implementation
+// Print register mask.
 //
-void PrintRegisterDefMask(FILE *f, BitString mask, const char *title) {
+void PrintRegistersInRegisterMask(FILE *f, BitString mask, const char *title) {
   if (title)
     fprintf(f, "%s: ", title);
   for (int i = 0; i < 255; i++) {
     if (mask.Get(i)) {
-      for (RegPtrMap::iterator it = reg_ptr_map.begin();
-           it != reg_ptr_map.end(); ++it) {
-        if ((*it).second->mask().Get(i)) {
-          fprintf(f, "%s ", (*it).second->name());
-          break;
-        }
-      }
+      fprintf(f, "%s ", reg_num_map[i]->name());
     }
   }
   fprintf(f, "\n");
 }
+
 
 // See whether subreg is a part of reg
 //

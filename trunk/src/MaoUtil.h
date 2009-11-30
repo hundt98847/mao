@@ -58,7 +58,7 @@ class BitString {
       1ull << (index % (sizeof(unsigned long long) * 8));
   }
 
-  bool Get(int index) {
+  bool Get(int index) const {
     return word[index / (sizeof(unsigned long long) * 8)] &
       (1ull << (index % (sizeof(unsigned long long) * 8)));
   }
@@ -109,10 +109,10 @@ class BitString {
 
   // Remove bits
   BitString operator - (const BitString &b) {
-    BitString bs(word[0] & !b.word[0],
-                 word[1] & !b.word[1],
-                 word[2] & !b.word[2],
-                 word[3] & !b.word[3]);
+    BitString bs(word[0] & ~b.word[0],
+                 word[1] & ~b.word[1],
+                 word[2] & ~b.word[2],
+                 word[3] & ~b.word[3]);
 
     return bs;
   }
