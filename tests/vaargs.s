@@ -1,4 +1,4 @@
-#Option: --mao=CFG=stat[1] --mao=LOOPALIGN
+#Option: --mao=CFG=collect_stats[1] --mao=TEST
 #grep VA_ARG patterns    :      1 1
 
 	.file	"vaargs.c"

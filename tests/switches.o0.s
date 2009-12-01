@@ -1,4 +1,4 @@
-#Option: --mao=CFG=stat[1]  --mao=ASM=o[/dev/null] --mao=LOOPALIGN
+#Option: --mao=CFG=collect_stats[1]  --mao=ASM=o[/dev/null] --mao=TEST
 #grep table.patterns\:.* 1 1
 	
 	.file	"switches.c"
