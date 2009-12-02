@@ -33,6 +33,7 @@
 class MaoEntry;
 class InstructionEntry;
 class SectionEntryIterator;
+class ReverseSectionEntryIterator;
 class BasicBlock;
 class LabelEntry;
 
@@ -117,8 +118,13 @@ class BasicBlock {
   }
 
   // Entry methods
-  SectionEntryIterator EntryBegin();
-  SectionEntryIterator EntryEnd();
+  SectionEntryIterator EntryBegin() const;
+  SectionEntryIterator EntryEnd() const;
+
+  ReverseSectionEntryIterator RevEntryBegin() const;
+  ReverseSectionEntryIterator RevEntryEnd() const;
+
+
   void AddEntry(MaoEntry *entry);
 
   // Is this basic block located directly before basicblock in the section.
