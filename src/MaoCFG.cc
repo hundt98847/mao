@@ -27,18 +27,31 @@
 #include "MaoOptions.h"
 
 // Class: BasicBlock
-
-SectionEntryIterator BasicBlock::EntryBegin() {
+SectionEntryIterator BasicBlock::EntryBegin() const {
   return SectionEntryIterator(first_entry());
 }
 
-SectionEntryIterator BasicBlock::EntryEnd() {
+SectionEntryIterator BasicBlock::EntryEnd() const {
   MaoEntry *entry = last_entry();
   if (entry) {
     entry = entry->next();
   }
   return SectionEntryIterator(entry);
 }
+
+
+ReverseSectionEntryIterator BasicBlock::RevEntryBegin() const {
+  return ReverseSectionEntryIterator(last_entry());
+}
+
+ReverseSectionEntryIterator BasicBlock::RevEntryEnd() const {
+  MaoEntry *entry = first_entry();
+  if (entry) {
+    entry = entry->prev();
+  }
+  return ReverseSectionEntryIterator(entry);
+}
+
 
 void BasicBlock::AddEntry(MaoEntry *entry) {
   if (NULL == first_entry_) {
@@ -208,7 +221,8 @@ bool CFGBuilder::Go() {
     // If the current entry starts a new basic block, end the previous one
     if (current && entry->Type() == MaoEntry::LABEL &&
         (respect_orig_labels_ ||
-         CFG_->FindBasicBlock(static_cast<LabelEntry*>(entry)->name()) != NULL)) {
+         CFG_->FindBasicBlock(static_cast<LabelEntry*>(entry)->name())
+         != NULL)) {
       create_fall_through = true;
       previous = current;
       current = NULL;
@@ -776,8 +790,8 @@ bool CFGBuilder::IsVaargBasedJump(InstructionEntry *entry,
     pattern->push_back(e);
     e = e->next();
   }
-  //The instruction following the sequence of movaps is also a possible
-  //target of the indirect jump
+  // The instruction following the sequence of movaps is also a possible
+  // target of the indirect jump
   while (e && !e->IsInstruction())
     e = e->next();
 
@@ -970,7 +984,8 @@ void CFGBuilder::CFGStat::Print(FILE *out) {
     fprintf(out, "CFG: Indirect jumps:     %7d (%d unresolved)\n",
             number_of_indirect_jumps_, number_of_unresolved_jumps_);
   if (number_of_jump_table_patterns_)
-    fprintf(out, "CFG: Jump table patterns:%7d\n", number_of_jump_table_patterns_);
+    fprintf(out, "CFG: Jump table patterns:%7d\n",
+            number_of_jump_table_patterns_);
   if (number_of_vaarg_patterns_)
     fprintf(out, "CFG: VA_ARG patterns    :%7d\n", number_of_vaarg_patterns_);
   if (number_of_tail_calls_)

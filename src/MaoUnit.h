@@ -123,8 +123,8 @@ class MaoEntry {
   void LinkAfter(MaoEntry *entry);
 
   // Align an entry via .p2align
-  void AlignTo(int power_of_2_alignment, // 0: 1, 1: 2, 2: 4, 3: 8, 4: 16, 5: 32
-               int fill_value = -1,      // -1: no parameter, leave empty in .p2align
+  void AlignTo(int power_of_2_alignment,  // 0:1, 1:2, 2:4, 3:8, 4:16, 5:32
+               int fill_value = -1,  // -1: no param, leave empty in .p2align
                int max_bytes_to_skip = 0);
 
   unsigned int line_number() const { return line_number_; }
@@ -878,6 +878,21 @@ class SectionEntryIterator {
  private:
   MaoEntry *current_entry_;  // NULL is used for signalling the end.
 };
+
+
+class ReverseSectionEntryIterator {
+  // This class uses the prev/next of the Entries to move.
+ public:
+  explicit ReverseSectionEntryIterator(MaoEntry *entry);
+  MaoEntry *operator *() {return current_entry_;}
+  ReverseSectionEntryIterator &operator ++();
+  ReverseSectionEntryIterator &operator --();
+  bool operator ==(const ReverseSectionEntryIterator &other) const;
+  bool operator !=(const ReverseSectionEntryIterator &other) const;
+ private:
+  MaoEntry *current_entry_;  // NULL is used for signalling the end.
+};
+
 
 
 // A Subsection is part of a section. The subsection concept allows the assembly

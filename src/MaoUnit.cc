@@ -562,7 +562,7 @@ bool MaoUnit::AddEntry(MaoEntry *entry,
       // in ir.cc makes it possible to add the entry
       // when creating a new subsection.
       directive_entry = static_cast<DirectiveEntry *>(entry);
-      switch(directive_entry->op()) {
+      switch (directive_entry->op()) {
         case DirectiveEntry::SECTION:
           {
             // the name from operand
@@ -2484,7 +2484,7 @@ InstructionEntry::GetAssemblyInstructionName(std::string *out) const {
     };
 
     const MaoOpcode opcode_has_l_suffix[] =  {
-      OP_cmovl,OP_cmovnl, OP_cwtl, OP_cltd, OP_movbe
+      OP_cmovl, OP_cmovnl, OP_cwtl, OP_cltd, OP_movbe
     };
     const MaoOpcode opcode_has_w_suffix[] =  {
       OP_cbtw, OP_fnstsw
@@ -3289,6 +3289,33 @@ bool SectionEntryIterator::operator ==(const SectionEntryIterator &other)
 }
 
 bool SectionEntryIterator::operator !=(const SectionEntryIterator &other)
+    const {
+  return !((*this) == other);
+}
+
+ReverseSectionEntryIterator::ReverseSectionEntryIterator(MaoEntry *entry)
+    : current_entry_(entry) {
+  return;
+}
+
+ReverseSectionEntryIterator &ReverseSectionEntryIterator::operator ++() {
+  current_entry_ = current_entry_->prev();
+  return *this;
+}
+
+ReverseSectionEntryIterator &ReverseSectionEntryIterator::operator --() {
+  current_entry_ = current_entry_->next();
+  return *this;
+}
+
+bool ReverseSectionEntryIterator::operator ==(const ReverseSectionEntryIterator
+                                              &other)
+    const {
+  return (current_entry_ == other.current_entry_);
+}
+
+bool ReverseSectionEntryIterator::operator !=(const ReverseSectionEntryIterator
+                                              &other)
     const {
   return !((*this) == other);
 }
