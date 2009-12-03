@@ -131,7 +131,7 @@ class RatFinderPass : public MaoFunctionPass {
           // If this is a "small" register, check for writes later in the
           // that might cause a RAT stall.
           if (!( GetParentRegs(defined_reg) ==
-                BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull))) {
+                 BitString(256, 4, 0x0ull, 0x0ull, 0x0ull, 0x0ull))) {
             // Loop through the remaining instructions in the basic block.
             InstructionEntry *next = current_insn->nextInstruction();
             MaoEntry *last = (*it)->GetLastInstruction();

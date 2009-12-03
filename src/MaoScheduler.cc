@@ -684,8 +684,8 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag(BasicBlock *bb) {
       src_regs_mask = src_regs_mask | dest_regs_mask;
     }
     char src_str[128], dest_str[128];
-    src_regs_mask.ToString(src_str);
-    dest_regs_mask.ToString(dest_str);
+    src_regs_mask.ToString(src_str, 128);
+    dest_regs_mask.ToString(dest_str, 128);
 
     Trace(4, "Src registers: %s", src_str);
     Trace(4, "Dest  registers: %s", dest_str);

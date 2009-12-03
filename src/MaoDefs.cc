@@ -34,9 +34,11 @@ class RegProps {
 	   int              num) :
     reg_(reg),
     num_(num),
-    mask_(num),
-    sub_regs_(num)
-  {}
+    mask_(),
+    sub_regs_() {
+    mask_.Set(num);
+    sub_regs_.Set(num);
+  }
 
   const reg_entry  *reg() { return reg_; }
   BitString        &mask() { return mask_; }
@@ -319,7 +321,7 @@ void InitRegisters() {
 //
 BitString GetMaskForRegister(const char *reg) {
   if (!reg)
-    return BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull);
+    return BitString(256, 4, 0x0ull, 0x0ull, 0x0ull, 0x0ull);
 
   RegProps *rprops = reg_name_map.find(reg)->second;
   MAO_ASSERT(rprops);

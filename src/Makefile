@@ -188,9 +188,9 @@ $(GAS_CONFIG_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/config/%.c
 $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) GenOpcodes.cc MaoDefs.h MaoDefs.tbl MaoUses.tbl MaoUtil.h Makefile
+$(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) MaoDebug.h MaoDefs.h MaoDefs.tbl MaoUses.tbl MaoUtil.h Makefile MaoDebug.o
 	mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
+	$(CC) $(CFLAGS) MaoDebug.o -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
 
 $(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes
 	$(OBJDIR)/GenOpcodes -p $(OBJDIR) $(BINUTILSRC)/opcodes/i386-opc.tbl $(SRCDIR)/MaoDefs.tbl $(SRCDIR)/MaoUses.tbl
