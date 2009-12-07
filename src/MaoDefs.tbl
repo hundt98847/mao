@@ -87,6 +87,7 @@ cld clear: DF
 clflush
 cli clear: IF VIF
 clts cr0
+cltq rax
 cmc flags: CF
 
 cmova   dest
@@ -142,6 +143,8 @@ comisd flags: ZF PF CF clear: OF AF SF
 comiss flags: ZF PF CF clear: OF AF SF
 cpuid eax ebx ecx edx
 crc32 dest
+
+cvtsi2sd dest
 cvtdq2pd dest
 cvtdq2pd dest
 cvtpd2dq dest
@@ -331,6 +334,7 @@ minss dest
 monitor 
 # movers and shakers
 mov  dest
+movabs dest
 movapd dest
 movaps dest
 movbe dest
