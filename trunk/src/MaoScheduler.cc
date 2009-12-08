@@ -192,6 +192,7 @@ class SchedulerPass : public MaoFunctionPass {
     : MaoFunctionPass("SCHEDULER", options, mao, func) {
 
       profitable_ = IsProfitable(func);
+      rsp_pointer_ = GetRegFromName("rsp");
   }
 
   bool Go() {
@@ -291,6 +292,8 @@ class SchedulerPass : public MaoFunctionPass {
   // An array used to keep track of instructions that
   // are sources of some loop carried dependence
   char *is_lcd_source_;
+
+  const reg_entry *rsp_pointer_;
 
   BitString GetSrcRegisters(InstructionEntry *insn);
   BitString GetDestRegisters(InstructionEntry *insn);
@@ -653,7 +656,7 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag(BasicBlock *bb) {
     // This BB forms a straightline loop
     InitializeLastWriter(bb, last_writer);
   }
-  BitString rsp_mask = GetMaskForRegister("rsp");
+  BitString rsp_mask = GetMaskForRegister(rsp_pointer_);
 
   for (SectionEntryIterator entry_iter = bb->EntryBegin();
       entry_iter != bb->EntryEnd(); ++entry_iter) {

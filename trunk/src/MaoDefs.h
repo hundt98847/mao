@@ -18,12 +18,14 @@
 #ifndef __MAODEFS_H_INCLUDED
 #define __MAODEFS_H_INCLUDED
 
-#include <set>
 #include <stdio.h>
+
+#include <set>
+
 #include "MaoUtil.h"
 
-//This should be included, but since its not guraded, it will generate errors
-//#include "opcodes/i386-opc.h"
+// This should be included, but since its not guraded, it will generate errors
+// #include "opcodes/i386-opc.h"
 
 // Bitmasks for operands
 #define  REG_OP0      (1 << 0)
@@ -83,7 +85,7 @@ BitString  GetCallingConventionDefMask();
 
 void       PrintRegisterDefMask(FILE *f, BitString mask,
                                 const char *title = NULL);
-BitString  GetMaskForRegister(const char *reg);
+BitString  GetMaskForRegister(const reg_entry *reg);
 bool       DefinesSubReg(reg_entry *reg,
                          reg_entry *sub_reg);
 bool       RegistersOverlap(const reg_entry *reg1,
@@ -107,4 +109,4 @@ const reg_entry *GetIP();
 
 const reg_entry *GetRegFromName(const char *reg_name);
 
-#endif // __MAODEFS_H_INCLUDED
+#endif  // __MAODEFS_H_INCLUDED

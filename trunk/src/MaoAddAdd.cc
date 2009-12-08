@@ -35,61 +35,9 @@ MAO_OPTIONS_DEFINE(ADDADD, 0) {
 class AddAddElimPass : public MaoFunctionPass {
  public:
   AddAddElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
-      : MaoFunctionPass("ADDADD", options, mao, function) { }
+      : MaoFunctionPass("ADDADD", options, mao, function),
+        emask_(GetMaskForRegister(GetRegFromName("eflags"))) { }
 
-  bool IsAddIOrSubI(InstructionEntry *insn) {
-    return ((insn->op() == OP_add || insn->op() == OP_sub)  &&
-            insn->NumOperands() == 2 &&
-            insn->IsImmediateOperand(0) &&
-            insn->IsRegisterOperand(1));
-  }
-
-  // Update the imm value in inst2 to the hold the sum of inst1 and inst2
-  // Currently only handles simple immediate values. If the update was done
-  // return True, otherwise False.
-  // TODO(martint): Support more types of immediate values
-  // TODO(martint): Use the MaoDefs to find out possible op for immedate
-  //                values instead of always using index 0.
-  bool UpdateImmediate(InstructionEntry *inst1, InstructionEntry *inst2) {
-    if (inst1->NumOperands() < 1 || inst2->NumOperands() < 1) {
-      return false;
-    }
-    if (!(inst1->IsImmediateOperand(0) && inst2->IsImmediateOperand(0))) {
-      return false;
-    }
-
-    // Now get the immediate value
-    expressionS *imm1 = inst1->instruction()->op[0].imms;
-    expressionS *imm2 = inst2->instruction()->op[0].imms;
-
-    // supported variants:
-    if (imm1->X_op == O_constant && imm2->X_op == O_constant) {
-      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
-      return true;
-    }
-
-    if (imm1->X_op == O_symbol && imm2->X_op == O_constant) {
-      imm2->X_op = O_symbol;
-      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
-      imm2->X_add_symbol = imm1->X_add_symbol;
-      return true;
-    }
-
-    if (imm1->X_op == O_symbol && imm2->X_op == O_symbol) {
-      imm2->X_op = O_add;
-      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
-      imm2->X_op_symbol  = imm1->X_add_symbol;
-      return true;
-    }
-
-
-    if (imm1->X_op == O_constant && imm2->X_op == O_symbol) {
-      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
-      return true;
-    }
-
-    return false;
-  }
 
   // Add add  pattern finder:
   //     add/sub rX, IMM1
@@ -156,8 +104,7 @@ class AddAddElimPass : public MaoFunctionPass {
             // we should continue looking up or not.
 
             // There is a conflict in the defs
-            BitString emask =  GetMaskForRegister("eflags");
-            if ( (!(pmask & imask).IsNull()) && !((pmask & imask) == emask )) {
+            if ((!(pmask & imask).IsNull()) && !((pmask & imask) == emask_ )) {
               break;
             }
             // The register is used here. In order to remove any of the add/sub
@@ -183,6 +130,63 @@ class AddAddElimPass : public MaoFunctionPass {
     }  // BB
     return true;
   }
+ private:
+  bool IsAddIOrSubI(InstructionEntry *insn) {
+    return ((insn->op() == OP_add || insn->op() == OP_sub)  &&
+            insn->NumOperands() == 2 &&
+            insn->IsImmediateOperand(0) &&
+            insn->IsRegisterOperand(1));
+  }
+
+  // Update the imm value in inst2 to the hold the sum of inst1 and inst2
+  // Currently only handles simple immediate values. If the update was done
+  // return True, otherwise False.
+  // TODO(martint): Support more types of immediate values
+  // TODO(martint): Use the MaoDefs to find out possible op for immedate
+  //                values instead of always using index 0.
+  bool UpdateImmediate(InstructionEntry *inst1, InstructionEntry *inst2) {
+    if (inst1->NumOperands() < 1 || inst2->NumOperands() < 1) {
+      return false;
+    }
+    if (!(inst1->IsImmediateOperand(0) && inst2->IsImmediateOperand(0))) {
+      return false;
+    }
+
+    // Now get the immediate value
+    expressionS *imm1 = inst1->instruction()->op[0].imms;
+    expressionS *imm2 = inst2->instruction()->op[0].imms;
+
+    // supported variants:
+    if (imm1->X_op == O_constant && imm2->X_op == O_constant) {
+      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
+      return true;
+    }
+
+    if (imm1->X_op == O_symbol && imm2->X_op == O_constant) {
+      imm2->X_op = O_symbol;
+      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
+      imm2->X_add_symbol = imm1->X_add_symbol;
+      return true;
+    }
+
+    if (imm1->X_op == O_symbol && imm2->X_op == O_symbol) {
+      imm2->X_op = O_add;
+      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
+      imm2->X_op_symbol  = imm1->X_add_symbol;
+      return true;
+    }
+
+
+    if (imm1->X_op == O_constant && imm2->X_op == O_symbol) {
+      imm2->X_add_number = imm1->X_add_number + imm2->X_add_number;
+      return true;
+    }
+
+    return false;
+  }
+
+  // Stores the mask for the e-flag.
+  const BitString emask_;
 };
 
 REGISTER_FUNC_PASS("ADDADD", AddAddElimPass)
