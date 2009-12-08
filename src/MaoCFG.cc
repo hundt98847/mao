@@ -688,8 +688,7 @@ bool CFGBuilder::IsTablePattern4(InstructionEntry *entry,
       // The AMD64 ABI convertion used on Linux uses the following registers
       // %rdi, %rsi, %rdx, %rcv, %r8 and %r9 (and also their subregisters)
       BitString abi_calling_convention_mask = GetCallingConventionDefMask();
-      const char *reg = r_rb->reg_name;
-      rmask = GetMaskForRegister(reg);
+      rmask = GetMaskForRegister(r_rb);
       if (!(abi_calling_convention_mask & rmask).IsNull()) {
         Trace(3, "Found a conflict between input paramter register and r_rb");
         return false;

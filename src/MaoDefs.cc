@@ -31,11 +31,11 @@
 class RegProps {
  public:
   RegProps(const reg_entry *reg,
-	   int              num) :
-    reg_(reg),
-    num_(num),
-    mask_(),
-    sub_regs_() {
+           int              num)
+    : reg_(reg),
+      num_(num),
+      mask_(),
+      sub_regs_() {
     mask_.Set(num);
     sub_regs_.Set(num);
   }
@@ -84,7 +84,7 @@ static RegProps *eip_props = NULL;
 // into the name map.
 //
 static void AddAlias(const char *name,
-		     const char *alias) {
+                     const char *alias) {
   RegNameMap::iterator it = reg_name_map.find(name);
 
   MAO_ASSERT(it != reg_name_map.end());
@@ -125,10 +125,9 @@ void ReadRegisterTable() {
 // sub register, e.g., %rax has subregisters %rax, %eax, ...
 //
 void AddSubRegs(const char *r64, const char *r32,
-		const char *r16, const char *r8,
+                const char *r16, const char *r8,
                 const char *r8_alias = NULL,
                 const char *r8h = NULL) {
-
   // Find properties
   RegProps *p64 = reg_name_map.find(r64)->second;
   RegProps *p32 = reg_name_map.find(r32)->second;
@@ -319,11 +318,11 @@ void InitRegisters() {
 // For a given register name, return it's
 // sub-register mask.
 //
-BitString GetMaskForRegister(const char *reg) {
+BitString GetMaskForRegister(const reg_entry *reg) {
   if (!reg)
     return BitString(256, 4, 0x0ull, 0x0ull, 0x0ull, 0x0ull);
 
-  RegProps *rprops = reg_name_map.find(reg)->second;
+  RegProps *rprops = reg_ptr_map.find(reg)->second;
   MAO_ASSERT(rprops);
   return rprops->sub_regs();
 }
@@ -355,7 +354,7 @@ BitString GetRegisterDefMask(InstructionEntry *insn,
   for (int op = 0; op < 5 && op < insn->NumOperands(); ++op) {
     if (e->op_mask & (1 << op)) {
       if (insn->IsRegisterOperand(op)) {
-        const char *reg = insn->GetRegisterOperandStr(op);
+        const reg_entry *reg = insn->GetRegisterOperand(op);
         mask = mask | GetMaskForRegister(reg);
        }
     }
@@ -369,8 +368,7 @@ BitString GetRegisterDefMask(InstructionEntry *insn,
   if ( (insn->NumOperands() == 1) &&
        (insn->IsRegisterOperand(0)) &&
        (e->op_mask & (1 << 1)) ) {
-    const char *reg = insn->GetRegisterOperandStr(0);
-    mask = mask | GetMaskForRegister(reg);
+    mask = mask | GetMaskForRegister(insn->GetRegisterOperand(0));
   }
 
   DefEntry *prefix_entry = NULL;
@@ -384,8 +382,8 @@ BitString GetRegisterDefMask(InstructionEntry *insn,
     mask = mask | prefix_mask;
   }
   if (expand_mask) {
-    FillSubRegs (&mask);
-    FillParentRegs (&mask);
+    FillSubRegs(&mask);
+    FillParentRegs(&mask);
   }
   return mask;
 }
@@ -417,18 +415,15 @@ BitString GetRegisterUseMask(InstructionEntry *insn,
   for (int op = 0; op < 5 && op < insn->NumOperands(); ++op) {
     if (e->op_mask & (1 << op)) {
       if (insn->IsRegisterOperand(op)) {
-        const char *reg = insn->GetRegisterOperandStr(op);
-        mask = mask | GetMaskForRegister(reg);
+        mask = mask | GetMaskForRegister(insn->GetRegisterOperand(op));
        }
     }
   }
   if (insn->HasBaseRegister() && (e->op_mask & REG_OP_BASE)) {
-    const char *reg = insn->GetBaseRegisterStr();
-    mask = mask | GetMaskForRegister(reg);
+    mask = mask | GetMaskForRegister(insn->GetBaseRegister());
   }
   if (insn->HasIndexRegister() && (e->op_mask & REG_OP_INDEX)) {
-    const char *reg = insn->GetIndexRegisterStr();
-    mask = mask | GetMaskForRegister(reg);
+    mask = mask | GetMaskForRegister(insn->GetIndexRegister());
   }
   UseEntry *prefix_entry = NULL;
   if (insn->HasPrefix (REPE_PREFIX_OPCODE))
@@ -441,8 +436,8 @@ BitString GetRegisterUseMask(InstructionEntry *insn,
     mask = mask | prefix_mask;
   }
   if (expand_mask) {
-    FillSubRegs (&mask);
-    FillParentRegs (&mask);
+    FillSubRegs(&mask);
+    FillParentRegs(&mask);
   }
   return mask;
 }
@@ -510,8 +505,10 @@ BitString GetCallingConventionDefMask() {
   for (unsigned int i = 0;
        i < sizeof(amd64_abi_input_regs)/sizeof(const char *);
        ++i) {
-    MAO_ASSERT(!(mask == (mask | GetMaskForRegister(amd64_abi_input_regs[i]))));
-    mask = mask | GetMaskForRegister(amd64_abi_input_regs[i]);
+    MAO_ASSERT(!(mask ==
+                 (mask | GetMaskForRegister(
+                     GetRegFromName(amd64_abi_input_regs[i])))));
+    mask = mask | GetMaskForRegister(GetRegFromName(amd64_abi_input_regs[i]));
   }
   return mask;
 }
@@ -569,9 +566,7 @@ bool       IsParent(const reg_entry *parent,
   BitString  parents = GetParentRegs(child);
   // is parent in parents?
   RegProps *preg = reg_ptr_map.find(parent)->second;
-  return (! ((preg->mask() & parents) ==
-             BitString(0x0ull, 0x0ull, 0x0ull, 0x0ull)));
-
+  return ((preg->mask() & parents).IsNonNull());
 }
 
 
