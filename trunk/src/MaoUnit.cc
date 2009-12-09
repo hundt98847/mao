@@ -714,7 +714,7 @@ ConstSectionIterator MaoUnit::ConstSectionEnd() const {
   return ConstSectionIterator(sections_.end());
 }
 
-void MaoUnit::FindFunctions() {
+void MaoUnit::FindFunctions(bool create_anonymous) {
   // Use the symbol-table to find out the names of
   // the functions in the code!
   for (SymbolIterator iter = symbol_table_.Begin();
@@ -750,7 +750,8 @@ void MaoUnit::FindFunctions() {
       MAO_ASSERT(entry_tail);
       // Stops at the end of a section, or breaks when a new functions is found.
       while (entry_tail->next()) {
-        // size directive for current function?
+        // Normally functions end with .size directive. Check
+        // for this here.
         if (entry_tail->Type() == MaoEntry::DIRECTIVE) {
           // is it a function?
           DirectiveEntry *directive_entry = entry_tail->AsDirective();
@@ -762,12 +763,13 @@ void MaoUnit::FindFunctions() {
             MAO_ASSERT(d_op->type == DirectiveEntry::SYMBOL);
             const char *size_symbol_name = S_GET_NAME(d_op->data.sym);
             if (strcmp(size_symbol_name, symbol->name()) == 0) {
+              // We found the end of the function.
               break;
             }
           }
         }
 
-        // check if we found the next function?
+        // Check if we have reached the start of a new function.
         if (entry_tail->next()->Type() == MaoEntry::LABEL) {
           // is it a function?
           LabelEntry *label_entry = entry_tail->next()->AsLabel();
@@ -788,46 +790,58 @@ void MaoUnit::FindFunctions() {
     }
   }
 
-
-
   // Now, create an unnamed function for any instructions at the start of any
-  // section. Special case for sections created in mao to handle the inital
-  // directives found int he assembly file.
-  int function_number = 0;
-  for (SectionIterator iter = SectionBegin();
-       iter != SectionEnd();
-       ++iter) {
-    // Make sure the section exists in bfd, and it nos created
-    // created temporarily inside mao.
-    Section *section = *iter;
-    if (bfd_get_section_by_name(stdoutput,
-                                section->name().c_str()) != NULL &&
-        section->name() != ".eh_frame") {
-      // Iterate over entries, until we find an entry belonging to a function,
+  // section. Special case for sections created in mao to handle the initial
+  // directives found in the assembly file.
+  if (create_anonymous == true) {
+    int function_number = 0;
+    for (SectionIterator iter = SectionBegin();
+         iter != SectionEnd();
+         ++iter) {
+      // Make sure the section exists in bfd, and it nos created
+      // created temporarily inside mao.
+      Section *section = *iter;
+      if (bfd_get_section_by_name(stdoutput,
+                                  section->name().c_str()) != NULL &&
+          section->name() != ".eh_frame" &&
+          section->name() != ".bss" &&
+          section->name() != ".rodata" &&
+          section->name() != ".data") {
+        // Iterate over entries, until we find an entry belonging to a function,
+        // or the end of the text section
+        MaoEntry *entry = *(section->EntryBegin());
+        int instruciton_entries = 0;
+        if (entry &&
+            !InFunction(entry)) {
+          // Find the subsection from the entry
+          SubSection *subsection = GetSubSection(entry);
+          MAO_ASSERT(subsection);
 
-     // or the end of the text section
-      MaoEntry *entry = *(section->EntryBegin());
-      if (entry &&
-          !InFunction(entry)) {
-        // Find the subsection from the entry
-        SubSection *subsection = GetSubSection(entry);
-        MAO_ASSERT(subsection);
-
-        char function_name[64];
-        sprintf(function_name, "__mao_unnamed%d", function_number++);
-        Function *function = new Function(function_name, functions_.size(),
-                                          subsection);
-        function->set_first_entry(entry);
-        while (entry &&
-               !InFunction(entry)) {
-          function->set_last_entry(entry);
-          entry_to_function_[entry] = function;
-          entry = entry->next();
+          char function_name[64];
+          sprintf(function_name, "__mao_unnamed%d", function_number++);
+          Function *function = new Function(function_name, functions_.size(),
+                                            subsection);
+          function->set_first_entry(entry);
+          // New section should break the anaonumous function.
+          while (entry &&
+                 !InFunction(entry)) {
+            function->set_last_entry(entry);
+            entry_to_function_[entry] = function;
+            if (entry->IsInstruction())
+              ++instruciton_entries;
+            entry = entry->next();
+          }
+          // Only add anonymous functions if they have
+          // any instruction entries in them.
+          if (instruciton_entries > 0) {
+            functions_.push_back(function);
+          } else {
+            delete function;
+          }
         }
-        functions_.push_back(function);
-      }
-    }
-  }
+      }  // if (bfd_get_section_by_name( ...
+    }  // for (SectionIterator iter = ...
+  }  // if (create_anonymous = ...
   return;
 }
 

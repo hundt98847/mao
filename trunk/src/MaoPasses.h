@@ -48,7 +48,7 @@ class MaoAction {
   virtual ~MaoAction();
 
   // regular Trace, adds newline to output
-  virtual void Trace (unsigned int level, const char *fmt, ...) const;
+  virtual void Trace(unsigned int level, const char *fmt, ...) const;
 
   // Trace with Continuation, doesn't add newline
   virtual void TraceC(unsigned int level, const char *fmt, ...) const;
@@ -99,10 +99,10 @@ class MaoPass : public MaoAction {
   MaoPass(const char *name, MaoOptionMap *options, MaoUnit *unit);
   virtual ~MaoPass();
 
-  // Pass implementation
+  // Pass implementation.
   virtual bool Go() = 0;
 
-  //Main invocation
+  // Main invocation.
   virtual bool Run();
 };
 
@@ -137,7 +137,7 @@ class MaoPassManager {
  public:
   typedef MaoPass *(*PassCreator)(MaoOptionMap *options, MaoUnit *unit);
 
-  MaoPassManager(MaoUnit *unit) : unit_(unit) { }
+  explicit MaoPassManager(MaoUnit *unit) : unit_(unit) { }
   ~MaoPassManager() {
     for (std::list<MaoPass *>::iterator pass_iter = pass_list_.begin();
          pass_iter != pass_list_.end(); ++pass_iter) {
@@ -292,7 +292,7 @@ class DumpSymbolTablePass : public MaoPass {
 class TestPass : public MaoFunctionPass {
  public:
   explicit TestPass(MaoOptionMap *options, MaoUnit *mao_unit,
-		    Function *function);
+                    Function *function);
   bool Go();
  private:
   bool cfg_;
@@ -317,13 +317,13 @@ void InitLoops();
 
 class PassInitializer {
   public:
-    PassInitializer (const char *name, MaoFunctionPassManager::PassCreator creator) {
-      RegisterFunctionPass (name, creator);
+    PassInitializer(const char *name,
+                    MaoFunctionPassManager::PassCreator creator) {
+      RegisterFunctionPass(name, creator);
     }
-    PassInitializer (const char *name, MaoPassManager::PassCreator creator) {
-      RegisterUnitPass (name, creator);
+    PassInitializer(const char *name, MaoPassManager::PassCreator creator) {
+      RegisterUnitPass(name, creator);
     }
-
 };
 
 #define REGISTER_FUNC_PASS(name, classname)  \

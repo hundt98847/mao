@@ -19,8 +19,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <map>
 #include <algorithm>
+#include <map>
+#include <string>
 
 #include "MaoDebug.h"
 #include "MaoCFG.h"
@@ -200,7 +201,9 @@ bool MaoFunctionPass::Run() {
 //
 // Read/parse the input asm file and generate the IR
 //
-MAO_OPTIONS_DEFINE(READ, 0) {
+MAO_OPTIONS_DEFINE(READ, 1) {
+  OPTION_BOOL("create_anonymous", false, "Create anonymous functions for "
+              "instructions that are not part of regular functions."),
 };
 
 class SourceDebugAction : public MaoDebugAction {
@@ -228,9 +231,11 @@ bool ReadInputPass::Go() {
   // of debug actions.
   SourceDebugAction spos;
 
+  bool create_anonymous = GetOptionString("create_anonymous");
+
   // Use gas to parse input file.
   MAO_ASSERT(!as_main(argc_, const_cast<char**>(argv_)));
-  unit_->FindFunctions();
+  unit_->FindFunctions(create_anonymous);
   // Now GAS have parsed it arguments, and we can find out the default
   // architecture and operand size.
   unit_->SetDefaultArch();
@@ -322,13 +327,13 @@ bool DumpSymbolTablePass::Go() {
 //
 MAO_OPTIONS_DEFINE(TEST, 3) {
   OPTION_BOOL("cfg", false, "Run CFG pass (note that CFG runs automatically "
-	                    "in the Relaxer and the LSG pass.)"),
+              "in the Relaxer and the LSG pass.)"),
   OPTION_BOOL("lsg", true, "Run LSG pass."),
   OPTION_BOOL("relax", true, "Run Relaxer pass."),
 };
 
 TestPass::TestPass(MaoOptionMap *options, MaoUnit *mao_unit,
-		   Function *function)
+                   Function *function)
   : MaoFunctionPass("TEST", options, mao_unit, function),
     cfg_(GetOptionBool("cfg")),
     lsg_(GetOptionBool("lsg")),
@@ -336,8 +341,9 @@ TestPass::TestPass(MaoOptionMap *options, MaoUnit *mao_unit,
 }
 
 bool TestPass::Go() {
-  Trace(3, "Running TEST on function \"%s\" with options cfg=%d lsg=%d relax=%d"
-	,function_->name().c_str(), cfg_, lsg_, relax_);
+  Trace(3,
+        "Running TEST on function \"%s\" with options cfg=%d lsg=%d relax=%d",
+        function_->name().c_str(), cfg_, lsg_, relax_);
 
   if (cfg_)
     CFG::GetCFG(unit_, function_);
@@ -391,19 +397,18 @@ void InitPasses() {
   InitCFG();
   InitRelax();
   InitLoops();
-
 }
 
 // Code to maintain the set of available passes
 static RegisteredStaticOptionPassMap registered_static_option_passes;
 
-RegisteredFunctionPassesMap& GetRegisteredFunctionPasses () {
+RegisteredFunctionPassesMap& GetRegisteredFunctionPasses() {
   static RegisteredFunctionPassesMap *map =
       new RegisteredFunctionPassesMap();
   return *map;
 }
 
-RegisteredUnitPassesMap& GetRegisteredUnitPasses () {
+RegisteredUnitPassesMap& GetRegisteredUnitPasses() {
   static RegisteredUnitPassesMap *map =
       new RegisteredUnitPassesMap();
   return *map;
