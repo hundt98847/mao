@@ -738,7 +738,7 @@ class MaoUnit {
   ConstFunctionIterator ConstFunctionEnd() const;
 
   // Find all Functions in the MaoUnit and populate functions_
-  void FindFunctions();
+  void FindFunctions(bool create_anonymous);
 
   Function *GetFunction(MaoEntry *entry);
   bool InFunction(MaoEntry *entry) const;
