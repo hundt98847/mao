@@ -124,7 +124,7 @@ class BitString {
   }
 
   // Union
-  BitString operator |(const BitString &b) {
+  BitString operator |(const BitString &b) const {
     MAO_ASSERT(b.number_of_bits() == number_of_bits_);
     BitString bs_new(number_of_bits_);
     for (int i = 0; i < number_of_words_; ++i) {
@@ -134,7 +134,7 @@ class BitString {
   }
 
   // Intersect
-  BitString operator &(const BitString &b) {
+  BitString operator &(const BitString &b) const {
     MAO_ASSERT(b.number_of_bits() == number_of_bits_);
     BitString bs_new(number_of_bits_);
     for (int i = 0; i < number_of_words_; ++i) {
@@ -144,7 +144,7 @@ class BitString {
   }
 
   // Flip the bits
-  BitString operator ~() {
+  BitString operator ~() const {
     BitString bs_new(number_of_bits_);
     for (int i = 0; i < number_of_words_; ++i) {
       bs_new.word_[i] = ~word_[i];
@@ -156,7 +156,7 @@ class BitString {
   }
 
   // Remove bits
-  BitString operator -(const BitString &b) {
+  BitString operator -(const BitString &b) const {
     MAO_ASSERT(b.number_of_bits() == number_of_bits_);
     BitString bs_new(number_of_bits_);
     for (int i = 0; i < number_of_words_; ++i) {
@@ -165,7 +165,7 @@ class BitString {
     return bs_new;
   }
 
-  bool operator == (const BitString &b) {
+  bool operator == (const BitString &b) const {
     MAO_ASSERT(b.number_of_bits() == number_of_bits_);
     for (int i = 0; i < number_of_words_; ++i) {
       if (word_[i] != b.word_[i])
@@ -174,7 +174,11 @@ class BitString {
     return true;
   }
 
-  bool IsNull() {
+  bool operator != (const BitString &b) const {
+    return !(*this == b);
+  }
+
+  bool IsNull() const {
     for (int i = 0; i < number_of_words_; ++i) {
       if (word_[i] != 0)
         return false;
@@ -182,7 +186,7 @@ class BitString {
     return true;
   }
 
-  bool IsNonNull() {
+  bool IsNonNull() const {
     for (int i = 0; i < number_of_words_; ++i) {
       if (word_[i] != 0)
         return true;
@@ -190,7 +194,7 @@ class BitString {
     return false;
   }
 
-  bool IsUndef() {
+  bool IsUndef() const {
     for (int i = 0; i < number_of_words_; ++i) {
       if (word_[i] != (-1ULL))
         return false;
@@ -204,7 +208,7 @@ class BitString {
     }
   }
 
-  void Print() {
+  void Print() const {
     fprintf(stderr, "bits: ");
     for (int i = 0; i < number_of_words_; ++i) {
       fprintf(stderr, "%016llx ", word_[i]);
@@ -212,7 +216,7 @@ class BitString {
     fprintf(stderr, "\n");
   }
 
-  void ToString(char *s, int max_size) {
+  void ToString(char *s, int max_size) const {
     MAO_ASSERT(s != NULL);
     MAO_ASSERT(max_size > 0);
     char *sp = s;
@@ -233,7 +237,7 @@ class BitString {
     snprintf(sp, space_left, "\n");
   }
 
-  void PrintInitializer(FILE *f) {
+  void PrintInitializer(FILE *f) const {
     if (IsNull()) {
       fprintf(f, "BNULL");
     } else {
