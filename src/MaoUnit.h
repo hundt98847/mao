@@ -111,8 +111,8 @@ class MaoEntry {
   void set_next(MaoEntry *entry) {next_ = entry;}
   void set_prev(MaoEntry *entry) {prev_ = entry;}
 
-  MaoEntry *next() {return next_;}
-  MaoEntry *prev() {return prev_;}
+  MaoEntry *next() const {return next_;}
+  MaoEntry *prev() const {return prev_;}
 
   InstructionEntry *nextInstruction();
   InstructionEntry *prevInstruction();

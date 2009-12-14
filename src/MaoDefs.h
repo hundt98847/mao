@@ -83,8 +83,8 @@ std::set<const reg_entry *> GetUsedRegisters(InstructionEntry *insn);
 
 BitString  GetCallingConventionDefMask();
 
-void       PrintRegisterDefMask(FILE *f, BitString mask,
-                                const char *title = NULL);
+void       PrintRegistersInRegisterMask(FILE *f, BitString mask,
+					const char *title = NULL);
 BitString  GetMaskForRegister(const reg_entry *reg);
 bool       DefinesSubReg(reg_entry *reg,
                          reg_entry *sub_reg);
@@ -108,5 +108,8 @@ void FillParentRegs(BitString *mask);
 const reg_entry *GetIP();
 
 const reg_entry *GetRegFromName(const char *reg_name);
+const char *GetRegName(int reg_number);
+
+int GetNumberOfRegisters();
 
 #endif  // __MAODEFS_H_INCLUDED

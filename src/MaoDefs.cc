@@ -120,6 +120,11 @@ void ReadRegisterTable() {
   MAO_ASSERT(rip_props);
 }
 
+
+int GetNumberOfRegisters() {
+  return reg_max;
+}
+
 // Create Subreg Relations by populating registers
 // sub_regs mask. Convention: A register is it's own
 // sub register, e.g., %rax has subregisters %rax, %eax, ...
@@ -590,6 +595,15 @@ const reg_entry *GetRegFromName(const char *reg_name) {
 
   MAO_ASSERT(it != reg_name_map.end());
   return (*it).second->reg();
+}
+
+const char *GetRegName(int reg_number) {
+  RegNumMap::iterator it = reg_num_map.find(reg_number);
+  if (reg_num_map.end() == it) {
+    fprintf(stderr, "Unable to find register :%d\n", reg_number);
+  }
+  MAO_ASSERT(it != reg_num_map.end());
+  return (*it).second->reg()->reg_name;
 }
 
 

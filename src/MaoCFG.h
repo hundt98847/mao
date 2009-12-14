@@ -189,8 +189,8 @@ class CFG {
   typedef std::map<const char *, BasicBlock *, ltstr> LabelToBBMap;
 
   explicit CFG(MaoUnit *mao_unit) : mao_unit_(mao_unit),
-                                          num_external_jumps_(0),
-                                          num_unresolved_indirect_jumps_(0) {
+                                    num_external_jumps_(0),
+                                    num_unresolved_indirect_jumps_(0) {
     labels_to_jumptargets_.clear();
   }
   ~CFG() {
@@ -236,6 +236,16 @@ class CFG {
 
   BBVector::iterator End() { return basic_blocks_.end(); }
   BBVector::const_iterator End() const { return basic_blocks_.end(); }
+
+  BBVector::reverse_iterator RevBegin() { return basic_blocks_.rbegin(); }
+  BBVector::const_reverse_iterator RevConstBegin() {
+    return basic_blocks_.rbegin();
+  }
+  BBVector::reverse_iterator RevEnd() { return basic_blocks_.rend(); }
+  BBVector::const_reverse_iterator RevConstEnd() {
+    return basic_blocks_.rend();
+  }
+
 
   BasicBlock *Start() const { return basic_blocks_[0]; }
   BasicBlock *Sink() const { return basic_blocks_[1]; }
@@ -305,6 +315,10 @@ class CFG {
 #define FORALL_CFG_BB(cfg, it) \
     for (CFG::BBVector::const_iterator it = cfg->Begin(); \
            it != cfg->End(); ++it)
+
+#define FORALL_REV_CFG_BB(cfg, it) \
+    for (CFG::BBVector::const_reverse_iterator it = cfg->RevBegin(); \
+           it != cfg->RevEnd(); ++it)
 
 class CFGBuilder : public MaoFunctionPass {
  public:

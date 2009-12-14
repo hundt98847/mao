@@ -123,6 +123,10 @@ CCSRCS=						\
 	MaoRelax.cc				\
 	MaoUnit.cc				\
 	MaoZee.cc				\
+	MaoDataFlow.cc                          \
+	MaoLiveness.cc                          \
+	MaoReachingDefs.cc                      \
+	MaoTestDF.cc                            \
 	SymbolTable.cc
 
 PLUGIN_CCSRCS=					\
@@ -188,7 +192,7 @@ $(GAS_CONFIG_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/config/%.c
 $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) MaoDebug.h MaoDefs.h MaoDefs.tbl MaoUses.tbl MaoUtil.h Makefile MaoDebug.o
+$(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) GenOpcodes.cc MaoDebug.h MaoDebug.o MaoDefs.h MaoDefs.tbl MaoUses.tbl MaoUtil.h Makefile
 	mkdir -p $(OBJDIR)
 	$(CC) $(CFLAGS) MaoDebug.o -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
 
