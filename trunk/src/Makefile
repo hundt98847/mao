@@ -7,6 +7,7 @@ BINUTILOBJ=$(BINUTILSRC)-obj-$(TARGET)
 PYTHON=../python-2.5.4
 PYTHONLIB=$(PYTHON)/usr/local/lib/python2.5/config/libpython2.5.a
 PYTHONINCL=/usr/local/include/python2.5
+EXTRALIBS=
 
 ifeq ($(OS),Linux)
  PYTHONLDOPTS=-Xlinker -export-dynamic 
@@ -202,7 +203,7 @@ $(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes
 mao-$(DEVPREFIX)$(TARGET): $(BINDIR)/mao-$(DEVPREFIX)$(TARGET)
 
 $(BINDIR)/mao-$(DEVPREFIX)$(TARGET): stamp-bin $(OBJDIR)/gen-opcodes.h $(OBJS)
-	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -rdynamic -o $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil -lm
+	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -rdynamic -o $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil -lm $(EXTRALIBS)
 
 mao: all
 	ln -s $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(BINDIR)/mao
