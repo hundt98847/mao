@@ -162,6 +162,8 @@ cvtsd2si dest
 cvtsd2si dest
 cvtsd2ss dest
 cvtsd2ss dest
+cvtsi2sd dest
+cvtsi2ss dest
 cvtss2sd dest
 cvtss2sd dest
 cvttpd2pi dest
