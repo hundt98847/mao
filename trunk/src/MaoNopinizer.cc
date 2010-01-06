@@ -56,6 +56,15 @@ class NopInizerPass : public MaoFunctionPass {
     FORALL_FUNC_ENTRY(function_,entry) {
       if (!entry->IsInstruction())
         continue;
+      MaoEntry *prev_entry =  entry->prev();
+      if (prev_entry->IsInstruction()) {
+        InstructionEntry *prev_ins = prev_entry->AsInstruction();
+        //lock appears as separate instruction but in reality is a prefix
+        //Inserting nops between lock and the next instruction is bad as
+        //'lock nop' is an illegal instruction sequence
+        if (prev_ins->IsLock())
+          continue;
+      }
 
       if (count_down) {
         --count_down;

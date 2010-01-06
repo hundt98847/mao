@@ -458,6 +458,7 @@ class InstructionEntry : public MaoEntry {
   bool IsReturn() const;
   bool IsAdd() const;
   bool IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
+  bool IsLock() const { return op() == OP_lock; }
   bool IsPredicated() const;
 
   int NumOperands() const {
@@ -514,6 +515,9 @@ class InstructionEntry : public MaoEntry {
   }
   bool IsRegisterXMMOperand(const unsigned int op_index) {
     return instruction_->types[op_index].bitfield.regxmm;
+  }
+  bool IsStringOperation() {
+    return instruction_->tm.opcode_modifier.isstring;
   }
 
   bool HasDisplacement(const int op_index) {
