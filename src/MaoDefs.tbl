@@ -78,7 +78,7 @@ btr src dest flags: CF undef: OF SF ZF AF PF
 bts src dest flags: CF undef: OF SF ZF AF PF
 
 #c
-call rax rcx rdx rsi rdi r8 r9 r10 r11 flags: CF ZF SF OF PF AF
+#call rax rcx rdx rsi rdi r8 r9 r10 r11 flags: CF ZF SF OF PF AF
 cbw  ax
 cwde eax
 cdqe rax
