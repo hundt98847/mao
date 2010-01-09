@@ -74,7 +74,8 @@ class BasicBlock {
   : id_(id), label_(label),
     first_entry_(NULL),
     last_entry_(NULL),
-    chained_indirect_jump_target_(false) {
+    chained_indirect_jump_target_(false),
+    has_data_directives_(false) {
   }
   ~BasicBlock() {
     for (EdgeIterator iter = out_edges_.begin();
@@ -158,6 +159,15 @@ class BasicBlock {
     return chained_indirect_jump_target_;
   }
 
+  void FoundDataDirectives() {
+    has_data_directives_=true;
+  }
+
+  bool HasDataDirectives() {
+    return has_data_directives_;
+  }
+
+
  private:
   const BasicBlockID id_;
   const char *label_;
@@ -175,6 +185,9 @@ class BasicBlock {
   // jumps. This flags shows that the current basic block
   // is such a basic block.
   bool chained_indirect_jump_target_;
+
+  // Does the BB contains data directives such as .long?
+  bool has_data_directives_;
 };
 
 // Convenience Macros for Entry iteration

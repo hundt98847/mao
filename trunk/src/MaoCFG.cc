@@ -212,8 +212,14 @@ bool CFGBuilder::Go() {
       fprintf(stderr, "CFG: Working on: ");
       entry->PrintEntry(stderr);
     }
-    if (!BelongsInBasicBlock(entry))
+    if (!BelongsInBasicBlock(entry)) {
+      if (entry->IsDirective()) {
+        DirectiveEntry *de = entry->AsDirective();
+        if (current != NULL && de->IsDataDirective())
+          current->FoundDataDirectives();
+      }
       continue;
+    }
 
     // Update the last entry in the basic block
     last_entry = entry;

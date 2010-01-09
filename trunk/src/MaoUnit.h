@@ -299,6 +299,9 @@ class DirectiveEntry : public MaoEntry {
     CFI_VAL_ENCODED_ADDR,
     NUM_OPCODES  // Used to get the size of the array
   };
+#define NUM_DATA_DIRECTIVES  8
+  static const Opcode data_directives[NUM_DATA_DIRECTIVES];
+
 
   static const char *const kOpcodeNames[NUM_OPCODES];
 
@@ -381,6 +384,15 @@ class DirectiveEntry : public MaoEntry {
   Opcode op() const { return op_; }
   const char *GetOpcodeName() const {
     return kOpcodeNames[op_];
+  }
+
+  bool IsDataDirective() {
+    int i;
+    for (i=0; i<NUM_DATA_DIRECTIVES; i++) {
+      if (data_directives[i] == op_)
+        return true;
+    }
+    return false;
   }
 
   int NumOperands() const { return operands_.size(); }

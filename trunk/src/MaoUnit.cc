@@ -1627,6 +1627,9 @@ void LabelEntry::PrintIR(FILE *out) const {
 // Class: DirectiveEntry
 //
 
+const DirectiveEntry::Opcode DirectiveEntry::data_directives[NUM_DATA_DIRECTIVES] = {BYTE,
+  WORD, LONG, QUAD, STRING8, STRING16, STRING32, STRING64};
+
 const char *const DirectiveEntry::kOpcodeNames[NUM_OPCODES] = {
   ".file",
   ".section",
