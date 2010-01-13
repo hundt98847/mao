@@ -26,12 +26,12 @@
 #include "MaoCFG.h"
 #include "MaoDefs.h"
 
-const char* kPassName = "FNHIJACK";
+const char* kPassName = "FUNHIJACK";
 
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(FNHIJACK, 2) {
+MAO_OPTIONS_DEFINE(FUNHIJACK, 2) {
   OPTION_BOOL("entry", false, "Enable function entries to be hijacked"),
   OPTION_BOOL("return", false, "Enable function returns to be hijacked"),
 };
