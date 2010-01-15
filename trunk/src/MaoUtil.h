@@ -294,7 +294,7 @@ class BitString {
 
   void VerifyBitString() {
     // Check relation between number_of_bits_ and number_of_words_.
-#ifdef NDEBUG
+#ifndef NDEBUG
     int bits_per_word = sizeof(unsigned long long) * 8;
     MAO_ASSERT(((number_of_words_ * bits_per_word) >= number_of_bits_)
                && (((number_of_words_ - 1) * bits_per_word) < number_of_bits_));
