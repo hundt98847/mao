@@ -22,6 +22,7 @@
 #include <map>
 #include <set>
 #include <utility>
+#include <vector>
 
 #include "MaoCFG.h"
 #include "MaoDataFlow.h"
@@ -39,15 +40,16 @@
 
 class Definition {
  public:
-  Definition(const InstructionEntry *entry,
+  Definition() {}
+  Definition(const InstructionEntry *instruction,
              const BasicBlock *bb,
              int register_number)
-      : entry_(entry), bb_(bb), register_number_(register_number) {}
-  const InstructionEntry *entry() const { return entry_; }
+      : instruction_(instruction), bb_(bb), register_number_(register_number) {}
+  const InstructionEntry *instruction() const { return instruction_; }
   const BasicBlock *bb() const { return bb_; }
   int register_number() const { return register_number_; }
  private:
-  const InstructionEntry *entry_;
+  const InstructionEntry *instruction_;
   const BasicBlock *bb_;
   int register_number_;
 };
@@ -95,7 +97,6 @@ class ReachingDefs : public DFProblem {
   typedef std::pair<const BasicBlock *, int> IndexMapKey;
   typedef std::map<IndexMapKey, int> IndexMap;
   typedef std::map<int, IndexMapKey> RevIndexMap;
-  //typedef std::map<int, BitString> DefsMap;
   typedef std::vector<BitString> DefsMap;
 
   // Map from <basicblock, registernumber> -> index in bitstring

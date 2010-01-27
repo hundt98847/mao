@@ -60,10 +60,10 @@ class TestDataFlowPass : public MaoFunctionPass {
       liveness.Solve();
 
       // Print the live registers for each instruction.
-      FORALL_CFG_BB(cfg,it) {
+      FORALL_CFG_BB(cfg, it) {
         const BasicBlock *bb = *it;
         // Loop over the instructions.
-        FORALL_BB_ENTRY(it,entry) {
+        FORALL_BB_ENTRY(it, entry) {
           if ((*entry)->IsInstruction()) {
             InstructionEntry *insn = (*entry)->AsInstruction();
             std::string insn_str;
@@ -71,7 +71,7 @@ class TestDataFlowPass : public MaoFunctionPass {
             fprintf(stderr, "insn: %s\n", insn_str.c_str());
             BitString live_regs = liveness.GetLive(*bb, *insn);
             fprintf(stderr, "live: ");
-            for(int i = 0; i < live_regs.number_of_bits(); ++i) {
+            for (int i = 0; i < live_regs.number_of_bits(); ++i) {
               if (live_regs.Get(i)) {
                 if (i < GetNumberOfRegisters())
                   fprintf(stderr, "%s ", GetRegName(i));
@@ -101,10 +101,10 @@ class TestDataFlowPass : public MaoFunctionPass {
 
       // Print out the results!
       // For each instruction, print out the reaching definitions.
-      FORALL_CFG_BB(cfg,it) {
+      FORALL_CFG_BB(cfg, it) {
         const BasicBlock *bb = *it;
         // Loop over the instructions.
-        FORALL_BB_ENTRY(it,entry) {
+        FORALL_BB_ENTRY(it, entry) {
           if (!(*entry)->IsInstruction()) continue;
           InstructionEntry *insn = (*entry)->AsInstruction();
           std::string insn_str;
@@ -126,12 +126,12 @@ class TestDataFlowPass : public MaoFunctionPass {
                 fprintf(stderr, "%5s: No definitions found\n",
                         GetRegName(reg_num));
               }
-              for(std::list<Definition>::const_iterator iter = defs.begin();
-                  iter != defs.end();
-                  ++iter) {
+              for (std::list<Definition>::const_iterator iter = defs.begin();
+                   iter != defs.end();
+                   ++iter) {
                 std::string insn_str;
                 MAO_ASSERT(iter->register_number() == reg_num);
-                iter->entry()->ToString(&insn_str);
+                iter->instruction()->ToString(&insn_str);
                 fprintf(stderr, "%5s: Defined in bb:%s inst:%s\n",
                         GetRegName(reg_num),
                         iter->bb()->label(),

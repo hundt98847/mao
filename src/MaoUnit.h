@@ -100,9 +100,9 @@ class MaoEntry {
   const EntryID id() const { return id_; }
   void set_id(const EntryID id) {id_ = id;}
 
-  bool IsInstruction() { return Type() == INSTRUCTION; }
-  bool IsLabel() { return Type() == LABEL; }
-  bool IsDirective() { return Type() == DIRECTIVE; }
+  bool IsInstruction() const { return Type() == INSTRUCTION; }
+  bool IsLabel() const { return Type() == LABEL; }
+  bool IsDirective() const { return Type() == DIRECTIVE; }
 
   InstructionEntry *AsInstruction();
   LabelEntry *AsLabel();
@@ -405,6 +405,8 @@ class DirectiveEntry : public MaoEntry {
   virtual char GetDescriptiveChar() const {return 'D';}
 
   bool IsJumpTableEntry() const;
+  bool IsCFIDirective() const;
+  bool IsAlignDirective() const;
 
   // For indirect jumps, this instruction finds out the
   // label identifying the jump table used. If no such label,
@@ -426,6 +428,9 @@ class DirectiveEntry : public MaoEntry {
   OperandVector operands_;
 
   bool IsDebugDirective() const;
+
+  bool IsInList(const Opcode opcode, const Opcode list[],
+                const unsigned int number_of_elements) const;
 };
 
 
@@ -476,81 +481,81 @@ class InstructionEntry : public MaoEntry {
   int NumOperands() const {
     return instruction()->operands;
   }
-  bool IsMemOperand(const unsigned int op_index) {
+  bool IsMemOperand(const unsigned int op_index) const {
     return IsMemOperand(instruction(), op_index);
   }
-  bool IsMem8Operand(const unsigned int op_index) {
+  bool IsMem8Operand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.disp8 ||
         instruction_->types[op_index].bitfield.unspecified;
   }
-  bool IsMem16Operand(const unsigned int op_index) {
+  bool IsMem16Operand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.disp16 ||
         instruction_->types[op_index].bitfield.unspecified;
   }
-  bool IsMem32Operand(const unsigned int op_index) {
+  bool IsMem32Operand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.disp32 ||
         instruction_->types[op_index].bitfield.disp32s ||
         instruction_->types[op_index].bitfield.unspecified;
   }
-  bool IsMem64Operand(const unsigned int op_index) {
+  bool IsMem64Operand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.disp64 ||
         instruction_->types[op_index].bitfield.unspecified;
   }
-  bool IsImmediateOperand(const unsigned int op_index) {
+  bool IsImmediateOperand(const unsigned int op_index) const {
     return IsImmediateOperand(instruction(), op_index);
   }
-  bool IsRegisterOperand(const unsigned int op_index) {
+  bool IsRegisterOperand(const unsigned int op_index) const {
     return IsRegisterOperand(instruction(), op_index);
   }
-  bool IsRegister8Operand(const unsigned int op_index) {
+  bool IsRegister8Operand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.reg8 ||
       (instruction_->types[op_index].bitfield.acc &&
        instruction_->types[op_index].bitfield.byte);
   }
-  bool IsRegister16Operand(const unsigned int op_index) {
+  bool IsRegister16Operand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.reg16 ||
       (instruction_->types[op_index].bitfield.acc &&
        instruction_->types[op_index].bitfield.word);
   }
-  bool IsRegister32Operand(const unsigned int op_index) {
+  bool IsRegister32Operand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.reg32 ||
       (instruction_->types[op_index].bitfield.acc &&
        instruction_->types[op_index].bitfield.dword);
   }
-  bool IsRegister64Operand(const unsigned int op_index) {
+  bool IsRegister64Operand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.reg64 ||
       (instruction_->types[op_index].bitfield.acc &&
        instruction_->types[op_index].bitfield.qword);
   }
-  bool IsRegisterFloatOperand(const unsigned int op_index) {
+  bool IsRegisterFloatOperand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.floatreg;
   }
-  bool IsRegisterXMMOperand(const unsigned int op_index) {
+  bool IsRegisterXMMOperand(const unsigned int op_index) const {
     return instruction_->types[op_index].bitfield.regxmm;
   }
   bool IsStringOperation() {
     return instruction_->tm.opcode_modifier.isstring;
   }
 
-  bool HasDisplacement(const int op_index) {
+  bool HasDisplacement(const int op_index) const {
     MAO_ASSERT(op_index < NumOperands());
     return instruction_->op[op_index].disps != NULL;
   }
 
-  expressionS *GetDisplacement(const int op_index) {
+  expressionS *GetDisplacement(const int op_index) const {
     MAO_ASSERT(HasDisplacement(op_index));
     return instruction_->op[op_index].disps;
   }
 
-  bool CompareMemOperand(int op1, InstructionEntry *i2, int op2);
+  bool CompareMemOperand(int op1, InstructionEntry *i2, int op2) const;
   void SetOperand(int op1, InstructionEntry *i2, int op2);
 
   i386_insn   *instruction() const { return instruction_; }
 
-  const char  *GetRegisterOperandStr(const unsigned int op_index) {
+  const char  *GetRegisterOperandStr(const unsigned int op_index) const {
     return instruction_->op[op_index].regs->reg_name;
   }
-  const reg_entry *GetRegisterOperand(const unsigned int op_index) {
+  const reg_entry *GetRegisterOperand(const unsigned int op_index) const {
     return instruction_->op[op_index].regs;
   }
 
