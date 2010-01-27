@@ -26,7 +26,7 @@
 #include "MaoCFG.h"
 #include "MaoDefs.h"
 
-const char* kPassName = "FUNHIJACK";
+static const char* kPassName = "FUNHIJACK";
 
 // --------------------------------------------------------------------
 // Options
@@ -37,9 +37,9 @@ MAO_OPTIONS_DEFINE(FUNHIJACK, 2) {
 };
 
 
-class EnableFunctionHijackingPass : public MaoFunctionPass {
+class EnableFunHijackPass : public MaoFunctionPass {
  public:
-  EnableFunctionHijackingPass(MaoOptionMap *options, MaoUnit *mao,
+  EnableFunHijackPass(MaoOptionMap *options, MaoUnit *mao,
                               Function *func)
       : MaoFunctionPass(kPassName, options, mao, func) {
     hijack_fn_entry_ = GetOptionBool("entry");
@@ -129,4 +129,4 @@ class EnableFunctionHijackingPass : public MaoFunctionPass {
   bool  hijack_fn_return_;
 };
 
-REGISTER_FUNC_PASS(kPassName, EnableFunctionHijackingPass)
+REGISTER_FUNC_PASS(kPassName, EnableFunHijackPass)
