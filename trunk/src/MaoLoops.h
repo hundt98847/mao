@@ -286,7 +286,8 @@ class LoopStructureGraph {
     }
   }
 
-  unsigned int NumberOfLoops() { return loops_.size(); }
+  // Return number of loops, without the artificial root node
+  unsigned int NumberOfLoops() { return loops_.size()-1; }
 
   SimpleLoop *root() { return root_; }
 
