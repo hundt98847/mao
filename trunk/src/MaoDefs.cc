@@ -45,6 +45,7 @@ class RegProps {
   BitString        &sub_regs() { return sub_regs_; }
   BitString        &parent_regs() { return parent_regs_; }
   const char       *name() { return reg_->reg_name; }
+  int              num() { return num_; }
 
   void        AddSubReg(BitString &bstr) {
     sub_regs_ = sub_regs_ | bstr;
@@ -338,7 +339,7 @@ BitString GetMaskForRegister(const reg_entry *reg) {
 //
 // If expand_mask is true, the mask includes all parent and child registers
 // of the defined registers.
-BitString GetRegisterDefMask(InstructionEntry *insn,
+BitString GetRegisterDefMask(const InstructionEntry *insn,
                              bool expand_mask) {
   DefEntry *e = &def_entries[insn->op()];
   MAO_ASSERT(e->opcode == insn->op());
@@ -399,7 +400,7 @@ BitString GetRegisterDefMask(InstructionEntry *insn,
 //
 // If expand_mask is true, the mask includes all parent and child registers
 // of the defined registers.
-BitString GetRegisterUseMask(InstructionEntry *insn,
+BitString GetRegisterUseMask(const InstructionEntry *insn,
                              bool expand_mask) {
   UseEntry *e = &use_entries[insn->op()];
   MAO_ASSERT(e->opcode == insn->op());
@@ -574,6 +575,12 @@ bool       IsParent(const reg_entry *parent,
   return ((preg->mask() & parents).IsNonNull());
 }
 
+bool       IsParentNum(int parent,
+                       int child) {
+  return IsParent(reg_num_map[parent]->reg(),
+                  reg_num_map[child]->reg());
+}
+
 
 BitString  GetParentRegs(const reg_entry *reg) {
   RegProps *p1 = reg_ptr_map.find(reg)->second;
@@ -604,6 +611,13 @@ const char *GetRegName(int reg_number) {
   }
   MAO_ASSERT(it != reg_num_map.end());
   return (*it).second->reg()->reg_name;
+}
+
+int GetRegNum(const char *reg_name) {
+  RegNameMap::iterator it = reg_name_map.find(reg_name);
+
+  MAO_ASSERT(it != reg_name_map.end());
+  return (*it).second->num();
 }
 
 

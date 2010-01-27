@@ -1845,6 +1845,56 @@ bool DirectiveEntry::IsDebugDirective() const {
           op() == DirectiveEntry::LOC);
 }
 
+
+bool DirectiveEntry::IsInList(const Opcode opcode, const Opcode list[],
+              const unsigned int number_of_elements) const {
+  for (unsigned int i = 0; i < number_of_elements; i++) {
+    if (opcode == list[i])
+      return true;
+  }
+  return false;
+}
+
+bool DirectiveEntry::IsCFIDirective() const {
+  const Opcode cfi_directives[] = {
+    CFI_STARTPROC,
+    CFI_ENDPROC,
+    CFI_DEF_CFA,
+    CFI_DEF_CFA_REGISTER,
+    CFI_DEF_CFA_OFFSET,
+    CFI_ADJUST_CFA_OFFSET,
+    CFI_OFFSET,
+    CFI_REL_OFFSET,
+    CFI_REGISTER,
+    CFI_RETURN_COLUMN,
+    CFI_RESTORE,
+    CFI_UNDEFINED,
+    CFI_SAME_VALUE,
+    CFI_REMEMBER_STATE,
+    CFI_RESTORE_STATE,
+    CFI_WINDOW_SAVE,
+    CFI_ESCAPE,
+    CFI_SIGNAL_FRAME,
+    CFI_PERSONALITY,
+    CFI_LSDA,
+    CFI_VAL_ENCODED_ADDR,
+  };
+  return (IsInList(op(), cfi_directives,
+                   sizeof(cfi_directives)/sizeof(Opcode)));
+}
+
+bool DirectiveEntry::IsAlignDirective() const {
+  const Opcode align_directives[] = {
+    P2ALIGN,
+    P2ALIGNW,
+    P2ALIGNL,
+  };
+  return (IsInList(op(), align_directives,
+                   sizeof(align_directives)/sizeof(Opcode)));
+}
+
+
+
 //
 // Class: InstructionEntry
 //
@@ -2223,7 +2273,7 @@ void InstructionEntry::SetOperand(int op1,
 
 bool InstructionEntry::CompareMemOperand(int op1,
                                          InstructionEntry *insn2,
-                                         int op2) {
+                                         int op2) const {
   i386_insn *i1 = instruction();
   i386_insn *i2 = insn2->instruction();
 

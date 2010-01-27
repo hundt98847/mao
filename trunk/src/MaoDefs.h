@@ -72,10 +72,10 @@ extern UseEntry use_entries[];
 class InstructionEntry;
 
 void InitRegisters();
-BitString  GetRegisterDefMask(InstructionEntry *insn,
+BitString  GetRegisterDefMask(const InstructionEntry *insn,
                               bool expand_mask = false);
 
-BitString  GetRegisterUseMask(InstructionEntry *insn,
+BitString  GetRegisterUseMask(const InstructionEntry *insn,
                               bool expand_mask = false);
 
 std::set<const reg_entry *> GetDefinedRegisters(InstructionEntry *insn);
@@ -84,7 +84,7 @@ std::set<const reg_entry *> GetUsedRegisters(InstructionEntry *insn);
 BitString  GetCallingConventionDefMask();
 
 void       PrintRegistersInRegisterMask(FILE *f, BitString mask,
-					const char *title = NULL);
+                                        const char *title = NULL);
 BitString  GetMaskForRegister(const reg_entry *reg);
 bool       DefinesSubReg(reg_entry *reg,
                          reg_entry *sub_reg);
@@ -94,6 +94,8 @@ bool       RegistersContained(BitString &parent,
                               BitString &child);
 bool       IsParent(const reg_entry *parent,
                     const reg_entry *child);
+bool       IsParentNum(int parent,
+                       int child);
 BitString  GetParentRegs(const reg_entry *reg);
 
 bool       IsRegDefined(InstructionEntry *insn, const reg_entry *reg);
@@ -108,6 +110,8 @@ void FillParentRegs(BitString *mask);
 const reg_entry *GetIP();
 
 const reg_entry *GetRegFromName(const char *reg_name);
+int GetRegNum(const char *reg_name);
+
 const char *GetRegName(int reg_number);
 
 int GetNumberOfRegisters();

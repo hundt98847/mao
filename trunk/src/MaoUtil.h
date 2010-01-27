@@ -251,6 +251,19 @@ class BitString {
     }
   }
 
+  int NumOnes() const {
+    int c = 0; // c accumulates the total bits set.
+    // Count the number of bits in each byte.
+    for (int i = 0; i < number_of_words_; ++i) {
+      unsigned long long v = word_[i];
+      for (; v; c++)
+      {
+        v &= v - 1; // Clear the least significant bit set.
+      }
+    }
+    return c;
+  }
+
   int number_of_bits() const {return number_of_bits_;}
 
  private:
