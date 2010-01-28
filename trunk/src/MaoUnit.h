@@ -996,6 +996,7 @@ class Function {
   const std::string name() const {return name_;}
   FunctionID id() const {return id_;}
 
+  int GetNumInstructions() const;
   // TODO(martint): Reconsider iterator name.
   SectionEntryIterator EntryBegin();
   SectionEntryIterator EntryEnd();
