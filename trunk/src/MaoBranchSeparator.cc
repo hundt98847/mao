@@ -29,6 +29,8 @@
 #include "MaoPasses.h"
 #include "MaoRelax.h"
 
+namespace {
+
 #define FETCH_LINE_SIZE 16
 
 // Pass that finds paths in inner loops that fits in 4 16-byte lines
@@ -317,3 +319,5 @@ bool BranchSeparatorPass::IsProfitable(Function *function) {
     }
 }
 REGISTER_FUNC_PASS("BRSEP", BranchSeparatorPass)
+
+}  // namespace

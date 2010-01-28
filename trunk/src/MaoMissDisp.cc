@@ -25,6 +25,7 @@
 #include "MaoCFG.h"
 #include "MaoDefs.h"
 
+namespace {
 
 // --------------------------------------------------------------------
 // Options
@@ -79,3 +80,5 @@ class MissDispElimPass : public MaoFunctionPass {
 
 
 REGISTER_FUNC_PASS("MISSDISP", MissDispElimPass)
+
+}  // namespace

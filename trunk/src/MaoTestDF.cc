@@ -27,6 +27,8 @@
 #include "MaoLiveness.h"
 #include "MaoReachingDefs.h"
 
+namespace {
+
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
@@ -150,3 +152,5 @@ class TestDataFlowPass : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("TESTDF", TestDataFlowPass)
+
+}  // namespace

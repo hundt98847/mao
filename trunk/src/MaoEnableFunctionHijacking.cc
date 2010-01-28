@@ -26,6 +26,8 @@
 #include "MaoCFG.h"
 #include "MaoDefs.h"
 
+namespace {
+
 static const char* kPassName = "FUNHIJACK";
 
 // --------------------------------------------------------------------
@@ -130,3 +132,5 @@ class EnableFunHijackPass : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS(kPassName, EnableFunHijackPass)
+
+}  // namespace

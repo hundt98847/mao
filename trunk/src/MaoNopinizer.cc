@@ -25,6 +25,7 @@
 #include "MaoCFG.h"
 #include "MaoDefs.h"
 
+namespace {
 
 // --------------------------------------------------------------------
 // Options
@@ -92,3 +93,5 @@ class NopInizerPass : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("NOPIN", NopInizerPass)
+
+}  // namespace

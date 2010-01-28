@@ -31,6 +31,8 @@
 
 #include <map>
 
+namespace {
+
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
@@ -350,3 +352,5 @@ class BackBranchAlign : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("BACKBRALIGN", BackBranchAlign)
+
+}  // namespace

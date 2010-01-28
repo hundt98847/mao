@@ -31,6 +31,8 @@
 
 #include <map>
 
+namespace {
+
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
@@ -110,3 +112,5 @@ class PrefetchNtaPass : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("PREFNTA", PrefetchNtaPass)
+
+}  // namespace

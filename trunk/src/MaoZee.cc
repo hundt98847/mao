@@ -25,6 +25,8 @@
 #include "MaoDefs.h"
 
 
+namespace {
+
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
@@ -122,3 +124,5 @@ class ZeroExtentElimPass : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("ZEE", ZeroExtentElimPass)
+
+}  // namespace

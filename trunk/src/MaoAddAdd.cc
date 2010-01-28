@@ -25,6 +25,7 @@
 #include "MaoCFG.h"
 #include "MaoDefs.h"
 
+namespace {
 
 // --------------------------------------------------------------------
 // Options
@@ -190,3 +191,5 @@ class AddAddElimPass : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("ADDADD", AddAddElimPass)
+
+}  // namespace
