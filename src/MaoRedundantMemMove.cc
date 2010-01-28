@@ -25,6 +25,8 @@
 #include "MaoCFG.h"
 #include "MaoDefs.h"
 
+namespace {
+
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
@@ -135,3 +137,5 @@ class RedMemMovElimPass : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("REDMOV", RedMemMovElimPass)
+
+}  // namespace

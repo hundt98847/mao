@@ -22,6 +22,8 @@
 #include "MaoPasses.h"
 #include "MaoPlugin.h"
 
+namespace {
+
 PLUGIN_VERSION
 
 extern "C" {
@@ -54,3 +56,5 @@ void MaoInit() {
       "TESTPLUG",
       MaoFunctionPassManager::GenericPassCreator<TestPlugin>);
 }
+
+}  // namespace

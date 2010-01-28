@@ -32,6 +32,8 @@
 
 #include <map>
 
+namespace {
+
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
@@ -260,3 +262,5 @@ class AlignTinyLoops16 : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("LOOP16", AlignTinyLoops16)
+
+}  // namespace

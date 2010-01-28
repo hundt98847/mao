@@ -26,6 +26,8 @@
 
 #include <map>
 
+namespace {
+
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
@@ -98,3 +100,5 @@ class DeadCodeElimPass : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("DCE", DeadCodeElimPass)
+
+}  // namespace

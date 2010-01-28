@@ -27,6 +27,8 @@
 #include "MaoUnit.h"
 #include "MaoLoops.h"
 
+namespace {
+
 //
 // Union/Find algorithm after Tarjan, R.E., 1983, Data Structures
 // and Network Algorithms.
@@ -467,6 +469,8 @@ class LoopFinderPass : public MaoFunctionPass {
   LoopStructureGraph *LSG_;
   bool                dump_lsg_;
 };
+
+}  // namespace
 
 LoopStructureGraph *LoopStructureGraph::GetLSG(MaoUnit *mao,
 					       Function *function) {

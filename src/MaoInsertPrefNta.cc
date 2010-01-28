@@ -34,6 +34,8 @@
 
 #include "libiberty.h"
 
+namespace {
+
 using std::insert_iterator;
 using std::pair;
 using std::string;
@@ -390,3 +392,5 @@ void InitInsertPrefetchNta() {
       "INSPREFNTA",
       MaoPassManager::GenericPassCreator<InsertPrefetchNtaPass>);
 }
+
+}  // namespace

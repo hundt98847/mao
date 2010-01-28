@@ -25,6 +25,8 @@
 
 #include <set>
 
+namespace {
+
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
@@ -187,3 +189,5 @@ class RatFinderPass : public MaoFunctionPass {
 };
 
 REGISTER_FUNC_PASS("RATFINDER", RatFinderPass)
+
+}  // namespace
