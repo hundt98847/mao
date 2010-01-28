@@ -89,21 +89,29 @@ class BitString {
   }
 
   void Set(int index) {
+    MAO_ASSERT(index >= 0);
+    MAO_ASSERT(index < number_of_bits_);
     word_[index / (sizeof(unsigned long long) * 8)] |=
         1ULL << (index % (sizeof(unsigned long long) * 8));
   }
 
   void Clear(int index) {
+    MAO_ASSERT(index >= 0);
+    MAO_ASSERT(index < number_of_bits_);
     word_[index / (sizeof(unsigned long long) * 8)] &=
         ~(1ULL << (index % (sizeof(unsigned long long) * 8)));
   }
 
   bool Get(int index) const {
+    MAO_ASSERT(index >= 0);
+    MAO_ASSERT(index < number_of_bits_);
     return word_[index / (sizeof(unsigned long long) * 8)] &
         (1ULL << (index % (sizeof(unsigned long long) * 8)));
   }
 
   int NextSetBit(int from_index) {
+    MAO_ASSERT(index >= 0);
+    MAO_ASSERT(from_index < number_of_bits_);
     unsigned int word_pos = from_index/(sizeof(unsigned long long) * 8);
     unsigned int bit_pos = from_index%(sizeof(unsigned long long) * 8);
     while ((int) word_pos < number_of_words_) {
@@ -119,6 +127,7 @@ class BitString {
   }
 
   unsigned long long GetWord(int index) {
+    MAO_ASSERT(index >= 0);
     MAO_ASSERT(index < number_of_words_);
     return word_[index];
   }
@@ -251,14 +260,17 @@ class BitString {
     }
   }
 
-  int NumOnes() const {
+  // Return the number of set bits in the bitstring.
+  int NumOfBitsSet() const {
     int c = 0; // c accumulates the total bits set.
-    // Count the number of bits in each byte.
+    // Process one byte at the time.
     for (int i = 0; i < number_of_words_; ++i) {
       unsigned long long v = word_[i];
+      // Loop one iteration for each bit set in v.
       for (; v; c++)
       {
-        v &= v - 1; // Clear the least significant bit set.
+        // Clear the least significant set bit in v.
+        v &= v - 1;
       }
     }
     return c;
