@@ -3392,6 +3392,17 @@ bool ReverseSectionEntryIterator::operator !=(const ReverseSectionEntryIterator
 // Class: Function
 //
 
+int Function::GetNumInstructions() const {
+  unsigned num_instrns = 0;
+  for (MaoEntry *entry = first_entry(); entry != end_entry();
+       entry = entry->next()) {
+    if (entry->IsInstruction()) {
+      ++num_instrns;
+    }
+  }
+  return num_instrns;
+}
+
 SectionEntryIterator Function::EntryBegin() {
   return SectionEntryIterator(first_entry());
 }
