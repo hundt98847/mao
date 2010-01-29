@@ -109,9 +109,15 @@ class BitString {
         (1ULL << (index % (sizeof(unsigned long long) * 8)));
   }
 
+  // Return the index of the next bit set, starting (and including)
+  // from the index from_index. If no bit set is found, return -1.
+  // Valid inputs are 0 up to the number of bits in the BitString.
+  // (that is the range of values is the number of bits in the string
+  // plus one).  If the input value is set to the number of bits in
+  // the string, return -1.
   int NextSetBit(int from_index) {
     MAO_ASSERT(index >= 0);
-    MAO_ASSERT(from_index < number_of_bits_);
+    MAO_ASSERT(from_index <= number_of_bits_);
     unsigned int word_pos = from_index/(sizeof(unsigned long long) * 8);
     unsigned int bit_pos = from_index%(sizeof(unsigned long long) * 8);
     while ((int) word_pos < number_of_words_) {
