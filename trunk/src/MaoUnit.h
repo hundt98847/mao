@@ -933,6 +933,8 @@ class SubSection {
         start_section_(false),
         section_(section) { }
 
+  ~SubSection() {}
+
   unsigned int number() const { return number_; }
   const std::string &name() const { return name_; }
 
@@ -980,6 +982,12 @@ class Function {
       name_(name), id_(id), first_entry_(NULL), last_entry_(NULL),
       subsection_(subsection), cfg_(NULL), lsg_(NULL) {}
 
+  ~Function() {
+    // Deallocate memory.
+    set_cfg(NULL);
+    set_lsg(NULL);
+  }
+
   void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
   void set_last_entry(MaoEntry *entry) {
     last_entry_ = entry;
@@ -1019,16 +1027,17 @@ class Function {
   // These methods are to be used by the respective analyses to cache
   // analysis results.
   CFG *cfg() const {return cfg_;}
+  // Sets the CFG (NULL for no one) for a function.
   void set_cfg(CFG *cfg);
   friend CFG *CFG::GetCFG(MaoUnit *mao, Function *function, bool);
   friend CFG *CFG::GetCFGIfExists(const MaoUnit *mao, Function *function);
   friend void CFG::InvalidateCFG(Function *function);
 
   LoopStructureGraph *lsg() const {return lsg_;}
-  void set_lsg(LoopStructureGraph *lsg) {lsg_ = lsg;}
+  // Sets the Loop Structure Graph (NULL for no one) for a function.
+  void set_lsg(LoopStructureGraph *lsg);
   friend LoopStructureGraph *LoopStructureGraph::GetLSG(MaoUnit *mao,
                                                         Function *function);
-
 
   // Name of the function, as given by the function symbol.
   const std::string name_;

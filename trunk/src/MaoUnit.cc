@@ -59,7 +59,6 @@ MaoUnit::~MaoUnit() {
     delete *iter;
   }
 
-
   // Remove functions and free allocated memory
   for (MaoUnit::ConstFunctionIterator iter = ConstFunctionBegin();
       iter != ConstFunctionEnd();
@@ -67,12 +66,18 @@ MaoUnit::~MaoUnit() {
     delete *iter;
   }
 
-
   // Remove sections and free allocated memory
   for (std::map<const char *, Section *, ltstr>::const_iterator iter =
            sections_.begin();
        iter != sections_.end(); ++iter) {
     delete iter->second;
+  }
+
+  // Remove entries and free allocated memory
+  for (EntryIterator iter = entry_vector_.begin();
+       iter != entry_vector_.end();
+       ++iter) {
+    delete *iter;
   }
 }
 
@@ -1100,7 +1105,6 @@ MaoEntry::MaoEntry(unsigned int line_number, const char *line_verbatim,
 MaoEntry::~MaoEntry() {
 }
 
-
 // used when creating temporary expression
 // used when processing the dot (".") label in non-absolute sections
 #ifndef FAKE_LABEL_NAME
@@ -2055,15 +2059,16 @@ void InstructionEntry::FreeInstruction() {
     if (IsMemOperand(instruction_, i)) {
       delete instruction_->op[i].disps;
     }
-    if (IsRegisterOperand(instruction_, i)) {
-      delete instruction_->op[i].regs;
-    }
   }
   for (unsigned int i = 0; i < 2; i++) {
     delete instruction_->seg[i];
   }
-  delete instruction_->base_reg;
-  delete instruction_->index_reg;
+
+  // Registers are shared, and should not be freed.
+  //   - instruction_->base_reg;
+  //   - instruction_->index_reg;
+  //   - instruction_->op[*].regs;
+
   delete instruction_;
 }
 
@@ -3431,11 +3436,21 @@ void Function::Print(FILE *out) {
 }
 
 void Function::set_cfg(CFG *cfg) {
+  // Deallocate any previous CFG.
   if (cfg_ != NULL) {
     delete cfg_;
   }
   cfg_ = cfg;
 }
+
+void Function::set_lsg(LoopStructureGraph *lsg) {
+  // Deallocate any previous LSG.
+  if (lsg_ != NULL) {
+    delete lsg_;
+  }
+  lsg_ = lsg;
+}
+
 
 // Casting functions.
 InstructionEntry *MaoEntry::AsInstruction() {
