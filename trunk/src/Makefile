@@ -131,9 +131,11 @@ CCSRCS=						\
 	SymbolTable.cc
 
 PLUGIN_CCSRCS=					\
+	MaoInstructionBuilder.cc		\
 	MaoTestPlugin.cc
 
-PLUGINS=MaoTestPlugin
+PLUGINS=MaoTestPlugin				\
+	MaoInstructionBuilder
 
 GAS_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_SRC)))
 GAS_CONFIG_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_CONFIG_SRC)))

@@ -1,232 +1,431 @@
-// Copyright 2009 Google Inc. All Rights Reserved.
-// Author: eraman@google.com (Easwaran Raman)
+//
+// Copyright 2010 Google Inc.
+//
+// This program is free software; you can redistribute it and/or to
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the
+//   Free Software Foundation, Inc.,
+//   51 Franklin Street, Fifth Floor,
+//   Boston, MA  02110-1301, USA.
+
+// Instruction builder plugin. Given a file with a single assembly
+// instruction, this plugin prints C++ code that fills in an i386_insn
+// structure corresponding to this instruction.
+
+#include "MaoDebug.h"
+#include "MaoPasses.h"
+#include "MaoPlugin.h"
+#include "MaoUnit.h"
+
+namespace {
+
+PLUGIN_VERSION
 
 extern "C" {
+  void MaoInit();
   #include "as.h"
   #include "tc-i386.h"
 }
 
-void PrintTemplate (insn_template *tm);
-void PrintOperandTypes (i386_operand_type *operand_types);
-void PrintOpcodeModifier (i386_opcode_modifier *modifier);
-void PrintOperandTypes2 (i386_operand_type *types);
+void PrintTemplate(const insn_template *tm, int num_operands);
+void PrintOperandTypes(const i386_operand_type *operand_types, int num_operands);
+void PrintOpcodeModifier(i386_opcode_modifier modifier);
+void PrintOperandTypes2(const i386_operand_type *types, int num_operands);
+void PrintFlags(const unsigned int *flags);
+void PrintRelocs(const enum bfd_reloc_code_real *reloc);
+void PrintModRm(const modrm_byte *modrm);
+void PrintSib(const sib_byte *sib);
+void PrintDrex(const drex_byte *drex);
+void PrintVexPrefix(const vex_prefix *vex);
+void PrintPrefixes(unsigned int prefixes, const unsigned char *prefix);
+void PrintI386InsnStruct(const i386_insn *instruction);
+void PrintOperands(const i386_insn *i);
 
-void print_i386_insn_struct (i386_insn *instruction) {
-  PrintTemplate (&(instruction->tm));
-  printf ("i->suffix = %d;\n", instruction->suffix);
-  printf ("i->operands= %d;\n", instruction->operands);
-  printf ("i->reg_operands= %d;\n", instruction->reg_operands);
-  printf ("i->disp_operands= %d;\n", instruction->disp_operands);
-  printf ("i->mem_operands= %d;\n", instruction->mem_operands);
-  printf ("i->imm_operands= %d;\n", instruction->imm_operands);
-  PrintOperandTypes2(instruction->types);
+// Macros to simplify printing
+
+// Prints a format string and a value if the value is non-zero
+#define PrintNonZero(fmt_str, value) \
+    if (value) printf("  "fmt_str, value)
+
+// Print with indentation after stringifying the first argument
+#define PrettyPrint(x, y)\
+    printf("  "#x, y)
+
+
+// Print a field in prefix (dot) structure if it is non-zero
+#define PrintNonZeroDot(prefix, structure, field, format_str) \
+    if (structure.field) \
+    PrettyPrint(prefix.structure.field = format_str;\n, structure.field)
+
+// Print a field in prefix (arrow) structure if it is non-zero
+#define PrintNonZeroArrow(prefix, structure, field, format_str) \
+    if (structure.field) \
+    PrettyPrint(prefix->structure.field = format_str;\n, structure.field)
+
+// Print a field in prefix (arrow) structure
+#define PrintArrow(prefix, structure, field, format_str) \
+    PrettyPrint(prefix->structure.field = format_str;\n, structure->field)
+
+MAO_OPTIONS_DEFINE(INSBUILDPLUG, 0) {
+};
+
+class InstructionBuilderPlugin : public MaoPass {
+ public:
+  InstructionBuilderPlugin(MaoOptionMap *options, MaoUnit *mao)
+      : MaoPass("INSBUILDPLUG", options, mao) { }
+
+  bool Go() {
+    InstructionEntry *insn = NULL;
+    for (ConstSectionIterator section = unit_->ConstSectionBegin();
+          section != unit_->ConstSectionEnd(); ++section) {
+      for (SectionEntryIterator entry = (*section)->EntryBegin();
+           entry != (*section)->EntryEnd(); ++entry) {
+        if ((*entry)->IsInstruction()) {
+          // We expect the file to have only one insruction
+          MAO_RASSERT_MSG(insn == NULL,
+                          "More than one instruction found in input file\n");
+          insn = (*entry)->AsInstruction();
+        }
+      }
+    }
+    PrintI386InsnStruct(insn->instruction());
+    return true;
+  }
+};
+
+
+// External Entry Point
+//
+void MaoInit() {
+  RegisterUnitPass(
+      "INSBUILDPLUG",
+      MaoPassManager::GenericPassCreator<InstructionBuilderPlugin>);
 }
 
-#define PrintField(fmt_str, value) \
-    printf (fmt_str, value);
+void PrintI386InsnStruct(const i386_insn *instruction) {
+  // Print headers
+  printf("extern \"C\" {\n  #include \"as.h\"\n  #include \"tc-i386.h\"\n}\n");
+  printf("#include \"MaoDefs.h\"\n");
+  printf("void FillInstructionDetails(i386_insn *i) {\n");
 
-#define PrintNonZeroField(fmt_str, value) \
-    printf (fmt_str, value);
+  printf("  // Zero out the structure.\n");
+  printf("  memset(i, 0, sizeof(*i));\n");
+  PrintTemplate(&(instruction->tm), instruction->operands);
 
-#define Print3(x, y)\
-    printf(#x, y);
+  printf("  i->suffix = %d;\n", instruction->suffix);
+  printf("  i->operands= %d;\n", instruction->operands);
+  printf("  i->reg_operands= %d;\n", instruction->reg_operands);
+  printf("  i->disp_operands= %d;\n", instruction->disp_operands);
+  printf("  i->mem_operands= %d;\n", instruction->mem_operands);
+  printf("  i->imm_operands= %d;\n", instruction->imm_operands);
+  PrintOperandTypes2(instruction->types, instruction->operands);
+  PrintOperands(instruction);
+  PrintFlags(instruction->flags);
+  PrintRelocs(instruction->reloc);
+  if (instruction->base_reg != NULL)
+    PrintNonZero("i->base_reg = GetRegFromName (\"%s\");\n",
+                 instruction->base_reg->reg_name);
+  if (instruction->index_reg != NULL)
+    PrintNonZero("i->index_reg = GetRegFromName (\"%s\");\n",
+                 instruction->index_reg->reg_name);
+  PrintNonZero("i->log2_scale_factor = %d;\n",
+               instruction->log2_scale_factor);
 
+  // TODO(eraman): Fill the segentry fields for the few cases they matter
+  PrintPrefixes(instruction->prefixes, instruction->prefix);
+  PrintModRm(&(instruction->rm));
+  PrintNonZero("i->rex = %d;\n", instruction->rex);
+  PrintSib(&(instruction->sib));
+  PrintDrex(&(instruction->drex));
+  PrintVexPrefix(&(instruction->vex));
+  printf("}\n");
+}
 
-#define PrintNonZero(prefix, structure, field, format_str) \
-    if (structure->field) \
-    Print3(prefix.structure.field = format_str;\n, structure->field);
-
-#define PrintNonZero2(prefix, structure, field, format_str) \
-    if (structure.field) \
-    Print3(prefix.structure.field = format_str;\n, structure.field);
-
-#define PrintNonZero1(prefix, structure, field, format_str) \
-    if (structure.field) \
-    Print3(prefix->structure.field = format_str;\n, structure.field);
-
-#define PrintField1(prefix, structure, field, format_str) \
-    Print3(prefix.structure.field = format_str;\n, structure->field);
-
-#define PrintField2(prefix, structure, field, format_str) \
-    Print3(prefix->structure.field = format_str;\n, structure->field);
-void PrintTemplate (insn_template *tm) {
-#ifdef PREFIX
-#undef PREFIX
-#endif
-#define PREFIX i->tm
-
-  PrintField2(i, tm, name, strdup ("%s"))
-  PrintField2(i, tm, operands, %d)
-  PrintField2(i, tm, base_opcode, %d)
-  PrintField2(i, tm, extension_opcode, %d)
-  PrintField2(i, tm, opcode_length, %d)
+void PrintTemplate(const insn_template *tm, int num_operands) {
+  PrintArrow(i, tm, name, strdup("%s"));
+  PrintArrow(i, tm, operands, %d);
+  PrintArrow(i, tm, base_opcode, %d);
+  PrintArrow(i, tm, extension_opcode, %d);
+  PrintArrow(i, tm, opcode_length, %d);
   /* Omitting CPU flags for now. Seems to be all zeroes */
 
-  PrintOpcodeModifier(&(tm->opcode_modifier));
-  PrintOperandTypes(tm->operand_types);
-
-
+  PrintOpcodeModifier(tm->opcode_modifier);
+  PrintOperandTypes(tm->operand_types, num_operands);
 }
 
-void PrintOperandTypes (i386_operand_type *operand_types) {
-  printf ("int i;");
-  for (int i=0; i<MAX_OPERANDS; i++) {
-    printf ("i = %d;\n", i);
-    PrintNonZero2(i->tm, operand_types[i], bitfield.reg8, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.reg16, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.reg32, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.reg64, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.floatreg, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.regmmx, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.regxmm, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.regymm, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.control, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.debug, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.test, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.sreg2, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.sreg3, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.imm1, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.imm8, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.imm8s, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.imm16, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.imm32, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.imm32, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.imm64, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.disp8, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.disp16, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.disp32, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.disp32s, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.disp64, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.acc, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.floatacc, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.baseindex, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.inoutportreg, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.shiftcount, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.jumpabsolute, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.esseg, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.regmem, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.mem, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.byte, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.word, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.dword, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.fword, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.qword, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.tbyte, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.xmmword, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.ymmword, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.unspecified, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.anysize, %d)
-    PrintNonZero2(i->tm, operand_types[i], bitfield.vex_imm4, %d)
+void PrintModRm(const modrm_byte *modrm) {
+  PrintNonZero("i->rm.regmem = %u;\n", modrm->regmem);
+  PrintNonZero("i->rm.reg = %u;\n", modrm->reg);
+  PrintNonZero("i->rm.mode = %u;\n", modrm->mode);
+}
+
+void PrintSib(const sib_byte *sib) {
+  PrintNonZero("i->sib.base = %u;\n", sib->base);
+  PrintNonZero("i->sib.index = %u;\n", sib->index);
+  PrintNonZero("i->sib.scale = %u;\n", sib->scale);
+}
+
+void PrintDrex(const drex_byte *drex) {
+  PrintNonZero("i->drex.reg = %u;\n", drex->reg);
+  PrintNonZero("i->drex.rex = %u;\n", drex->rex);
+  PrintNonZero("i->drex.modrm_reg = %u;\n", drex->modrm_reg);
+  PrintNonZero("i->drex.modrm_regmem = %u;\n", drex->modrm_regmem);
+}
+
+void PrintVexPrefix(const vex_prefix *vex) {
+  PrintNonZero("i->vex.bytes[0] = %u;\n", vex->bytes[0]);
+  PrintNonZero("i->vex.bytes[1] = %u;\n", vex->bytes[1]);
+  PrintNonZero("i->vex.bytes[2] = %u;\n", vex->bytes[2]);
+  PrintNonZero("i->vex.length = %u;\n", vex->length);
+  if (vex->register_specifier)
+    PrintNonZero("  i->vex.register_specifier = GetRegFromName (\"%s\");\n",
+                 vex->register_specifier->reg_name);
+}
+
+void PrintPrefixes(unsigned int prefixes, const unsigned char *prefix) {
+  if (!prefixes)
+    return;
+  printf("  i->prefixes = %u;\n", prefixes);
+
+  for (unsigned int i = 0; i < prefixes; i++) {
+    if (prefix[i])
+      printf("  i->prefix[%d] = %u;\n", i, prefix[i]);
   }
 }
 
-void PrintOperandTypes2 (i386_operand_type *types) {
-  printf ("int i;");
-  for (int i=0; i<MAX_OPERANDS; i++) {
-    printf ("i = %d;\n", i);
-    PrintNonZero1(i, types[i], bitfield.reg8, %d)
-    PrintNonZero1(i, types[i], bitfield.reg16, %d)
-    PrintNonZero1(i, types[i], bitfield.reg32, %d)
-    PrintNonZero1(i, types[i], bitfield.reg64, %d)
-    PrintNonZero1(i, types[i], bitfield.floatreg, %d)
-    PrintNonZero1(i, types[i], bitfield.regmmx, %d)
-    PrintNonZero1(i, types[i], bitfield.regxmm, %d)
-    PrintNonZero1(i, types[i], bitfield.regymm, %d)
-    PrintNonZero1(i, types[i], bitfield.control, %d)
-    PrintNonZero1(i, types[i], bitfield.debug, %d)
-    PrintNonZero1(i, types[i], bitfield.test, %d)
-    PrintNonZero1(i, types[i], bitfield.sreg2, %d)
-    PrintNonZero1(i, types[i], bitfield.sreg3, %d)
-    PrintNonZero1(i, types[i], bitfield.imm1, %d)
-    PrintNonZero1(i, types[i], bitfield.imm8, %d)
-    PrintNonZero1(i, types[i], bitfield.imm8s, %d)
-    PrintNonZero1(i, types[i], bitfield.imm16, %d)
-    PrintNonZero1(i, types[i], bitfield.imm32, %d)
-    PrintNonZero1(i, types[i], bitfield.imm32, %d)
-    PrintNonZero1(i, types[i], bitfield.imm64, %d)
-    PrintNonZero1(i, types[i], bitfield.disp8, %d)
-    PrintNonZero1(i, types[i], bitfield.disp16, %d)
-    PrintNonZero1(i, types[i], bitfield.disp32, %d)
-    PrintNonZero1(i, types[i], bitfield.disp32s, %d)
-    PrintNonZero1(i, types[i], bitfield.disp64, %d)
-    PrintNonZero1(i, types[i], bitfield.acc, %d)
-    PrintNonZero1(i, types[i], bitfield.floatacc, %d)
-    PrintNonZero1(i, types[i], bitfield.baseindex, %d)
-    PrintNonZero1(i, types[i], bitfield.inoutportreg, %d)
-    PrintNonZero1(i, types[i], bitfield.shiftcount, %d)
-    PrintNonZero1(i, types[i], bitfield.jumpabsolute, %d)
-    PrintNonZero1(i, types[i], bitfield.esseg, %d)
-    PrintNonZero1(i, types[i], bitfield.regmem, %d)
-    PrintNonZero1(i, types[i], bitfield.mem, %d)
-    PrintNonZero1(i, types[i], bitfield.byte, %d)
-    PrintNonZero1(i, types[i], bitfield.word, %d)
-    PrintNonZero1(i, types[i], bitfield.dword, %d)
-    PrintNonZero1(i, types[i], bitfield.fword, %d)
-    PrintNonZero1(i, types[i], bitfield.qword, %d)
-    PrintNonZero1(i, types[i], bitfield.tbyte, %d)
-    PrintNonZero1(i, types[i], bitfield.xmmword, %d)
-    PrintNonZero1(i, types[i], bitfield.ymmword, %d)
-    PrintNonZero1(i, types[i], bitfield.unspecified, %d)
-    PrintNonZero1(i, types[i], bitfield.anysize, %d)
-    PrintNonZero1(i, types[i], bitfield.vex_imm4, %d)
+void PrintFlags(const unsigned int *flags) {
+  for (int i = 0; i < MAX_OPERANDS; i++) {
+    if (flags[i])
+      printf("  i->flags[%d] = %u;\n", i, flags[i]);
   }
 }
-void PrintOpcodeModifier (i386_opcode_modifier *modifier) {
-  PrintNonZero(i->tm, modifier, d, %d)
-  PrintNonZero(i->tm, modifier, w, %d)
-  PrintNonZero(i->tm, modifier, modrm, %d)
-  PrintNonZero(i->tm, modifier, shortform, %d)
-  PrintNonZero(i->tm, modifier, jump, %d)
-  PrintNonZero(i->tm, modifier, jumpdword, %d)
-  PrintNonZero(i->tm, modifier, jumpbyte, %d)
-  PrintNonZero(i->tm, modifier, jumpintersegment, %d)
-  PrintNonZero(i->tm, modifier, floatmf, %d)
-  PrintNonZero(i->tm, modifier, floatr, %d)
-  PrintNonZero(i->tm, modifier, floatd, %d)
-  PrintNonZero(i->tm, modifier, size16, %d)
-  PrintNonZero(i->tm, modifier, size32, %d)
-  PrintNonZero(i->tm, modifier, size64, %d)
-  PrintNonZero(i->tm, modifier, ignoresize, %d)
-  PrintNonZero(i->tm, modifier, defaultsize, %d)
-  PrintNonZero(i->tm, modifier, no_bsuf, %d)
-  PrintNonZero(i->tm, modifier, no_wsuf, %d)
-  PrintNonZero(i->tm, modifier, no_lsuf, %d)
-  PrintNonZero(i->tm, modifier, no_ssuf, %d)
-  PrintNonZero(i->tm, modifier, no_qsuf, %d)
-  PrintNonZero(i->tm, modifier, no_ldsuf, %d)
-  PrintNonZero(i->tm, modifier, fwait, %d)
-  PrintNonZero(i->tm, modifier, isstring, %d)
-  PrintNonZero(i->tm, modifier, regkludge, %d)
-  PrintNonZero(i->tm, modifier, firstxmm0, %d)
-  PrintNonZero(i->tm, modifier, implicit1stxmm0, %d)
-  PrintNonZero(i->tm, modifier, byteokintel, %d)
-  PrintNonZero(i->tm, modifier, todword, %d)
-  PrintNonZero(i->tm, modifier, toqword, %d)
-  PrintNonZero(i->tm, modifier, addrprefixop0, %d)
-  PrintNonZero(i->tm, modifier, isprefix, %d)
-  PrintNonZero(i->tm, modifier, immext, %d)
-  PrintNonZero(i->tm, modifier, norex64, %d)
-  PrintNonZero(i->tm, modifier, rex64, %d)
-  PrintNonZero(i->tm, modifier, ugh, %d)
-  PrintNonZero(i->tm, modifier, drex, %d)
-  PrintNonZero(i->tm, modifier, drexv, %d)
-  PrintNonZero(i->tm, modifier, drexc, %d)
-  PrintNonZero(i->tm, modifier, vex, %d)
-  PrintNonZero(i->tm, modifier, vex256, %d)
-  PrintNonZero(i->tm, modifier, vexnds, %d)
-  PrintNonZero(i->tm, modifier, vexndd, %d)
-  PrintNonZero(i->tm, modifier, vexw0, %d)
-  PrintNonZero(i->tm, modifier, vexw1, %d)
-  PrintNonZero(i->tm, modifier, vex0f, %d)
-  PrintNonZero(i->tm, modifier, vex0f38, %d)
-  PrintNonZero(i->tm, modifier, vex0f3a, %d)
-  PrintNonZero(i->tm, modifier, vex3sources, %d)
-  PrintNonZero(i->tm, modifier, veximmext, %d)
-  PrintNonZero(i->tm, modifier, sse2avx, %d)
-  PrintNonZero(i->tm, modifier, noavx, %d)
-  PrintNonZero(i->tm, modifier, oldgcc, %d)
-  PrintNonZero(i->tm, modifier, attmnemonic, %d)
-  PrintNonZero(i->tm, modifier, attsyntax, %d)
-  PrintNonZero(i->tm, modifier, intelsyntax, %d)
 
+void PrintRelocs(const enum bfd_reloc_code_real *reloc) {
+  for (int i = 0; i < MAX_OPERANDS; i++) {
+    if (reloc[i])
+      printf("  i->reloc[%d] = static_cast<bfd_reloc_code_real>(%u);\n",
+             i, reloc[i]);
+  }
 }
+
+// Prints the bitfields that describe the types of the operands
+void PrintOperandTypes(const i386_operand_type *operand_types, int num_operands) {
+  printf("  int j;\n");
+  for (int j = 0; j < num_operands; j++) {
+    printf("\n  j = %d;\n", j);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.reg8, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.reg16, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.reg32, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.reg64, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.floatreg, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.regmmx, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.regxmm, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.regymm, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.control, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.debug, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.test, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.sreg2, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.sreg3, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.imm1, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.imm8, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.imm8s, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.imm16, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.imm32, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.imm32, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.imm64, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.disp8, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.disp16, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.disp32, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.disp32s, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.disp64, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.acc, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.floatacc, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.baseindex, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.inoutportreg, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.shiftcount, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.jumpabsolute, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.esseg, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.regmem, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.mem, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.byte, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.word, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.dword, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.fword, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.qword, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.tbyte, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.xmmword, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.ymmword, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.unspecified, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.anysize, %d);
+    PrintNonZeroDot(i->tm, operand_types[j], bitfield.vex_imm4, %d);
+  }
+}
+
+void PrintOperands(const i386_insn *i) {
+  for (unsigned int j = 0; j < i->operands; j++) {
+    if (InstructionEntry::IsRegisterOperand(i, j)) {
+      printf("  i->op[%u].regs = GetRegFromName (\"%s\");\n",
+             j, i->op[j].regs->reg_name);
+    } else if (InstructionEntry::IsImmediateOperand(i, j)) {
+      printf("  i->op[%u].imms = "
+             "static_cast<expressionS*>xmalloc(sizeof(expressionS));\n",
+             j);
+      if (i->op[j].imms->X_add_symbol) {
+        const char *name = S_GET_NAME(i->op[j].imms->X_add_symbol);
+        printf("  i->op[%u].imms->X_add_symbol = "
+               "symbol_find_or_make(\"%s\");\n", j, name);
+      }
+      if (i->op[j].imms->X_op_symbol) {
+        const char *name = S_GET_NAME(i->op[j].imms->X_op_symbol);
+        printf("  i->op[%u].imms->X_op_symbol = "
+               "symbol_find_or_make(\"%s\");\n", j, name);
+      }
+      printf("  i->op[%u].imms->X_add_number = %ld;\n",
+             j, i->op[j].imms->X_add_number);
+      printf("  i->op[%u].imms->X_op = %u;\n", j, i->op[j].imms->X_op);
+      printf("  i->op[%u].imms->X_unsigned = %u;\n",
+             j, i->op[j].imms->X_unsigned);
+      printf("  i->op[%u].imms->X_md = %u;\n", j, i->op[j].imms->X_md);
+    } else if (i->op[j].disps != NULL) {
+      printf("  i->op[%u].disps = "
+             "(expressionS*)malloc(sizeof(expressionS));\n", j);
+      if (i->op[j].disps->X_add_symbol) {
+        const char *name = S_GET_NAME(i->op[j].disps->X_add_symbol);
+        printf("  i->op[%u].disps->X_add_symbol = "
+               "symbol_find_or_make(\"%s\");\n", j, name);
+      }
+      if (i->op[j].disps->X_op_symbol) {
+        const char *name = S_GET_NAME(i->op[j].disps->X_op_symbol);
+        printf("  i->op[%u].disps->X_op_symbol = "
+               "symbol_find_or_make(\"%s\");\n", j, name);
+      }
+      printf("  i->op[%u].disps->X_add_number = %ld;\n",
+             j, i->op[j].disps->X_add_number);
+      printf("  i->op[%u].disps->X_op = %u;\n", j, i->op[j].disps->X_op);
+      printf("  i->op[%u].disps->X_unsigned = %u;\n",
+             j, i->op[j].disps->X_unsigned);
+      printf("  i->op[%u].disps->X_md = %u;\n", j, i->op[j].disps->X_md);
+    }
+  }
+}
+
+// Similar to PrintOperandTypes, except that the bitfields are in a different
+// structure.
+void PrintOperandTypes2(const i386_operand_type *types, int num_operands) {
+  for (int j = 0; j < num_operands; j++) {
+    printf("\n  j = %d;\n", j);
+    PrintNonZeroArrow(i, types[j], bitfield.reg8, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.reg16, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.reg32, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.reg64, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.floatreg, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.regmmx, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.regxmm, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.regymm, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.control, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.debug, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.test, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.sreg2, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.sreg3, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.imm1, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.imm8, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.imm8s, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.imm16, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.imm32, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.imm32, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.imm64, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.disp8, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.disp16, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.disp32, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.disp32s, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.disp64, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.acc, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.floatacc, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.baseindex, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.inoutportreg, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.shiftcount, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.jumpabsolute, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.esseg, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.regmem, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.mem, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.byte, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.word, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.dword, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.fword, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.qword, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.tbyte, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.xmmword, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.ymmword, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.unspecified, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.anysize, %d);
+    PrintNonZeroArrow(i, types[j], bitfield.vex_imm4, %d);
+  }
+}
+void PrintOpcodeModifier(i386_opcode_modifier opcode_modifier) {
+  PrintNonZeroDot(i->tm, opcode_modifier, d, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, w, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, modrm, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, shortform, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, jump, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, jumpdword, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, jumpbyte, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, jumpintersegment, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, floatmf, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, floatr, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, floatd, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, size16, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, size32, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, size64, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, ignoresize, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, defaultsize, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, no_bsuf, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, no_wsuf, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, no_lsuf, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, no_ssuf, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, no_qsuf, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, no_ldsuf, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, fwait, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, isstring, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, regkludge, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, firstxmm0, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, implicit1stxmm0, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, byteokintel, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, todword, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, toqword, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, addrprefixop0, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, isprefix, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, immext, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, norex64, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, rex64, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, ugh, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, drex, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, drexv, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, drexc, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vex, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vex256, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vexnds, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vexndd, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vexw0, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vexw1, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vex0f, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vex0f38, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vex0f3a, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, vex3sources, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, veximmext, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, sse2avx, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, noavx, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, oldgcc, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, attmnemonic, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, attsyntax, %d);
+  PrintNonZeroDot(i->tm, opcode_modifier, intelsyntax, %d);
+}
+}  // namespace
