@@ -316,6 +316,39 @@ static struct insn_template FindTemplate(const char *opcode,
   return i386_optab[0];  // Should never happen;
 }
 
+InstructionEntry *MaoUnit::CreateInstruction(i386_insn *instruction,
+                                             Function *function) {
+  enum flag_code flag;
+  switch (arch_) {
+    case X86_64:
+      flag = CODE_64BIT;
+      break;
+    case I386:
+      flag = CODE_32BIT;
+      break;
+    default:
+      MAO_RASSERT_MSG(false, "Unable to match code flag to architecture");
+      return NULL;  // Quells a warning about flag used without being defined
+  }
+
+  InstructionEntry *e = new InstructionEntry(instruction, flag, 0, NULL, this);
+  // next free ID for the entry
+  EntryID entry_index = entry_vector_.size();
+  e->set_id(entry_index);
+
+  // Add the entry to the compilation unit
+  entry_vector_.push_back(e);
+
+  SubSection *subsection = function->GetSubSection();
+  if (function) {
+    entry_to_function_[e] = function;
+  }
+  if (subsection) {
+    entry_to_subsection_[e] = subsection;
+  }
+  return e;
+}
+
 InstructionEntry *MaoUnit::CreateInstruction(const char *opcode_str,
                                              unsigned int base_opcode,
                                              Function *function) {
@@ -332,7 +365,7 @@ InstructionEntry *MaoUnit::CreateInstruction(const char *opcode_str,
       flag = CODE_32BIT;
       break;
     default:
-      MAO_ASSERT_MSG(false, "Unable to match code flag to architecture");
+      MAO_RASSERT_MSG(false, "Unable to match code flag to architecture");
       return NULL;  // Quells a warning about flag used without being defined
   }
 

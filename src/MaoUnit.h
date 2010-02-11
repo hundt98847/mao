@@ -596,6 +596,13 @@ class InstructionEntry : public MaoEntry {
      class already exists, 1 if non rep/repne added, 2 if rep/repne
      added.  */
   int AddPrefix(unsigned int prefix);
+  // Used to determine type of operand.
+  static bool IsMemOperand(const i386_insn *instruction,
+                           const unsigned int op_index);
+  static bool IsImmediateOperand(const i386_insn *instruction,
+                                 const unsigned int op_index);
+  static bool  IsRegisterOperand(const i386_insn *instruction,
+                                 const unsigned int op_index);
 
  private:
   i386_insn *instruction_;
@@ -611,13 +618,6 @@ class InstructionEntry : public MaoEntry {
   bool execution_count_valid_;
   long execution_count_;
 
-  // Used to determine type of operand.
-  static bool IsMemOperand(const i386_insn *instruction,
-                           const unsigned int op_index);
-  static bool IsImmediateOperand(const i386_insn *instruction,
-                                 const unsigned int op_index);
-  static bool  IsRegisterOperand(const i386_insn *instruction,
-                                 const unsigned int op_index);
   // Allocates memory for a new instruction and populates it.
   // The instruction passed from gas might not be allocated
   // until the end of the program.
@@ -695,6 +695,8 @@ class MaoUnit {
   // Instruction Creators
   InstructionEntry *CreateInstruction(const char *opcode,
                                       unsigned int base_opcode,
+                                      Function *function);
+  InstructionEntry *CreateInstruction(i386_insn *instruction,
                                       Function *function);
   InstructionEntry *CreateNop(Function *function);
   InstructionEntry *Create2ByteNop(Function *function);
