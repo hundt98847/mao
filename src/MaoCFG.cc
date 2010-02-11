@@ -79,8 +79,11 @@ bool BasicBlock::DirectlyFollows(const BasicBlock *basicblock) const {
 }
 
 CFG *CFG::GetCFG(MaoUnit *mao, Function *function, bool conservative) {
-  if (function->cfg() == NULL) {
-    // Build it!
+  // If a CFG is associated with the function, and it was build with the
+  // same flags, we can reuse it. Otherwise rebuild it.
+  if (function->cfg() == NULL ||
+      function->cfg()->conservative() != conservative) {
+    // Build it!p
     CFG *cfg = new CFG(mao);
     CreateCFG(mao, function, cfg, conservative);
     function->set_cfg(cfg);
@@ -172,6 +175,7 @@ CFGBuilder::CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG,
                        bool conservative)
     : MaoFunctionPass("CFG", GetStaticOptionPass("CFG"), mao_unit, function),
       CFG_(CFG), next_id_(0), cfg_stat_(NULL) {
+  MAO_ASSERT(CFG_ != NULL);
   split_basic_blocks_ = GetOptionBool("callsplit");
   respect_orig_labels_= GetOptionBool("respect_orig_labels");
   dump_vcg_ = GetOptionBool("vcg");
@@ -186,6 +190,7 @@ CFGBuilder::CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG,
       unit_->GetStats()->Add("CFG", cfg_stat_);
     }
   }
+  CFG_->set_conservative(conservative);
 }
 
 

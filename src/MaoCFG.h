@@ -160,7 +160,7 @@ class BasicBlock {
   }
 
   void FoundDataDirectives() {
-    has_data_directives_=true;
+    has_data_directives_ = true;
   }
 
   bool HasDataDirectives() {
@@ -304,6 +304,15 @@ class CFG {
     ++num_unresolved_indirect_jumps_;
   }
 
+  // Was the CFG built with the conservative flag.
+  bool conservative() const {
+    return conservative_;
+  }
+
+  void set_conservative(bool value) {
+    conservative_ = value;
+  }
+
  private:
   MaoUnit *mao_unit_;
   LabelToBBMap basic_block_map_;
@@ -322,6 +331,8 @@ class CFG {
   // moving back from the register used). Once the label is found,
   // the table is parsed and the results cached here.
   LabelsToJumpTableTargets labels_to_jumptargets_;
+
+  bool conservative_;  // CFG build with conservative flag.
 };
 
 // Convenience Macros for BB iteration
