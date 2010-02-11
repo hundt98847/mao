@@ -215,7 +215,9 @@ class LoopStructureGraph {
   public:
   typedef std::list<SimpleLoop *> LoopList;
 
-  static LoopStructureGraph *GetLSG(MaoUnit *mao, Function *function);
+  static LoopStructureGraph *GetLSG(MaoUnit *mao,
+                                    Function *function,
+                                    bool conservative = false);
 
   LoopStructureGraph() : root_(new SimpleLoop()),
                          loop_counter_(0) {

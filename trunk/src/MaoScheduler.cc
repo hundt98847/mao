@@ -184,10 +184,10 @@ class SchedulerPass : public MaoFunctionPass {
       return num_predecessors;
     }
 
-    private:
-     int num_instructions_;
-     char *adj_matrix_;
-     std::string *dag_insn_str_;
+   private:
+    int num_instructions_;
+    char *adj_matrix_;
+    std::string *dag_insn_str_;
   };
 
   SchedulerPass(MaoOptionMap *options, MaoUnit *mao, Function *func)
@@ -325,7 +325,8 @@ int SchedulerPass::function_count_ = 0;
 
 void SchedulerPass::FindBBsInStraightLineLoops() {
   LoopStructureGraph *loop_graph = LoopStructureGraph::GetLSG(unit_,
-                                                              function_);
+                                                              function_,
+                                                              true);
   SimpleLoop *root = loop_graph->root();
   FindBBsInStraightLineLoops(root);
 }

@@ -1039,7 +1039,8 @@ class Function {
   // Sets the Loop Structure Graph (NULL for no one) for a function.
   void set_lsg(LoopStructureGraph *lsg);
   friend LoopStructureGraph *LoopStructureGraph::GetLSG(MaoUnit *mao,
-                                                        Function *function);
+                                                        Function *function,
+                                                        bool conservative);
 
   // Name of the function, as given by the function symbol.
   const std::string name_;

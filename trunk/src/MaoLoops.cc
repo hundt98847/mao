@@ -448,14 +448,17 @@ MAO_OPTIONS_DEFINE(LFIND, 1) {
 
 class LoopFinderPass : public MaoFunctionPass {
  public:
-  LoopFinderPass(MaoUnit *mao, Function *function, LoopStructureGraph *LSG)
+  LoopFinderPass(MaoUnit *mao,
+                 Function *function,
+                 LoopStructureGraph *LSG,
+                 bool conservative)
       : MaoFunctionPass("LFIND", GetStaticOptionPass("LFIND"), mao, function),
-        LSG_(LSG) {
+        LSG_(LSG), conservative_(conservative) {
     dump_lsg_ = GetOptionBool("lsg");
   }
 
   bool Go() {
-    CFG *cfg = CFG::GetCFG(unit_, function_);
+    CFG *cfg = CFG::GetCFG(unit_, function_, conservative_);
     MAO_ASSERT(cfg != NULL);
     HavlakLoopFinder Havlak(cfg, LSG_);
     Havlak.FindLoops();
@@ -468,32 +471,23 @@ class LoopFinderPass : public MaoFunctionPass {
  private:
   LoopStructureGraph *LSG_;
   bool                dump_lsg_;
+  bool                conservative_;
 };
 
 }  // namespace
 
 LoopStructureGraph *LoopStructureGraph::GetLSG(MaoUnit *mao,
-					       Function *function) {
+                                               Function *function,
+                                               bool conservative) {
   MAO_ASSERT(function != NULL);
   if (function->lsg() == NULL) {
     LoopStructureGraph *LSG = new LoopStructureGraph;
-    LoopFinderPass finder(mao, function, LSG);
+    LoopFinderPass finder(mao, function, LSG, conservative);
     finder.Go();
     function->set_lsg(LSG);
   }
   MAO_ASSERT(function->lsg());
   return function->lsg();
-}
-
-
-// External Entry Point
-//
-LoopStructureGraph *PerformLoopRecognition(MaoUnit *mao, Function *function) {
-  MAO_ASSERT(function != NULL);
-  LoopStructureGraph *LSG = new LoopStructureGraph;
-  LoopFinderPass finder(mao, function, LSG);
-  finder.Go();
-  return LSG;
 }
 
 void InitLoops() {
