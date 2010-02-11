@@ -22,6 +22,8 @@
 
 #include <stdio.h>
 #include <ctype.h>
+
+#include "libiberty.h"
 #include "MaoDebug.h"
 #include "MaoOptions.h"
 #include "MaoPasses.h"
@@ -328,10 +330,10 @@ void MaoOptions::Parse(const char *arg, bool collect,
       mao_options_ = strdup(arg);
     } else {
       // Append mao_options_ and arg
-      char *buf = (char *)malloc(sizeof(char) * (strlen(mao_options_) +
-                                                 strlen(arg) +
-                                                 1 +
-                                                 1));
+      char *buf = static_cast<char *>(xmalloc(strlen(mao_options_) +
+                                              strlen(arg) +
+                                              1 +
+                                              1));
       sprintf(buf, "%s:%s", mao_options_, arg);
       free(mao_options_);
       mao_options_ = buf;
