@@ -16,4 +16,4 @@ The CFI (Call Frame Information) directives makes it possible to find the curren
 
 The following guidelines will make sure no such bug is introduced.
   * Do not modify callee-save register before the corresponding .cfi_offset directive (currently no convenient way to map register-number to actual registers exists. The mapping can be found in the binutils file i386-tbl.h.)
-  * Make sure CFI-directvies are kept next to their associated instruction/label. cfi_startproc/cfi_endproc should be kept at the start and end of a function. cfi_def_\* should be kept after the instruction they are emitted at.
+  * Make sure CFI-directvies are kept next to their associated instruction/label. cfi_startproc/cfi_endproc should be kept at the start and end of a function. The cfi_def directives should be kept after the instruction they are emitted at.
