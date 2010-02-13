@@ -1,0 +1,25 @@
+#summary Discussion about MAO and exception handling.
+
+= Introduction =
+
+For exception handling and stack unwinding to work correctly, the compiler generates information in the assembly code that can be used by the runtime.
+
+In the MAO context it is important that any transformation do not render the exception header incorrect. Failure to do so will create errors when exception happens, and debuggers will not be able to correctly unwind the stack.
+
+= Details =
+
+From GCC version 4.4.0, this information is stored in the assembly using .CFI directives.
+
+http://sourceware.org/binutils/docs-2.19/as/CFI-directives.html#CFI-directives
+
+The CFI (Call Frame Information) directives makes it possible to find the current call-frame for any PC and to find all register values saved on the stack.
+
+The following guidelines will make sure no such bug is introduced.
+  * Do not modify callee-save register before the corresponding .cfi_offset directive (note that the register-number to register mapping can be found in i386-tbl.h)
+  * Make sure CFI-directvies are kept next to their associated instruction/label. cfi_startproc/cfi_endproc should be kept at the start and end of a function. cfi_def_\* should be kept after the instruction they are emitted at.
+
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
