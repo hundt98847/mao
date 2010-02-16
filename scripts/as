@@ -38,39 +38,39 @@ wrapper_help=0
 
 function parse_args() {
   while [[ $# -gt 0 ]]; do
-    if [[ $1 == '--save-temps' ]]; then
+    if [[ "$1" == '--save-temps' ]]; then
       save_temps=1
       shift 1
-    elif [[ $1 == '--help' ]]; then
+    elif [[ "$1" == '--help' ]]; then
       wrapper_help=1
       shift 1
-    elif [[  $1 == '--mao' ]]; then
+    elif [[  "$1" == '--mao' ]]; then
       invoke_mao=1
-      mao_args[${#mao_args[*]}]="--mao=$2"
+      mao_args[${#mao_args[@]}]="--mao=$2"
       shift 2
-    elif [[  ${1:0:6} == '--mao=' ]]; then
+    elif [[  "${1:0:6}" == '--mao=' ]]; then
       invoke_mao=1
       #This is already of the form --mao=foo
-      mao_args[${#mao_args[*]}]=$1
+      mao_args[${#mao_args[@]}]="$1"
       shift 1
-    elif [[  ${1:0:2} == '-o' ]]; then
+    elif [[  "${1:0:2}" == '-o' ]]; then
       #The option could be either -ofoo -o foo
-      if [[ $1 == '-o' ]]; then
-        output_file=$2
+      if [[ "$1" == '-o' ]]; then
+        output_file="$2"
         shift 2
       else
         #This is of the form -ofoo
-        output_file=${1:2}
+        output_file="${1:2}"
         shift 1
       fi
     elif [[ $# -eq 1 ]]; then
       #We are assuming that the last argument is the input file
       #This is true when as is invoked by gcc
-      input_files=$@
+      input_files=("${@}")
       break;
     else
-      mao_args[${#mao_args[*]}]=$1
-      as_args[${#as_args[*]}]=$1
+      mao_args[${#mao_args[@]}]="$1"
+      as_args[${#as_args[@]}]="$1"
       shift 1
     fi
   done
@@ -78,9 +78,9 @@ function parse_args() {
 
 
 function main()  {
-  local dir_name=`dirname $0`
-  local mao_bin=${dir_name}/mao
-  local as_bin=${dir_name}/as-orig
+  local dir_name="`dirname $0`"
+  local mao_bin="${dir_name}/mao"
+  local as_bin="${dir_name}/as-orig"
   local mao_output_file='a.mao.s'
 
   #Abort if mao or the real as does not exist
@@ -93,23 +93,22 @@ function main()  {
     exit 1
   fi
 
-  original_args=$@
-  parse_args $@
+  original_args=("${@}")
+  parse_args "${@}"
 
   if [[ ${wrapper_help} = 1 ]]; then
-    ${mao_bin} --mao=-h
+    "${mao_bin}" --mao=-h
     echo -e "\nAssembler specific options:\n"
-    ${as_bin} --help
+    "${as_bin}" --help
     exit 0
   fi
 
-  if [[ $output_file != "a.out" ]]; then
-    mao_output_file=${output_file}.mao.s
+  if [[ "$output_file" != "a.out" ]]; then
+    mao_output_file="${output_file}.mao.s"
   fi
 
   if [[ ${invoke_mao} = 1 ]]; then
-
-    ${mao_bin} ${mao_args[*]} ${input_files} --mao=ASM=o[${mao_output_file}]
+    "${mao_bin}" "${mao_args[@]}" "${input_files[@]}" --mao=ASM=o["${mao_output_file}"]
     if [[ $? != 0 ]]; then
       echo "$0: Execution of ${mao_bin} failed with error code $?"
       exit 1
@@ -119,22 +118,18 @@ function main()  {
       exit 0
     fi
 
-
-
-    #echo "${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}"
-    ${as_bin} ${as_args[*]} ${mao_output_file} -o ${output_file}
+    "${as_bin}" "${as_args[@]}" "${mao_output_file}" -o "${output_file}"
     if [[ $? != 0 ]]; then
       echo "$0: Execution of ${as_bin} failed with error code $?"
       exit 1
     fi
 
     if [[ ${save_temps} = 0 ]]; then
-      #echo "rm ${mao_output_file}"
-      rm -f ${mao_output_file}
+      rm -f "${mao_output_file}"
     fi
   else
     #If --mao is not passed, invoke as with the original arguments
-    ${as_bin} ${original_args}
+    "${as_bin}" "${original_args[@]}"
     if [[ $? != 0 ]]; then
       echo "$0: Execution of ${as_bin} failed with error code $?"
       exit 1
@@ -142,5 +137,5 @@ function main()  {
   fi
 }
 
-main $@
+main "${@}"
 
