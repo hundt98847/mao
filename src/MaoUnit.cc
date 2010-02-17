@@ -1126,7 +1126,8 @@ bool ConstSectionIterator::operator !=(const ConstSectionIterator &other)
 
 MaoEntry::MaoEntry(unsigned int line_number, const char *line_verbatim,
                    MaoUnit *maounit) :
-    maounit_(maounit), id_(0), next_(0), prev_(0), line_number_(line_number) {
+    maounit_(maounit), id_(0), next_(NULL), prev_(NULL),
+    line_number_(line_number) {
   if (line_verbatim) {
     MAO_ASSERT(strlen(line_verbatim) < MAX_VERBATIM_ASSEMBLY_STRING_LENGTH);
     line_verbatim_ = strdup(line_verbatim);
@@ -1531,16 +1532,34 @@ void MaoEntry::Unlink() {
   next_ = NULL;
 }
 
+
+MaoEntry *MaoEntry::GetLastEntry(MaoEntry *entry) const {
+  MaoEntry *last_entry = entry;
+  MAO_ASSERT(last_entry != NULL);
+  while (last_entry->next() != NULL) {
+    last_entry = last_entry->next();
+    MAO_ASSERT_MSG(entry != last_entry, "Cycle detected.");
+  }
+  return last_entry;
+}
+
+// Link a chain of instructions (one or more) before the current instruction.
+// Function and subsection pointers are updated in case the instructions
+// are inserted at the beginning of such a unit.
 void MaoEntry::LinkBefore(MaoEntry *entry) {
-  entry->set_next(this);
+  MAO_ASSERT(entry != NULL);
+
+  // Find the last entry in the chain.
+  MaoEntry *last_entry = GetLastEntry(entry);
+
+  // Set prev and next pointers.
+  last_entry->set_next(this);
   entry->set_prev(prev());
 
   if (prev()) {
     prev()->set_next(entry);
-  } else {
-    // TODO(rhundt): Set "first" pointer of everything to entry
   }
-  this->set_prev(entry);
+  this->set_prev(last_entry);
 
   // Do we need to update the function?
   Function *function = maounit_->GetFunction(this);
@@ -1557,11 +1576,19 @@ void MaoEntry::LinkBefore(MaoEntry *entry) {
   }
 }
 
+// Link a chain of instructions (one or more) after the current instruction.
+// Function and subsection pointers are updated in case the instructions
+// are inserted at the end of such a unit.
 void MaoEntry::LinkAfter(MaoEntry *entry) {
-  entry->set_next(next());
+  MAO_ASSERT(entry != NULL);
+
+  // Find the last entry in the chain.
+  MaoEntry *last_entry = GetLastEntry(entry);
+
+  last_entry->set_next(next());
   entry->set_prev(this);
   if (next()) {
-    next()->set_prev(entry);
+    next()->set_prev(last_entry);
   }
   set_next(entry);
 
@@ -1569,14 +1596,14 @@ void MaoEntry::LinkAfter(MaoEntry *entry) {
   Function *function = maounit_->GetFunction(this);
   if (function &&  // Not all entries are part of a function.
       function->last_entry() == this) {
-    function->set_last_entry(entry);
+    function->set_last_entry(last_entry);
   }
 
   // Do we need to update the subsection?
   SubSection *subsection = maounit_->GetSubSection(this);
   MAO_ASSERT(subsection);
   if (subsection->last_entry() == this) {
-    subsection->set_last_entry(entry);
+    subsection->set_last_entry(last_entry);
   }
 }
 
