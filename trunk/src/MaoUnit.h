@@ -182,6 +182,9 @@ class MaoEntry {
       std::string *out,
       bool immediate,
       const enum bfd_reloc_code_real *reloc) const;
+
+  // Return the last entry in a chain.
+  MaoEntry *GetLastEntry(MaoEntry *entry) const;
 };
 
 
