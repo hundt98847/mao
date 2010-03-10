@@ -2089,6 +2089,14 @@ S_FORCE_RELOC (symbolS *s, int strict)
 	  || bfd_is_com_section (s->bsym->section));
 }
 
+
+static char
+is_local_label(const char *name) {
+  return strncmp(LOCAL_LABEL_PREFIX_STR,
+                 name,
+                 LOCAL_LABEL_PREFIX_LEN) == 0;
+}
+
 int
 S_IS_DEBUG (symbolS *s)
 {
@@ -2124,11 +2132,15 @@ S_IS_LOCAL (symbolS *s)
       && bfd_get_section (s->bsym) == absolute_section)
     return 1;
 
+  /* Dollar local labels are not enabled in gas, and MAO only has a
+   partial implementation to support them. To support dollar local
+   labels in the future, the corresponding expression below needs to
+   be updated. */
   name = S_GET_NAME (s);
   return (name != NULL
 	  && ! S_IS_DEBUG (s)
 	  && (strchr (name, DOLLAR_LABEL_CHAR)
-	      || strchr (name, LOCAL_LABEL_CHAR)
+	      || is_local_label(name)
 	      || (! flag_keep_locals
 		  && (bfd_is_local_label (stdoutput, s->bsym)
 		      || (flag_mri
