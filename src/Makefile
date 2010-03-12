@@ -34,6 +34,8 @@ CC=gcc
 SRCDIR=.
 VPATH=$(SRCDIR)
 
+
+CCEXTRAFLAGS=
 CFLAGS=						\
 	-D_GNU_SOURCE				\
 	-I.					\
@@ -174,7 +176,7 @@ $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	    -e '/^$$/ d' -e 's/$$/ :/' -e 's/^ *//'		\
             < $(OBJDIR)/$*.P >> $(OBJDIR)/$*.d;			\
 	rm -f $(OBJDIR)/$*.P
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) -c -o $@ $<
 
 # Plugin source rule
 $(PLUGIN_OBJS) : $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
@@ -184,7 +186,7 @@ $(PLUGIN_OBJS) : $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.
 	    -e '/^$$/ d' -e 's/$$/ :/' -e 's/^ *//'		\
             < $(OBJDIR)/$*.P >> $(OBJDIR)/$*.d;			\
 	rm -f $(OBJDIR)/$*.P
-	$(CC) $(CFLAGS) -fPIC -c -o $@ $<
+	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) -fPIC -c -o $@ $<
 
 $(GAS_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -197,7 +199,7 @@ $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 
 $(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) GenOpcodes.cc MaoDebug.h MaoDebug.o MaoDefs.h MaoDefs.tbl MaoUses.tbl MaoUtil.h Makefile
 	mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) MaoDebug.o -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
+	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) MaoDebug.o -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
 
 $(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes
 	$(OBJDIR)/GenOpcodes -p $(OBJDIR) $(BINUTILSRC)/opcodes/i386-opc.tbl $(SRCDIR)/MaoDefs.tbl $(SRCDIR)/MaoUses.tbl
