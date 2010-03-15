@@ -1,5 +1,5 @@
 //
-// Copyright 2008 Google Inc.
+// Copyright 2010 Google Inc.
 //
 // This program is free software; you can redistribute it and/or to
 // modify it under the terms of the GNU General Public License
@@ -1528,10 +1528,53 @@ void MaoEntry::Unlink() {
       function->last_entry() == this) {
     function->set_last_entry(prev);
   }
+  SubSection *subsection = maounit_->GetSubSection(this);
+  if (subsection &&
+      subsection->first_entry() == this) {
+    subsection->set_first_entry(next);
+  }
+  if (subsection&&
+      subsection->last_entry() == this) {
+    subsection->set_last_entry(prev);
+  }
   prev_ = NULL;
   next_ = NULL;
 }
 
+void MaoEntry::Unlink(MaoEntry *last_in_chain) {
+  MaoEntry *prev = prev_, *next = last_in_chain->next();
+  MAO_RASSERT(last_in_chain != NULL);
+  Function *function = maounit_->GetFunction(this);
+  SubSection *subsection = maounit_->GetSubSection(this);
+  MAO_RASSERT_MSG(function == maounit_->GetFunction(last_in_chain),
+                  "Last instruction to unlink is in a different function\n");
+  MAO_RASSERT_MSG(subsection == maounit_->GetSubSection(last_in_chain),
+                  "Last instruction to unlink is in a different subsection\n");
+  if (prev != NULL) {
+    prev->set_next(next);
+  }
+  if (next != NULL) {
+    next->set_prev(prev);
+  }
+  if (function &&
+      function->first_entry() == this) {
+    function->set_first_entry(next);
+  }
+  if (function &&
+      function->last_entry() == last_in_chain) {
+    function->set_last_entry(prev);
+  }
+  if (subsection &&
+      subsection->first_entry() == this) {
+    subsection->set_first_entry(next);
+  }
+  if (subsection&&
+      subsection->last_entry() == last_in_chain) {
+    subsection->set_last_entry(prev);
+  }
+  prev_ = NULL;
+  last_in_chain->next_ = NULL;
+}
 
 MaoEntry *MaoEntry::GetLastEntry(MaoEntry *entry) const {
   MaoEntry *last_entry = entry;
@@ -3315,6 +3358,13 @@ bool InstructionEntry::IsCall() const {
     OP_call, OP_lcall, OP_vmcall, OP_syscall, OP_vmmcall
   };
   return IsInList(op(), calls, sizeof(calls)/sizeof(MaoOpcode));
+}
+
+bool InstructionEntry::IsThunkCall() const {
+  if (!IsCall())
+    return false;
+  const char *target = GetTarget();
+  return (strstr(target, "get_pc_thunk") != NULL);
 }
 
 bool InstructionEntry::IsReturn() const {
