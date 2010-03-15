@@ -2872,14 +2872,17 @@ int InstructionEntry::StripRexPrefix(int prefix) const {
   }
 
   // Check for the four bits, and remove them if they are unnecessary
-
   if ((stripped_prefix-REX_OPCODE) & REX_W) {
     // Make sure xchange-based noops are not stripped of their rex prefix
+    // xchange based nops use the rax register.
+    const reg_entry *rax = GetRegFromName("rax");
     if (op() == OP_xchg &&
         instruction_->operands == 2 &&
         IsRegisterOperand(instruction_, 0) &&
         IsRegisterOperand(instruction_, 1) &&
-        instruction_->op[0].regs == instruction_->op[1].regs) {
+        instruction_->op[0].regs == rax &&
+        instruction_->op[1].regs == rax) {
+      // Do not strip any prefixes.
     } else if (instruction_->suffix == 'q') {
       // Remove prefixes for instructions with the q suffix
       stripped_prefix = ((stripped_prefix-REX_OPCODE) & ~REX_W)+REX_OPCODE;
