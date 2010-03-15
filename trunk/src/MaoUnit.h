@@ -1,5 +1,5 @@
 //
-// Copyright 2008 Google Inc.
+// Copyright 2010 Google Inc.
 //
 
 // This program is free software; you can redistribute it and/or
@@ -118,6 +118,7 @@ class MaoEntry {
   InstructionEntry *prevInstruction();
 
   void Unlink();
+  void Unlink(MaoEntry *last_in_chain);
   // Take 'entry' and link it in before/after current instruction
   void LinkBefore(MaoEntry *entry);
   void LinkAfter(MaoEntry *entry);
@@ -475,6 +476,7 @@ class InstructionEntry : public MaoEntry {
   bool IsCondJump() const;
   bool IsJump() const;
   bool IsCall() const;
+  bool IsThunkCall() const;
   bool IsReturn() const;
   bool IsAdd() const;
   bool IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
@@ -560,6 +562,9 @@ class InstructionEntry : public MaoEntry {
   }
   const reg_entry *GetRegisterOperand(const unsigned int op_index) const {
     return instruction_->op[op_index].regs;
+  }
+  const enum bfd_reloc_code_real GetReloc(int num) const {
+    return instruction_->reloc[num];
   }
 
   bool HasBaseRegister() const;
