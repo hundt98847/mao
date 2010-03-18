@@ -20,3 +20,12 @@ However, when this mov is preceeded by a 32-bit operation on reg32, this instruc
 }}}
 
 This pass checks for possible definitions of reg32 between the 1st assignment and the possinly redundant movl. If there is none, the movl can be eliminated.
+
+=== Extensions ===
+This pass can be greatly enhanced. It should look across basic blocks for dead zero-extends. We've also identified an overlapping assignment, e.g., 
+{{{
+[ZEE]   Overlap
+        movq    (8)(%rdi), %rax # id: 5661, l: 6300     
+        movl    %eax, %eax      # id: 5662, l: 6301     
+}}}
+which is not yet handled.
