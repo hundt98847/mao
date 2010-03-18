@@ -1,0 +1,28 @@
+== LOOP16 - Align very tiny loops ==
+=== Description ===
+This pass seeks to align very tight loops to 16-byte boundaries to avoid incurring an instruction fetch penalty. This problem was discovered analyzing a 9% degradation for 252.eon on an Intel platform.
+
+Very tiny loops, e.g., loops that are shorter than 32-byte, should be aligned to 16-byte boundaries to minimize the number of fetch lines. This pass looks at inner loops, it checks whether pushing the starting address down would reduce the number of required fetch lines. In particular, it checks whether more bytes are available in the last fetch lines than are used in the 1st fetch line. For example:
+{{{
+         |0123456789012345|
+         |.........BBBBBBB|   these bytes are used by loop
+         |XXXXXXXXXXXXXXXX|*  any number of filled lines
+         |EEEEEEE---------|   there need to be more -'s than B's
+}}}
+
+The pass implementation is somewhat interesting, it makes use of the loop structure graph, multiple relaxations, and displays how to get to instruction offsets and sizes within MAO.
+
+=== Options ===
+{{{
+  max_fetch_lines: (int)    Seek to align loops with size <= max_fetch_lines*fetchline_size
+  fetch_line_size: (int)    Fetchline size
+  limit     : (int)    Limit tranformation invocations
+}}}
+
+=== Extensions ===
+The current heuristics are somewhat brain dead - it only aligns loops with 2 or less fetch lines. A more thorough analysis might find more opportunity.
+
+=== Source ===
+{{{
+  MaoLoop16.cc
+}}}
