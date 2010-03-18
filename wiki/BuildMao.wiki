@@ -2,87 +2,52 @@
 
 = Build instructions =
 
-MAO relies on GNU Binutils (currenty v2.19.1) for parsing an input assembly 
-file. Make sure you download and build the correct version of binutils as indicated below. 
+MAO reuses code from the GNU Binutils (currently v2.19.1) for parsing an input assembly 
+file. Before building MAO, it is necessary to download Binutils, and patch the sources using a provided patch (see instructions below).
 
-These are the instructions for builing MAO for both i686 and x86_64,
-for Linux and OSX. Note that --disable-nls might be needed when building binutils for Mac (tested on Leopard).
+MAO currently supports i686 and x86_64 targets on Linux and Mac OS X (only tested on Leopard). Please note any host-specific instructions below.
 
-* NOTE: Please install TEXINFO if make fails *
 {{{
+#
 #=========================================================
-# Getting and Building binutils
+# MAO Sources
 #=========================================================
 
-# Please note that when copying and pasting the following
-# commands, include the parentheses in the last command.
-#
-# Also, you may put various pieces in directories different
-# from the ones used in this example, please adjust the command-lines
-# accordingly.
-#
-cd $DIR
+# Set target to i686-linux or x86_64
+TARGET=x86_64-linux
+
+# On MacOS, please set the following required flag:
+# BINUTILS_CONF_FLAGS=-disable-nls
+# otherwise, clear the flag:
+BINUTILS_CONF_FLAGS=
+
+mkdir MAO
+cd MAO
+
+# If you haven't downloaded the source for mao:
+# See http://code.google.com/p/mao/source/checkout for more info
+svn checkout https://mao.googlecode.com/svn/trunk/ . --username your.name
+
+#=========================================================
+# GNU Binutils sources
+#=========================================================
+# Fetch and patch binutils sources.
 wget http://ftp.gnu.org/gnu/binutils/binutils-2.19.1.tar.gz
 gzip -dc binutils-2.19.1.tar.gz | tar xvf -
 (cd binutils-2.19.1 && patch -p1  < ../data/binutils-2.19.1-mao.patch)
 
-# For i686-linux
-#
-(mkdir binutils-2.19.1-obj-i686-linux 
-cd binutils-2.19.1-obj-i686-linux
-../binutils-2.19.1/configure --target=i686-linux
+# Configure modified binutils.
+(mkdir binutils-2.19.1-obj-${TARGET}
+cd binutils-2.19.1-obj-${TARGET}
+../binutils-2.19.1/configure --target=${TARGET} ${BINUTILS_CONF_FLAGS}
 make)
 
-# For x86_64 - you should be in the main directory
-# that was created when you checked out MAO
-#
-(mkdir binutils-2.19.1-obj-x86_64-linux
-cd binutils-2.19.1-obj-x86_64-linux
-../binutils-2.19.1/configure --target=x86_64-linux
-make)
-
-#=========================================================
-# Getting and Building MAO
-#=========================================================
-
-# If you haven't downloaded the source for mao, e.g.
-#
-cd $DIR
-svn checkout https://mao.googlecode.com/svn/trunk/ . --username your.name
-
-# Now build MAO for i686-linux and/or x86_64-linux
-#
+# Build MAO
 cd src
 
-# Note that the Makefile in this directory specifies
-# the location of binutils. Depending on your setup, you
-# may have to change the Makefile to point to the proper
-# locations.
-make TARGET=i686-linux
-make TARGET=x86_64-linux
+make TARGET=${TARGET}
+#or
+make TARGET=${TARGET} OS=MacOS
 }}}
 
-
-When building on MacOS X, the following flags might be necessary.
-{{{
-# When configuring binutils
-./binutils-2.19.1/configure --target=x86_64-linux --disable-nls
-# Building mao
-make OS=MacOS
-}}}
-
-Python instructions (Currently Disabled)
-{{{
-# Python
-#
-# Note: Python integration is currently disabled, so 
-#       none of these steps is needed at this point.
-#
-#wget http://www.python.org/ftp/python/2.5.4/Python-2.5.4.tgz
-#gzip -dc Python-2.5.4.tgz  | tar xvf -
-#cd Python-2.5.4
-#./configure PREFIX=$DIR/python-2.5.4 EXEC_PREFIX=$DIR/python-2.5.4
-#make
-#make DESTDIR=$DIR/python-2.5.4 install
-#cd ..
-}}}
+Now, goto RunMao for information on how use the MAO binary in MAO/bin/.
