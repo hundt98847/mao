@@ -3,93 +3,87 @@
 = Running Standalone MAO =
 
 After building MAO, for each build target, a binary called {{{mao-$TARGET}}} will be placed in 
-{{{./bin/.}}} For example, building a 64-bit MAO on Linux produces {{{./bin/mao-x86_64-linux}}}.
+{{{./bin/.}}} For example, building a 64-bit MAO on Linux produces {{{./bin/mao-x86_64-linux}}}. The MAO binary is invoked as follows:
 
-The MAO binary accepts all flags accepted by the GNU Assembler, and as a matter of fact, all flags are passed on to the integrated assembler. To specify MAO specific options, use the option {{{--mao=...}}}. Everything specified after the {{{--mao=}}} will be parsed by MAO and taken off the arguments passed to the integrated assembler. 
+{{{
+mao [--mao=mao-options]* [regular-assembler-options]* <input-file>
+}}}
 
-Multiple MAO options can be specified on the command line. 
+Options specific to MAO are prefixed with {{{--mao=...}}}. All other options are passed to the integrated assembler and hence need to be valid options to 'as'.
 
-Additionally, the environment variable MAOOPTS can be set. This environment variable is parsed before the actual command line parameters. It should only contain MAO specific options, without the {{{--mao=}}} prefix.
+Another way to pass MAO specific options is to set the environment variable MAOOPTS. This environment variable is parsed before the actual command line parameters. It should only contain MAO specific options, without the {{{--mao=}}} prefix.
 
-Please find more details on how to specify MAO options in OptionHandling.
+= Getting help =
+Passing --mao=-h or --mao=--help lists the set of available options to MAO. Note that when -h or --help is passed without the --mao=  prefix, it gets passed on to the assembler and prints the assembler's help message.
 
 = Passes =
-Everything MAO does is organized in passes. There is a pass to read an input assembly file. This pass is enabled by default. There are various analysis, transformation, and optimization passes, and there is an ASM pass which write the IR to a valid assembly file.
+Everything in MAO including reading the input file, analysis, code transformations and writing the output file is organized in passes. All passes except the file reading pass needs explicit invocation using MAO options. The syntax for the options for a single pass is as follows:
 
-In order to get anything done with MAO, the sequence of passes must be specified on the command line (or, later, in a control file). This is done via the {{{--mao=...}}} option. Specifying a pass on the command line enables the pass and puts it in sequence with the other specified passes. 
-
-Passes cannot be enabled or disabled. If they are on the command-line, they are sequenced in and enabled. If they are not on the command-line, they are not executed.
-
-Certain passes perform analysis, for example, to build a control flow graph, or to perform loop recognition. These passes do *not* need to be specified explicitly. If, for example, an optimization pass requires such analysis, it will explicitly call that particular pass.
-
-For example:
 {{{
-  ../bin/mao-x86_64-linux --mao=:ZEE:ASM=o[/dev/stderr] input.s
+pass_name=option1[argument1]+option2+option3[argument3]+...
 }}}
-would open and read the file input.s (that's done by default). Then pass ZEE is executed, before pass ASM is executed. The ASM pass got a parameter to define the output file (/dev/stderr) in the example.
 
-Another example:
+The pass name is separated from its argument list using the = operator. The + symbol is used as the delimiter between the different options. If an option has an argument is is enclosed within square brackets. As a concrete example, the command line
+
 {{{
-  ../bin/mao-x86_64-linux  --mao=ZEE=trace:REDTEST=trace:REDMOV=trace \
-                           --mao=LOOP16=trace:BACKBRALIGN=trace[0] input.s
+--mao=LOOP16=fetch_line_size[16]+limit[100]
 }}}
-will invoke the phases ZEE, REDTEST, REDMOV, LOOP16 and BACKBRALIGN in this sequence. This example is missing the ASM pass at the end, so there would be no output generated. This can be useful to run, e.g., analysis only passes.
+invokes the LOOP16 pass with two options fetch_line and limit with arguments 16 and 100 respectively for the two options. Multiple passes (along with their options) can be specified either using separate --mao= options or in a single option separated by : symbol. Thus, --mao=ZEE:LOOP16=fetch_line_size[16] is equivalent to --mao=ZEE --mao=LOOP16=fetch_line_size[16].
+
+Certain options are common to all passes and are listed under a pseudo-pass ALL in the help message:
+
+{{{
+Pass: ALL
+  trace     : (int)    Set trace level to 'val' (0..3)
+  db[parm]  : (bool)   Dump before a pass
+  da[parm]  : (bool)   Dump after  a pass
+     with parm being one of:
+        cfg : dump CFG, if available
+        vcg : dump VCG file, if CFG is available
+}}}
+
+Certain passes that perform analysis, like the pass that build a control flow graph, are used by optimization passes. These passes are *not* specified explicitly in the command line. 
 
 = Default Output =
 The ASM pass is used to print the resulting assembly file. The default output of the pass is /dev/stdout. To change the output file, the option 'o' to 'ASM' can be used. For example:
 
 {{{
   # redirect output to stderr
-  ../bin/mao-x86_64-linux --mao=:ZEE=trace:ASM=o[/dev/stderr] input.s
+  mao-x86_64-linux --mao=:ZEE=trace:ASM=o[/dev/stderr] input.s
 
-  # kill all output
-  ../bin/mao-x86_64-linux --mao=ASM=o[/dev/null] input.s
-
-  # simple omit the ASM pass will also not create output
-  ../bin/mao-x86_64-linux input.s
+  # write the output to output.s
+  mao-x86_64-linux --mao=ASM=o[output.s] input.s
 
 }}}
 
-To see all available options and passes, start MAO with the --mao=-h command line parameter. e.g.
+= Plugins =
 
-{{{
-  # print all available command line options and descriptions
-  ../bin/mao-x86_64-linux --mao=-h
-}}}
-
-= Using plugins =
-
-MAO supports dynamically loadable passes using so called plugins. A plugin is a dynamically loadable library, containing the implementation of a pass. For MAO to be able to run these passes, the --mao=--plugin option is needed. The example below shows how the plugin TESTPLUG is loaded and invoked:
+In addition to the passes that come with it, MAO also supports dynamically loadable passes using plugins. A plugin is a dynamically loadable library, containing the implementation of a pass. Using a plugin pass requires an additional --mao=--plugin option along with the options for the pass implemented by the plugin. The example below shows how a plugin that implements a pass named TESTPLUG is loaded and invoked:
 
 {{{
    ./mao-x86_64-linux --mao=--plugin=/path/to/plugin/MaoTestPlugin-x86_64-linux.so  --mao=TESTPLUG input.s
 }}}
 
 = Integrating MAO with gcc =
-
-The gcc compiler runs its input through a preprocessor and then through either cc1 or cc1plus to generate an assembly file, which is usually a temporary file in {{{/tmp/...}}} (Note: Modern versions of gcc combine the preprocessor and cc1 into one pass). The compiler driver then call the GNU assembler 'as' to produce the final object file. 
+The typical usage of gcc is to transform a source file to an object file or the executable binary. In both cases, gcc first invokes the compiler (cc1 or cc1plus) that produces an assembly file (usually a temporary file in /tmp) and then invokes the GNU assembler 'as'. 
 
 For example, to compile foo.cc, the compiler might call:
 
 {{{
-$ gcc -o foo.o foo.cc
+$ gcc -c -o foo.o foo.cc
   ...cc1 -quiet hello.c -o /tmp/cciDot0H.s
   ...as  -V -Qy -o hello.o /tmp/cciDot0H.s
 }}}
 
-In order to benefit from MAO optimizations, it should be run right before the GNU assembler. The easiest way to do this is to replace the 'as' with a script which executes MAO first, and then start 'as' on MAO's output. 
+MAO optimizations can be applied to the source file by invoking MAO between the invocations of the compiler and the assembler. One way to do this is to replace the 'as' with a script which executes MAO first, and then invoke 'as' on MAO's output. Such a script is available in {{{ mao/scripts/as }}}. This script invokes mao only when a --mao= option is passed in the command line. Command lines to this script can be passed from the gcc command line using the -Wa option.
 
-We wrote such a wrapper script and put it in {{{ mao/scripts/as_wrapper.sh }}}.
+To make gcc invoke this script instead of the actual 'as', one can:
 
-To squeeze this script into gcc, you can:
-
-   # Replace the 'as' directly. For example, rename it, and put a wrapper script named 'as' in its original place, which runs MAO and the former orginal assembler. This method has the drawback that MAO will always be executed.
-   # Recommended: Pass the -Bpath option to gcc and place the 'as' wrapper script into the specified path. gcc will look into these paths first, and if it finds an 'as' it will execute it from there. This method allows to selectively apply MAO to compilations. The scripts directory in MAO's base directory may be used, however, soft links to 'mao' and 'as-orig' (as-orig should link to your original gas 'as' binary) must be created\.  After doing this, simply add "-B/MAODIR/scripts" to your gcc command line and pass MAO directives using "-Wa,--mao=..." e.g.
+   # Replace the 'as' directly. For example, rename the original as, and copy the wrapper script 'as' to the location where the original as binary was present. 
+   # Recommended: Pass the -B path_to_as_wrapper option to gcc. gcc will look into this path first, thereby invoking the wrapper. As an example, to invoke the ZEE pass on a C file named test.c, invoke
 {{{
-$ gcc test.c -o test -B/home/username/mao/scripts -Wa,--mao=ASM=o[mao_test.s]
+$ gcc test.c -o test -B/home/username/mao/scripts -Wa,--mao=ZEE
 }}}
-   # This method is similar to point 2, instead of passing the -B option, the enviroment variable GCC_EXEC_PREFIX can be set.
+   # This method is similar to the previous one where instead of passing the -B option, the enviroment variable GCC_EXEC_PREFIX can be set.
 
-= Integrating MAO with Open64 =
-
-The open64 compiler re-uses parts of an existing gcc installation. In particular, it also re-uses 'as' and has support for {{{-B}}}, as well as it's own options allowing to specify various parts of the toolchain {{{-y...}}}. The same tricks as above apply.
+In all the above use cases, the script requires a symlink named 'as-orig' pointing to the actual as binary and a sym link mao to the mao binary in the same directory as the script.
