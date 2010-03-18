@@ -4,7 +4,7 @@ This pass inserts random nops into functions.
 
 The idea is to find micro-architectural issues with this methodology. Using various parameters for density and distribution of nops, for example loops will end up being aligned in ways that would not be found via regular compilations.
 
-Experiments with this pass quickly found a 3% opportunity in a compression benchmark.
+Experiments with this pass quickly found a 3% opportunity in a compression benchmark. We have also seen around 7% performance difference caused by the insertion of a single nop in another benchmark.
 
 === Options ===
 {{{
