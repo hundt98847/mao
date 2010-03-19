@@ -9,264 +9,47 @@ MAO comes with a set of analysis, transformation, and optimization passes. The i
 Since MAO is a young project, some passes are developed more than others, and some might not make sense at all. In this document, we keep the current status for the various passes.
 
 == ZEE - Zero Extension Elimination ==
-=== Source ===
-{{{ 
-  MaoZee.cc 
-}}}
-=== Description ===
-This pass seeks to eliminate redundant zero extensions. It is a local optimization and only operates in a basic block. 
-
-In 64-bit compilation models, performing an operation on a 32-bit part of a 64-bit register will, be default, zero-extend the upper 32-bit of that register. An explicit zero-extent operation of the following form is often used in generated code:
-{{{
-    movl reg32, same-reg32
-}}}
-
-However, when this mov is preceeded by a 32-bit operation on reg32, this instruction is redundant. For example:
-{{{
-[ZEE]   Found redundant zero-extend:
-        shrl    $8, %ecx        # id: 132, l: 166       
-        movl    %ecx, %ecx      # id: 133, l: 167   
-}}}
-
-This pass checks for possible definitions of reg32 between the 1st assignment and the possinly redundant movl. If there is none, the movl can be eliminated.
-
-=== Extensions ===
-This pass can be greatly enhanced. It should look across basic blocks for dead zero-extends. We've also identified an overlapping assignment, e.g., 
-{{{
-[ZEE]   Overlap
-        movq    (8)(%rdi), %rax # id: 5661, l: 6300     
-        movl    %eax, %eax      # id: 5662, l: 6301     
-}}}
-which is not yet handled.
+This pass seeks to eliminate redundant zero extensions. It is a local optimization and only operates in a basic block. [ZEE More.]
 
 == REDTEST - Redundant Test Removal ==
-=== Source ===
-{{{
-  MaoRedundantTestElim.cc
-}}}
 
-=== Description ===
-
-This pass seeks to eliminate redundant test instructions.  It is a local optimization and only operates in a basic block. 
-
-Within gcc, for x86, flags are not modeled with best precision. Instead, the flags are all lumped together in one pseudo operand in the compiler IR.
-
-Correspondingly, the compiler can oftentimes not properly determine whether a test instructions is needed, or whether flags have been set properly by a preceding operation. As a result, we find many patterns of this form:
-
-{{{
-   subl     xxx, %r15d
-   ... instructions not setting flags
-   testl    %r15d, %r15d
-}}}
-
-The pass implementation is fairly straightforward. It finds test instructions with identical registers, and then peeks upwards, passing (only) over mov instructions (not defining the register used in the test instructions), which do not set flags, until it finds an add, sub, and, or, xor, or sbb instruction defining the same register. If such test instruction is found, it is removed.
-
-=== Extensions ===
-This pass can be extended to handle the sar, shr, sal, shl as well. However, the flag logic for these operations is non-canonical, and proper handling will be difficult. The pass can also be extended to work across basic blocks (expect little benefit)
+This pass seeks to eliminate redundant 'test' instructions within basic blocks. [REDTEST More.]
 
 == REDMOV - Redundant Memory Move Elimination ==
-=== Source ===
-{{{
-  MaoRedundantMemMove.cc
-}}}
-=== Description ===
-This pass seeks to remove memory operations. It is a local pass and only works in a basic block.
 
-Because of various (phase ordering) issues, compiler oftentimes generate code of the following form to load from memory:
-{{{
-    movq    24(%rsp), %rdx
-    ... no def for this memory,
-    ... no def for the right hand side register %rdx,
-    movq    24(%rsp), %rcx
-}}}
-
-We find that the 2nd movg address operation is not necessary and the instruction can be replaced by:
-{{{
-  //  movq    %rdx, %rcx
-}}}
-This instruction has a shorter encoding and avoids a 2nd memory reference.
-
-
-The implementation of this pass is somewhat interesting, as it has to check, whether the address in the instruction aliases with any instruction in between the two moves. It makes use of the infrastructure to determine whether registers overlap and/or are defined between the instructions. 
-
-=== Caveats ===
-The current implementation might be a little too optimistic. There is a question around multi-threaded code. We believe the transformation is legal for the current C++ memory model. There is also an issue around performance, this pass does not seem to help. Work in progress.
+This pass seeks to remove memory operations within basic blocks. [REDMOV More.]
 
 == LOOP16 - Align very tiny loops ==
-=== Source ===
-{{{
-  MaoLoop16
-}}}
-=== Description ===
-This pass seeks to align very tight loops to 16-byte boundaries to avoid incurring an instruction fetch penalty. This problem was discovered analyzing a 9% degradation for 252.eon on an Intel platform.
 
-Very tiny loops, e.g., loops that are shorter than 32-byte, should be aligned to 16-byte boundaries to minimize the number of fetch lines. This pass looks at inner loops, it checks whether pushing the starting address down would reduce the number of required fetch lines. In particular, it checks whether more bytes are available in the last fetch lines than are used in the 1st fetch line. For example:
-{{{
-         |0123456789012345|
-         |.........BBBBBBB|   these bytes are used by loop
-         |XXXXXXXXXXXXXXXX|*  any number of filled lines
-         |EEEEEEE---------|   there need to be more -'s than B's
-}}}
-
-The pass implementation is somewhat interesting, it makes use of the loop structure graph, multiple relaxations, and displays how to get to instruction offsets and sizes within MAO.
-
-=== Extensions ===
-The current heuristics are somewhat brain dead - it only aligns loops with 2 or less fetch lines. A more thorough analysis might find more opportunity.
+This pass seeks to align very tight loops to 16-byte boundaries to avoid incurring an instruction fetch penalty. [LOOP16 More.]
 
 == NOPKILL - Remove Alignments ==
-=== Source ===
-{{{
-  MaoNopKiller.cc
-}}}
-=== Description ===
-This pass seeks to eliminate all nops from a function. In particular, it eliminates:
-{{{
-     nop
-     nopl
-     xchg %ax, %ax
-     xchg %eax, %eax
-     xchg %rax, %rax
-     .p2align ...
-}}}
-
-We wanted to study the performance effects of removing such compiler inserted alignments. While we found that code size can be reduced by about 2% be removing these things. There are correctness issues, as some codes rely on a certain code layout. So far, this pass is good for experimentation, in particular for the other alignment passes, but it's not ready for prime time.
+This pass seeks to eliminate all nops from a function. [NOPKILL More.]
 
 == NOPIN - Insert Random Nops ==
-=== Source ===
-{{{
-  MaoNopinizer.cc
-}}}
-=== Description ===
-This pass inserts random nops into functions.
-
-The idea is to find micro-architectural issues with this methodology. Using various parameters for density and distribution of nops, for example loops will end up being aligned in ways that would not be found via regular compilations.
-
-Experiments with this pass quickly found a 3% opportunity in a compression benchmark.
-
-=== Extensions ===
-Many more experiments need to be run. Smarter nop insertion policies should be tried out, in particular, around branches and branch targets.
-
+This pass inserts random nops into functions. [NOPIN More.]
 
 == BACKBRALIGN - Back Branch Alignment ==
-=== Source ===
-{{{
-  MaoBackBranchAlign.cc
-}}}
-=== Description ===
-This pass seeks to align the position of back-edges in 2-deep loop nests, such that the jump instructions reside in different 32-byte aligned block.
-
-We were able to observe that for short running nested loops, the branch predictors could be confused when the two back branches were on the same 32-byte line.
-
-This pass employs an interesting transformation strategy, based on an idea by Martin Thuresson. Instead of explicitly aligning the backbranch, we simple shift the whole loop down until the back branches end up on different lines.
-
-Performance results so far aren't that great. More study is needed, in particular, aligning the backbranch might be an alternative codegen strategy.
-
-=== Extensions ===
-More codegen and alignment strategies need to be explored.
+This pass seeks to align the position of back-edges in 2-deep loop nests, such that the jump instructions reside in different 32-byte aligned block. [BACKBRALIGN More.]
 
 == PREFNTA - Simple Prefetch Insertion ==
-=== Source ===
-{{{
-  MaoPrefetchNta.cc
-}}}
-=== Description ===
-This pass inserts a prefetch instruction right in front of every memory load and store operation. All x86 prefetch types are supported (nta, t0, t1, t2). The key idea for this path is in the SBO space (Mars, Hundt, CGO '09), where we basically try to avoid cache pollution by prefixing any load with a prefetchnta.
-
-This technique yielded interesting performance results. As expected almost all benchmarks degraded, however, typically by less than 2x, most often in the 10% to 30% range. This was surprising. The larger degradations point to benchmarks that can benefit from memory hierarchy optimizations, and/or altered prefetch settings on the system. One benchmark actually improved by 6% on AMD/Opteron, independently of the type of prefetch being inserted. We suspect that a 2nd order effect kicked in, very likely some micro-architectural event.
-
-We ran experiments with the various prefetch types and offsets to a given load, but couldn't materialize performance gains. We suspect the number of prefetches is just too high for our systems.
-=== Extensions ===
+This pass inserts a prefetch instruction right in front of every memory load and store operation. [PREFNTA More.]
 
 == INSPREFNTA - Prefetchnta Insertion for Specified Instructions==
-=== Source ===
-{{{
-  MaoInsertPrefNta.cc
-}}}
-=== Description ===
-This pass inserts a prefetchnta instruction right before a list of specified instructions. Instructions are specified in a file as a list of (file name, function, offset) tuple. File name part of this pass is broken at the moment, i.e, it simply ignores the file name, and looks for relevant function name, offset pairs. So as far as multiple files do not have functions with the same name, it should work just fine.
 
-Experiments show quite interesting results. We were able to reduce last level cache misses by a significant percentage by inserting a very small number of prefetchnta instructions in a program. However, these added instructions have some overhead and the overall performance (time) could not be improved, but it does show some promise.
-
-=== Extensions ===
-
+This pass inserts a prefetchnta instruction right before a list of specified instructions. [INSPREFNTA More.]
 
 == SCHED - Instruction Scheduling ==
-=== Source ===
-{{{
-  MaoScheduler.cc
-}}}
-=== Description ===
-=== Extensions ===
-
-
+This pass scheduled instructions at the basic block level. [SCHED More.]
 
 == ADDADD - Remove Redundant Adds ==
-=== Source ===
-{{{
-  MaoAddAdd.cc
-}}}
-=== Description ===
-This is a local optimization and only operates in a basic block. 
+
 The pass seeks to eliminate the first add instruction in the following pattern:
 {{{
        add/sub rX, IMM1
        ...no redef of rX
        add/sub rX, IMM2
 }}}
-Yes, it is hard to believe, but we find such instances in gcc 4.4 generated code. Analysis shows that such atrocities are possible, based on phase ordering difficulties in the compiler.
-
-This simple peephole is a good example for instruction manipulation in MAO. The performance effect across our set of benchmarks is, of course, negligible.
-
-=== Extensions ===
-We could look across the basic block boundaries.
+[ADDADD More.]
 
 
-= Analysis Passes =
-These passes perform some analysis. Typically, we would implement the analysis first. If a particular pattern cannot be found, we keep it at that and don't bother implementing the corresponding transformations.
-
-== LFIND - Loop Recognition ==
-=== Source ===
-{{{
-  MaoLoops.cc
-}}}
-=== Description ===
-This path performs fast loop recognition based on Paul Havlak's paper "Nesting of Reducible and Irreducible Loops", Rice University.
-
-We avoid doing tree balancing and instead use path compression to avoid traversing parent pointers over and over. This is a small extension to the original paper. In the implementation, most of the variable names and identifiers are taken literally from this paper (and the original Tarjan paper mentioned above)
-
-== DCE - Unreachable Code Removal ==
-=== Source ===
-{{{
-  MaoDCE.cc
-}}}
-=== Description ===
-This pass seeks to find unreachable basic blocks. 
-
-The basic assumption is that a reasonable compiler would not leave any unreachable code in a produced asm file. This pass is therefore mainly used for quality assurance for compiler _and_ MAO's control flow implementation.
-
-However, once MAO is hooked up to a threaded VM, these kinds of simple scalar optimizations will become relevant. 
-
-For now, only analysis has been implemented. It is a straightforward pass and can be used to learn about the CFG implementation.
-
-
-== MISSDISP - Find missing displacement ==
-Analysis Pass.
-
-=== Source ===
-{{{
-  MaoMissDisp.cc
-}}}
-=== Description ===
-This pass seeks to transform this pattern:
-{{{
-   add    $0x8,%rax
-   mov    (%rax),%rax
-}}}
-into this instruction:
-{{{
-   mov    0x8(%rax),%rax
-}}}
-
-It is a local optimization and only operates in a basic block. 
-
-We only found this code in gcc compiled code at optimization level -O0. It provides a good and simple example for how to check for patterns. Currently, it does *not* perform the transformation. We didn't bother to implement the transformation, as we didn't find real instances in code that matters.
