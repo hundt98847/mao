@@ -1,4 +1,4 @@
-This page discusses MAO's internal representation(IR) and the important APIs to access and manipulate the IR.
+This page discusses MAO's internal representation(IR) and the important APIs to access and manipulate the IR. This document does not serve as a complete documentation of all the classes that implement MAO's core IR. Instead, it gives an overview of the classes and describes some of the important methods that will be useful to a developer.
 
 <wiki:toc max_depth="2" />
 
@@ -36,7 +36,39 @@ The `Section` class also contains a vector of `SubSection` pointers. The GNU ass
 to iterate over the entries within the subsection. 
 
 == Function ==
+Many optimization passes operate at a function level and hence it is important to group a sequence of entries into functions. The `Function` class represents a function. It contains pointers to the first and last entries, the enclosing subsection and the enclosing section.  The following methods enable iterating over the entries of a function: 
+
+{{{
+  SectionEntryIterator EntryBegin();
+  SectionEntryIterator EntryEnd();
+}}}
+
+Internally, the `Function` class also stores pointers to the control flow graph (CFG) and the loop structure graph (LSG). These data structures are not directly accessed from a `Function` object. Instead, the CFG and LSG classes provide methods to obtain the CFG or LSG for a given `Function`.
+
 == Entry == 
-== Instruction ==
+An entry corresponds to a non-comment line in the assembly file and is represented by the `MaoEntry` class. `MaoEntry` is a pure abstract class. It is derived by `InstructionEntry`, `LabelEntry` and `DirectiveEntry` classes. The base class `MaoEntry` implements the following methods common to all the derived classes that return the previous and next entries in the `MaoUnit`:
+{{{
+  MaoEntry *next()
+  MaoEntry *prev()
+}}}
+
+The following methods in `MaoEntry` help to determine the specific type of an entry:
+{{{
+  bool IsInstruction()
+  bool IsLabel() 
+  bool IsDirective()
+}}}
+
+and the following methods help to cast a `MaoEntry` pointer to a specific type:
+{{{
+  InstructionEntry *AsInstruction();
+  LabelEntry *AsLabel();
+  DirectiveEntry *AsDirective();
+}}}
+
 == Directive ==
+The `DirectiveEntry` class represents assembler directives such as `.byte`, `.word`, `.p2align`, etc. A directive consists of an opcode and a vector of operands. The operands are represented by an inner `Operand` class. The opcode of the directive is returned by the `op()` method and the `const Operand *GetOperand(int num)` returns a particular operand of the directive.
+
 == Label ==
+
+== Instruction ==
