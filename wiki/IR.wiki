@@ -1,0 +1,42 @@
+This page discusses MAO's internal representation(IR) and the important APIs to access and manipulate the IR.
+
+<wiki:toc max_depth="2" />
+
+MAO stores a program as a list of _entries_ which roughly correspond to lines in the assembly file. While this makes the representation simple, it does not provide a very rich interface to access and manipulate the IR. So MAO provides a hierarchy of views that are useful to the developer.
+
+== Unit == 
+The topmost level in this hierarchy is the `MaoUnit` class. This class corresponds to an entire assembly program and contains a vector of pointers to `MaoEntry` objects. This entry vector is not directly accessed from `MaoUnit`. Instead, it provides iterators to access _sections_ and _functions_ that are represented by the `Section` and `Function` classes respectively. The following methods in `MaoUnit` enable iterating over the sections and the functions.
+
+{{{
+  SectionIterator SectionBegin();
+  SectionIterator SectionEnd();
+  ConstSectionIterator ConstSectionBegin() const;
+  ConstSectionIterator ConstSectionEnd() const;
+  FunctionIterator FunctionBegin();
+  FunctionIterator FunctionEnd();
+  ConstFunctionIterator ConstFunctionBegin() const;
+  ConstFunctionIterator ConstFunctionEnd() const;
+}}}
+
+The entries in `MaoUnit` are not replicated in other hierarchical containers under `MaoUnit`. Instead, they typically keep a pointer to the first and last entries in the hierarchy.
+
+In addition, `MaoUnit` provides other useful methods that are found in `MaoUnit.h` and `MaoUnit.cc`.
+
+== Sections and Subsections ==
+A section in an assembly file corresponds to `.section` directives in the assembly file with the same name and is represented by the `Section` class. For instance, every entry between `.section text` and the next `.section` directive is represented by one `Section` object.  The entries in a Section can be iterated over using the following methods:
+{{{
+  SectionEntryIterator EntryBegin() const;
+  SectionEntryIterator EntryEnd() const;
+}}}
+The `Section` class also contains a vector of `SubSection` pointers. The GNU assembler allows subsections that are not contiguous in the assembly file, but considered as belonging to the same section. A subsection is represented by the `SubSection` class. The method `std::vector<SubSectionID> GetSubsectionIDs()` returns a cetor of subsection IDs in a given section. These ids can be passed to the `SubSection *GetSubSection(unsigned int subsection_number)` method of `MaoUnit` to get the `SubSection` pointer. The `SubSection` class stores pointers to the first and the last entry within the subsection. It provides the methods
+{{{
+  SectionEntryIterator EntryBegin();
+  SectionEntryIterator EntryEnd();
+}}}
+to iterate over the entries within the subsection. 
+
+== Function ==
+== Entry == 
+== Instruction ==
+== Directive ==
+== Label ==
