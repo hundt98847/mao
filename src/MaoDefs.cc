@@ -75,6 +75,9 @@ static RegPtrMap reg_ptr_map;
 
 typedef std::map<int , RegProps *> RegNumMap;
 static RegNumMap reg_num_map;
+// Map from dwarf2 register numbers to RegProps *
+static RegNumMap reg_dw2num_map_i386;
+static RegNumMap reg_dw2num_map_x86_64;
 
 // maintain pointer to rip - it's always modified, for every insn
 //
@@ -107,6 +110,11 @@ void ReadRegisterTable() {
     reg_name_map[i386_regtab[i].reg_name] = r;
     reg_ptr_map[&i386_regtab[i]] = r;
     reg_num_map[i] = r;
+    // dw2_regnum[0] is for 32 bit and dw2_regnum[1] is for 64 bit
+    if (i386_regtab[i].dw2_regnum[0] != Dw2Inval)
+      reg_dw2num_map_i386[i386_regtab[i].dw2_regnum[0]] = r;
+    if (i386_regtab[i].dw2_regnum[1] != Dw2Inval)
+      reg_dw2num_map_x86_64[i386_regtab[i].dw2_regnum[1]] = r;
 
     if (!strcmp("rip", i386_regtab[i].reg_name))
       rip_props = r;
@@ -620,6 +628,19 @@ int GetRegNum(const char *reg_name) {
   return (*it).second->num();
 }
 
+// Returns  the reg_entry corresponding to the register numbers used by DWARF.
+// The flag is_64_bit tells whether the code is 64 bit or not.
+const reg_entry *GetRegFromDwarfNumber(int dw2_num, bool is_64_bit) {
+  RegNumMap::iterator it;
+  if (is_64_bit) {
+    it = reg_dw2num_map_x86_64.find(dw2_num);
+    MAO_ASSERT(it != reg_dw2num_map_x86_64.end());
+  } else {
+    it = reg_dw2num_map_i386.find(dw2_num);
+    MAO_ASSERT(it != reg_dw2num_map_i386.end());
+  }
+  return (*it).second->reg();
+}
 
 bool IsRegDefined(InstructionEntry *insn, const reg_entry *reg) {
   // TODO(martint): Improve this slow implementation.
