@@ -22,10 +22,13 @@
 #include "MaoUnit.h"
 #include "MaoPasses.h"
 #include "MaoCFG.h"
+#include "MaoPlugin.h"
 
 #include <set>
 
 namespace {
+
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -188,6 +191,10 @@ class RatFinderPass : public MaoFunctionPass {
   }
 };
 
-REGISTER_FUNC_PASS("RATFINDER", RatFinderPass)
+extern "C" {
+  void MaoInit() {
+    REGISTER_FUNC_PASS("RATFINDER", RatFinderPass)
+  }
+}
 
 }  // namespace

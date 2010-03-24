@@ -32,9 +32,13 @@
 #include "MaoOptions.h"
 #include "MaoRelax.h"
 
+#include "MaoPlugin.h"
+
 #include "libiberty.h"
 
 namespace {
+
+PLUGIN_VERSION
 
 using std::insert_iterator;
 using std::pair;
@@ -387,10 +391,10 @@ bool InsertPrefetchNtaPass::Go() {
   return true;
 }
 
-void InitInsertPrefetchNta() {
-  RegisterUnitPass(
-      "INSPREFNTA",
-      MaoPassManager::GenericPassCreator<InsertPrefetchNtaPass>);
+extern "C" {
+  void MaoInit() {
+    REGISTER_UNIT_PASS("INSPREFNTA", InsertPrefetchNtaPass)
+  }
 }
 
 }  // namespace

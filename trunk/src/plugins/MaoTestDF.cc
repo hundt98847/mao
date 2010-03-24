@@ -27,7 +27,11 @@
 #include "MaoLiveness.h"
 #include "MaoReachingDefs.h"
 
+#include "MaoPlugin.h"
+
 namespace {
+
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -151,6 +155,10 @@ class TestDataFlowPass : public MaoFunctionPass {
   bool reachingdef_;
 };
 
-REGISTER_FUNC_PASS("TESTDF", TestDataFlowPass)
+extern "C" {
+  void MaoInit() {
+    REGISTER_FUNC_PASS("TESTDF", TestDataFlowPass)
+  }
+}
 
 }  // namespace

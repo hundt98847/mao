@@ -33,7 +33,7 @@ CC=gcc
 # Allow users to set this SRCDIR, to build outside of the source directory.
 SRCDIR=.
 VPATH=$(SRCDIR)
-
+PLUGINSRC=plugins
 
 CCEXTRAFLAGS=
 CFLAGS=						\
@@ -98,52 +98,63 @@ CSRCS=						\
 CCSRCS=						\
 	ir.cc					\
 	mao.cc					\
-	MaoAddAdd.cc				\
-	MaoBackBranchAlign.cc			\
 	MaoCFG.cc				\
-	MaoDCE.cc				\
 	MaoDefs.cc				\
 	MaoDebug.cc				\
-        MaoEnableFunctionHijacking.cc           \
 	Maoi386Size.cc				\
 	MaoLoop16.cc				\
 	MaoLoops.cc				\
-	MaoMissDisp.cc				\
-	MaoNopinizer.cc				\
 	MaoNopKiller.cc				\
 	MaoOpcodes.cc				\
 	MaoOptions.cc				\
 	MaoPasses.cc				\
 	MaoPlugin.cc				\
-	MaoPrefetchNta.cc			\
-	MaoInsertPrefNta.cc			\
 	MaoProfile.cc				\
 	MaoRedundantTestElim.cc			\
 	MaoRedundantMemMove.cc			\
-	MaoBranchSeparator.cc			\
 	MaoScheduler.cc				\
-	MaoRatFinder.cc				\
 	MaoRelax.cc				\
 	MaoUnit.cc				\
 	MaoZee.cc				\
 	MaoDataFlow.cc                          \
 	MaoLiveness.cc                          \
 	MaoReachingDefs.cc                      \
-	MaoTestDF.cc                            \
 	SymbolTable.cc
 
 PLUGIN_CCSRCS=					\
-	MaoInstructionBuilder.cc		\
-	MaoTestPlugin.cc
+	$(PLUGINSRC)/MaoAddAdd.cc		\
+	$(PLUGINSRC)/MaoBackBranchAlign.cc	\
+	$(PLUGINSRC)/MaoBranchSeparator.cc	\
+	$(PLUGINSRC)/MaoDCE.cc			\
+	$(PLUGINSRC)/MaoEnableFunctionHijacking.cc \
+	$(PLUGINSRC)/MaoInsertPrefNta.cc	\
+	$(PLUGINSRC)/MaoInstructionBuilder.cc	\
+	$(PLUGINSRC)/MaoMissDisp.cc		\
+	$(PLUGINSRC)/MaoNopinizer.cc		\
+	$(PLUGINSRC)/MaoPrefetchNta.cc		\
+	$(PLUGINSRC)/MaoRatFinder.cc		\
+	$(PLUGINSRC)/MaoTestDF.cc		\
+	$(PLUGINSRC)/MaoTestPlugin.cc
 
-PLUGINS=MaoTestPlugin				\
-	MaoInstructionBuilder
+PLUGINS=MaoAddAdd				\
+	MaoBackBranchAlign			\
+	MaoBranchSeparator	  		\
+	MaoDCE					\
+	MaoInsertPrefNta			\
+	MaoEnableFunctionHijacking		\
+	MaoInstructionBuilder			\
+	MaoMissDisp				\
+	MaoNopinizer				\
+	MaoPrefetchNta				\
+	MaoRatFinder				\
+	MaoTestDF				\
+	MaoTestPlugin
 
 GAS_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_SRC)))
 GAS_CONFIG_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_CONFIG_SRC)))
 OPCODES_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(OPCODES_SRC)))
 BINUTILS_OBJS=$(GAS_OBJS) $(GAS_CONFIG_OBJS) $(OPCODES_OBJS)
-PLUGIN_OBJS=$(patsubst %.cc,$(OBJDIR)/%.o,$(PLUGIN_CCSRCS))
+PLUGIN_OBJS=$(patsubst %.cc,$(OBJDIR)/%.o,$(notdir $(PLUGIN_CCSRCS)))
 PLUGIN_TARGETS=$(patsubst %,$(BINDIR)/%-$(TARGET).$(DYNLIBEXT),$(PLUGINS))
 
 OBJS=							\
@@ -179,7 +190,7 @@ $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) -c -o $@ $<
 
 # Plugin source rule
-$(PLUGIN_OBJS) : $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
+$(PLUGIN_OBJS) : $(OBJDIR)/%.o : $(PLUGINSRC)/%.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	@$(MAKEDEPEND) -MQ $@;					\
 	cp $(OBJDIR)/$*.P $(OBJDIR)/$*.d;			\
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//'	\

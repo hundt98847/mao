@@ -28,10 +28,13 @@
 #include "MaoDefs.h"
 #include "MaoLoops.h"
 #include "MaoRelax.h"
+#include "MaoPlugin.h"
 
 #include <map>
 
 namespace {
+
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -111,6 +114,11 @@ class PrefetchNtaPass : public MaoFunctionPass {
   int insertions_;
 };
 
-REGISTER_FUNC_PASS("PREFNTA", PrefetchNtaPass)
+
+extern "C" {
+  void MaoInit() {
+    REGISTER_FUNC_PASS("PREFNTA", PrefetchNtaPass)
+  }
+}
 
 }  // namespace
