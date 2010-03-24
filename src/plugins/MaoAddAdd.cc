@@ -24,8 +24,11 @@
 #include "MaoPasses.h"
 #include "MaoCFG.h"
 #include "MaoDefs.h"
+#include "MaoPlugin.h"
 
 namespace {
+
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -190,6 +193,10 @@ class AddAddElimPass : public MaoFunctionPass {
   const BitString emask_;
 };
 
-REGISTER_FUNC_PASS("ADDADD", AddAddElimPass)
+extern "C" {
+  void MaoInit() {
+    REGISTER_FUNC_PASS("ADDADD", AddAddElimPass)
+  }
+}
 
 }  // namespace

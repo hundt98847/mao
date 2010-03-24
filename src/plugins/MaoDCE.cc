@@ -23,10 +23,13 @@
 #include "MaoPasses.h"
 #include "MaoCFG.h"
 #include "MaoDefs.h"
+#include "MaoPlugin.h"
 
 #include <map>
 
 namespace {
+
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -99,6 +102,11 @@ class DeadCodeElimPass : public MaoFunctionPass {
   }
 };
 
-REGISTER_FUNC_PASS("DCE", DeadCodeElimPass)
+extern "C" {
+  void MaoInit() {
+    REGISTER_FUNC_PASS("DCE", DeadCodeElimPass)
+  }
+}
+
 
 }  // namespace

@@ -28,10 +28,13 @@
 #include "MaoDefs.h"
 #include "MaoLoops.h"
 #include "MaoRelax.h"
+#include "MaoPlugin.h"
 
 #include <map>
 
 namespace {
+
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -351,6 +354,10 @@ class BackBranchAlign : public MaoFunctionPass {
   int       align_limit_;
 };
 
-REGISTER_FUNC_PASS("BACKBRALIGN", BackBranchAlign)
+extern "C" {
+  void MaoInit() {
+    REGISTER_FUNC_PASS("BACKBRALIGN", BackBranchAlign)
+  }
+}
 
 }  // namespace

@@ -24,8 +24,11 @@
 #include "MaoPasses.h"
 #include "MaoCFG.h"
 #include "MaoDefs.h"
+#include "MaoPlugin.h"
 
 namespace {
+
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -92,6 +95,10 @@ class NopInizerPass : public MaoFunctionPass {
   int             thick_;
 };
 
-REGISTER_FUNC_PASS("NOPIN", NopInizerPass)
+extern "C" {
+  void MaoInit() {
+    REGISTER_FUNC_PASS("NOPIN", NopInizerPass)
+  }
+}
 
 }  // namespace

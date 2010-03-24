@@ -28,8 +28,11 @@
 #include "MaoUnit.h"
 #include "MaoPasses.h"
 #include "MaoRelax.h"
+#include "MaoPlugin.h"
 
 namespace {
+
+PLUGIN_VERSION
 
 #define FETCH_LINE_SIZE 16
 
@@ -318,6 +321,11 @@ bool BranchSeparatorPass::IsProfitable(Function *function) {
       return true;
     }
 }
-REGISTER_FUNC_PASS("BRSEP", BranchSeparatorPass)
+
+extern "C" {
+  void MaoInit() {
+    REGISTER_FUNC_PASS("BRSEP", BranchSeparatorPass)
+  }
+}
 
 }  // namespace
