@@ -1139,6 +1139,26 @@ MaoEntry::MaoEntry(unsigned int line_number, const char *line_verbatim,
 MaoEntry::~MaoEntry() {
 }
 
+// Returns the flag code of the closest instruction entry that precedes this
+// entry. This is a virtual method which is overridden by the InstructionEntry
+// class and so if the entry is an instruction entry, it simply returns the flag
+// code associated with it
+enum flag_code MaoEntry::GetFlag() const {
+  MaoEntry *prev = prev_;
+  while (prev != NULL) {
+    if (prev->IsInstruction()) {
+      InstructionEntry *ie = prev->AsInstruction();
+      return ie->GetFlag();
+    }
+    prev = prev->prev_;
+  }
+  // This could be an entry before the first instruction.
+  // Use arch_ to determine code type
+  if (maounit_->Is64BitMode())
+    return CODE_64BIT;
+  else
+    return CODE_32BIT;
+}
 // used when creating temporary expression
 // used when processing the dot (".") label in non-absolute sections
 #ifndef FAKE_LABEL_NAME

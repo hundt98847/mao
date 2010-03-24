@@ -110,6 +110,7 @@ void FillParentRegs(BitString *mask);
 const reg_entry *GetIP();
 
 const reg_entry *GetRegFromName(const char *reg_name);
+const reg_entry *GetRegFromDwarfNumber(int dw_number, bool is_64_bit);
 int GetRegNum(const char *reg_name);
 
 const char *GetRegName(int reg_number);

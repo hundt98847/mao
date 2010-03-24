@@ -217,6 +217,11 @@ class SchedulerPass : public MaoFunctionPass {
 
       profitable_ = IsProfitable(func);
       rsp_pointer_ = GetRegFromName("rsp");
+      // The default CFA register is RSP for 64 bit code and ESP for 32 bit
+      // code. Since the scheduler doesn't differentiate sub-registers and
+      // parent registers differently when computing dependences, it is ok to
+      // assign rsp_pointer_ to cfa_reg_
+      cfa_reg_ = rsp_pointer_;
   }
 
   bool Go() {
@@ -315,12 +320,14 @@ class SchedulerPass : public MaoFunctionPass {
   char *is_lcd_source_;
 
   const reg_entry *rsp_pointer_;
+  const reg_entry *cfa_reg_;
 
   BitString GetSrcRegisters(SchedulerNode *node);
   BitString GetDestRegisters(SchedulerNode *node);
   DependenceDag *FormDependenceDag(BasicBlock *bb);
   bool HasMemOperation(SchedulerNode *node) const;
   bool IsMemOperation(InstructionEntry *insn) const;
+  bool IsMemCFIDirective(MaoEntry *entry) const;
   bool HasControlOperation(SchedulerNode *node) const;
   bool IsControlOperation(InstructionEntry *insn) const;
   bool HasPredicateOperation(SchedulerNode *node) const;
@@ -583,6 +590,43 @@ BitString SchedulerPass::GetSrcRegisters(SchedulerNode *node) {
     if (entry->IsInstruction()) {
       InstructionEntry *insn = entry->AsInstruction();
       use_mask = use_mask | GetRegisterUseMask(insn, true);
+    } else if (entry->IsDirective()) { // Handle .cfi directives
+      DirectiveEntry *de = entry->AsDirective();
+      DirectiveEntry::Opcode opcode = de->op();
+      const DirectiveEntry::Operand *operand = NULL;
+      const reg_entry *reg;
+      switch (opcode) {
+        case DirectiveEntry::CFI_DEF_CFA:
+        case DirectiveEntry::CFI_DEF_CFA_REGISTER:
+        case DirectiveEntry::CFI_OFFSET:
+          // All these directives are assumed to use the *current* cfa_reg_ to
+          // prevent scheduling across instructions that write to the current
+          // cfa_reg_
+          use_mask = use_mask | GetMaskForRegister(cfa_reg_);
+          if (opcode != DirectiveEntry::CFI_OFFSET) {
+            // For .cfi_def_cfa and .cfi_def_cfa_register, add the new cfa
+            // register (which is the first operand of these directives) to the
+            // use_mask
+            bool is_64_bit = (entry->GetFlag() == CODE_64BIT);
+            operand = de->GetOperand(0);
+            const char *reg_num_str = operand->data.str->c_str();
+            char *endptr = NULL;
+            int reg_num = (int)(strtoul(reg_num_str, &endptr, 10));
+            // In the .cfi directives we have seen, a register is represented by
+            // a dwarf register number. However, this operand gets passed to MAO
+            // as string. Just in case there are .cfi directives with actual
+            // register names, the following assert checks if the operand is
+            // indeed a number.
+            MAO_RASSERT_MSG( (*endptr == 0),
+                             "Not a valid dwarf2 register number");
+            reg = GetRegFromDwarfNumber(reg_num, is_64_bit);
+            use_mask = use_mask | GetMaskForRegister(reg);
+            cfa_reg_ = reg;
+          }
+          break;
+        default:
+          {/*Do Nothing*/}
+      }
     }
   }
   return use_mask;
@@ -595,6 +639,34 @@ BitString SchedulerPass::GetDestRegisters(SchedulerNode *node) {
     if (entry->IsInstruction()) {
       InstructionEntry *insn = entry->AsInstruction();
       def_mask = def_mask | GetRegisterDefMask(insn, true);
+    } else if (entry->IsDirective()) {
+      DirectiveEntry *de = entry->AsDirective();
+      DirectiveEntry::Opcode opcode = de->op();
+      const DirectiveEntry::Operand *operand = NULL;
+      const reg_entry *reg;
+      switch (opcode) {
+        case DirectiveEntry::CFI_DEF_CFA:
+        case DirectiveEntry::CFI_DEF_CFA_REGISTER:
+          {
+            // For .cfi_def_cfa and .cfi_def_cfa_register, add the new cfa
+            // register (which is the first operand of these directives) to the
+            // def_mask
+            bool is_64_bit = false;
+            operand = de->GetOperand(0);
+            const char *reg_num_str = operand->data.str->c_str();
+            char *endptr = NULL;
+            int reg_num = (int)(strtoul(reg_num_str, &endptr, 10));
+            MAO_RASSERT_MSG( (*endptr == 0),
+                             "Not a valid dwarf2 register number");
+            if (entry->GetFlag() == CODE_64BIT)
+              is_64_bit = true;
+            reg = GetRegFromDwarfNumber(reg_num, is_64_bit);
+            def_mask = def_mask | GetMaskForRegister(reg);
+          }
+          break;
+        default:
+          {/*Do nothing. */}
+      }
     }
   }
   return def_mask;
@@ -912,11 +984,32 @@ bool SchedulerPass::HasMemOperation(SchedulerNode *node) const {
       InstructionEntry *insn = entry->AsInstruction();
       if (IsMemOperation(insn))
         return true;
+    } else if (IsMemCFIDirective(entry)) {
+      return true;
     }
   }
   return false;
 }
 
+// .cf_offset and .cfi_restore can not move across a memory operation. This
+// prevents a stack store from clobbering the location specified by .cfi_offset
+// making the claimn of the .cfi_offset directive (the prev value of a register
+// is in a specified location) incorrect. .cfi_restore is essentially similar
+// to .cfi_offset since it is saying a specified register is at the same
+// location as it was at an earlier point in the code.
+bool SchedulerPass::IsMemCFIDirective(MaoEntry *entry) const {
+  if(!entry->IsDirective())
+    return false;
+  DirectiveEntry *de = entry->AsDirective();
+  DirectiveEntry::Opcode opcode = de->op();
+  switch (opcode) {
+    case DirectiveEntry::CFI_OFFSET:
+    case DirectiveEntry::CFI_RESTORE:
+      return true;
+    default:
+      return false;
+  }
+}
 
 // An instruction is considered to touch memory if
 // 1. It has base or index registers, buit not a lea

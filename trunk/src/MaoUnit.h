@@ -96,6 +96,7 @@ class MaoEntry {
   virtual void PrintIR(FILE *out = stderr) const = 0;
   virtual char GetDescriptiveChar() const = 0;
   virtual EntryType Type() const = 0;
+  virtual enum flag_code GetFlag() const;
 
   const EntryID id() const { return id_; }
   void set_id(const EntryID id) {id_ = id;}
