@@ -1,4 +1,5 @@
-#Option:  --mao=READ=create_anonymous[1] --mao=ADDADD=trace[2]
+#Option: --mao=READ=create_anonymous[1] --mao=ADDADD=trace[2]
+#Plugin: MaoAddAdd
 #grep \[ADDADD\].*Addi/Subi pattern identified 3
 #
 # Three patterns should match in this code
