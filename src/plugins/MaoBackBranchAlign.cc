@@ -39,7 +39,8 @@ PLUGIN_VERSION
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(BACKBRALIGN, 2) {
+MAO_DEFINE_OPTIONS(BACKBRALIGN, "Align back branches of doubly nested loops "\
+                   "so that they are in separate 32 byte lines", 2) {
   OPTION_INT("align_limit", 32, "Align to cross this byte boundary"),
   OPTION_INT("limit", -1, "Limit tranformation invocations")
 };

@@ -34,7 +34,8 @@ namespace {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(SCHEDULER, 5) {
+MAO_DEFINE_OPTIONS(SCHEDULER, "Schedules instructions at the assembly level", \
+                   5) {
   // The next four options are helpful in debugging the scheduler
   // by limiting  the functions to which the transformation is applied
   OPTION_STR("function_list", "",
@@ -705,7 +706,7 @@ int  SchedulerPass::CreateSchedulerNodes(MaoEntry *head, BasicBlock *bb) {
   int retain_next = 0;
   MaoEntry *first = NULL;
   SchedulerNode *sn = NULL;
-  for (SectionEntryIterator entry_iter(head);
+  for (EntryIterator entry_iter(head);
        entry_iter != bb->EntryEnd(); ++entry_iter) {
     MaoEntry *entry = *entry_iter;
     if (entry == NULL)
@@ -817,7 +818,7 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag(BasicBlock *bb) {
   entries_.clear();
   MaoEntry *ins_start = NULL;
 
-  for (SectionEntryIterator entry_iter = bb->EntryBegin();
+  for (EntryIterator entry_iter = bb->EntryBegin();
       entry_iter != bb->EntryEnd(); ++entry_iter) {
     if ((*entry_iter)->IsInstruction()) {
       ins_start = *entry_iter;
@@ -941,8 +942,8 @@ SchedulerPass::DependenceDag *SchedulerPass::FormDependenceDag(BasicBlock *bb) {
       }
       writers[i].clear();
   }
-  SectionEntryIterator last_entry = bb->EntryEnd();
-  SectionEntryIterator first_entry = bb->EntryBegin();
+  EntryIterator last_entry = bb->EntryEnd();
+  EntryIterator first_entry = bb->EntryBegin();
   if (*first_entry == NULL || *last_entry == NULL)
     return dag;
   --first_entry;

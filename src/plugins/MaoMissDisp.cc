@@ -33,7 +33,8 @@ PLUGIN_VERSION
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(MISSDISP, 0) {
+MAO_DEFINE_OPTIONS(MISSDISP, "A peephole optimization pass to find an add "\
+                   "followed by a move without displacement", 0) {
 };
 
 class MissDispElimPass : public MaoFunctionPass {

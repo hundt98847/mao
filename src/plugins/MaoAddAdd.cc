@@ -33,7 +33,8 @@ PLUGIN_VERSION
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(ADDADD, 0) {
+MAO_DEFINE_OPTIONS(ADDADD, "A peephole optimization that removes redundant "\
+                   "add instructions in certain cases", 0) {
 };
 
 class AddAddElimPass : public MaoFunctionPass {

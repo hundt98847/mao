@@ -37,7 +37,7 @@ namespace {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(LOOP16, 3) {
+MAO_DEFINE_OPTIONS(LOOP16, "Aligns short loops at 16 byte boundaries", 3) {
   OPTION_INT("max_fetch_lines",  2,
              "Seek to align loops with size <= max_fetch_lines*fetchline_size"),
   OPTION_INT("fetch_line_size", 16, "Fetchline size"),

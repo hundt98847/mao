@@ -36,7 +36,8 @@ PLUGIN_VERSION
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(TESTDF, 2) {
+MAO_DEFINE_OPTIONS(TESTDF, "Implements example analysis that uses MAO's "\
+                   "dataflow analysis framework", 2) {
   OPTION_BOOL("liveness", true, "Run liveness analysis."),
   OPTION_BOOL("reachingdef", true, "Run reaching def. analysis."),
 };

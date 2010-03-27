@@ -30,7 +30,7 @@ namespace {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(REDMOV, 1) {
+MAO_DEFINE_OPTIONS(REDMOV, "Eliminates redundant memory moves", 1) {
   OPTION_INT("lookahead", 6, "Look ahead limit for pattern matcher")
 };
 

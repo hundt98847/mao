@@ -201,7 +201,7 @@ bool MaoFunctionPass::Run() {
 //
 // Read/parse the input asm file and generate the IR
 //
-MAO_OPTIONS_DEFINE(READ, 1) {
+MAO_DEFINE_OPTIONS(READ, "Reads the input assembly file", 1) {
   OPTION_BOOL("create_anonymous", false, "Create anonymous functions for "
               "instructions that are not part of regular functions."),
 };
@@ -246,7 +246,7 @@ bool ReadInputPass::Go() {
 //
 // Pass to dump out the IR in assembly format
 //
-MAO_OPTIONS_DEFINE(ASM, 1) {
+MAO_DEFINE_OPTIONS(ASM, "Writes assembly output to file", 1) {
   OPTION_STR("o", "/dev/stdout", "Filename to output assembly to."),
 };
 
@@ -273,7 +273,7 @@ bool AssemblyPass::Go() {
 //
 // Pass to to dump out the IR in text format.
 //
-MAO_OPTIONS_DEFINE(IR, 1) {
+MAO_DEFINE_OPTIONS(IR, "Dumps the IR in text format", 1) {
   OPTION_STR("o", "/dev/stdout", "Filename to dump IR to."),
 };
 
@@ -298,7 +298,7 @@ bool DumpIrPass::Go() {
 //
 // Pass to to dump out the symbol table in text format.
 //
-MAO_OPTIONS_DEFINE(SYMBOLTABLE, 1) {
+MAO_DEFINE_OPTIONS(SYMBOLTABLE, "Dumps the symbol table in text format", 1) {
   OPTION_STR("o", "/dev/stdout", "Filename to dump symboltable to."),
 };
 
@@ -325,7 +325,8 @@ bool DumpSymbolTablePass::Go() {
 // A pass that can (optionally) run CFG, LSG, Relaxer. Useful
 // for testing
 //
-MAO_OPTIONS_DEFINE(TEST, 3) {
+MAO_DEFINE_OPTIONS(TEST, "A test pass that can optionally run the CFG, LSG "\
+                   "and the relaxer",  3) {
   OPTION_BOOL("cfg", false, "Run CFG pass (note that CFG runs automatically "
               "in the Relaxer and the LSG pass.)"),
   OPTION_BOOL("lsg", true, "Run LSG pass."),
@@ -358,9 +359,10 @@ REGISTER_FUNC_PASS("TEST", TestPass)
 
 // MaoFunctionPassManager
 //
-// A pass to run function passes on all passes in the unit.
+// A pass to run function passes on all functions in the unit.
 //
-MAO_OPTIONS_DEFINE(PASSMAN, 0) {
+MAO_DEFINE_OPTIONS(PASSMAN, "A uber-pass that runs function passes on all "\
+                   "functions in a file", 0) {
 };
 
 MaoFunctionPassManager::MaoFunctionPassManager(MaoOptionMap *options,

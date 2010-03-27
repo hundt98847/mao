@@ -34,7 +34,7 @@ PLUGIN_VERSION
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(DCE, 0) {
+MAO_DEFINE_OPTIONS(DCE, "Performs analysis for dead code elimination", 0) {
 };
 
 typedef std::map<BasicBlock *, bool> BasicBlockMap;

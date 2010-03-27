@@ -124,7 +124,8 @@ class BranchSeparatorPass : public MaoFunctionPass {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(BRSEP, 4) {
+MAO_DEFINE_OPTIONS(BRSEP, "Separate branches to avoid BTB interference and "\
+                   "other microarchitectural effects", 4) {
   OPTION_INT("min_branch_distance", 16, "Minimum distance required between "
                               "any two branches"),
   OPTION_BOOL("collect_stats", false, "Collect and print a table with "
@@ -176,7 +177,7 @@ bool BranchSeparatorPass::Go() {
   int alignment = (int)(log2(min_branch_distance_));
   char prev_branch_str[1024];
 
-  for (SectionEntryIterator iter = function_->EntryBegin();
+  for (EntryIterator iter = function_->EntryBegin();
        iter != function_->EntryEnd();
        ++iter) {
     int size = (*sizes_)[*iter];

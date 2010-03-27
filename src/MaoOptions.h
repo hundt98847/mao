@@ -101,33 +101,45 @@ class MaoTimer {
 
 // Define an array of options with help of this macro.
 // Usage (please note the final trainling comma):
-//    MAO_OPTIONS_DEFINE {
+//    MAO_DEFINE_OPTIONS(pass, description, N) {
 //       OPTION_INT(...),
 //       OPTION_STR(...),
 //       ...,
 //    };
 //
-#define MAO_OPTIONS_DEFINE(pass, N)  \
+#define MAO_DEFINE_OPTIONS(pass, description, N) \
             extern MaoOption pass##_opts[]; \
             static MaoTimer  pass##_timer; \
-            static MaoOptionRegister pass##_opts_reg(#pass, pass##_opts, N, \
-                       &pass##_timer); \
+            static MaoOptionRegister pass##_opts_reg(#pass, description, \
+                                                     pass##_opts, N, \
+                                                     &pass##_timer); \
+            MaoOption pass##_opts[N] =
+
+// TODO(eraman): Remove this after the next release so that existing customers
+// can switch to the new macro without breaking their code till they switch
+#define MAO_OPTIONS_DEFINE(pass, N) \
+            extern MaoOption pass##_opts[]; \
+            static MaoTimer  pass##_timer; \
+            static MaoOptionRegister pass##_opts_reg(#pass, \
+                                                     "[None given]", \
+                                                     pass##_opts, N, \
+                                                     &pass##_timer); \
             MaoOption pass##_opts[N] =
 
 class MaoOptionRegister {
  public:
-  MaoOptionRegister(const char *name, MaoOption *array, int N,
-                    MaoTimer *timer);
+  MaoOptionRegister(const char *name, const char *description,
+                    MaoOption *array, int N, MaoTimer *timer);
 };
 
 // Maintain mapping between option array and pass name.
 //
 class MaoOptionArray {
  public:
-  MaoOptionArray(const char *name, MaoOption *array, int num_entries,
-                 MaoTimer *timer)
-    : name_(name), array_(array), num_entries_(num_entries),
-    timer_(timer){
+  MaoOptionArray(const char *name, const char *description, MaoOption *array,
+                 int num_entries, MaoTimer *timer)
+    : name_(name), description_(description), array_(array),
+    num_entries_(num_entries), timer_(timer){
   }
 
   MaoOption  *FindOption(const char *option_name) {
@@ -139,11 +151,13 @@ class MaoOptionArray {
   }
 
   const char *name() const { return name_; }
+  const char *description() const { return description_; }
   MaoOption  *array() { return array_; }
   int         num_entries() { return num_entries_; }
   MaoTimer   *timer() { return timer_; }
  private:
   const char *name_;
+  const char *description_;
   MaoOption  *array_;
   int         num_entries_;
   MaoTimer   *timer_;

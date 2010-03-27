@@ -101,6 +101,8 @@ CCSRCS=						\
 	MaoCFG.cc				\
 	MaoDefs.cc				\
 	MaoDebug.cc				\
+	MaoEntry.cc				\
+	MaoFunction.cc				\
 	Maoi386Size.cc				\
 	MaoLoop16.cc				\
 	MaoLoops.cc				\
@@ -114,6 +116,7 @@ CCSRCS=						\
 	MaoRedundantMemMove.cc			\
 	MaoScheduler.cc				\
 	MaoRelax.cc				\
+	MaoSection.cc				\
 	MaoUnit.cc				\
 	MaoZee.cc				\
 	MaoDataFlow.cc                          \
@@ -230,11 +233,13 @@ $(PLUGIN_TARGETS) : $(BINDIR)/%-$(TARGET).$(DYNLIBEXT) : $(OBJDIR)/%.o stamp-bin
 
 
 MAO_HEADERS = $(SRCDIR)/MaoCFG.h $(SRCDIR)/MaoDebug.h $(SRCDIR)/MaoDefs.h \
-	      $(SRCDIR)/MaoLoops.h $(SRCDIR)/MaoOptions.h $(SRCDIR)/MaoPasses.h\
-	      $(SRCDIR)/MaoPlugin.h $(SRCDIR)/MaoStats.h $(SRCDIR)/MaoUnit.h \
-	      $(SRCDIR)/MaoUtil.h $(SRCDIR)/SymbolTable.h \
+	      $(SRCDIR)/MaoEntry.h $(SRCDIR)/MaoFunction.h \
+	      $(SRCDIR)/MaoLoops.h $(SRCDIR)/MaoOptions.h \
+	      $(SRCDIR)/MaoPasses.h $(SRCDIR)/MaoPlugin.h \
+	      $(SRCDIR)/MaoStats.h $(SRCDIR)/MaoSection.h $(SRCDIR)/MaoUnit.h \
+	      $(SRCDIR)/MaoUtil.h $(SRCDIR)/SymbolTable.h $(SRCDIR)/MaoTypes.h \
 	      $(OBJDIR)/gen-opcodes.h $(SRCDIR)/mao.h $(SRCDIR)/irlink.h \
-              $(SRCDIR)/expr.h
+	      $(SRCDIR)/expr.h
 
 
 MAO_BINUTILS_HEADERS = $(BINUTILSRC)/gas/config/tc-i386.h \

@@ -39,7 +39,8 @@ using std::string;
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(PROFILE, 1) {
+MAO_DEFINE_OPTIONS(PROFILE, \
+                   "Annotates the code with sample profile information", 1) {
   OPTION_STR("sample_profile", "/dev/null",
 	     "Filename from which to read profiles."),
 };
@@ -247,7 +248,7 @@ void ProfileAnnotationPass::BuildFileTable() {
 
   for (ConstSectionIterator section = unit_->ConstSectionBegin();
        section != unit_->ConstSectionEnd(); ++section) {
-    for (SectionEntryIterator entry = (*section)->EntryBegin();
+    for (EntryIterator entry = (*section)->EntryBegin();
          entry != (*section)->EntryEnd(); ++entry) {
       if (!(*entry)->IsDirective())
         continue;
@@ -346,7 +347,7 @@ bool ProfileAnnotationPass::Go() {
     // For each sample, attribute it to the corresponding instruction
     InstructionSampleSet *function_samples = function_samples_iterator->second;
     long offset = 0;
-    SectionEntryIterator entry_iter = function->EntryBegin();
+    EntryIterator entry_iter = function->EntryBegin();
     current_source_file = UpdateSourceFile(*entry_iter, current_source_file);
 
     for (InstructionSampleSet::iterator sample = function_samples->begin();

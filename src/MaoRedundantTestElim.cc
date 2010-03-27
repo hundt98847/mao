@@ -30,7 +30,7 @@ namespace {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(REDTEST, 0) {
+MAO_DEFINE_OPTIONS(REDTEST, "Eliminates redundant tests",  0) {
 };
 
 class RedTestElimPass : public MaoFunctionPass {

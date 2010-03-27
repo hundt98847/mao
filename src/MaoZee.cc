@@ -30,7 +30,8 @@ namespace {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(ZEE, 0) {
+MAO_DEFINE_OPTIONS(ZEE, "Eliminates unnecessary zero extension instructions", \
+                   0) {
 };
 
 class ZeroExtentElimPass : public MaoFunctionPass {

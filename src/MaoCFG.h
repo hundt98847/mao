@@ -32,8 +32,8 @@
 
 class MaoEntry;
 class InstructionEntry;
-class SectionEntryIterator;
-class ReverseSectionEntryIterator;
+class EntryIterator;
+class ReverseEntryIterator;
 class BasicBlock;
 class LabelEntry;
 
@@ -119,11 +119,11 @@ class BasicBlock {
   }
 
   // Entry methods
-  SectionEntryIterator EntryBegin() const;
-  SectionEntryIterator EntryEnd() const;
+  EntryIterator EntryBegin() const;
+  EntryIterator EntryEnd() const;
 
-  ReverseSectionEntryIterator RevEntryBegin() const;
-  ReverseSectionEntryIterator RevEntryEnd() const;
+  ReverseEntryIterator RevEntryBegin() const;
+  ReverseEntryIterator RevEntryEnd() const;
 
 
   void AddEntry(MaoEntry *entry);
@@ -192,7 +192,7 @@ class BasicBlock {
 
 // Convenience Macros for Entry iteration
 #define FORALL_BB_ENTRY(it, entry) \
-      for (SectionEntryIterator entry = (*it)->EntryBegin(); \
+      for (EntryIterator entry = (*it)->EntryBegin(); \
            entry != (*it)->EntryEnd(); ++entry)
 
 
