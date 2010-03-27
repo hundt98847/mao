@@ -73,7 +73,10 @@ void MaoOptions::ProvideHelp(bool exit_after, bool always) {
   for (OptionVector::iterator it = option_array_list->begin();
        it != option_array_list->end(); ++it) {
     fprintf(stdout, "Pass: %s\n", (*it)->name());
+    fprintf(stdout, "Description: %s\n", (*it)->description());
     MaoOption *arr = (*it)->array();
+    if ((*it)->num_entries() > 0)
+      fprintf(stdout, "Options:\n");
     for (int i = 0; i < (*it)->num_entries(); i++) {
       fprintf(stdout, "  %-10s: %7s %s\n",
               arr[i].name(),
@@ -113,10 +116,11 @@ void MaoOptions::TimerPrint() {
 // option arrays.
 //
 MaoOptionRegister::MaoOptionRegister(const char *name,
+                                     const char *description,
                                      MaoOption  *array,
                                      int N,
                                      MaoTimer   *timer) {
-  MaoOptionArray *tmp = new MaoOptionArray(name, array, N, timer);
+  MaoOptionArray *tmp = new MaoOptionArray(name, description, array, N, timer);
   if (!option_array_list) {
     option_array_list = new OptionVector;
   }

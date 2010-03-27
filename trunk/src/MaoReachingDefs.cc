@@ -76,7 +76,7 @@ BitString ReachingDefs::CreateKillSet(const BasicBlock& bb) {
 BitString ReachingDefs::GetDefs(const BasicBlock& bb) const {
   BitString defined;
   // Find out all the defs in this basic block.
-  for (SectionEntryIterator entry = bb.EntryBegin();
+  for (EntryIterator entry = bb.EntryBegin();
        entry != bb.EntryEnd();
        ++entry) {
     if ((*entry)->IsInstruction()) {
@@ -171,7 +171,7 @@ BitString ReachingDefs::GetReachingDefsAtInstruction(
   BitString current_set = GetInSet(bb);
 
   // Use iterators!
-  for (SectionEntryIterator entry = bb.EntryBegin();
+  for (EntryIterator entry = bb.EntryBegin();
        entry != bb.EntryEnd(); ++entry) {
     if ((*entry)->IsInstruction()) {
       InstructionEntry *curr_insn = (*entry)->AsInstruction();
@@ -280,8 +280,8 @@ const InstructionEntry *
 ReachingDefs::GetDefiningInstruction(const BasicBlock& bb,
                                      int reg_number,
                                      MaoEntry *start_entry) const {
-  for (ReverseSectionEntryIterator entry =
-           ReverseSectionEntryIterator(start_entry);
+  for (ReverseEntryIterator entry =
+           ReverseEntryIterator(start_entry);
        entry != bb.RevEntryEnd(); ++entry) {
     if ((*entry)->IsInstruction()) {
       InstructionEntry *curr_insn = (*entry)->AsInstruction();

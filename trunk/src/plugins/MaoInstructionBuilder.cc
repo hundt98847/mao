@@ -75,7 +75,8 @@ void PrintOperands(const i386_insn *i);
 #define PrintArrow(prefix, structure, field, format_str) \
     PrettyPrint(prefix->structure.field = format_str;\n, structure->field)
 
-MAO_OPTIONS_DEFINE(INSBUILDPLUG, 0) {
+MAO_DEFINE_OPTIONS(INSBUILDPLUG, "Generates i386_insn structure corresponding "\
+                   "to an instruction in the input file", 0) {
 };
 
 class InstructionBuilderPlugin : public MaoPass {
@@ -87,7 +88,7 @@ class InstructionBuilderPlugin : public MaoPass {
     InstructionEntry *insn = NULL;
     for (ConstSectionIterator section = unit_->ConstSectionBegin();
           section != unit_->ConstSectionEnd(); ++section) {
-      for (SectionEntryIterator entry = (*section)->EntryBegin();
+      for (EntryIterator entry = (*section)->EntryBegin();
            entry != (*section)->EntryEnd(); ++entry) {
         if ((*entry)->IsInstruction()) {
           // We expect the file to have only one insruction

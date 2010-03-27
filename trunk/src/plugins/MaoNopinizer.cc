@@ -33,7 +33,7 @@ PLUGIN_VERSION
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(NOPIN, 3) {
+MAO_DEFINE_OPTIONS(NOPIN, "Inserts nops randomly", 3) {
   OPTION_INT("seed",    17, "Seed for random number generation"),
   OPTION_INT("density", 11, "Density for inserts, random, 1 / 'density' insn"),
   OPTION_INT("thick",   3,  "How many nops in a row, random, 1 / 'thick'"),

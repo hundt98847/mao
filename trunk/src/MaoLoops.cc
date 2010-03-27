@@ -442,7 +442,7 @@ const int HavlakLoopFinder::kMaxNonBackPreds;
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(LFIND, 1) {
+MAO_DEFINE_OPTIONS(LFIND, "Finds all Havlak loops", 1) {
   OPTION_BOOL("lsg", false, "Dump LSG in text format"),
 };
 

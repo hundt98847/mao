@@ -36,7 +36,7 @@ Liveness::Liveness(MaoUnit *unit,
 BitString Liveness::CreateGenSet(const BasicBlock& bb) {
   BitString current_set(num_bits_);  // Defaults to no regisers.
   // Move backwards. remove defs, then add uses
-  for (ReverseSectionEntryIterator entry = bb.RevEntryBegin();
+  for (ReverseEntryIterator entry = bb.RevEntryBegin();
        entry != bb.RevEntryEnd(); ++entry) {
     if ((*entry)->IsInstruction()) {
       InstructionEntry *insn = (*entry)->AsInstruction();
@@ -52,7 +52,7 @@ BitString Liveness::CreateGenSet(const BasicBlock& bb) {
 //  - The set of variables assigned a value in bb before any use.
 BitString Liveness::CreateKillSet(const BasicBlock& bb) {
   BitString current_set(num_bits_);  // Defaults to no regisers.
-  for (ReverseSectionEntryIterator entry = bb.RevEntryBegin();
+  for (ReverseEntryIterator entry = bb.RevEntryBegin();
        entry != bb.RevEntryEnd(); ++entry) {
     if ((*entry)->IsInstruction()) {
       InstructionEntry *insn = (*entry)->AsInstruction();
@@ -74,7 +74,7 @@ BitString Liveness::GetLive(const BasicBlock& bb,
   BitString current_set = GetOutSet(bb);
 
   // Use iterators!
-  for (ReverseSectionEntryIterator entry = bb.RevEntryBegin();
+  for (ReverseEntryIterator entry = bb.RevEntryBegin();
        entry != bb.RevEntryEnd(); ++entry) {
     if ((*entry)->IsInstruction()) {
       InstructionEntry *curr_insn = (*entry)->AsInstruction();

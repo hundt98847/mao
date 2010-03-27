@@ -33,7 +33,7 @@ PLUGIN_VERSION
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(RATFINDER, 0) {
+MAO_DEFINE_OPTIONS(RATFINDER, "Finds potential RAT stalls in the code", 0) {
 };
 
 class RatFinderPass : public MaoFunctionPass {

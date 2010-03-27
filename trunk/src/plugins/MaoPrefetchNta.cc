@@ -39,7 +39,7 @@ PLUGIN_VERSION
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(PREFNTA, 2) {
+MAO_DEFINE_OPTIONS(PREFNTA, "Inserts prefetches before loads and stores", 2) {
   OPTION_INT("offset",  0, "Offset added to prefetch addresses"),
   OPTION_INT("ptype",   0, "Type of prefetch (0: nta, ..., 3: t2)"),
 };

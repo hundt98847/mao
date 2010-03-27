@@ -27,29 +27,29 @@
 #include "MaoOptions.h"
 
 // Class: BasicBlock
-SectionEntryIterator BasicBlock::EntryBegin() const {
-  return SectionEntryIterator(first_entry());
+EntryIterator BasicBlock::EntryBegin() const {
+  return EntryIterator(first_entry());
 }
 
-SectionEntryIterator BasicBlock::EntryEnd() const {
+EntryIterator BasicBlock::EntryEnd() const {
   MaoEntry *entry = last_entry();
   if (entry) {
     entry = entry->next();
   }
-  return SectionEntryIterator(entry);
+  return EntryIterator(entry);
 }
 
 
-ReverseSectionEntryIterator BasicBlock::RevEntryBegin() const {
-  return ReverseSectionEntryIterator(last_entry());
+ReverseEntryIterator BasicBlock::RevEntryBegin() const {
+  return ReverseEntryIterator(last_entry());
 }
 
-ReverseSectionEntryIterator BasicBlock::RevEntryEnd() const {
+ReverseEntryIterator BasicBlock::RevEntryEnd() const {
   MaoEntry *entry = first_entry();
   if (entry) {
     entry = entry->prev();
   }
-  return ReverseSectionEntryIterator(entry);
+  return ReverseEntryIterator(entry);
 }
 
 
@@ -159,7 +159,7 @@ void CFG::DumpVCG(const char *fname) const {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(CFG, 4) {
+MAO_DEFINE_OPTIONS(CFG, "Builds the control flow graph", 4) {
   OPTION_BOOL("callsplit", false, "Split Basic Blocks at call sites"),
   OPTION_BOOL("respect_orig_labels", false, "Create a BB whenever the "
               "input file has a label directive"),
@@ -209,7 +209,7 @@ bool CFGBuilder::Go() {
   create_fall_through = true;
 
   // Main loop processing the IR entries
-  for (SectionEntryIterator e_iter = function_->EntryBegin();
+  for (EntryIterator e_iter = function_->EntryBegin();
        e_iter != function_->EntryEnd(); ++e_iter) {
     MaoEntry *entry = *e_iter;
 
@@ -321,7 +321,7 @@ bool CFGBuilder::Go() {
                 MAO_ASSERT_MSG(target != NULL,
                                "Unable to find label: %s", label);
 
-                for (SectionEntryIterator entry_iter = target->EntryBegin();
+                for (EntryIterator entry_iter = target->EntryBegin();
                      entry_iter != target->EntryEnd(); ++entry_iter) {
                   MaoEntry *temp_entry = *entry_iter;
                   if (temp_entry->Type() == MaoEntry::LABEL) {
@@ -449,7 +449,7 @@ bool CFG::GetJumptableTargets(LabelEntry *jump_table,
     // Move forward while the entries match the jump-table pattern.
     JumpTableTargets *found_targets = new JumpTableTargets();
     found_targets->clear();
-    SectionEntryIterator e_iter = SectionEntryIterator(jump_table);
+    EntryIterator e_iter = EntryIterator(jump_table);
     // Move past the label to the first entry in the jump table.
     ++e_iter;
     while (true) {

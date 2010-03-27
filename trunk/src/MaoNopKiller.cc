@@ -30,7 +30,7 @@ namespace {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(NOPKILL, 0) {
+MAO_DEFINE_OPTIONS(NOPKILL, "Removes all NOPs in the code", 0) {
 };
 
 class NopKillerElimPass : public MaoFunctionPass {

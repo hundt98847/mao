@@ -47,7 +47,8 @@ extern "C" {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(RELAX, 3) {
+MAO_DEFINE_OPTIONS(RELAX, "Runs a relaxation algorithm to compute sizes and" \
+                   " offsets of all instructions", 3) {
   OPTION_BOOL("collect_stats", false,
               "Collect and print a table with statistics about relaxer "
               "from all the processed functions."),
@@ -153,7 +154,7 @@ bool MaoRelaxer::Go() {
 
   // calculate offset map
   int offset = 0;
-  for (SectionEntryIterator iter = section_->EntryBegin();
+  for (EntryIterator iter = section_->EntryBegin();
        iter != section_->EntryEnd(); ++iter) {
     (*offset_map_)[*iter] = offset;
     offset += (*size_map_)[*iter];
@@ -255,7 +256,7 @@ struct frag *MaoRelaxer::BuildFragments(MaoUnit *mao, Section *section,
 
   bool is_text = !section->name().compare(".text");
 
-  for (SectionEntryIterator iter = section->EntryBegin();
+  for (EntryIterator iter = section->EntryBegin();
        iter != section->EntryEnd(); ++iter) {
     MaoEntry *entry = *iter;
     switch (entry->Type()) {
@@ -801,7 +802,7 @@ int MaoRelaxer::SectionSize(MaoEntryIntMap *size_map) {
 
 int MaoRelaxer::FunctionSize(Function *function, MaoEntryIntMap *size_map) {
   int size = 0;
-  for (SectionEntryIterator iter = function->EntryBegin();
+  for (EntryIterator iter = function->EntryBegin();
       iter != function->EntryEnd();
       ++iter) {
     if (!(*iter)->IsLabel()) {

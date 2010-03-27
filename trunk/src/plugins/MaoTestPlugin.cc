@@ -33,7 +33,7 @@ extern "C" {
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_OPTIONS_DEFINE(TESTPLUG, 1) {
+MAO_DEFINE_OPTIONS(TESTPLUG, "A test plugin pass", 1) {
   OPTION_STR("prefix", "plugin", "Prefix for messages"),
 };
 
