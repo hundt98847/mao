@@ -16,6 +16,35 @@
 //   Free Software Foundation, Inc.,
 //   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+// Control Flow Graph - Calculates the control flow graph for a function.
+//
+// Classes:
+//   BasicBlockEdge - Represent edges in the CFG
+//   BasicBlock     - Basic blocks are the nodes in the CFG.
+//   CFG            - Holds a Control Flow Graph for one function.
+//   CFGBuilder     - Used for building a CFG from a function.
+//
+// To get the CFG for a function, use the static method so that
+// you benefit from the caching of the CFGs. Also, make sure
+// to invalidate the CFG if the IR is updated.
+//  // To get the CFG for a function
+//  CFG *cfg = CFG::GetCFG(unit_, function_);
+//
+//  // Iterate over all instructions in all basic blocks
+//  FORALL_CFG_BB(cfg,it) {
+//    MaoEntry *first = (*it)->GetFirstInstruction();
+//    if (!first) continue;
+//
+//    FORALL_BB_ENTRY(it,entry) {
+//      if (!(*entry)->IsInstruction()) continue;
+//      InstructionEntry *insn = (*entry)->AsInstruction();
+//      // TODO: Process instruction here
+//    }
+//  }
+//
+//  // Invalidate the CFG
+//  CFG::InvalidateCFG(function_);
+
 #ifndef MAOCFG_H_
 #define MAOCFG_H_
 
@@ -43,15 +72,20 @@ class LabelEntry;
 
 typedef int BasicBlockID;
 
+// A basic block edge is a possible path between two basic blocks.
 class BasicBlockEdge {
  public:
+  // Creates an edge between source and destination. fall_through
+  // means that the edge is not created by an explicit control
+  // transfer instruction.
   BasicBlockEdge(BasicBlock *source, BasicBlock *dest, bool fall_through)
       : source_(source), dest_(dest), fall_through_(fall_through) { }
 
   bool fall_through() { return fall_through_; }
+
+  // Accessors for source and destination.
   BasicBlock *source() { return source_; }
   void set_source(BasicBlock *source) { source_ = source; }
-
   BasicBlock *dest() { return dest_; }
   void set_dest(BasicBlock *dest) { dest_ = dest; }
 
@@ -62,14 +96,17 @@ class BasicBlockEdge {
 };
 
 
+// A basic block holds a series of entries which have one entry point
+// (the first entry), and one exit point (last entry).
 class BasicBlock {
  public:
-  // Iterators
-  //
   typedef std::vector<BasicBlockEdge *> EdgeList;
   typedef EdgeList::iterator EdgeIterator;
   typedef EdgeList::const_iterator ConstEdgeIterator;
 
+  // Creates a basic block with the name 'label', which should be the
+  // first label of the basic block. Id and label must be unique within
+  // the CFG.
   BasicBlock(BasicBlockID id, const char *label)
   : id_(id), label_(label),
     first_entry_(NULL),
@@ -84,13 +121,14 @@ class BasicBlock {
     }
   }
 
-  // Getters
-  //
+  // Returns the unique ID.
   BasicBlockID id() const { return id_; }
+  // Returns the label associated with the basic block.
   const char *label() const { return label_; }
 
   // Edge methods
-  //
+
+  // Iterators
   EdgeIterator      BeginInEdges ()       { return in_edges_.begin(); }
   ConstEdgeIterator BeginInEdges () const { return in_edges_.begin(); }
   EdgeIterator      EndInEdges   ()       { return in_edges_.end(); }
@@ -100,6 +138,7 @@ class BasicBlock {
   EdgeIterator      EndOutEdges  ()       { return out_edges_.end(); }
   ConstEdgeIterator EndOutEdges  () const { return out_edges_.end(); }
 
+  // Methods for adding and removing edges.
   void AddInEdge(BasicBlockEdge *edge) {
     MAO_ASSERT(edge->dest() == this);
     in_edges_.push_back(edge);
@@ -118,14 +157,15 @@ class BasicBlock {
     return out_edges_.erase(pos);
   }
 
-  // Entry methods
+  // Entry iterators.
   EntryIterator EntryBegin() const;
   EntryIterator EntryEnd() const;
-
   ReverseEntryIterator RevEntryBegin() const;
   ReverseEntryIterator RevEntryEnd() const;
 
-
+  // Adds an entry to the basic block. Basic blocks are stored using a
+  // start and an end pointer, so it is sufficient to add only the
+  // first and last entry.
   void AddEntry(MaoEntry *entry);
 
   // Is this basic block located directly before basicblock in the section.
@@ -137,7 +177,8 @@ class BasicBlock {
   // Caution: This routine iterates through a bb to count entries
   int       NumEntries();
 
-  // Find 1st, last instruction, can be NULL
+  // Find and last instruction. Returns NULL if there is no
+  // instruction in the basic block.
   InstructionEntry *GetFirstInstruction() const;
   InstructionEntry *GetLastInstruction() const;
 
@@ -146,11 +187,17 @@ class BasicBlock {
   void Print(FILE *f, MaoEntry *last = NULL);
   void Print(FILE *f, MaoEntry *from, MaoEntry *to);
 
+  // Accessors for the first and last entry in the basic block.
   MaoEntry *first_entry() const { return first_entry_;}
   MaoEntry *last_entry() const { return last_entry_;}
   void set_first_entry(MaoEntry *entry)  { first_entry_ = entry;}
   void set_last_entry(MaoEntry *entry)  { last_entry_ = entry;}
 
+  // GCC relies on the fact that some basic blocks are stored after
+  // each-other when generating code for methods with variable number
+  // of arguments. For such basic blocks, chained_indirect_jump_target()
+  // is set to true. It is not safe to move these blocks unless the
+  // corresponding jumps are updated.
   void set_chained_indirect_jump_target(bool value) {
     chained_indirect_jump_target_ = value;
   }
@@ -159,6 +206,7 @@ class BasicBlock {
     return chained_indirect_jump_target_;
   }
 
+  // Basic block contains at least one .data directive.
   void FoundDataDirectives() {
     has_data_directives_ = true;
   }
@@ -166,7 +214,6 @@ class BasicBlock {
   bool HasDataDirectives() {
     return has_data_directives_;
   }
-
 
  private:
   const BasicBlockID id_;
@@ -179,14 +226,8 @@ class BasicBlock {
   MaoEntry *first_entry_;
   MaoEntry *last_entry_;
 
-  // Some indirect jumps relies on that some basic blocks
-  // are placed after eachother. These blocks may not be
-  // changed and reordered without changing the corresponding
-  // jumps. This flags shows that the current basic block
-  // is such a basic block.
   bool chained_indirect_jump_target_;
 
-  // Does the BB contains data directives such as .long?
   bool has_data_directives_;
 };
 
@@ -196,11 +237,19 @@ class BasicBlock {
            entry != (*it)->EntryEnd(); ++entry)
 
 
+// Control Flow Graph
+// Use CFG::GetCFG() to get the CFG for a function. The CFG is cached,
+// and using this method avoids unnecessary regenerations. Invalidate
+// the CFG using CFG::InvalidateCFG() if necessary.
+//
+// All CFGs also have two special blocks called "<SOURCE>" and
+// "<SINK>". The source is always the first basic block of the CFG and
+// all exit points lead to the sink.
+//
 class CFG {
  public:
   typedef std::vector<BasicBlock *> BBVector;
   typedef std::map<const char *, BasicBlock *, ltstr> LabelToBBMap;
-
   explicit CFG(MaoUnit *mao_unit) : mao_unit_(mao_unit),
                                     num_external_jumps_(0),
                                     num_unresolved_indirect_jumps_(0) {
@@ -218,32 +267,46 @@ class CFG {
     }
   }
 
-  // Get the CFG for the given function, build
-  // if it necessary.
+  // Gets the CFG for the given function and builds if it not
+  // cached.  A conservative CFG treats all labels as the start of a
+  // new basic block.
   static CFG *GetCFG(MaoUnit *mao, Function *function,
                      bool conservative = false);
+  // Returns a cached CFG if it exists in our cache, otherwise NULL.
   static CFG *GetCFGIfExists(const MaoUnit *mao, Function *function);
+  // Invalidates the CFG in the cache.
   static void InvalidateCFG(Function *function);
-
+  // Returns the number of nodes in the CFG. Each node represent one
+  // basic block.
   int  GetNumOfNodes() const { return basic_blocks_.size(); }
+  // Prints a graphical representation of the CFG as a VCG graph to a file.
   void DumpVCG(const char *fname) const;
+  // Prints a textual representation of the CFG.
   void Print() const { Print(stdout); }
   void Print(FILE *out) const;
 
-  // Construction methods
+  // Adds a basic block to the CFG.
   void AddBasicBlock(BasicBlock *bb) { basic_blocks_.push_back(bb); }
+  // Puts the basic block in the map from label to basic block.
+  // TODO(martint): Should be done automatically when creating a basic block.
   void MapBasicBlock(BasicBlock *bb) {
-    MAO_ASSERT(basic_block_map_.insert(std::make_pair(bb->label(), bb)).second);
+    MAO_RASSERT(basic_block_map_.insert(std::make_pair(bb->label(),
+                                                       bb)).second);
   }
 
-  // Getter methods
+  // Returns the basic block of a given id. Assumes that an basic block with
+  // the id exists.
   BasicBlock *GetBasicBlock(BasicBlockID id) { return basic_blocks_[id]; }
+  // Finds a basic block for a given label, or returns NULL if one has not
+  // already exists.
   BasicBlock *FindBasicBlock(const char *label) {
     LabelToBBMap::iterator bb = basic_block_map_.find(label);
     if (bb == basic_block_map_.end())
       return NULL;
     return bb->second;
   }
+
+  // Iterators for the basic blocks.
   BBVector::iterator Begin() { return basic_blocks_.begin(); }
   BBVector::const_iterator Begin() const { return basic_blocks_.begin(); }
 
@@ -259,17 +322,19 @@ class CFG {
     return basic_blocks_.rend();
   }
 
-
-  BasicBlock *Start() const { return basic_blocks_[0]; }
+  // Returns the source node in the CFG
+  BasicBlock *Source() const { return basic_blocks_[0]; }
+  // Returns the sink node in the CFG
   BasicBlock *Sink() const { return basic_blocks_[1]; }
 
-  // Lists the targets found in a jump table.
+  // A jump-table is stored as a set of target-labels.
   typedef std::set<LabelEntry *> JumpTableTargets;
+  // Maps labels to the jump-table targets stored at that label.
   typedef std::map<LabelEntry *, JumpTableTargets *> LabelsToJumpTableTargets;
 
-  // Given a label, return all the targets found in the corresponing
-  // jump table. The function return True all entries could be understood,
-  // and False otherwise. The results are stored in out_targets.
+  // Given a label, returns all the targets found in the corresponding
+  // jump table. The function returns True if the jump_table can be
+  // successfully parsed. The results are stored in out_targets.
   bool GetJumptableTargets(LabelEntry *jump_table,
                            CFG::JumpTableTargets **out_targets);
 
@@ -279,17 +344,19 @@ class CFG {
   // External jumps            - Jump to labels not found in the current
   //                             function.
 
-  // True if function has unresolved jumps
+  // True if function has unresolved jumps.
   bool HasUnresolvedIndirectJump() const {
     return num_unresolved_indirect_jumps_ > 0;
   }
 
-  // True if functuion has external jumps
+  // Returns True if function contains jumps to labels not found in
+  // the current function.
   bool HasExternalJump() const {
     return num_external_jumps_ > 0;
   }
 
-  // True if all jumps are resolved, and to labels within the function.
+  // Returnes True if all jumps are resolved, and all targets are
+  // labels within the function.
   bool IsWellFormed() const {
     return !HasExternalJump() && !HasUnresolvedIndirectJump();
   }
@@ -305,6 +372,7 @@ class CFG {
   }
 
   // Was the CFG built with the conservative flag.
+  // In a conservative CFG, each label starts a new basic block.
   bool conservative() const {
     return conservative_;
   }
@@ -324,7 +392,7 @@ class CFG {
   int num_unresolved_indirect_jumps_;  // Number of indirect jumps that
                                        // are unresolved
 
-  // This holds the jumptables we so far have identified, and maps the
+  // This holds the jump-tables we so far have identified, and maps the
   // label that identifies them to the list of targets in the table.
   // This is populated on demand. When we reach an indirect jump, we
   // find which label is used to identify the jump table (possibly by
@@ -344,6 +412,7 @@ class CFG {
     for (CFG::BBVector::const_reverse_iterator it = cfg->RevBegin(); \
            it != cfg->RevEnd(); ++it)
 
+// Class used when building a CFG.
 class CFGBuilder : public MaoFunctionPass {
  public:
   CFGBuilder(MaoUnit *mao_unit, Function *function, CFG *CFG,
@@ -395,7 +464,9 @@ class CFGBuilder : public MaoFunctionPass {
   bool      respect_orig_labels_ : 1;
   bool      dump_vcg_ : 1;
 
-
+  // Class for holding statistics about a CFG. The state is kept
+  // between CFG objects, and the stats is presented at the end of the
+  // MAO run. Only used when the stat option is given.
   class CFGStat : public Stat {
    public:
     CFGStat() : number_of_direct_jumps_(0), number_of_indirect_jumps_(0),

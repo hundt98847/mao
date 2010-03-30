@@ -16,17 +16,35 @@
 //   Free Software Foundation Inc.,
 //   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+// Relaxer calculates the sizes of all instructions inside a a given
+// section. The result can be given as sizemap (maps entries to sizes)
+// or as an offsetmap (maps entries to its address inside the
+// section).  Results are cached, and the results must be invalidated
+// using InvalidateSizeMap() if the IR is changed.
+//
+// The name comes from the algorithm used.
+// Usage:
+//   MaoEntryIntMap *sizes = MaoRelaxer::GetSizeMap(unit_,
+//                                                  function_->GetSection());
+//   int entry_size = (*sizes)[entry];
+
 #ifndef MAORELAX_H_
 #define MAORELAX_H_
+
+#include <map>
+#include <vector>
 
 #include "MaoDebug.h"
 #include "MaoPasses.h"
 #include "MaoUnit.h"
 #include "tc-i386-helper.h"
 
-#include <map>
-#include <vector>
-
+// The main relaxation class.
+//
+// Use the static methods MaoRelaxer::GetSizeMap() and
+// MaoRelaxer::GetOffsetMap() to access the results. Results are
+// cached per section and needs to be explicitly invalidated using
+// MaoRelaxer::InvalidateSizeMap() if the section is updated.
 class MaoRelaxer : public MaoPass {
  public:
   MaoRelaxer(MaoUnit *mao_unit, Section *section, MaoEntryIntMap *size_map,
@@ -39,9 +57,9 @@ class MaoRelaxer : public MaoPass {
   // Used when a pass needs the offsets for a given section.
   // Returns the offsetmap, which holds entries for the whole section.
   static MaoEntryIntMap *GetOffsetMap(MaoUnit *mao, Section *section);
-  // Checks if a section has a sizemap computed.
+  // Checks if a section has a sizemap and an offsetmap computed.
   static bool HasSizeMap(Section *section);
-  // Invalidates the sizemap for the section.
+  // Invalidates the sizemap and offsetmap for the section.
   static void InvalidateSizeMap(Section *section);
 
  private:

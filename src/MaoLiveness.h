@@ -32,12 +32,17 @@
 //   transfer function    : in = (out-kill) U gen
 //   confluence op        : out = U in_s
 //   start state          : out_final = {}
+
+
+// An implementation of the Liveness data-flow problem.
 class Liveness : public DFProblem {
  public:
   Liveness(MaoUnit *unit,
            Function *function,
            const CFG *cfg);
-  // Return the live registers of a given instruction.
+  // Returns the live registers of a given instruction.
+  // The information is stored in a bitstring, indexed by register number.
+  // A set bit means the register is live.
   BitString GetLive(const BasicBlock& bb, const InstructionEntry& insn);
  private:
   BitString CreateGenSet(const BasicBlock& bb);
