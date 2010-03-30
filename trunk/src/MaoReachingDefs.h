@@ -38,6 +38,9 @@
 //   confluence op        : in = U out_p
 //   start state          : in_first = {}
 
+
+// A definition points out an instruction. It also points out in which
+// basic block it belongs, and which register it defined.
 class Definition {
  public:
   Definition() {}
@@ -45,8 +48,11 @@ class Definition {
              const BasicBlock *bb,
              int register_number)
       : instruction_(instruction), bb_(bb), register_number_(register_number) {}
+  // Returns the instruction.
   const InstructionEntry *instruction() const { return instruction_; }
+  // Returns the basic block.
   const BasicBlock *bb() const { return bb_; }
+  // Returns the number of the defined register.
   int register_number() const { return register_number_; }
  private:
   const InstructionEntry *instruction_;
@@ -54,6 +60,7 @@ class Definition {
   int register_number_;
 };
 
+// An implementation of the reaching def data-flow problem.
 class ReachingDefs : public DFProblem {
  public:
   ReachingDefs(MaoUnit *unit,
@@ -61,10 +68,10 @@ class ReachingDefs : public DFProblem {
                const CFG *cfg);
 
   // Public API
-  // Get all the reaching definitions at the given instruction.
+  // Gets all the reaching definitions at the given instruction.
   std::list<Definition> GetAllReachingDefs(const BasicBlock& bb,
                                            const InstructionEntry& insn);
-  // Return the definitions for register reg_number at the given instruction.
+  // Returns the definitions for register reg_number at the given instruction.
   std::list<Definition> GetReachingDefs(const BasicBlock& bb,
                                         const InstructionEntry& insn,
                                         int reg_number) const;
@@ -78,11 +85,11 @@ class ReachingDefs : public DFProblem {
     return Union(dataset);
   }
 
-  // Return all the registers defined in the basic block.
+  // Returns all the registers defined in the basic block.
   BitString GetDefs(const BasicBlock& bb) const;
 
-  // Return the last instruction in the basic block that defines the
-  // register reg_num, and start looking at entry start_entry. Returns NULL if
+  // Returns the last instruction in the basic block that defines the
+  // register reg_num, and starts looking at entry start_entry. Returns NULL if
   // no definition is found.
   const InstructionEntry *GetDefiningInstruction(const BasicBlock& bb,
                                                  int reg_number,

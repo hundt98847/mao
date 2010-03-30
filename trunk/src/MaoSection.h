@@ -16,6 +16,15 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
+// A section in an assembly file corresponds to .section directives in
+// the assembly file with the same name and is represented by the
+// Section class.
+
+// Section:
+// The GNU assembler allows a section to be split in the assembly
+// source as subsections. A MAO section stores all sections as one
+// or more subsections.
+
 #ifndef MAOSECTION_H_
 #define MAOSECTION_H_
 
@@ -40,8 +49,9 @@ class Section;
 // sections.
 class SubSection {
  public:
-  // Constructor needs subsection number, a pointer to the actual section, and
-  // the assembly code needed to create the subsection.
+
+  // Constructor needs a unique id, the subsection number, the section name,
+  // and a pointer to the section it belongs to.
   explicit SubSection(const SubSectionID id, unsigned int subsection_number,
                       const char *name, Section *section)
       : number_(subsection_number),
@@ -54,35 +64,42 @@ class SubSection {
 
   ~SubSection() {}
 
+  // The sub-section number.
   unsigned int number() const { return number_; }
+  // The section name.
   const std::string &name() const { return name_; }
 
+  // Accessors to first and last entry of the subsection.
   MaoEntry *first_entry() const { return first_entry_;}
   MaoEntry *last_entry() const { return last_entry_;}
   void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
   void set_last_entry(MaoEntry *entry);
+  // A unique ID of the subsection.
   SubSectionID id() const { return id_;}
-
+  // Helper method to make sure we have a first section if needed.
   void set_start_section(bool value) {start_section_ = value;}
   bool start_section() const {return start_section_;}
 
+  // Gets the section this subsection belongs to.
   Section *section() const {return section_;}
 
+  // Entry iterator methods.
   EntryIterator EntryBegin();
   EntryIterator EntryEnd();
 
  private:
-  // The subsection number
+  // The subsection number and name
   const unsigned int number_;
   const std::string name_;
 
+  // Unique id.
   const SubSectionID id_;
 
   // Points to the first and last entry for the subsection.
   MaoEntry *first_entry_;
   MaoEntry *last_entry_;
 
-  // For special section that holds the inital directies that are not
+  // For special section that holds the initial directives that are not
   // part of the first "real" section.
   bool start_section_;
 
@@ -90,7 +107,7 @@ class SubSection {
   Section *section_;
 };
 
-// A section
+// One section, implemented as one or more subsections.
 class Section {
  public:
   // Memory for the name is allocated in the constructor and freed
@@ -98,17 +115,20 @@ class Section {
   explicit Section(const char *name, const SectionID id) :
     name_(name), id_(id), sizes_(NULL), offsets_(NULL) {}
   ~Section() {}
+  // Getters for name and id.
   std::string name() const {return name_;}
   SectionID id() const {return id_;}
-
+  // Adds a subsection to the section.
   void AddSubSection(SubSection *subsection);
 
+  // Entry iterator methods.
   EntryIterator EntryBegin() const;
   EntryIterator EntryEnd() const;
 
+  // Returns a vector of all the subsection IDs.
   std::vector<SubSectionID> GetSubsectionIDs() const;
 
-  // Return the last subsection in the section or NULL if section is empty.
+  // Returns the last subsection in the section or NULL if section is empty.
   SubSection *GetLastSubSection() const;
 
   // The next 4 methods are only to be used by MaoRelaxer.  Others
@@ -128,20 +148,19 @@ class Section {
   }
 
  private:
-
   const std::string name_;  // e.g. ".text", ".data", etc.
   const SectionID id_;
 
   std::vector<SubSection *> subsections_;
 
   // Sizes as determined by the relaxer
-  // TODO(martint): fix types to use the named type in relax.h
   // NULL if not set.
   MaoEntryIntMap *sizes_;
 
   // Store corresponding entry offsets
   MaoEntryIntMap *offsets_;
 };
+
 // Iterator wrapper for iterating over all the Sections in a MaoUnit.
 class SectionIterator {
  public:
@@ -171,6 +190,4 @@ class ConstSectionIterator {
   std::map<const char *, Section *, ltstr>::const_iterator section_iter_;
 };
 
-
-
-#endif // MAOSECTION_H_
+#endif  // MAOSECTION_H_

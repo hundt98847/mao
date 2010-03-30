@@ -83,7 +83,7 @@ CFG *CFG::GetCFG(MaoUnit *mao, Function *function, bool conservative) {
   // same flags, we can reuse it. Otherwise rebuild it.
   if (function->cfg() == NULL ||
       function->cfg()->conservative() != conservative) {
-    // Build it!p
+    // Build it!
     CFG *cfg = new CFG(mao);
     CreateCFG(mao, function, cfg, conservative);
     function->set_cfg(cfg);
