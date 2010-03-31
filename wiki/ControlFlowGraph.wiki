@@ -1,9 +1,0 @@
-#summary Control Flow Graph.
-
-= Control Flow Graph (CFG) =
-
-The CFG is a graph with basic block as nodes and possible transitions between basic block as edges. The CFG has explicit source and sink nodes. While the CFG is currently build for the whole Compilation Unit, future versions of the CFG will work on one function at the time.
-
-Basic blocks are defined as sequences of instructions that have only one entry point, and only one exit point. Labels split basic blocks if they are the target of at least one jump/branch instruction.
-
-The command line option "callsplit" determines if _call_ instructions should split basic blocks. The default value for "callsplit" is false.
