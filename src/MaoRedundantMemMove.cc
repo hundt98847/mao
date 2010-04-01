@@ -86,8 +86,15 @@ class RedMemMovElimPass : public MaoFunctionPass {
                 next->IsCall() ||
                 next->IsReturn())
               break;
-            BitString defs = GetRegisterDefMask(next);
+            // Check if instruction writes to memory.
+            // TODO(martint): Implement a safe method in
+            // the entry class that checks for memory writes.
+            if (next->NumOperands() >= 1
+                && next->IsMemOperand(next->NumOperands()-1)) {
+              break;
+            }
 
+            BitString defs = GetRegisterDefMask(next);
             if (defs.IsNull() || defs.IsUndef())
               break;  // defines something other than registers
 
