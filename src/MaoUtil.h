@@ -116,7 +116,7 @@ class BitString {
   // plus one).  If the input value is set to the number of bits in
   // the string, return -1.
   int NextSetBit(int from_index) {
-    MAO_ASSERT(index >= 0);
+    MAO_ASSERT(from_index >= 0);
     MAO_ASSERT(from_index <= number_of_bits_);
     unsigned int word_pos = from_index/(sizeof(unsigned long long) * 8);
     unsigned int bit_pos = from_index%(sizeof(unsigned long long) * 8);
