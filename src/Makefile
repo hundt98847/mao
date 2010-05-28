@@ -268,8 +268,10 @@ MAO_BINUTILS_HEADERS = $(BINUTILSRC)/gas/config/tc-i386.h \
 	               $(BINUTILSRC)/include/progress.h \
 	               $(BINUTILSRC)/include/bfdlink.h \
 	               $(BINUTILSRC)/include/fopen-same.h \
-	               $(BINUTILSRC)/include/libiberty.h \
 	               $(BINUTILOBJ)/bfd/bfd.h
+
+MAO_LIBIBERBY_HEADER = $(BINUTILSRC)/include/libiberty.h
+
 
 MAO_ELF_HEADERS = $(BINUTILSRC)/include/elf/common.h \
 	          $(BINUTILSRC)/include/elf/internal.h \
@@ -294,6 +296,15 @@ headers:
 	cp $(MAO_OPCODES_HEADERS) $(HEADERDIR)/binutils/opcodes
 	mkdir -p $(HEADERDIR)/binutils/opcode
 	cp $(MAO_INCLUDE_OPCODE_HEADERS) $(HEADERDIR)/binutils/opcode
+	echo "// Define added by \"headers\" target in MAO makefile."    > $(HEADERDIR)/binutils/libiberty.h
+	echo "// libiberty.h assumes the macro is defined by configure script."    >> $(HEADERDIR)/binutils/libiberty.h
+	echo "// Since plugins do not use configure, and we know " >> $(HEADERDIR)/binutils/libiberty.h
+	echo "// basename is available, we hardcode this define."             >> $(HEADERDIR)/binutils/libiberty.h
+	echo "#ifndef HAVE_DECL_BASENAME"                                 >> $(HEADERDIR)/binutils/libiberty.h
+	echo "#define HAVE_DECL_BASENAME 1"                               >> $(HEADERDIR)/binutils/libiberty.h
+	echo "#endif"                                                     >> $(HEADERDIR)/binutils/libiberty.h
+	echo                                                              >> $(HEADERDIR)/binutils/libiberty.h
+	cat $(MAO_LIBIBERBY_HEADER)         >> $(HEADERDIR)/binutils/libiberty.h
 
 stamp-bin:
 	test -d $(BINDIR) || mkdir -p $(BINDIR)
