@@ -51,6 +51,7 @@ CFLAGS=						\
 	-I$(BINUTILSRC)/include			\
 	-I$(BINUTILOBJ)/include			\
 	-DLOCALEDIR="\"$(LOCALEDIR)\""		\
+	-DHAVE_DECL_BASENAME=1                  \
 	-g -O2 -Wall -fno-exceptions
 
 MAKEDEPEND=gcc -MM $(CFLAGS) -o $(patsubst %.o,%.P,$@) $<
