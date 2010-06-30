@@ -19,6 +19,8 @@
 
 #include <list>
 #include <map>
+#include <set>
+#include <string>
 #include <utility>
 
 #include "MaoOptions.h"
@@ -84,6 +86,10 @@ class MaoAction {
   bool           db_cfg_;
   bool           da_vcg_;
   bool           da_cfg_;
+
+  // If not NULL, only apply pass to functions that have the string
+  // function_filter_ as a substring.
+  std::set<std::string> function_filter_;
 };
 
 
@@ -123,6 +129,9 @@ class MaoFunctionPass : public MaoPass {
 
  protected:
   Function *const function_;
+
+ private:
+  bool FunctionMatchFilter(const Function *function) const;
 };
 
 

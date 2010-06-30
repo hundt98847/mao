@@ -268,6 +268,15 @@ bool SetPassSpecificOptions(const char *option, const char *arg,
                             MaoOptionMap *options) {
   MaoOptionValue value;
 
+  if (!strcasecmp(option, "apply_to_funcs")) {
+    const char *param;
+    value.cval_ = NULL;
+    if (GetParam(arg, next, &param, token_buff))
+      value.cval_ = strdup(param);
+    (*options)["apply_to_funcs"] = value;
+    return true;
+  }
+
   if (!strcasecmp(option, "trace")) {
     const char *param;
     value.ival_ = 1;
@@ -295,6 +304,7 @@ void MaoOptions::InitializeOptionMap(MaoOptionMap *options,
                                      MaoOptionArray *pass_opts) {
   // Initialize builtin options
   (*options)["trace"].ival_ = verbose() ? 3 : 0;
+  (*options)["apply_to_funcs"].cval_ = "";  // Default, apply to all functions.
   (*options)["da[vcg]"].bval_ = 0;
   (*options)["db[vcg]"].bval_ = 0;
   (*options)["da[cfg]"].bval_ = 0;
