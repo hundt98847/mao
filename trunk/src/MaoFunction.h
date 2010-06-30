@@ -16,6 +16,12 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
+// Function - Classes and methods to access a function in the assembly file
+// Classes:
+//   Function - Represents a function in the assembly file
+//
+//   To access all entries in the function, use the following pattern:
+//
 #ifndef MAOFUNCTION_H_
 #define MAOFUNCTION_H_
 
@@ -29,6 +35,11 @@
 // A function is defined as a sequence of instructions from a
 // label matching a symbol with the type Function to the next function,
 // or to the end of the section.
+// To iterate over all entries in the function, use the macro:
+// FORALL_FUNC_ENTRY(func, entry) {
+//   ...
+// }
+//
 class Function {
  public:
   explicit Function(const std::string &name, const FunctionID id,
@@ -41,8 +52,9 @@ class Function {
     set_cfg(NULL);
     set_lsg(NULL);
   }
-
+  // Sets the first entry of the function.
   void set_first_entry(MaoEntry *entry) { first_entry_ = entry;}
+  // Sets the last entry of the function.
   void set_last_entry(MaoEntry *entry) {
     last_entry_ = entry;
     if (last_entry_->next())
@@ -51,26 +63,37 @@ class Function {
       // TODO(rhundt): insert dummy node, but for now:
       end_entry_ = last_entry_;
   }
+  // Returns the first entry of the function.
   MaoEntry *first_entry() const { return first_entry_;}
+  // Returns the last entry of the function.
   MaoEntry *last_entry() const { return last_entry_;}
+  // Returns the entry of the function immediately after the last entry.
   MaoEntry *end_entry() const { return end_entry_;}
 
+  // Returns the function name.
   const std::string name() const {return name_;}
+  // Returns the function id.
   FunctionID id() const {return id_;}
 
+  // Returns the number of instructions in this function.
   int GetNumInstructions() const;
-  // TODO(martint): Reconsider iterator name.
+  // Returns an iterator that points to first_entry().
   EntryIterator EntryBegin();
+  // Returns an iterator that points to end_entry().
   EntryIterator EntryEnd();
 
+  // Prints the function to stdout.
   void Print();
+  // Prints the function to FILE *out.
   void Print(FILE *out);
 
+  // Returns the section containing this function.
   Section *GetSection() {
     MAO_ASSERT(subsection_);
     return subsection_->section();
   }
 
+  // Returns the subsection containing this function.
   SubSection *GetSubSection() {
     MAO_ASSERT(subsection_);
     return subsection_;
@@ -113,7 +136,7 @@ class Function {
 
   // Pointer to CFG, if one is build for the function.
   CFG *cfg_;
-  // Pointer to Loop Structure Graph, if one is build for the function
+  // Pointer to Loop Structure Graph, if one is build for the function.
   LoopStructureGraph *lsg_;
 };
 

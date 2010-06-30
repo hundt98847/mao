@@ -16,6 +16,10 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
+// Mao Unit - represents the entire program being compiled by MAO
+// Classes:
+//   MaoUnit - represents the entire assembly program.
+//
 #ifndef MAOUNIT_H_
 #define MAOUNIT_H_
 
@@ -53,6 +57,10 @@ class MaoUnit;
 class Symbol;
 class SymbolTable;
 
+
+// Represents an input assembly file and provides methods to access sections,
+// functions and entries in the program. Also provides methods to create new
+// instructions, directives and labels.
 class MaoUnit {
  public:
 
@@ -79,15 +87,19 @@ class MaoUnit {
   //                  this is true only when building the initial structures,
   //                  typically not when adding extra entries later on.
   // create_default_section - signals if an entry can trigger automatic creation
-  //                          of a new section, if there is no "current" section
+  //                         of a new section, if there is no "current" section.
   bool AddEntry(MaoEntry *entry, bool create_default_section);
 
-  // Add a common symbol to the symbol table
+  // Adds a common symbol to the symbol table with a desired size and alignment.
+  // If the symbol does not exist in the symbol table, it is added. If it exists
+  // and its size or alignment is less than the specified size and alignment,
+  // they are set to the specified size and/or alignment.
   bool AddCommSymbol(const char *name, unsigned int common_size,
                      unsigned int common_align);
-  // Returns a handle to the symbol table
+  // Returns a handle to the symbol table.
   SymbolTable *GetSymbolTable() {return &symbol_table_;}
 
+  // Returns the subsection specified by the given subsection number.
   SubSection *GetSubSection(unsigned int subsection_number) {
     return sub_sections_[subsection_number];
   }
@@ -96,15 +108,24 @@ class MaoUnit {
   // if no such label is found.
   LabelEntry *GetLabelEntry(const char *label_name) const;
 
-  // Instruction Creators
+  // Instruction Creators.
+  //
+  // Creates an instruction with the specified opcode in a given function.
   InstructionEntry *CreateInstruction(const char *opcode,
                                       unsigned int base_opcode,
                                       Function *function);
+  // Creates an InstructionEntry wrapping around the specified i386_insn* and
+  // associate it with the given function.
   InstructionEntry *CreateInstruction(i386_insn *instruction,
                                       Function *function);
+  // Creates a nop and associate it with the given function.
   InstructionEntry *CreateNop(Function *function);
+  // Creates a 2-byte nop and associate it with the given function.
   InstructionEntry *Create2ByteNop(Function *function);
+  // Creates a lock instruction and associate it with the given function.
   InstructionEntry *CreateLock(Function *function);
+  // Creates an unconditional jump to a specified label and associate it with
+  // the given function.
   InstructionEntry *CreateUncondJump(LabelEntry *l, Function *function);
 
   // prefetch type:
@@ -112,26 +133,40 @@ class MaoUnit {
   //    1:  t0
   //    2:  t1
   //    3:  t2
+
+  // Creates a prefetch instruction of the given prefetch type. The prefetch
+  // address is obtained by adding offset to the 'op_index'th operand of 'insn'.
   InstructionEntry *CreatePrefetch(Function *function,
                                    int prefetch_type,
                                    InstructionEntry *insn,
                                    int op_index,
                                    int offset = 0);
+  // Creates a label specified by label_name and associate it with the specified
+  // function and subsection if they are not NULL.
   LabelEntry *CreateLabel(const char *labelname,
                           Function* function,
                           SubSection* ss);
+  // Creates a directive with opcode 'op' and operands specified by the given
+  // vector. Associate it with the specified function and subsection if they
+  // are not NULL.
   DirectiveEntry *CreateDirective(DirectiveEntry::Opcode op,
                                   const DirectiveEntry::OperandVector &operands,
                                   Function *function,
                                   SubSection *subsection);
 
-  // Dumpers
+  // Dumpers.
+  //
+  // Prints this MAO unit.
   void PrintMaoUnit() const;
+  // Prints this MAO unit to FILE *out.
   void PrintMaoUnit(FILE *out) const;
+  // Prints the IR of this unit. The flags controls what gets printed.
   void PrintIR(bool print_entries = true,
                bool print_sections = true,
                bool print_subsections = true,
                bool print_functions = true) const;
+  // Prints the IR of this unit to FILE *out. The flags controls what gets
+  // printed.
   void PrintIR(FILE *out,
                bool print_entries = true,
                bool print_sections = true,
@@ -151,45 +186,81 @@ class MaoUnit {
     static long i;
   };
 
+  // Returns the pointer to the MaoOptions object that contains the options
+  // passed during the invocation of MAO.
   MaoOptions *mao_options() { return mao_options_; }
 
-  // Iterate over the sections
+  // Returns an iterator that points to the first section in this unit.
   SectionIterator SectionBegin();
+  // Returns an iterator that points after the last section in this unit.
   SectionIterator SectionEnd();
+  // Returns a constant iterator that points to the first section in this unit.
   ConstSectionIterator ConstSectionBegin() const;
+  // Returns a constant iterator that points after the last section in this
+  // unit.
   ConstSectionIterator ConstSectionEnd() const;
 
+  // Returns an iterator that points to the first function in this unit.
   FunctionIterator FunctionBegin();
+  // Returns an iterator that points after the last function in this unit.
   FunctionIterator FunctionEnd();
+  // Returns a constant iterator that points to the first function in this unit.
   ConstFunctionIterator ConstFunctionBegin() const;
+  // Returns a constant iterator that points after the last function in this
+  // unit.
   ConstFunctionIterator ConstFunctionEnd() const;
 
-  // Find all Functions in the MaoUnit and populate functions_
+  // Finds all Functions in the MaoUnit and populate functions_.
+  // create_anonymous tells whether MAO has to create anonymous functions for
+  // instructions not in any function.
   void FindFunctions(bool create_anonymous);
 
+  // Returns the function to which the given entry belongs.
   Function *GetFunction(MaoEntry *entry);
+  // Returns true if the given entry is in a function.
   bool InFunction(MaoEntry *entry) const;
+
+  // Returns the subsection to which the given entry belongs.
   SubSection *GetSubSection(MaoEntry *entry);
+  // Returns true if the given entry is in a subsection.
   bool InSubSection(MaoEntry *entry) const;
 
-  // Symbol handling
+  // Symbol handling.
+  //
+  // Adds a symbol to the symbol table.
   Symbol *AddSymbol(const char *name);
+  // Checks if a symbol with the given name is in the symbol table and returns a
+  // Symbol *. If the symbol does not exist in the symbol table, creates a new
+  // symbol with the given name and adds it to the symbol table.
   Symbol *FindOrCreateAndFindSymbol(const char *name);
 
-  // Delete the entry from the IR.
+  // Deletes the entry from the IR.
   void DeleteEntry(MaoEntry *entry);
 
+  // Returns statistics about the unit.
   Stats *GetStats() {return &stats_;}
 
 
+  // Returns true if the code is in 64 bit mode.
   bool Is64BitMode() const { return arch_ == X86_64; }
+  // Returns true if the code is in 32 bit mode.
   bool Is32BitMode() const { return arch_ == I386;   }
 
+  // Implements the .pushsection directive that pushes the current subsection
+  // into a subsection stack. In MAO, this directive gets translated into a
+  // .section directive.
   void PushSubSection();
+  // Implements the .popsection directive that pops the top of the subsection
+  // stack and uses it as the current subsection. In MAO, this directive gets
+  // translated into a .section and .subsection directives. The line_number
+  // specified is used as the line number of the .section and .subsection
+  // directive entries.
   void PopSubSection(int line_number);
+  // Sets the previous subsection as the new current subsection. line_number is
+  // used as the line number of the new .section directive.
   void SetPreviousSubSection(int line_number);
 
-  // Set the default achiecture (32-bit vs 64-bit). Should only be called
+  // Sets the default achiecture (32-bit vs 64-bit). Should only be called
   // after GAS have parsed it arguments, since the flags --32 and --64
   // change the architecture.
   void SetDefaultArch();
@@ -213,22 +284,22 @@ class MaoUnit {
 
   // A list of all subsections found in the unit.
   // Each subsection should have a pointer to the first and last
-  // entry of the subsection in entries_
+  // entry of the subsection in entries_.
   std::vector<SubSection *> sub_sections_;
 
   // List of sections_ found in the program. Each subsection has a pointer to
   // its section.
   std::map<const char *, Section *, ltstr> sections_;
 
-  // Holds the function identified in the MaoUnit
+  // Holds the function identified in the MaoUnit.
   FunctionVector  functions_;
 
   // Pointer to current subsection. Used when parsing the assembly file.
   SubSection *current_subsection_;
-  // Previous subsection is needed for the .previous directive
+  // Previous subsection is needed for the .previous directive.
   SubSection *prev_subsection_;
   // A stack of subsection is used to support push/popsection directives.
-  // each pair is the subsection, and the prev_subsection
+  // each pair is the subsection, and the prev_subsection.
   std::stack<std::pair<SubSection *, SubSection *> > subsection_stack_;
 
   // One symbol table holds all symbols found in the assembly file.
