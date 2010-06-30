@@ -42,6 +42,12 @@ MaoAction::MaoAction(const char *name, MaoOptionMap *options, MaoUnit *unit)
   db_vcg_ = GetOptionBool("db[vcg]");
   da_cfg_ = GetOptionBool("da[cfg]");
   db_cfg_ = GetOptionBool("db[cfg]");
+
+  // Populate the function_apply_to_funcs_
+  MAO_ASSERT(GetOptionString("apply_to_funcs") != NULL);
+  MaoUtil::Tokenize(GetOptionString("apply_to_funcs"),
+                    function_filter_,
+                    ",");
 }
 
 MaoAction::~MaoAction() { }
@@ -163,33 +169,51 @@ MaoFunctionPass::MaoFunctionPass(const char *pname, MaoOptionMap *options,
 
 MaoFunctionPass::~MaoFunctionPass() { }
 
+bool MaoFunctionPass::FunctionMatchFilter(const Function *function) const {
+  // A match is found, if the function name exists in the list, _or_ no
+  // filter was given (empty set).
+  if (function_filter_.size() == 0 ||
+      function_filter_.find(function->name()) != function_filter_.end()) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool MaoFunctionPass::Run() {
-  if (db_cfg_) {
-    CFG *cfg = CFG::GetCFG(unit_, function_);
-    cfg->Print(stderr);
+  // The run is considered successful, even if a filter blocked
+  // this particular function.
+  bool success = true;
+
+  // Apply the pass if no filter is given, or if the filter
+  // match the current function.
+  if (FunctionMatchFilter(function_)) {
+    if (db_cfg_) {
+      CFG *cfg = CFG::GetCFG(unit_, function_);
+      cfg->Print(stderr);
+    }
+
+    if (db_vcg_) {
+      char buff[13 + strlen(name()) + 1 + strlen(function_->name().c_str())];
+      sprintf(buff, "dump.db.%s.%s.vcg", name(), function_->name().c_str());
+      CFG *cfg = CFG::GetCFG(unit_, function_);
+      cfg->DumpVCG(buff);
+    }
+
+    success = MaoPass::Run();
+
+    if (da_cfg_) {
+      CFG *cfg = CFG::GetCFG(unit_, function_);
+      cfg->Print(stderr);
+    }
+
+    if (da_vcg_) {
+      char buff[13 + strlen(name()) + 1 + strlen(function_->name().c_str())];
+      sprintf(buff, "dump.da.%s.%s.vcg", name(), function_->name().c_str());
+      CFG *cfg = CFG::GetCFG(unit_, function_);
+      cfg->DumpVCG(buff);
+    }
   }
-
-  if (db_vcg_) {
-    char buff[13 + strlen(name()) + 1 + strlen(function_->name().c_str())];
-    sprintf(buff, "dump.db.%s.%s.vcg", name(), function_->name().c_str());
-    CFG *cfg = CFG::GetCFG(unit_, function_);
-    cfg->DumpVCG(buff);
-  }
-
-  bool success = MaoPass::Run();
-
-  if (da_cfg_) {
-    CFG *cfg = CFG::GetCFG(unit_, function_);
-    cfg->Print(stderr);
-  }
-
-  if (da_vcg_) {
-    char buff[13 + strlen(name()) + 1 + strlen(function_->name().c_str())];
-    sprintf(buff, "dump.da.%s.%s.vcg", name(), function_->name().c_str());
-    CFG *cfg = CFG::GetCFG(unit_, function_);
-    cfg->DumpVCG(buff);
-  }
-
   return success;
 }
 

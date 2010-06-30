@@ -119,6 +119,7 @@ CCSRCS=						\
 	MaoRelax.cc				\
 	MaoSection.cc				\
 	MaoUnit.cc				\
+	MaoUtil.cc				\
 	MaoZee.cc				\
 	MaoDataFlow.cc                          \
 	MaoLiveness.cc                          \

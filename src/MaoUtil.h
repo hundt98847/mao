@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <cstdarg>
+#include <set>
 #include <string>
 
 #include "MaoDebug.h"
@@ -341,5 +342,13 @@ class BitString {
     }
   }
 };
+
+namespace MaoUtil {
+
+void Tokenize(const std::string& str,
+              std::set<std::string>& tokens,
+              const std::string& delimiters);
+
+}
 
 #endif  // MAOUTIL_H_
