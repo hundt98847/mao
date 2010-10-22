@@ -178,7 +178,7 @@ void link_type(symbolS *symbol, SymbolType symbol_type,
   MAO_ASSERT(maounit_);
   SymbolTable *symbol_table = maounit_->GetSymbolTable();
   MAO_ASSERT(symbol_table);
-  Symbol *mao_symbol = maounit_->FindOrCreateAndFindSymbol(symbol->bsym->name);
+  Symbol *mao_symbol = maounit_->FindOrCreateAndFindSymbol(S_GET_NAME(symbol));
 
   MAO_ASSERT(mao_symbol);
   mao_symbol->set_symbol_type(symbol_type);
