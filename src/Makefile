@@ -54,7 +54,7 @@ CFLAGS=						\
 	-DHAVE_DECL_BASENAME=1                  \
 	-g -O2 -Wall -fno-exceptions
 
-MAKEDEPEND=gcc -MM $(CFLAGS) $(CCEXTRAFLAGS) -o $(patsubst %.o,%.P,$@) $<
+MAKEDEPEND=$(CC) -MM $(CFLAGS) $(CCEXTRAFLAGS) -o $(patsubst %.o,%.P,$@) $<
 
 GAS_SRC=					\
 	$(BINUTILSRC)/gas/app.c			\
