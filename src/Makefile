@@ -195,6 +195,15 @@ $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	rm -f $(OBJDIR)/$*.P
 	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) -c -o $@ $<
 
+# Specal cases required to avoid circular dependenies sicne GenOpCodes
+# depends on these.
+$(OBJDIR)/MaoDebug.o : MaoDebug.cc stamp-obj-$(TARGET) 
+	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) -c -o $@ MaoDebug.cc
+
+$(OBJDIR)/MaoOpcodes.o : MaoOpcodes.cc $(OBJDIR)/gen-opcodes.h stamp-obj-$(TARGET)
+	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) -c -o $@ $<
+
+
 # Plugin source rule
 $(PLUGIN_OBJS) : $(OBJDIR)/%.o : $(PLUGINSRC)/%.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 	@$(MAKEDEPEND) -MQ $@;					\
@@ -214,9 +223,9 @@ $(GAS_CONFIG_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/gas/config/%.c
 $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) GenOpcodes.cc MaoDebug.h MaoDebug.o MaoDefs.h MaoDefs.tbl MaoUses.tbl MaoUtil.h Makefile
+$(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) GenOpcodes.cc MaoDebug.h $(OBJDIR)/MaoDebug.o MaoDefs.h MaoDefs.tbl MaoUses.tbl MaoUtil.h Makefile
 	mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) MaoDebug.o -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
+	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) $(OBJDIR)/MaoDebug.o -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
 
 $(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes
 	$(OBJDIR)/GenOpcodes -p $(OBJDIR) $(BINUTILSRC)/opcodes/i386-opc.tbl $(SRCDIR)/MaoDefs.tbl $(SRCDIR)/MaoUses.tbl
@@ -318,7 +327,7 @@ stamp-obj-$(TARGET):
 	touch stamp-obj-$(TARGET)
 
 clean : 
-	-rm -rf $(OBJDIR)
+	-rm -rf $(OBJDIR) stamp-obj-$(TARGET)
 	-rm -f $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(PLUGIN_TARGETS) $(BINDIR)/mao
 
 allclean : 
