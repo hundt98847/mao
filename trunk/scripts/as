@@ -109,9 +109,10 @@ function main()  {
 
   if [[ ${invoke_mao} = 1 ]]; then
     "${mao_bin}" "${mao_args[@]}" "${input_files[@]}" --mao=ASM=o["${mao_output_file}"]
-    if [[ $? != 0 ]]; then
-      echo "$0: Execution of ${mao_bin} failed with error code $?"
-      exit 1
+    result=$?
+    if [[ ${result} != 0 ]]; then
+      echo "$0: Execution of ${mao_bin} failed with error code ${result}"
+      exit ${result}
     fi
     #If --mao=-h or --mao=--help is called, as-orig should not be invoked
     if [[ ${mao_help} = 1 ]]; then
@@ -119,9 +120,9 @@ function main()  {
     fi
 
     "${as_bin}" "${as_args[@]}" "${mao_output_file}" -o "${output_file}"
-    if [[ $? != 0 ]]; then
-      echo "$0: Execution of ${as_bin} failed with error code $?"
-      exit 1
+    result=$?
+    if [[ ${result} != 0 ]]; then
+      exit ${result}
     fi
 
     if [[ ${save_temps} = 0 ]]; then
@@ -130,10 +131,7 @@ function main()  {
   else
     #If --mao is not passed, invoke as with the original arguments
     "${as_bin}" "${original_args[@]}"
-    if [[ $? != 0 ]]; then
-      echo "$0: Execution of ${as_bin} failed with error code $?"
-      exit 1
-    fi
+    exit $?
   fi
 }
 
