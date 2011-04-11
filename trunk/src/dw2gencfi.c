@@ -1,5 +1,5 @@
 /* dw2gencfi.c - Support for generating Dwarf2 CFI information.
-   Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009
+   Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
    Free Software Foundation, Inc.
    Contributed by Michal Ludvig <mludvig@suse.cz>
 
@@ -23,6 +23,7 @@
 #include "as.h"
 #include "dw2gencfi.h"
 #include "subsegs.h"
+#include "dwarf2dbg.h"
 
 #include "irlink.h"
 
@@ -35,6 +36,14 @@
 # else
 #  define CFI_DIFF_EXPR_OK 0
 # endif
+#endif
+
+#ifndef CFI_DIFF_LSDA_OK
+# define CFI_DIFF_LSDA_OK CFI_DIFF_EXPR_OK
+#endif
+
+#if CFI_DIFF_EXPR_OK == 1 && CFI_DIFF_LSDA_OK == 0
+# error "CFI_DIFF_EXPR_OK should imply CFI_DIFF_LSDA_OK"
 #endif
 
 /* We re-use DWARF2_LINE_MIN_INSN_LENGTH for the code alignment field
@@ -61,10 +70,36 @@
 # define tc_cfi_frame_initial_instructions() ((void)0)
 #endif
 
+#ifndef DWARF2_FORMAT
+# define DWARF2_FORMAT(SEC) dwarf2_format_32bit
+#endif
+
 #ifndef DWARF2_ADDR_SIZE
 # define DWARF2_ADDR_SIZE(bfd) (bfd_arch_bits_per_address (bfd) / 8)
 #endif
 
+/* ??? Share this with dwarf2cfg.c.  */
+#ifndef TC_DWARF2_EMIT_OFFSET
+#define TC_DWARF2_EMIT_OFFSET  generic_dwarf2_emit_offset
+
+/* Create an offset to .dwarf2_*.  */
+
+static void
+generic_dwarf2_emit_offset (symbolS *symbol, unsigned int size)
+{
+  expressionS exp;
+
+  exp.X_op = O_symbol;
+  exp.X_add_symbol = symbol;
+  exp.X_add_number = 0;
+  emit_expr (&exp, size);
+}
+#endif
+
+struct cfi_escape_data {
+  struct cfi_escape_data *next;
+  expressionS exp;
+};
 
 struct cfi_insn_data
 {
@@ -89,10 +124,7 @@ struct cfi_insn_data
       symbolS *lab2;
     } ll;
 
-    struct cfi_escape_data {
-      struct cfi_escape_data *next;
-      expressionS exp;
-    } *esc;
+    struct cfi_escape_data *esc;
 
     struct {
       unsigned reg, encoding;
@@ -157,9 +189,11 @@ struct frch_cfi_data
 static struct fde_entry *
 alloc_fde_entry (void)
 {
-  struct fde_entry *fde = xcalloc (1, sizeof (struct fde_entry));
+  struct fde_entry *fde = (struct fde_entry *)
+      xcalloc (1, sizeof (struct fde_entry));
 
-  frchain_now->frch_cfi_data = xcalloc (1, sizeof (struct frch_cfi_data));
+  frchain_now->frch_cfi_data = (struct frch_cfi_data *)
+      xcalloc (1, sizeof (struct frch_cfi_data));
   frchain_now->frch_cfi_data->cur_fde_data = fde;
   *last_fde_data = fde;
   last_fde_data = &fde->next;
@@ -181,7 +215,8 @@ alloc_fde_entry (void)
 static struct cfi_insn_data *
 alloc_cfi_insn_data (void)
 {
-  struct cfi_insn_data *insn = xcalloc (1, sizeof (struct cfi_insn_data));
+  struct cfi_insn_data *insn = (struct cfi_insn_data *)
+      xcalloc (1, sizeof (struct cfi_insn_data));
   struct fde_entry *cur_fde_data = frchain_now->frch_cfi_data->cur_fde_data;
 
   *cur_fde_data->last = insn;
@@ -355,7 +390,7 @@ cfi_add_CFA_remember_state (void)
 
   cfi_add_CFA_insn (DW_CFA_remember_state);
 
-  p = xmalloc (sizeof (*p));
+  p = (struct cfa_save_data *) xmalloc (sizeof (*p));
   p->cfa_offset = frchain_now->frch_cfi_data->cur_cfa_offset;
   p->next = frchain_now->frch_cfi_data->cfa_save_stack;
   frchain_now->frch_cfi_data->cfa_save_stack = p;
@@ -384,6 +419,7 @@ cfi_add_CFA_restore_state (void)
 
 static void dot_cfi (int);
 static void dot_cfi_escape (int);
+static void dot_cfi_sections (int);
 static void dot_cfi_startproc (int);
 static void dot_cfi_endproc (int);
 static void dot_cfi_personality (int);
@@ -400,6 +436,7 @@ static void dot_cfi_val_encoded_addr (int);
 
 const pseudo_typeS cfi_pseudo_table[] =
   {
+    { "cfi_sections", dot_cfi_sections, 0 },
     { "cfi_startproc", dot_cfi_startproc, 0 },
     { "cfi_endproc", dot_cfi_endproc, 0 },
     { "cfi_def_cfa", dot_cfi, DW_CFA_def_cfa },
@@ -494,12 +531,12 @@ cfi_parse_const (void)
   return get_absolute_expression ();
 }
 
-
 static struct MaoStringPiece GetStringPiece(const char *before_pointer,
                                             const char *after_pointer) {
   struct MaoStringPiece sp = {before_pointer, after_pointer-before_pointer};
   return sp;
 }
+
 
 static void
 dot_cfi (int arg)
@@ -688,7 +725,6 @@ dot_cfi_escape (int ignored ATTRIBUTE_UNUSED)
   int num_expressions = 0;
   expressionS *expr[64];
 
-
   if (frchain_now->frch_cfi_data == NULL)
     {
       as_bad (_("CFI instruction used without previous .cfi_startproc"));
@@ -705,7 +741,7 @@ dot_cfi_escape (int ignored ATTRIBUTE_UNUSED)
   tail = &head;
   do
     {
-      e = xmalloc (sizeof (*e));
+      e = (struct cfi_escape_data *) xmalloc (sizeof (*e));
       do_parse_cons_expression (&e->exp, 1);
       *tail = e;
       tail = &e->next;
@@ -742,7 +778,6 @@ dot_cfi_personality (int ignored ATTRIBUTE_UNUSED)
 
   fde = frchain_now->frch_cfi_data->cur_fde_data;
   encoding = cfi_parse_const ();
-
   if (encoding == DW_EH_PE_omit)
     {
       demand_empty_rest_of_line ();
@@ -797,6 +832,7 @@ dot_cfi_personality (int ignored ATTRIBUTE_UNUSED)
       ignore_rest_of_line ();
       return;
     }
+
   demand_empty_rest_of_line ();
   link_cfi_personality_direcive(encoding, &fde->personality);
 }
@@ -826,7 +862,7 @@ dot_cfi_lsda (int ignored ATTRIBUTE_UNUSED)
 
   if ((encoding & 0xff) != encoding
       || ((encoding & 0x70) != 0
-#if CFI_DIFF_EXPR_OK || defined tc_cfi_emit_pcrel_expr
+#if CFI_DIFF_LSDA_OK || defined tc_cfi_emit_pcrel_expr
 	  && (encoding & 0x70) != DW_EH_PE_pcrel
 #endif
 	  )
@@ -903,6 +939,7 @@ dot_cfi_val_encoded_addr (int ignored ATTRIBUTE_UNUSED)
   struct MaoStringPiece link_reg = {before_pointer,
                                     input_line_pointer-before_pointer};
 
+
   cfi_parse_separator ();
   encoding = cfi_parse_const ();
   if ((encoding & 0xff) != encoding
@@ -947,6 +984,56 @@ dot_cfi_val_encoded_addr (int ignored ATTRIBUTE_UNUSED)
   demand_empty_rest_of_line ();
 
   link_cfi_val_encoded_addr_direcive(link_reg, encoding, link_label);
+}
+
+/* By default emit .eh_frame only, not .debug_frame.  */
+#define CFI_EMIT_eh_frame	(1 << 0)
+#define CFI_EMIT_debug_frame	(1 << 1)
+static int cfi_sections = CFI_EMIT_eh_frame;
+
+static void
+dot_cfi_sections (int ignored ATTRIBUTE_UNUSED)
+{
+  int sections = 0;
+
+  SKIP_WHITESPACE ();
+  if (is_name_beginner (*input_line_pointer))
+    while (1)
+      {
+	char *name, c;
+
+	name = input_line_pointer;
+	c = get_symbol_end ();
+
+	if (strcmp (name, ".eh_frame") == 0)
+	  sections |= CFI_EMIT_eh_frame;
+	else if (strcmp (name, ".debug_frame") == 0)
+	  sections |= CFI_EMIT_debug_frame;
+	else
+	  {
+	    *input_line_pointer = c;
+	    input_line_pointer = name;
+	    break;
+	  }
+
+	*input_line_pointer = c;
+	SKIP_WHITESPACE ();
+	if (*input_line_pointer == ',')
+	  {
+	    name = input_line_pointer++;
+	    SKIP_WHITESPACE ();
+	    if (!is_name_beginner (*input_line_pointer))
+	      {
+		input_line_pointer = name;
+		break;
+	      }
+	  }
+	else if (is_name_beginner (*input_line_pointer))
+	  break;
+      }
+
+  demand_empty_rest_of_line ();
+  cfi_sections = sections;
 }
 
 static void
@@ -1283,13 +1370,14 @@ encoding_size (unsigned char encoding)
 }
 
 static void
-output_cie (struct cie_entry *cie)
+output_cie (struct cie_entry *cie, bfd_boolean eh_frame, int align)
 {
   symbolS *after_size_address, *end_address;
   expressionS exp;
   struct cfi_insn_data *i;
   offsetT augmentation_size;
   int enc;
+  enum dwarf2_format fmt = DWARF2_FORMAT (now_seg);
 
   cie->start_address = symbol_temp_new_now ();
   after_size_address = symbol_temp_make ();
@@ -1300,16 +1388,33 @@ output_cie (struct cie_entry *cie)
   exp.X_op_symbol = after_size_address;
   exp.X_add_number = 0;
 
-  emit_expr (&exp, 4);				/* Length.  */
+  if (eh_frame || fmt == dwarf2_format_32bit)
+    emit_expr (&exp, 4);			/* Length.  */
+  else
+    {
+      if (fmt == dwarf2_format_64bit)
+	out_four (-1);
+      emit_expr (&exp, 8);			/* Length.  */
+    }
   symbol_set_value_now (after_size_address);
-  out_four (0);					/* CIE id.  */
+  if (eh_frame)
+    out_four (0);				/* CIE id.  */
+  else
+    {
+      out_four (-1);				/* CIE id.  */
+      if (fmt != dwarf2_format_32bit)
+	out_four (-1);
+    }
   out_one (DW_CIE_VERSION);			/* Version.  */
-  out_one ('z');				/* Augmentation.  */
-  if (cie->per_encoding != DW_EH_PE_omit)
-    out_one ('P');
-  if (cie->lsda_encoding != DW_EH_PE_omit)
-    out_one ('L');
-  out_one ('R');
+  if (eh_frame)
+    {
+      out_one ('z');				/* Augmentation.  */
+      if (cie->per_encoding != DW_EH_PE_omit)
+	out_one ('P');
+      if (cie->lsda_encoding != DW_EH_PE_omit)
+	out_one ('L');
+      out_one ('R');
+    }
   if (cie->signal_frame)
     out_one ('S');
   out_one (0);
@@ -1319,32 +1424,37 @@ output_cie (struct cie_entry *cie)
     out_one (cie->return_column);
   else
     out_uleb128 (cie->return_column);
-  augmentation_size = 1 + (cie->lsda_encoding != DW_EH_PE_omit);
-  if (cie->per_encoding != DW_EH_PE_omit)
-    augmentation_size += 1 + encoding_size (cie->per_encoding);
-  out_uleb128 (augmentation_size);		/* Augmentation size.  */
-  if (cie->per_encoding != DW_EH_PE_omit)
+  if (eh_frame)
     {
-      offsetT size = encoding_size (cie->per_encoding);
-      out_one (cie->per_encoding);
-      exp = cie->personality;
-      if ((cie->per_encoding & 0x70) == DW_EH_PE_pcrel)
+      augmentation_size = 1 + (cie->lsda_encoding != DW_EH_PE_omit);
+      if (cie->per_encoding != DW_EH_PE_omit)
+	augmentation_size += 1 + encoding_size (cie->per_encoding);
+      out_uleb128 (augmentation_size);		/* Augmentation size.  */
+
+      if (cie->per_encoding != DW_EH_PE_omit)
 	{
+	  offsetT size = encoding_size (cie->per_encoding);
+	  out_one (cie->per_encoding);
+	  exp = cie->personality;
+	  if ((cie->per_encoding & 0x70) == DW_EH_PE_pcrel)
+	    {
 #if CFI_DIFF_EXPR_OK
-	  exp.X_op = O_subtract;
-	  exp.X_op_symbol = symbol_temp_new_now ();
-	  emit_expr (&exp, size);
+	      exp.X_op = O_subtract;
+	      exp.X_op_symbol = symbol_temp_new_now ();
+	      emit_expr (&exp, size);
 #elif defined (tc_cfi_emit_pcrel_expr)
-	  tc_cfi_emit_pcrel_expr (&exp, size);
+	      tc_cfi_emit_pcrel_expr (&exp, size);
 #else
-	  abort ();
+	      abort ();
 #endif
+	    }
+	  else
+	    emit_expr (&exp, size);
 	}
-      else
-	emit_expr (&exp, size);
+
+      if (cie->lsda_encoding != DW_EH_PE_omit)
+	out_one (cie->lsda_encoding);
     }
-  if (cie->lsda_encoding != DW_EH_PE_omit)
-    out_one (cie->lsda_encoding);
 
   switch (DWARF2_FDE_RELOC_SIZE)
     {
@@ -1363,23 +1473,28 @@ output_cie (struct cie_entry *cie)
 #if CFI_DIFF_EXPR_OK || defined tc_cfi_emit_pcrel_expr
   enc |= DW_EH_PE_pcrel;
 #endif
-  out_one (enc);
+  if (eh_frame)
+    out_one (enc);
 
   if (cie->first)
     for (i = cie->first; i != cie->last; i = i->next)
       output_cfi_insn (i);
 
-  frag_align (2, DW_CFA_nop, 0);
+  frag_align (align, DW_CFA_nop, 0);
   symbol_set_value_now (end_address);
 }
 
 static void
 output_fde (struct fde_entry *fde, struct cie_entry *cie,
-	    struct cfi_insn_data *first, int align)
+	    bfd_boolean eh_frame, struct cfi_insn_data *first,
+	    int align)
 {
   symbolS *after_size_address, *end_address;
   expressionS exp;
   offsetT augmentation_size;
+  enum dwarf2_format fmt = DWARF2_FORMAT (now_seg);
+  int offset_size;
+  int addr_size;
 
   after_size_address = symbol_temp_make ();
   end_address = symbol_temp_make ();
@@ -1388,42 +1503,74 @@ output_fde (struct fde_entry *fde, struct cie_entry *cie,
   exp.X_add_symbol = end_address;
   exp.X_op_symbol = after_size_address;
   exp.X_add_number = 0;
-  emit_expr (&exp, 4);				/* Length.  */
+  if (eh_frame || fmt == dwarf2_format_32bit)
+    offset_size = 4;
+  else
+    {
+      if (fmt == dwarf2_format_64bit)
+	out_four (-1);
+      offset_size = 8;
+    }
+  emit_expr (&exp, offset_size);		/* Length.  */
   symbol_set_value_now (after_size_address);
 
-  exp.X_add_symbol = after_size_address;
-  exp.X_op_symbol = cie->start_address;
-  emit_expr (&exp, 4);				/* CIE offset.  */
+  if (eh_frame)
+    {
+      exp.X_op = O_subtract;
+      exp.X_add_symbol = after_size_address;
+      exp.X_op_symbol = cie->start_address;
+      exp.X_add_number = 0;
+      emit_expr (&exp, offset_size);		/* CIE offset.  */
+    }
+  else
+    {
+      TC_DWARF2_EMIT_OFFSET (cie->start_address, offset_size);
+    }
 
+  if (eh_frame)
+    {
+      exp.X_op = O_subtract;
+      exp.X_add_number = 0;
 #if CFI_DIFF_EXPR_OK
-  exp.X_add_symbol = fde->start_address;
-  exp.X_op_symbol = symbol_temp_new_now ();
-  emit_expr (&exp, DWARF2_FDE_RELOC_SIZE);	/* Code offset.  */
+      exp.X_add_symbol = fde->start_address;
+      exp.X_op_symbol = symbol_temp_new_now ();
+      emit_expr (&exp, DWARF2_FDE_RELOC_SIZE);	/* Code offset.  */
 #else
-  exp.X_op = O_symbol;
-  exp.X_add_symbol = fde->start_address;
-  exp.X_op_symbol = NULL;
+      exp.X_op = O_symbol;
+      exp.X_add_symbol = fde->start_address;
 #ifdef tc_cfi_emit_pcrel_expr
-  tc_cfi_emit_pcrel_expr (&exp, DWARF2_FDE_RELOC_SIZE);	 /* Code offset.  */
+      tc_cfi_emit_pcrel_expr (&exp, DWARF2_FDE_RELOC_SIZE);	 /* Code offset.  */
 #else
-  emit_expr (&exp, DWARF2_FDE_RELOC_SIZE);	/* Code offset.  */
+      emit_expr (&exp, DWARF2_FDE_RELOC_SIZE);	/* Code offset.  */
 #endif
-  exp.X_op = O_subtract;
 #endif
+      addr_size = DWARF2_FDE_RELOC_SIZE;
+    }
+  else
+    {
+      exp.X_op = O_symbol;
+      exp.X_add_symbol = fde->start_address;
+      exp.X_add_number = 0;
+      addr_size = DWARF2_ADDR_SIZE (stdoutput);
+      emit_expr (&exp, addr_size);
+    }
 
+  exp.X_op = O_subtract;
   exp.X_add_symbol = fde->end_address;
   exp.X_op_symbol = fde->start_address;		/* Code length.  */
-  emit_expr (&exp, DWARF2_FDE_RELOC_SIZE);
+  exp.X_add_number = 0;
+  emit_expr (&exp, addr_size);
 
   augmentation_size = encoding_size (fde->lsda_encoding);
-  out_uleb128 (augmentation_size);		/* Augmentation size.  */
+  if (eh_frame)
+    out_uleb128 (augmentation_size);		/* Augmentation size.  */
 
   if (fde->lsda_encoding != DW_EH_PE_omit)
     {
       exp = fde->lsda;
       if ((fde->lsda_encoding & 0x70) == DW_EH_PE_pcrel)
 	{
-#if CFI_DIFF_EXPR_OK
+#if CFI_DIFF_LSDA_OK
 	  exp.X_op = O_subtract;
 	  exp.X_op_symbol = symbol_temp_new_now ();
 	  emit_expr (&exp, augmentation_size);
@@ -1445,7 +1592,8 @@ output_fde (struct fde_entry *fde, struct cie_entry *cie,
 }
 
 static struct cie_entry *
-select_cie_for_fde (struct fde_entry *fde, struct cfi_insn_data **pfirst)
+select_cie_for_fde (struct fde_entry *fde, bfd_boolean eh_frame,
+		    struct cfi_insn_data **pfirst, int align)
 {
   struct cfi_insn_data *i, *j;
   struct cie_entry *cie;
@@ -1547,7 +1695,7 @@ select_cie_for_fde (struct fde_entry *fde, struct cfi_insn_data **pfirst)
     fail:;
     }
 
-  cie = xmalloc (sizeof (struct cie_entry));
+  cie = (struct cie_entry *) xmalloc (sizeof (struct cie_entry));
   cie->next = cie_root;
   cie_root = cie;
   cie->return_column = fde->return_column;
@@ -1566,11 +1714,55 @@ select_cie_for_fde (struct fde_entry *fde, struct cfi_insn_data **pfirst)
 
   cie->last = i;
   *pfirst = i;
-   
-  output_cie (cie);
+
+  output_cie (cie, eh_frame, align);
 
   return cie;
 }
+
+#ifdef md_reg_eh_frame_to_debug_frame
+static void
+cfi_change_reg_numbers (struct cfi_insn_data *insn)
+{
+  for (; insn; insn = insn->next)
+    switch (insn->insn)
+      {
+      case DW_CFA_advance_loc:
+      case DW_CFA_def_cfa_offset:
+      case DW_CFA_remember_state:
+      case DW_CFA_restore_state:
+      case DW_CFA_GNU_window_save:
+      case CFI_escape:
+	break;
+
+      case DW_CFA_def_cfa:
+      case DW_CFA_offset:
+	insn->u.ri.reg = md_reg_eh_frame_to_debug_frame (insn->u.ri.reg);
+	break;
+
+      case DW_CFA_def_cfa_register:
+      case DW_CFA_undefined:
+      case DW_CFA_same_value:
+      case DW_CFA_restore:
+	insn->u.r = md_reg_eh_frame_to_debug_frame (insn->u.r);
+	break;
+
+      case DW_CFA_register:
+	insn->u.rr.reg1 = md_reg_eh_frame_to_debug_frame (insn->u.rr.reg1);
+	insn->u.rr.reg2 = md_reg_eh_frame_to_debug_frame (insn->u.rr.reg2);
+	break;
+
+      case CFI_val_encoded_addr:
+	insn->u.ea.reg = md_reg_eh_frame_to_debug_frame (insn->u.ea.reg);
+	break;
+
+      default:
+	abort ();
+      }
+}
+#else
+#define cfi_change_reg_numbers(insn) do { } while (0)
+#endif
 
 void
 cfi_finish (void)
@@ -1582,38 +1774,79 @@ cfi_finish (void)
   if (all_fde_data == 0)
     return;
 
-  /* Open .eh_frame section.  */
-  cfi_seg = subseg_new (".eh_frame", 0);
-  bfd_set_section_flags (stdoutput, cfi_seg,
-			 SEC_ALLOC | SEC_LOAD | SEC_DATA
-			 | DWARF2_EH_FRAME_READ_ONLY);
-  subseg_set (cfi_seg, 0);
-  record_alignment (cfi_seg, EH_FRAME_ALIGNMENT);
+  if ((cfi_sections & CFI_EMIT_eh_frame) != 0)
+    {
+      /* Open .eh_frame section.  */
+      cfi_seg = subseg_new (".eh_frame", 0);
+      bfd_set_section_flags (stdoutput, cfi_seg,
+			     SEC_ALLOC | SEC_LOAD | SEC_DATA
+			     | DWARF2_EH_FRAME_READ_ONLY);
+      subseg_set (cfi_seg, 0);
+      record_alignment (cfi_seg, EH_FRAME_ALIGNMENT);
 
 #ifdef md_fix_up_eh_frame
-  md_fix_up_eh_frame (cfi_seg);
+      md_fix_up_eh_frame (cfi_seg);
 #endif
 
-  /* Make sure check_eh_frame doesn't do anything with our output.  */
-  save_flag_traditional_format = flag_traditional_format;
-  flag_traditional_format = 1;
+      /* Make sure check_eh_frame doesn't do anything with our output.  */
+      save_flag_traditional_format = flag_traditional_format;
+      flag_traditional_format = 1;
 
-  for (fde = all_fde_data; fde ; fde = fde->next)
-    {
-      struct cfi_insn_data *first;
-      struct cie_entry *cie;
-
-      if (fde->end_address == NULL)
+      for (fde = all_fde_data; fde ; fde = fde->next)
 	{
-	  as_bad (_("open CFI at the end of file; missing .cfi_endproc directive"));
-	  fde->end_address = fde->start_address;
+	  struct cfi_insn_data *first;
+	  struct cie_entry *cie;
+
+	  if (fde->end_address == NULL)
+	    {
+	      as_bad (_("open CFI at the end of file; missing .cfi_endproc directive"));
+	      fde->end_address = fde->start_address;
+	    }
+
+	  cie = select_cie_for_fde (fde, TRUE, &first, 2);
+	  output_fde (fde, cie, TRUE, first,
+		      fde->next == NULL ? EH_FRAME_ALIGNMENT : 2);
 	}
 
-      cie = select_cie_for_fde (fde, &first);
-      output_fde (fde, cie, first, fde->next == NULL ? EH_FRAME_ALIGNMENT : 2);
+      flag_traditional_format = save_flag_traditional_format;
     }
 
-  flag_traditional_format = save_flag_traditional_format;
+  if ((cfi_sections & CFI_EMIT_debug_frame) != 0)
+    {
+      struct cie_entry *cie, *cie_next;
+      int alignment = ffs (DWARF2_ADDR_SIZE (stdoutput)) - 1;
+
+      for (cie = cie_root; cie; cie = cie_next)
+	{
+	  cie_next = cie->next;
+	  free ((void *) cie);
+	}
+      cie_root = NULL;
+
+      /* Open .debug_frame section.  */
+      cfi_seg = subseg_new (".debug_frame", 0);
+      bfd_set_section_flags (stdoutput, cfi_seg,
+			     SEC_READONLY | SEC_DEBUGGING);
+      subseg_set (cfi_seg, 0);
+      record_alignment (cfi_seg, alignment);
+
+      for (fde = all_fde_data; fde ; fde = fde->next)
+	{
+	  struct cfi_insn_data *first;
+
+	  if (fde->end_address == NULL)
+	    {
+	      as_bad (_("open CFI at the end of file; missing .cfi_endproc directive"));
+	      fde->end_address = fde->start_address;
+	    }
+
+	  fde->per_encoding = DW_EH_PE_omit;
+	  fde->lsda_encoding = DW_EH_PE_omit;
+	  cfi_change_reg_numbers (fde->data);
+	  cie = select_cie_for_fde (fde, FALSE, &first, alignment);
+	  output_fde (fde, cie, FALSE, first, alignment);
+	}
+    }
 }
 
 #else /* TARGET_USE_CFIPOP */
