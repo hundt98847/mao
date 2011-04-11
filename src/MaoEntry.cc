@@ -996,9 +996,11 @@ int InstructionEntry::AddPrefix(unsigned int prefix) {
       case REPNE_PREFIX_OPCODE:
       case REPE_PREFIX_OPCODE:
         ret = 2;
-        /* fall thru */
+        q = X86InstructionSizeHelper::REP_PREFIX;
+        break;
       case LOCK_PREFIX_OPCODE:
-        q = X86InstructionSizeHelper::LOCKREP_PREFIX;
+        ret = 2;
+        q = X86InstructionSizeHelper::LOCK_PREFIX;
         break;
 
       case FWAIT_OPCODE:
@@ -1057,7 +1059,7 @@ InstructionEntry::InstructionEntry(i386_insn *instruction,
           if (instruction_->tm.cpu_flags.bitfield.cpupadlock) {
          check_prefix:
             if (prefix != REPE_PREFIX_OPCODE ||
-                (instruction_->prefix[X86InstructionSizeHelper::LOCKREP_PREFIX]
+                (instruction_->prefix[X86InstructionSizeHelper::REP_PREFIX]
                  != REPE_PREFIX_OPCODE))
               AddPrefix(prefix);
           } else {
@@ -1818,8 +1820,7 @@ int InstructionEntry::StripRexPrefix(int prefix) const {
       instruction_->tm.cpu_flags.bitfield.cpusse2 ||
       instruction_->tm.cpu_flags.bitfield.cpusse3 ||
       instruction_->tm.cpu_flags.bitfield.cpusse4_1 ||
-      instruction_->tm.cpu_flags.bitfield.cpusse4_2 ||
-      instruction_->tm.cpu_flags.bitfield.cpusse5 ) {
+      instruction_->tm.cpu_flags.bitfield.cpusse4_2) {
     return 0;
   }
 
@@ -2046,44 +2047,17 @@ std::string &InstructionEntry::InstructionToString(std::string *out) const {
 
   // Loop over operands
   int num_operands = instruction_->operands;
-  if (instruction_->tm.opcode_modifier.vex3sources) {
-    if (!instruction_->types[0].bitfield.imm8)
-      num_operands = instruction_->operands - 1;
-  }
-  if (!instruction_->tm.opcode_modifier.vex3sources) {
-    // This takes care of instructions
-    // that have opcode modifiers stored where the immeage
-    // normaly is stored (SSE, SSE2, AMD 3D Now).
-    if (instruction_->tm.opcode_modifier.immext) {
-      num_operands = instruction_->operands - 1;
-    }
+
+  if (instruction_->tm.opcode_modifier.immext) {
+    num_operands = instruction_->operands - 1;
   }
 
   for (int i = 0; i < num_operands; ++i) {
-    // Handle case of instruction which have 4 operands
-    // according to the instruction structure, but only
-    // three in the assembly (e.g. comeqss %xmm3, %xmm2, %xmm1)
-    if (i == 3 &&
-        instruction_->tm.opcode_modifier.drexc &&
-        instruction_->tm.extension_opcode == 65535) {
-      break;
-    }
-
     if (i > 0)
       out->append(", ");
 
     // IMMEDIATE
     if (IsImmediateOperand(instruction_, i)) {
-      // This code makes sure that instructions like this
-      // gets the correct immediate. They seem to encode data into the
-      // immediates higher bits.
-      // vpermil2ps $10,(%rcx),%ymm6,%ymm2 ,%ymm7
-      if (instruction_->tm.opcode_modifier.vex3sources &&
-          instruction_->imm_operands != 0) {
-        int mask = 0xF;
-        instruction_->op[i].imms->X_add_number  &= mask;
-      }
-
       // cpusse4a instruction swap the first two operands!
       //  extrq   $4,$2,%xmm1
       if (instruction_->tm.cpu_flags.bitfield.cpusse4a &&
@@ -2118,46 +2092,6 @@ std::string &InstructionEntry::InstructionToString(std::string *out) const {
     }
 
     // REGISTERS
-
-    // The various SSE5 formats. Tested on
-    // x86-64-sse5.s in gas test-suite.
-    if (instruction_->tm.opcode_modifier.drex &&
-        instruction_->tm.opcode_modifier.drexv) {
-      if ((instruction_->tm.extension_opcode == 0 &&
-           (i == 2 || i == 3)) ||
-          (instruction_->tm.extension_opcode == 1 &&
-           (i == 2 || i == 3)) ||
-          (instruction_->tm.extension_opcode == 2 &&
-           (i == 0 || i == 3)) ||
-          (instruction_->tm.extension_opcode == 3 &&
-           (i == 0 || i == 3))) {
-        out->append("%");
-        out->append(instruction_->op[i].regs->reg_name);
-      }
-    }
-    if (instruction_->tm.opcode_modifier.drex &&
-        !instruction_->tm.opcode_modifier.drexv) {
-      if ((instruction_->tm.extension_opcode == 0 &&
-           (i == 0 || i == 3)) ||
-          (instruction_->tm.extension_opcode == 1 &&
-           (i == 2 || i == 3)) ||
-          (instruction_->tm.extension_opcode == 2 &&
-           (i == 0 || i == 3)) ||
-          (instruction_->tm.extension_opcode == 3 &&
-           (i == 0 || i == 3))) {
-        out->append("%");
-        out->append(instruction_->op[i].regs->reg_name);
-      }
-    }
-    if (instruction_->tm.opcode_modifier.drexc) {
-      if ((instruction_->tm.extension_opcode == 0 &&
-           (i == 3)) ||
-          (instruction_->tm.extension_opcode == 65535 &&
-           (i == 2))) {
-        out->append("%");
-        out->append(instruction_->op[i].regs->reg_name);
-      }
-    }
 
     // If a jmp register instruction is given using
     // intel syntax, the jumpabsolute bit is not set using

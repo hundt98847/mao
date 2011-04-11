@@ -103,7 +103,8 @@ extern "C" {
 #undef SEG_PREFIX
 #undef ADDR_PREFIX
 #undef DATA_PREFIX
-#undef LOCKREP_PREFIX
+#undef REP_PREFIX
+#undef LOCK_PREFIX
 #undef REX_PREFIX
 #undef MAX_PREFIXES
 
@@ -114,9 +115,10 @@ class X86InstructionSizeHelper {
     SEG_PREFIX	   = 1,
     ADDR_PREFIX	   = 2,
     DATA_PREFIX	   = 3,
-    LOCKREP_PREFIX = 4,
-    REX_PREFIX     = 5,	/* must come last.  */
-    MAX_PREFIXES   = 6	/* max prefixes per opcode */
+    REP_PREFIX     = 4,
+    LOCK_PREFIX    = 5,
+    REX_PREFIX     = 6,	/* must come last.  */
+    MAX_PREFIXES   = 7	/* max prefixes per opcode */
   };
 
   X86InstructionSizeHelper(i386_insn *insn) : insn_(insn) { }

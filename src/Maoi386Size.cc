@@ -215,10 +215,6 @@ std::pair<int, bool> X86InstructionSizeHelper::SizeOfInstruction(
         size.first++;
     }
 
-    /* Write the DREX byte if needed.  */
-    if (insn_->tm.opcode_modifier.drex || insn_->tm.opcode_modifier.drexc)
-      size.first++;
-
     if (insn_->disp_operands)
       MergeSizePair(SizeOfDisp(), &size);
 

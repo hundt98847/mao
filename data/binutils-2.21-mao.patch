@@ -1,0 +1,329 @@
+diff -urpN binutils-2.21-orig/gas/config/tc-i386.c binutils-2.21/gas/config/tc-i386.c
+--- binutils-2.21-orig/gas/config/tc-i386.c	2011-02-21 15:53:38.785228000 -0800
++++ binutils-2.21/gas/config/tc-i386.c	2011-02-21 18:58:02.396517000 -0800
+@@ -55,20 +55,6 @@
+ #endif
+ #endif
+ 
+-/* Prefixes will be emitted in the order defined below.
+-   WAIT_PREFIX must be the first prefix since FWAIT is really is an
+-   instruction, and so must come before any prefixes.
+-   The preferred prefix order is SEG_PREFIX, ADDR_PREFIX, DATA_PREFIX,
+-   REP_PREFIX, LOCK_PREFIX.  */
+-#define WAIT_PREFIX	0
+-#define SEG_PREFIX	1
+-#define ADDR_PREFIX	2
+-#define DATA_PREFIX	3
+-#define REP_PREFIX	4
+-#define LOCK_PREFIX	5
+-#define REX_PREFIX	6       /* must come last.  */
+-#define MAX_PREFIXES	7	/* max prefixes per opcode */
+-
+ /* we define the syntax here (modulo base,index,scale syntax) */
+ #define REGISTER_PREFIX '%'
+ #define IMMEDIATE_PREFIX '$'
+@@ -103,27 +89,6 @@ typedef struct
+ }
+ templates;
+ 
+-/* 386 operand encoding bytes:  see 386 book for details of this.  */
+-typedef struct
+-{
+-  unsigned int regmem;	/* codes register or memory operand */
+-  unsigned int reg;	/* codes register operand (or extended opcode) */
+-  unsigned int mode;	/* how to interpret regmem & reg */
+-}
+-modrm_byte;
+-
+-/* x86-64 extension prefix.  */
+-typedef int rex_byte;
+-
+-/* 386 opcode byte to code indirect addressing.  */
+-typedef struct
+-{
+-  unsigned base;
+-  unsigned index;
+-  unsigned scale;
+-}
+-sib_byte;
+-
+ /* x86 arch names, types and features */
+ typedef struct
+ {
+@@ -186,105 +151,7 @@ static void handle_large_common (int sma
+ 
+ static const char *default_arch = DEFAULT_ARCH;
+ 
+-/* VEX prefix.  */
+-typedef struct
+-{
+-  /* VEX prefix is either 2 byte or 3 byte.  */
+-  unsigned char bytes[3];
+-  unsigned int length;
+-  /* Destination or source register specifier.  */
+-  const reg_entry *register_specifier;
+-} vex_prefix;
+ 
+-/* 'md_assemble ()' gathers together information and puts it into a
+-   i386_insn.  */
+-
+-union i386_op
+-  {
+-    expressionS *disps;
+-    expressionS *imms;
+-    const reg_entry *regs;
+-  };
+-
+-enum i386_error
+-  {
+-    operand_size_mismatch,
+-    operand_type_mismatch,
+-    register_type_mismatch,
+-    number_of_operands_mismatch,
+-    invalid_instruction_suffix,
+-    bad_imm4,
+-    old_gcc_only,
+-    unsupported_with_intel_mnemonic,
+-    unsupported_syntax,
+-    unsupported
+-  };
+-
+-struct _i386_insn
+-  {
+-    /* TM holds the template for the insn were currently assembling.  */
+-    insn_template tm;
+-
+-    /* SUFFIX holds the instruction size suffix for byte, word, dword
+-       or qword, if given.  */
+-    char suffix;
+-
+-    /* OPERANDS gives the number of given operands.  */
+-    unsigned int operands;
+-
+-    /* REG_OPERANDS, DISP_OPERANDS, MEM_OPERANDS, IMM_OPERANDS give the number
+-       of given register, displacement, memory operands and immediate
+-       operands.  */
+-    unsigned int reg_operands, disp_operands, mem_operands, imm_operands;
+-
+-    /* TYPES [i] is the type (see above #defines) which tells us how to
+-       use OP[i] for the corresponding operand.  */
+-    i386_operand_type types[MAX_OPERANDS];
+-
+-    /* Displacement expression, immediate expression, or register for each
+-       operand.  */
+-    union i386_op op[MAX_OPERANDS];
+-
+-    /* Flags for operands.  */
+-    unsigned int flags[MAX_OPERANDS];
+-#define Operand_PCrel 1
+-
+-    /* Relocation type for operand */
+-    enum bfd_reloc_code_real reloc[MAX_OPERANDS];
+-
+-    /* BASE_REG, INDEX_REG, and LOG2_SCALE_FACTOR are used to encode
+-       the base index byte below.  */
+-    const reg_entry *base_reg;
+-    const reg_entry *index_reg;
+-    unsigned int log2_scale_factor;
+-
+-    /* SEG gives the seg_entries of this insn.  They are zero unless
+-       explicit segment overrides are given.  */
+-    const seg_entry *seg[2];
+-
+-    /* PREFIX holds all the given prefix opcodes (usually null).
+-       PREFIXES is the number of prefix opcodes.  */
+-    unsigned int prefixes;
+-    unsigned char prefix[MAX_PREFIXES];
+-
+-    /* RM and SIB are the modrm byte and the sib byte where the
+-       addressing modes of this insn are encoded.  */
+-    modrm_byte rm;
+-    rex_byte rex;
+-    sib_byte sib;
+-    vex_prefix vex;
+-
+-    /* Swap operand in encoding.  */
+-    unsigned int swap_operand;
+-
+-    /* Force 32bit displacement in encoding.  */
+-    unsigned int disp32_encoding;
+-
+-    /* Error message.  */
+-    enum i386_error error;
+-  };
+-
+-typedef struct _i386_insn i386_insn;
+ 
+ /* List of chars besides those in app.c:symbol_chars that can start an
+    operand.  Used to prevent the scrubber eating vital white-space.  */
+@@ -382,12 +249,7 @@ static int this_operand = -1;
+ /* We support four different modes.  FLAG_CODE variable is used to distinguish
+    these.  */
+ 
+-enum flag_code {
+-	CODE_32BIT,
+-	CODE_16BIT,
+-	CODE_64BIT };
+-
+-static enum flag_code flag_code;
++enum flag_code flag_code;
+ static unsigned int object_64bit;
+ static int use_rela_relocations = 0;
+ 
+diff -urpN binutils-2.21-orig/gas/config/tc-i386.h binutils-2.21/gas/config/tc-i386.h
+--- binutils-2.21-orig/gas/config/tc-i386.h	2011-02-21 15:53:38.794231000 -0800
++++ binutils-2.21/gas/config/tc-i386.h	2011-03-25 09:46:38.416968000 -0700
+@@ -299,6 +299,153 @@ void tc_pe_dwarf2_emit_offset (symbolS *
+ 
+ #endif /* TE_PE */
+ 
++
++/* 386 opcode byte to code indirect addressing.  */
++typedef struct
++{
++  unsigned base;
++  unsigned index;
++  unsigned scale;
++}
++sib_byte;
++
++
++/* 386 operand encoding bytes:  see 386 book for details of this.  */
++typedef struct
++{
++  unsigned int regmem;	/* codes register or memory operand */
++  unsigned int reg;	/* codes register operand (or extended opcode) */
++  unsigned int mode;	/* how to interpret regmem & reg */
++}
++modrm_byte;
++
++/* x86-64 extension prefix.  */
++typedef int rex_byte;
++
++
++/* Prefixes will be emitted in the order defined below.
++   WAIT_PREFIX must be the first prefix since FWAIT is really is an
++   instruction, and so must come before any prefixes.
++   The preferred prefix order is SEG_PREFIX, ADDR_PREFIX, DATA_PREFIX,
++   REP_PREFIX, LOCK_PREFIX.  */
++#define WAIT_PREFIX	0
++#define SEG_PREFIX	1
++#define ADDR_PREFIX	2
++#define DATA_PREFIX	3
++#define REP_PREFIX	4
++#define LOCK_PREFIX	5
++#define REX_PREFIX	6       /* must come last.  */
++#define MAX_PREFIXES	7	/* max prefixes per opcode */
++
++/* VEX prefix.  */
++typedef struct
++{
++  /* VEX prefix is either 2 byte or 3 byte.  */
++  unsigned char bytes[3];
++  unsigned int length;
++  /* Destination or source register specifier.  */
++  const reg_entry *register_specifier;
++} vex_prefix;
++
++/* 'md_assemble ()' gathers together information and puts it into a
++   i386_insn.  */
++
++union i386_op
++  {
++    expressionS *disps;
++    expressionS *imms;
++    const reg_entry *regs;
++  };
++
++enum i386_error
++  {
++    operand_size_mismatch,
++    operand_type_mismatch,
++    register_type_mismatch,
++    number_of_operands_mismatch,
++    invalid_instruction_suffix,
++    bad_imm4,
++    old_gcc_only,
++    unsupported_with_intel_mnemonic,
++    unsupported_syntax,
++    unsupported
++  };
++
++
++struct _i386_insn
++  {
++    /* TM holds the template for the insn were currently assembling.  */
++    insn_template tm;
++
++    /* SUFFIX holds the instruction size suffix for byte, word, dword
++       or qword, if given.  */
++    char suffix;
++
++    /* OPERANDS gives the number of given operands.  */
++    unsigned int operands;
++
++    /* REG_OPERANDS, DISP_OPERANDS, MEM_OPERANDS, IMM_OPERANDS give the number
++       of given register, displacement, memory operands and immediate
++       operands.  */
++    unsigned int reg_operands, disp_operands, mem_operands, imm_operands;
++
++    /* TYPES [i] is the type (see above #defines) which tells us how to
++       use OP[i] for the corresponding operand.  */
++    i386_operand_type types[MAX_OPERANDS];
++
++    /* Displacement expression, immediate expression, or register for each
++       operand.  */
++    union i386_op op[MAX_OPERANDS];
++
++    /* Flags for operands.  */
++    unsigned int flags[MAX_OPERANDS];
++#define Operand_PCrel 1
++
++    /* Relocation type for operand */
++    enum bfd_reloc_code_real reloc[MAX_OPERANDS];
++
++    /* BASE_REG, INDEX_REG, and LOG2_SCALE_FACTOR are used to encode
++       the base index byte below.  */
++    const reg_entry *base_reg;
++    const reg_entry *index_reg;
++    unsigned int log2_scale_factor;
++
++    /* SEG gives the seg_entries of this insn.  They are zero unless
++       explicit segment overrides are given.  */
++    const seg_entry *seg[2];
++
++    /* PREFIX holds all the given prefix opcodes (usually null).
++       PREFIXES is the number of prefix opcodes.  */
++    unsigned int prefixes;
++    unsigned char prefix[MAX_PREFIXES];
++
++    /* RM and SIB are the modrm byte and the sib byte where the
++       addressing modes of this insn are encoded.  */
++    modrm_byte rm;
++    rex_byte rex;
++    sib_byte sib;
++    vex_prefix vex;
++
++    /* Swap operand in encoding.  */
++    unsigned int swap_operand;
++
++    /* Force 32bit displacement in encoding.  */
++    unsigned int disp32_encoding;
++
++    /* Error message.  */
++    enum i386_error error;
++  };
++
++typedef struct _i386_insn i386_insn;
++
++enum flag_code {
++	CODE_32BIT,
++	CODE_16BIT,
++	CODE_64BIT };
++
++
++
++
+ /* X_add_symbol:X_op_symbol (Intel mode only) */
+ #define O_full_ptr O_md2
+ 

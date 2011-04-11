@@ -2,7 +2,7 @@ OS=Linux
 TARGET=x86_64-linux
 DEVPREFIX=
 LOCALEDIR=/usr/share/locale
-BINUTILSRC=../binutils-2.19.1
+BINUTILSRC=../binutils-2.21
 BINUTILOBJ=$(BINUTILSRC)-obj-$(TARGET)
 PYTHON=../python-2.5.4
 PYTHONLIB=$(PYTHON)/usr/local/lib/python2.5/config/libpython2.5.a
@@ -59,6 +59,7 @@ MAKEDEPEND=$(CC) -MM $(CFLAGS) $(CCEXTRAFLAGS) -o $(patsubst %.o,%.P,$@) $<
 GAS_SRC=					\
 	$(BINUTILSRC)/gas/app.c			\
 	$(BINUTILSRC)/gas/atof-generic.c	\
+	$(BINUTILSRC)/gas/compress-debug.c	\
 	$(BINUTILSRC)/gas/cond.c		\
 	$(BINUTILSRC)/gas/depend.c		\
 	$(BINUTILSRC)/gas/ecoff.c		\
@@ -134,7 +135,6 @@ PLUGIN_CCSRCS=					\
 	$(PLUGINSRC)/MaoDCE.cc			\
 	$(PLUGINSRC)/MaoEnableFunctionHijacking.cc \
 	$(PLUGINSRC)/MaoInsertPrefNta.cc	\
-	$(PLUGINSRC)/MaoInstructionBuilder.cc	\
 	$(PLUGINSRC)/MaoMissDisp.cc		\
 	$(PLUGINSRC)/MaoNopinizer.cc		\
 	$(PLUGINSRC)/MaoPrefetchNta.cc		\
@@ -142,13 +142,16 @@ PLUGIN_CCSRCS=					\
 	$(PLUGINSRC)/MaoTestDF.cc		\
 	$(PLUGINSRC)/MaoTestPlugin.cc
 
+#	$(PLUGINSRC)/MaoInstructionBuilder.cc	\
+#	MaoInstructionBuilder			\
+
+
 PLUGINS=MaoAddAdd				\
 	MaoBackBranchAlign			\
 	MaoBranchSeparator	  		\
 	MaoDCE					\
 	MaoInsertPrefNta			\
 	MaoEnableFunctionHijacking		\
-	MaoInstructionBuilder			\
 	MaoMissDisp				\
 	MaoNopinizer				\
 	MaoPrefetchNta				\
@@ -200,7 +203,7 @@ $(OBJDIR)/%.o : %.cc stamp-obj-$(TARGET) $(OBJDIR)/gen-opcodes.h
 $(OBJDIR)/MaoDebug.o : $(SRCDIR)/MaoDebug.cc stamp-obj-$(TARGET) 
 	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) -c -o $@ $(SRCDIR)/MaoDebug.cc
 
-$(OBJDIR)/MaoOpcodes.o : MaoOpcodes.cc $(OBJDIR)/gen-opcodes.h stamp-obj-$(TARGET)
+$(OBJDIR)/MaoOpcodes.o : $(SRCDIR)/MaoOpcodes.cc $(OBJDIR)/gen-opcodes.h stamp-obj-$(TARGET)
 	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) -c -o $@ $<
 
 
