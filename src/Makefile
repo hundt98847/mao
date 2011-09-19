@@ -279,6 +279,7 @@ MAO_BINUTILS_HEADERS = $(BINUTILSRC)/gas/config/tc-i386.h \
 	               $(BINUTILOBJ)/gas/targ-cpu.h \
 	               $(BINUTILOBJ)/gas/targ-env.h \
 	               $(BINUTILSRC)/include/ansidecl.h \
+	               $(BINUTILSRC)/include/alloca-conf.h \
 	               $(BINUTILSRC)/include/symcat.h \
 	               $(BINUTILSRC)/include/progress.h \
 	               $(BINUTILSRC)/include/bfdlink.h \
