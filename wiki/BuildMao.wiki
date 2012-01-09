@@ -60,4 +60,4 @@ make -j 4 TARGET=${TARGET}
 make -j 4 TARGET=${TARGET} OS=MacOS
 }}}
 
-Now, goto RunMao for information on how use the MAO binary in MAO/bin/.
+Now, goto RunMao for information on how to use the generated MAO binary in MAO/bin/ (named mao-${TARGET}).
