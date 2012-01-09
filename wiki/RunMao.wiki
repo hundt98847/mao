@@ -1,5 +1,6 @@
 #summary How to run and integrate MAO.
 
+<wiki:toc max_depth="2" />
 = Running Standalone MAO =
 
 After building MAO, for each build target, a binary called {{{mao-$TARGET}}} will be placed in 
@@ -12,6 +13,9 @@ mao [--mao=mao-options]* [regular-assembler-options]* <input-file>
 Options specific to MAO are prefixed with {{{--mao=...}}}. All other options are passed to the integrated assembler and hence need to be valid options to 'as'.
 
 Another way to pass MAO specific options is to set the environment variable MAOOPTS. This environment variable is parsed before the actual command line parameters. It should only contain MAO specific options, without the {{{--mao=}}} prefix.
+
+
+
 
 = Getting help =
 Passing --mao=-h or --mao=--help lists the set of available options to MAO. Note that when -h or --help is passed without the --mao=  prefix, it gets passed on to the assembler and prints the assembler's help message.
@@ -64,7 +68,7 @@ In addition to the passes that come with it, MAO also supports dynamically loada
    ./mao-x86_64-linux --mao=--plugin=/path/to/plugin/MaoTestPlugin-x86_64-linux.so  --mao=TESTPLUG input.s
 }}}
 
-= Integrating MAO with gcc =
+= Integrating MAO with gcc (and other compilers)=
 The typical usage of gcc is to transform a source file to an object file or the executable binary. In both cases, gcc first invokes the compiler (cc1 or cc1plus) that produces an assembly file (usually a temporary file in /tmp) and then invokes the GNU assembler 'as'. 
 
 For example, to compile foo.cc, the compiler might call:
