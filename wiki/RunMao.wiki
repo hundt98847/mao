@@ -88,6 +88,8 @@ To make gcc invoke this script instead of the actual 'as', one can:
 {{{
 $ gcc test.c -o test -B/home/username/mao/scripts -Wa,--mao=ZEE
 }}}
-   # This method is similar to the previous one where instead of passing the -B option, the enviroment variable GCC_EXEC_PREFIX can be set.
+
+   Note that in this scenario, there is no need to explicitly specify the ASM pass. The 'as' wrapper script passes that ASM option to MAO and specifies the proper input and output files. However, the 'as' script might have to be modified to point to the proper original 'as' binary and to the proper mao binary (look at the top of function main())
+   # Finally, similar to the previous method, instead of passing the -B option, the enviroment variable GCC_EXEC_PREFIX can be set.
 
 In all the above use cases, the script requires a symlink named 'as-orig' pointing to the actual as binary and a sym link mao to the mao binary in the same directory as the script.
