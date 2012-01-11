@@ -1199,6 +1199,18 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
           || t.bitfield.regymm);
 }
 
+// If an operand is an immediate, get it's integer value
+offsetT  InstructionEntry::GetImmediateValue(const unsigned int op_index) {
+  i386_insn   *insn = instruction();
+  MAO_ASSERT(IsImmediateOperand(insn, op_index));
+  MAO_ASSERT(insn->operands > op_index);
+
+  expressionS *imm1 = insn->op[op_index].imms;
+  MAO_ASSERT(imm1->X_op == O_constant);
+
+  return imm1->X_add_number;
+}
+
 // Make a copy of an expression.
 expressionS *InstructionEntry::CreateExpressionCopy(expressionS *in_exp) {
   if (!in_exp)

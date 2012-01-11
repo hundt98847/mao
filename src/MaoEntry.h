@@ -731,6 +731,9 @@ class InstructionEntry : public MaoEntry {
   static bool  IsRegisterOperand(const i386_insn *instruction,
                                  const unsigned int op_index);
 
+  // If operand is an immediate operand, return its integer value.
+  offsetT GetImmediateValue(const unsigned int op_index);
+
  private:
   i386_insn *instruction_;
   MaoOpcode  op_;
