@@ -242,7 +242,9 @@ class SchedulerPass : public MaoFunctionPass {
       char line[4096];
       int func_num = 0;
       while (!feof(fp)) {
-        fscanf(fp, "%s", line);
+        int ret = fscanf(fp, "%s", line);
+        if (ret == EOF)
+          break;
         if (!strcmp(line, this_func_name))
           break;
         func_num++;
