@@ -980,6 +980,8 @@ dump_statistics (void)
 #endif
 }
 
+static void close_output_file (void) __attribute__((unused));
+
 static void
 close_output_file (void)
 {
