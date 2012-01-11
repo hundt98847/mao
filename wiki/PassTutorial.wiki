@@ -86,7 +86,7 @@ MAO_OPTIONS_DEFINE(MAOLOOPSIZEINFO, 3) {
 
 The options can be fetched using the following code:
 {{{
-  bool string_option = GetOptionBool("string_option");
+  bool string_option = GetOptionString("string_option");
   bool bool_option = GetOptionBool("boolean_option");
   bool int_option = GetOptionInt("integer_option");
 }}}
@@ -197,10 +197,26 @@ $ ../bin/mao-x86_64-linux --mao=MAOLOOPSIZEINFO=trace[3],print_sizes ../tests/lo
 === Plugin ===
 To compile a pass as a plugin (dynamically loadable library), the following changes are needed.
 
-  * Update Makefile.
-  * Include MaoPlugin.h
-  * Add macro PLUGIN_VERSION
-  * Put pass registration in MaoInit:
+  * Update Makefile. Specifically, add the plugin source(s) to {{{PLUGIN_CCSRCS=...}}} and add the plugin name, without extension, to {{{PLUGINS}}} right below
+  * Include MaoPlugin.h and add the PLUGIN_VERSION macro, like in this example:
+{{{
+#include "MaoDebug.h"
+#include "MaoUnit.h"
+#include "MaoPasses.h"
+#include "MaoCFG.h"
+#include "MaoDefs.h"
+#include "MaoPlugin.h"
+
+namespace {
+
+PLUGIN_VERSION
+
+// --------------------------------------------------------------------
+// Options
+// --------------------------------------------------------------------
+...
+}}}
+  * Create a C-binding MaoInit function and add code to register the pass to it. MaoInit is called on loading of the shared module containing the plugin.
 {{{
 // External Entry Point
 //
@@ -210,6 +226,8 @@ extern "C" {
   }
 }
 }}}
+
+Please check existing plugins in src/plugins for more examples.
 
 {{{
 $ ../bin/mao-x86_64-linux --mao=--plugin=../bin/MaoLoopSizeInfo-x86_64-linux.so --mao=MAOLOOPSIZEINFO=trace[3],print_sizes ../tests/loops-1.s 
