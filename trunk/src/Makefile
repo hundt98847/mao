@@ -52,7 +52,7 @@ CFLAGS=						\
 	-I$(BINUTILOBJ)/include			\
 	-DLOCALEDIR="\"$(LOCALEDIR)\""		\
 	-DHAVE_DECL_BASENAME=1                  \
-	-g -O2 -Wall -fno-exceptions
+	-g -O2 -Wall -Werror -fno-exceptions
 
 MAKEDEPEND=$(CC) -MM $(CFLAGS) $(CCEXTRAFLAGS) -o $(patsubst %.o,%.P,$@) $<
 
@@ -140,10 +140,8 @@ PLUGIN_CCSRCS=					\
 	$(PLUGINSRC)/MaoPrefetchNta.cc		\
 	$(PLUGINSRC)/MaoRatFinder.cc		\
 	$(PLUGINSRC)/MaoTestDF.cc		\
-	$(PLUGINSRC)/MaoTestPlugin.cc
-
-#	$(PLUGINSRC)/MaoInstructionBuilder.cc	\
-#	MaoInstructionBuilder			\
+	$(PLUGINSRC)/MaoTestPlugin.cc		\
+#	$(PLUGINSRC)/MaoInstructionBuilder.cc	
 
 
 PLUGINS=MaoAddAdd				\
@@ -157,7 +155,8 @@ PLUGINS=MaoAddAdd				\
 	MaoPrefetchNta				\
 	MaoRatFinder				\
 	MaoTestDF				\
-	MaoTestPlugin
+	MaoTestPlugin				\
+#	MaoInstructionBuilder
 
 GAS_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_SRC)))
 GAS_CONFIG_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_CONFIG_SRC)))
