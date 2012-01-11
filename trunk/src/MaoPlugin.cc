@@ -29,7 +29,7 @@ void LoadPlugin(const char *path) {
   char *error;
   void *lib_handle = dlopen(path, RTLD_NOW);
 
-  MAO_ASSERT_MSG(lib_handle, dlerror());
+  MAO_ASSERT_MSG(lib_handle, "%s",  dlerror());
 
   // Clear any pending dlerror messages
   dlerror();
@@ -38,7 +38,7 @@ void LoadPlugin(const char *path) {
   PluginVersion *version;
   version = static_cast<PluginVersion *>(dlsym(lib_handle, "mao_plugin_version"));
   if ((error = dlerror()) != NULL)
-    MAO_ASSERT_MSG(false, error);
+    MAO_ASSERT_MSG(false, "%s", error);
 
   MAO_ASSERT_MSG(version->major == MAO_MAJOR_VERSION,
                  "Plugin version %d.%d does not match MAO version %d.%d",
@@ -51,7 +51,7 @@ void LoadPlugin(const char *path) {
   // See the dlopen man page for an explanation of the strange casting
   init = (void (*)())dlsym(lib_handle, "MaoInit");
   if ((error = dlerror()) != NULL)
-    MAO_ASSERT_MSG(false, error);
+    MAO_ASSERT_MSG(false, "%s", error);
 
   init();
 }
