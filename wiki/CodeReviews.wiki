@@ -12,4 +12,14 @@ You can either use the web interface or options to upload.py to select reviewers
 
 Once the reviewers are happy (usually by writing LGTM), you can close the issue and submit the patch from your svn repository.
 
-Now, please take a look at [http://code.google.com/p/rietveld/wiki/CodeReviewHelp at the main help site] and try it out!
+For example, to submit a single file for review (e.g., MaoScheduler.cc), you would issue a command like the following (Note that Martin, Easwaran, and Robert are the main maintainers at Google):
+{{{
+   ./upload.py -s maoreview.appspot.com -e your-email-login \
+       -r martint@google.com,eraman@google.com,rhundt@google.com \
+       --cc mao-project@googlegroups.com \
+       --send_mail \
+       src/MaoScheduler.cc
+}}}
+
+
+Additionally, please take a look at [http://code.google.com/p/rietveld/wiki/CodeReviewHelp at the main help site] and try it out!
