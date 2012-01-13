@@ -52,6 +52,7 @@ void MaoOptions::ProvideHelp(bool exit_after, bool always) {
           "Common Options:\n"
           "-h or --help  display this help text\n"
           "-v            verbose (set trace level to 3)\n"
+          "-s            scan for, and load, plugin .so's\n"
           "-T            output timing information for passes\n"
           "--plugin      load the specified plugin\n"
           "\n"
@@ -303,7 +304,7 @@ bool SetPassSpecificOptions(const char *option, const char *arg,
 void MaoOptions::InitializeOptionMap(MaoOptionMap *options,
                                      MaoOptionArray *pass_opts) {
   // Initialize builtin options
-  (*options)["trace"].ival_ = verbose() ? 3 : 0;
+  (*options)["trace"].ival_ = verbose() ? 1 : 0;
   (*options)["apply_to_funcs"].cval_ = "";  // Default, apply to all functions.
   (*options)["da[vcg]"].bval_ = 0;
   (*options)["db[vcg]"].bval_ = 0;
@@ -321,10 +322,11 @@ void MaoOptions::InitializeOptionMap(MaoOptionMap *options,
 // parsing time. We therefore reparse on pass creation.
 //
 void MaoOptions::Reparse(MaoUnit *unit, MaoPassManager *pass_man) {
-  Parse(mao_options_, false, unit, pass_man);
+  Parse(NULL, mao_options_, false, unit, pass_man);
 }
 
-void MaoOptions::Parse(const char *arg, bool collect,
+void MaoOptions::Parse(const char *argv0,
+                       const char *arg, bool collect,
                        MaoUnit *unit, MaoPassManager *pass_man) {
   MaoFunctionPassManager *func_pass_man = NULL;
 
@@ -365,6 +367,12 @@ void MaoOptions::Parse(const char *arg, bool collect,
       if (arg[0] == 'v') {
         set_verbose();
         ++arg;
+      } else if (arg[0] == 's') {
+        // Automatically scan and load extension plugin's
+        // named Mao*.so in bin and lib
+        if (collect)
+          ScanAndLoadPlugins(argv0,verbose());
+        ++arg;
       } else if (arg[0] == 'h') {
         set_help(true);
         ++arg;
@@ -379,7 +387,7 @@ void MaoOptions::Parse(const char *arg, bool collect,
         GobbleGarbage(arg, &arg);
         char *plugin = NextToken(arg, &arg, token_buff);
         if (collect)
-          LoadPlugin(plugin);
+          LoadPlugin(plugin, verbose());
       } else {
         fprintf(stderr, "Invalid Option starting with: %s\n", arg);
         ++arg;

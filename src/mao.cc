@@ -27,8 +27,7 @@
 #include "MaoCFG.h"
 #include "MaoLoops.h"
 #include "MaoRelax.h"
-//#include "MaoDefs.h" // Problematic header since it uses "opcodes/i386-opc.h"
-                       // which is guard-less
+#include "MaoPlugin.h"
 
 //==================================
 // MAO Main Entry
@@ -43,14 +42,14 @@ int main(int argc, const char *argv[]) {
   int    new_argc = 0;
   int    gas_help_requested = false;
 
-  mao_options.Parse(getenv("MAOOPTS"));
+  mao_options.Parse(argv[0], getenv("MAOOPTS"));
   for (int i = 0; i < argc; i++) {
     if (strncmp(argv[i], "--help", 6) == 0) {
       gas_help_requested = true;
     }
 
     if (strncmp(argv[i], "--mao=", 6) == 0)
-      mao_options.Parse(&argv[i][6]);
+      mao_options.Parse(argv[0], &argv[i][6]);
     else
       new_argv[new_argc++] = argv[i];
   }

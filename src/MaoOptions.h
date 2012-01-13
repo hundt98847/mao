@@ -174,7 +174,15 @@ class MaoOptions {
 
   ~MaoOptions() {}
 
-  void        Parse(const char *arg, bool collect = true,
+  // Parse the option string
+  //
+  //   argv0 is the pointer to argv[0] from main().
+  //         We need this path to find plugin .so's.
+  //
+  //   arg   is the current pointer into the Mao option string
+  //         e.g., as it is passed via --mao=...
+  //
+  void        Parse(const char *argv0, const char *arg, bool collect = true,
                     MaoUnit *unit = NULL, MaoPassManager *pass_man = NULL);
   void        Reparse(MaoUnit *unit = NULL, MaoPassManager *pass_man = NULL);
   void        ProvideHelp(bool exit_after, bool always = false);
