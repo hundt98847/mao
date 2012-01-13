@@ -234,6 +234,10 @@ class AlignTinyLoops16 : public MaoFunctionPass {
           sizes = MaoRelaxer::GetSizeMap(unit_, function_->GetSection());
           offsets = MaoRelaxer::GetOffsetMap(unit_, function_->GetSection());
         }
+        else {
+          Trace(0, "  -> no transformation, limit is %d lines",
+                max_fetch_lines_);
+        }
       }
     }
   }
