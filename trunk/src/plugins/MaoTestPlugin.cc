@@ -23,10 +23,6 @@ namespace {
 
 PLUGIN_VERSION
 
-extern "C" {
-  void MaoInit();
-}
-
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
@@ -45,13 +41,6 @@ class TestPlugin : public MaoFunctionPass {
   }
 };
 
-
-// External Entry Point
-//
-void MaoInit() {
-  RegisterFunctionPass(
-      "TESTPLUG",
-      MaoFunctionPassManager::GenericPassCreator<TestPlugin>);
-}
-
+REGISTER_PLUGIN_FUNC_PASS("TESTPLUG",
+         MaoFunctionPassManager::GenericPassCreator<TestPlugin>);
 }  // namespace

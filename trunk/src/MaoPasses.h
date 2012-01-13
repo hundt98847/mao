@@ -340,5 +340,20 @@ class PassInitializer {
 #define REGISTER_UNIT_PASS(name, classname)  \
     static PassInitializer classname##Init(name, MaoPassManager::GenericPassCreator<classname>);
 
+// Plugin Support
+//
+#define REGISTER_PLUGIN_FUNC_PASS(name, classname) \
+   extern "C" { \
+      void MaoInit() {\
+         REGISTER_FUNC_PASS(name, classname ) \
+      } \
+   }
+
+#define REGISTER_PLUGIN_UNIT_PASS(name, classname) \
+   extern "C" { \
+      void MaoInit() {\
+         REGISTER_UNIT_PASS(name, classname ) \
+      } \
+   }
 
 #endif   // MAP_PASSES_H_INCLUDED_

@@ -347,10 +347,5 @@ class BackBranchAlign : public MaoFunctionPass {
   int       align_limit_;
 };
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("BACKBRALIGN", BackBranchAlign)
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS("BACKBRALIGN", BackBranchAlign)
 }  // namespace

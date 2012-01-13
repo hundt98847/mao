@@ -22,14 +22,10 @@
 // structure corresponding to this instruction.
 
 #include "Mao.h"
+#include "as.h"
+#include "tc-i386.h"
 namespace {
-
 PLUGIN_VERSION
-
-extern "C" {
-  void MaoInit();
-  #include "as.h"
-  #include "tc-i386.h"
 }
 
 void PrintTemplate(const insn_template *tm, int num_operands);

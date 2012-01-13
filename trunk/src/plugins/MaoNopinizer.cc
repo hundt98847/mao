@@ -90,10 +90,5 @@ class NopInizerPass : public MaoFunctionPass {
   int             thick_;
 };
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("NOPIN", NopInizerPass)
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS("NOPIN", NopInizerPass)
 }  // namespace

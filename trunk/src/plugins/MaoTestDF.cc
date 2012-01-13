@@ -148,10 +148,5 @@ class TestDataFlowPass : public MaoFunctionPass {
   bool reachingdef_;
 };
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("TESTDF", TestDataFlowPass)
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS("TESTDF", TestDataFlowPass)
 }  // namespace

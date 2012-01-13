@@ -189,10 +189,5 @@ class AddAddElimPass : public MaoFunctionPass {
   const BitString emask_;
 };
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("ADDADD", AddAddElimPass)
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS("ADDADD", AddAddElimPass)
 }  // namespace

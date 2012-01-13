@@ -185,10 +185,5 @@ class RatFinderPass : public MaoFunctionPass {
   }
 };
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("RATFINDER", RatFinderPass)
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS("RATFINDER", RatFinderPass)
 }  // namespace

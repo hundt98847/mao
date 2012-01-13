@@ -130,11 +130,5 @@ class EnableFunHijackPass : public MaoFunctionPass {
   bool  hijack_fn_return_;
 };
 
-
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS(kPassName, EnableFunHijackPass)
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS(kPassName, EnableFunHijackPass)
 }  // namespace

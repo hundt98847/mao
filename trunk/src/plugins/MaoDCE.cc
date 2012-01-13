@@ -91,11 +91,5 @@ class DeadCodeElimPass : public MaoFunctionPass {
   }
 };
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("DCE", DeadCodeElimPass)
-  }
-}
-
-
+REGISTER_PLUGIN_FUNC_PASS("DCE", DeadCodeElimPass)
 }  // namespace

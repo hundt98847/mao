@@ -107,10 +107,5 @@ class PrefetchNtaPass : public MaoFunctionPass {
 };
 
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("PREFNTA", PrefetchNtaPass)
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS("PREFNTA", PrefetchNtaPass)
 }  // namespace
