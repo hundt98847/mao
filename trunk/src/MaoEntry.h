@@ -583,6 +583,10 @@ class InstructionEntry : public MaoEntry {
   bool IsImmediateOperand(const unsigned int op_index) const {
     return IsImmediateOperand(instruction(), op_index);
   }
+  // Returns if the operand with index op_index is an immediate integer operand.
+  bool IsImmediateIntOperand(const unsigned int op_index) const {
+    return IsImmediateIntOperand(instruction(), op_index);
+  }
   // Returns if the operand with index op_index is a register operand.
   bool IsRegisterOperand(const unsigned int op_index) const {
     return IsRegisterOperand(instruction(), op_index);
@@ -720,19 +724,30 @@ class InstructionEntry : public MaoEntry {
   // class already exists, 1 if non rep/repne added, 2 if rep/repne
   // added.
   int AddPrefix(unsigned int prefix);
-  // Returns if thee 'op_index'th operand of instruction is a memory operand.
+  // Returns if the 'op_index'th operand of instruction is a memory operand.
   static bool IsMemOperand(const i386_insn *instruction,
                            const unsigned int op_index);
-  // Returns if thee 'op_index'th operand of instruction is an immediate
-  // operand.
+  // Returns if the 'op_index'th operand of instruction is an immediate
+  // operand. Operands can be constants, or symbols defined via .comm
   static bool IsImmediateOperand(const i386_insn *instruction,
                                  const unsigned int op_index);
-  // Returns if thee 'op_index'th operand of instruction is a register operand.
+
+  // Returns if the 'op_index'th operand of instruction is an immediate
+  // operand and an actual integer. The form above also allows symbols
+  // declared with .comm
+  static bool IsImmediateIntOperand(const i386_insn *instruction,
+                                    const unsigned int op_index);
+  // Returns if the 'op_index'th operand of instruction is a register operand.
   static bool  IsRegisterOperand(const i386_insn *instruction,
                                  const unsigned int op_index);
 
   // If operand is an immediate operand, return its integer value.
-  offsetT GetImmediateValue(const unsigned int op_index);
+  offsetT GetImmediateIntValue(const unsigned int op_index);
+
+  // Make an operand an Int Immediate operand
+  void SetImmediateIntOperand(const unsigned int op_index,
+                              int bit_size,
+                              int value);
 
  private:
   i386_insn *instruction_;
