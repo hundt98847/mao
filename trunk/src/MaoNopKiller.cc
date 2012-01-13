@@ -46,14 +46,12 @@ class NopKillerElimPass : public MaoFunctionPass {
   // and kill them all
   //
   bool Go() {
-    std::list<MaoEntry *> redundants;
-
    FORALL_FUNC_ENTRY(function_, entry) {
       if (entry->IsInstruction()) {
         InstructionEntry *insn = entry->AsInstruction();
 
         if (insn->op() == OP_nop) {
-          redundants.push_back(insn);
+          MarkInsnForDelete(insn);
           continue;
         }
 
@@ -61,7 +59,7 @@ class NopKillerElimPass : public MaoFunctionPass {
             insn->IsRegisterOperand(0) &&
             insn->IsRegisterOperand(1) &&
             insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1)) {
-          redundants.push_back(insn);
+          MarkInsnForDelete(insn);
           continue;
         }
       }
@@ -69,25 +67,15 @@ class NopKillerElimPass : public MaoFunctionPass {
       if (entry->IsDirective()) {
         DirectiveEntry *insn = entry->AsDirective();
         if (insn->op() == DirectiveEntry::P2ALIGN) {
-          redundants.push_back(insn);
+          MarkInsnForDelete(entry);
           continue;
         }
       }
     }
 
-    // Now delete all the redundant ones.
-    for (std::list<MaoEntry *>::iterator it = redundants.begin();
-         it != redundants.end(); ++it) {
-      TraceC(1, "Remove: ");
-      if (tracing_level() > 0)
-        (*it)->PrintEntry(stderr);
-      unit_->DeleteEntry(*it);
-    }
     return true;
   }
 };
 
-
 REGISTER_FUNC_PASS("NOPKILL", NopKillerElimPass)
-
 }  // namespace

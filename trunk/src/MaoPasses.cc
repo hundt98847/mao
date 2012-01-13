@@ -163,12 +163,12 @@ bool MaoPass::Run() {
     pass_debug_action = new PassDebugAction(name());
   else
     pass_debug_action->set_pass_name(name());
-  redundants = new std::list<InstructionEntry *>();
+  redundants = new std::list<MaoEntry *>();
 
   int ret = Go();
 
   // Now delete all the collected redundant instructions.
-  for (std::list<InstructionEntry *>::iterator it = redundants->begin();
+  for (std::list<MaoEntry *>::iterator it = redundants->begin();
        it != redundants->end(); ++it) {
     unit_->DeleteEntry(*it);
   }
@@ -178,7 +178,7 @@ bool MaoPass::Run() {
 }
 
 // Allow marking of Entries for deletion after exit from Go()
-void MaoPass::MarkInsnForDelete(InstructionEntry *insn) {
+void MaoPass::MarkInsnForDelete(MaoEntry *insn) {
   MAO_ASSERT(redundants);
   redundants->push_back(insn);
 }

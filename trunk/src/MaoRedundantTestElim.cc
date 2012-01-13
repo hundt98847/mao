@@ -51,13 +51,6 @@ class RedTestElimPass : public MaoFunctionPass {
     CFG *cfg = CFG::GetCFG(unit_, function_);
     if (!cfg->IsWellFormed()) return true;
 
-    // Container for instructions to remove. In order
-    // to make things simple and to avoid messing up
-    // iterators, we collect instructions in a first
-    // pass and delete them in a second loop.
-    //
-    std::list<InstructionEntry *> redundants;
-
     // Iterate over all basic blocks in the function.
     // This analysis is done 'local', we're only looking
     // within a basic block. This could be extended, however,
@@ -112,7 +105,7 @@ class RedTestElimPass : public MaoFunctionPass {
               if (prev->IsRegisterOperand(op_index) &&
                   prev->GetRegisterOperand(op_index) ==
                   insn->GetRegisterOperand(0)) {
-                redundants.push_back(insn);
+                MarkInsnForDelete(insn);
 
                 Trace(1, "Found %s/test seq", prev->op_str());
                 if (tracing_level() > 0)
@@ -123,12 +116,6 @@ class RedTestElimPass : public MaoFunctionPass {
       }
     }
 
-    // Now delete all the redundant test instructions
-    //
-    for (std::list<InstructionEntry *>::iterator it = redundants.begin();
-         it != redundants.end(); ++it) {
-      unit_->DeleteEntry(*it);
-    }
     return true;
   }
 };
