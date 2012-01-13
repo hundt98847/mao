@@ -108,44 +108,68 @@ class MaoUnit {
   // if no such label is found.
   LabelEntry *GetLabelEntry(const char *label_name) const;
 
+  //---------------------------------------------------------------------
   // Instruction Creators.
-  //
+  //---------------------------------------------------------------------
+
   // Creates an instruction with the specified opcode in a given function.
   InstructionEntry *CreateInstruction(const char *opcode,
                                       unsigned int base_opcode,
                                       Function *function);
+
   // Creates an InstructionEntry wrapping around the specified i386_insn* and
   // associate it with the given function.
   InstructionEntry *CreateInstruction(i386_insn *instruction,
                                       Function *function);
+
   // Creates a nop and associate it with the given function.
   InstructionEntry *CreateNop(Function *function);
+
   // Creates a 2-byte nop and associate it with the given function.
   InstructionEntry *Create2ByteNop(Function *function);
+
   // Creates a lock instruction and associate it with the given function.
   InstructionEntry *CreateLock(Function *function);
+
   // Creates an unconditional jump to a specified label and associate it with
   // the given function.
   InstructionEntry *CreateUncondJump(LabelEntry *l, Function *function);
 
-  // prefetch type:
+  // Create an inc reg instruction with a given operand from another insn
+  InstructionEntry *CreateIncFromOperand(Function *function,
+                                         InstructionEntry *insn2,
+                                         int op2);
+
+  // Create a  dec reg instruction with a given operand from another insn
+  InstructionEntry *CreateDecFromOperand(Function *function,
+                                         InstructionEntry *insn2,
+                                         int op2);
+
+  // Create an add instruction
+  InstructionEntry *CreateAdd(Function *function);
+
+  // Create a sub instruction
+  InstructionEntry *CreateSub(Function *function);
+
+  // Creates a prefetch instruction of the given prefetch type. The prefetch
+  // address is obtained by adding offset to the 'op_index'th operand of 'insn'.
+  // Prefetch types:
   //    0:  nta
   //    1:  t0
   //    2:  t1
   //    3:  t2
-
-  // Creates a prefetch instruction of the given prefetch type. The prefetch
-  // address is obtained by adding offset to the 'op_index'th operand of 'insn'.
   InstructionEntry *CreatePrefetch(Function *function,
                                    int prefetch_type,
                                    InstructionEntry *insn,
                                    int op_index,
                                    int offset = 0);
+
   // Creates a label specified by label_name and associate it with the specified
   // function and subsection if they are not NULL.
   LabelEntry *CreateLabel(const char *labelname,
                           Function* function,
                           SubSection* ss);
+
   // Creates a directive with opcode 'op' and operands specified by the given
   // vector. Associate it with the specified function and subsection if they
   // are not NULL.
