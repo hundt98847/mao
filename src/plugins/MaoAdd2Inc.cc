@@ -60,13 +60,6 @@ class Add2IncPass : public MaoFunctionPass {
   bool Go() {
     CFG *cfg = CFG::GetCFG(unit_, function_);
 
-    // Container for instructions to remove. In order
-    // to make things simple and to avoid messing up
-    // iterators, we collect instructions in a first
-    // pass and delete them in a second loop.
-    //
-    std::list<InstructionEntry *> redundants;
-
     // Iterate over all BBs, all entries which are instructions.
     // Find instructions that have 2 operands, an immediate as
     // the 1st operand, and a regiser as the second operand.
@@ -87,34 +80,19 @@ class Add2IncPass : public MaoFunctionPass {
         if (insn->op() == OP_add && insn->GetImmediateIntValue(0) == 1) {
           InstructionEntry *i = unit_->CreateIncFromOperand(function_, insn, 1);
           insn->LinkBefore(i);
-          redundants.push_back(insn);
-          TraceReplace(insn, i);
+          MarkInsnForDelete(insn);
+          TraceReplace(1, insn, i);
         }
         if (insn->op() == OP_sub && insn->GetImmediateIntValue(0) == 1) {
           InstructionEntry *i = unit_->CreateDecFromOperand(function_, insn, 1);
           insn->LinkBefore(i);
-          redundants.push_back(insn);
-          TraceReplace(insn, i);
+          MarkInsnForDelete(insn);
+          TraceReplace(1, insn, i);
         }
       }
     }
 
-    // Now delete all the collected redundant instructions.
-    for (std::list<InstructionEntry *>::iterator it = redundants.begin();
-         it != redundants.end(); ++it) {
-      unit_->DeleteEntry(*it);
-    }
-
     return true;
-  }
-
- private:
-  // Helper function to dump modified insn's.
-  void TraceReplace(InstructionEntry *before, InstructionEntry *after) {
-    TraceC(1, "*** Replaced: ");
-    if (tracing_level() > 0) before->PrintEntry(stderr);
-    TraceC(1, "*** With    : ");
-    if (tracing_level() > 0) after->PrintEntry(stderr);
   }
 };
 

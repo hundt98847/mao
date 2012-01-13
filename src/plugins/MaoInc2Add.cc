@@ -41,7 +41,7 @@ PLUGIN_VERSION
 // --------------------------------------------------------------------
 // Options
 // --------------------------------------------------------------------
-MAO_DEFINE_OPTIONS(INC2Add, "Convert inc|dec reg to add|sub 1,reg", 0)
+MAO_DEFINE_OPTIONS(INC2ADD, "Convert inc|dec reg to add|sub 1,reg", 0)
   {};
 
 // --------------------------------------------------------------------
@@ -59,13 +59,6 @@ class Inc2AddPass : public MaoFunctionPass {
   //
   bool Go() {
     CFG *cfg = CFG::GetCFG(unit_, function_);
-
-    // Container for instructions to remove. In order
-    // to make things simple and to avoid messing up
-    // iterators, we collect instructions in a first
-    // pass and delete them in a second loop.
-    //
-    std::list<InstructionEntry *> redundants;
 
     // Iterate over all BBs, all entries which are instructions.
     // Find instructions that have 1 operand and a register as
@@ -90,28 +83,13 @@ class Inc2AddPass : public MaoFunctionPass {
           i->SetOperand(1, insn, 0);
 
           insn->LinkBefore(i);
-          redundants.push_back(insn);
-          TraceReplace(insn, i);
+          MarkInsnForDelete(insn);
+          TraceReplace(1, insn, i);
         }
       }
     }
 
-    // Now delete all the collected redundant instructions.
-    for (std::list<InstructionEntry *>::iterator it = redundants.begin();
-         it != redundants.end(); ++it) {
-      unit_->DeleteEntry(*it);
-    }
-
     return true;
-  }
-
- private:
-  // Helper function to dump modified insn's.
-  void TraceReplace(InstructionEntry *before, InstructionEntry *after) {
-    TraceC(1, "*** Replaced: ");
-    if (tracing_level() > 0) before->PrintEntry(stderr);
-    TraceC(1, "*** With    : ");
-    if (tracing_level() > 0) after->PrintEntry(stderr);
   }
 };
 
