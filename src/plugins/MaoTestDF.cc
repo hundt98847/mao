@@ -18,15 +18,7 @@
 //   Boston, MA  02110-1301, USA.
 
 // Zero Extension Elimination
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-
-#include "MaoLiveness.h"
-#include "MaoReachingDefs.h"
-
+#include "Mao.h"
 #include "MaoPlugin.h"
 
 namespace {

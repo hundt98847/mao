@@ -20,12 +20,7 @@
 // Insert low-overhead nops in function prolog that can be patched at runtime to
 // hijack function entries.
 //
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoPlugin.h"
+#include "Mao.h"
 
 namespace {
 

@@ -21,15 +21,7 @@
 // The idea is to improve branch prediction for the back-edges,
 // in particular, for short running loops.
 //
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoLoops.h"
-#include "MaoRelax.h"
-#include "MaoPlugin.h"
-
+#include "Mao.h"
 #include <map>
 
 namespace {

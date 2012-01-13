@@ -16,8 +16,9 @@
 //   Free Software Foundation Inc.,
 //   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#include <iostream>
+#include "Mao.h"
 
+#include <iostream>
 #include <stdio.h>
 #include <iterator>
 #include <map>
@@ -25,14 +26,6 @@
 #include <utility>
 #include <vector>
 #include <set>
-
-#include "MaoUnit.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoOptions.h"
-#include "MaoRelax.h"
-
-#include "MaoPlugin.h"
 
 #include "libiberty.h"
 

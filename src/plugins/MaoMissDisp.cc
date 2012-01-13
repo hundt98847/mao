@@ -19,12 +19,7 @@
 
 // Missing Displacement Optimization
 //
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoPlugin.h"
+#include "Mao.h"
 
 namespace {
 

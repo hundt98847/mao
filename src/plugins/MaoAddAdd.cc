@@ -19,12 +19,7 @@
 
 // Add Add identifier
 // TODO(martint): Make sure that the eflags of the first insn are not used.
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoPlugin.h"
+#include "Mao.h"
 
 namespace {
 
@@ -139,7 +134,7 @@ class AddAddElimPass : public MaoFunctionPass {
   bool IsAddIOrSubI(InstructionEntry *insn) {
     return ((insn->op() == OP_add || insn->op() == OP_sub)  &&
             insn->NumOperands() == 2 &&
-            insn->IsImmediateOperand(0) &&
+            insn->IsImmediateIntOperand(0) &&
             insn->IsRegisterOperand(1));
   }
 
@@ -153,7 +148,7 @@ class AddAddElimPass : public MaoFunctionPass {
     if (inst1->NumOperands() < 1 || inst2->NumOperands() < 1) {
       return false;
     }
-    if (!(inst1->IsImmediateOperand(0) && inst2->IsImmediateOperand(0))) {
+    if (!(inst1->IsImmediateIntOperand(0) && inst2->IsImmediateIntOperand(0))) {
       return false;
     }
 

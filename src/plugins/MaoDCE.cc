@@ -18,13 +18,7 @@
 //   Boston, MA  02110-1301, USA.
 
 // Dead Code Elimination
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoPlugin.h"
-
+#include "Mao.h"
 #include <map>
 
 namespace {

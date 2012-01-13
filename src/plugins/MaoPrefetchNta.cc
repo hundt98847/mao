@@ -21,15 +21,7 @@
 // The idea is to keep data out of the caches as
 // much as possible.
 //
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoLoops.h"
-#include "MaoRelax.h"
-#include "MaoPlugin.h"
-
+#include "Mao.h"
 #include <map>
 
 namespace {
