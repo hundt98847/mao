@@ -58,34 +58,30 @@ class Inc2AddPass : public MaoFunctionPass {
   // for whichever registers support these forms.
   //
   bool Go() {
-    CFG *cfg = CFG::GetCFG(unit_, function_);
-
     // Iterate over all BBs, all entries which are instructions.
     // Find instructions that have 1 operand and a register as
     // the 1st operand.
     // Then, convert this instruction to an add or sub of 1 to that
     // register.
     //
-    FORALL_CFG_BB(cfg, it) {
-      FORALL_BB_ENTRY(it, entry) {
-        if (!(*entry)->IsInstruction()) continue;
-        InstructionEntry *insn = (*entry)->AsInstruction();
+    FORALL_FUNC_ENTRY(function_, entry) {
+      if (!entry->IsInstruction()) continue;
+      InstructionEntry *insn = entry->AsInstruction();
 
-        if (insn->NumOperands() != 1 ||
-            !insn->IsRegisterOperand(0))
-          continue;
+      if (insn->NumOperands() != 1 ||
+          !insn->IsRegisterOperand(0))
+        continue;
 
-        if (insn->op() == OP_inc || insn->op() == OP_dec) {
-          InstructionEntry *i = insn->op() == OP_inc ?
-            unit_->CreateAdd(function_) : unit_->CreateSub(function_);
-          i->instruction()->operands = 2;
-          i->SetImmediateIntOperand(0, 32, 1);
-          i->SetOperand(1, insn, 0);
+      if (insn->op() == OP_inc || insn->op() == OP_dec) {
+        InstructionEntry *i = insn->op() == OP_inc ?
+          unit_->CreateAdd(function_) : unit_->CreateSub(function_);
+        i->instruction()->operands = 2;
+        i->SetImmediateIntOperand(0, 32, 1);
+        i->SetOperand(1, insn, 0);
 
-          insn->LinkBefore(i);
-          MarkInsnForDelete(insn);
-          TraceReplace(1, insn, i);
-        }
+        insn->LinkBefore(i);
+        MarkInsnForDelete(insn);
+        TraceReplace(1, insn, i);
       }
     }
 

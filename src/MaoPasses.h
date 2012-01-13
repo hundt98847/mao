@@ -116,10 +116,10 @@ class MaoPass : public MaoAction {
   virtual bool Run();
 
   // Allow marking of Entries for deletion after exit from Go()
-  void MarkInsnForDelete(InstructionEntry *insn);
+  void MarkInsnForDelete(MaoEntry *insn);
 
  private:
-  std::list<InstructionEntry *> *redundants;
+  std::list<MaoEntry *> *redundants;
 };
 
 

@@ -58,8 +58,6 @@ class Add2IncPass : public MaoFunctionPass {
   // for whichever registers support these forms.
   //
   bool Go() {
-    CFG *cfg = CFG::GetCFG(unit_, function_);
-
     // Iterate over all BBs, all entries which are instructions.
     // Find instructions that have 2 operands, an immediate as
     // the 1st operand, and a regiser as the second operand.
@@ -67,28 +65,26 @@ class Add2IncPass : public MaoFunctionPass {
     // OP_sub, replace the instructions with an inc or dec
     // instruction.
     //
-    FORALL_CFG_BB(cfg, it) {
-      FORALL_BB_ENTRY(it, entry) {
-        if (!(*entry)->IsInstruction()) continue;
-        InstructionEntry *insn = (*entry)->AsInstruction();
+    FORALL_FUNC_ENTRY(function_, entry) {
+      if (!entry->IsInstruction()) continue;
+      InstructionEntry *insn = entry->AsInstruction();
 
-        if (insn->NumOperands() != 2 ||
-            !insn->IsImmediateIntOperand(0) ||
-            !insn->IsRegisterOperand(1))
-          continue;
+      if (insn->NumOperands() != 2 ||
+          !insn->IsImmediateIntOperand(0) ||
+          !insn->IsRegisterOperand(1))
+        continue;
 
-        if (insn->op() == OP_add && insn->GetImmediateIntValue(0) == 1) {
-          InstructionEntry *i = unit_->CreateIncFromOperand(function_, insn, 1);
-          insn->LinkBefore(i);
-          MarkInsnForDelete(insn);
-          TraceReplace(1, insn, i);
-        }
-        if (insn->op() == OP_sub && insn->GetImmediateIntValue(0) == 1) {
-          InstructionEntry *i = unit_->CreateDecFromOperand(function_, insn, 1);
-          insn->LinkBefore(i);
-          MarkInsnForDelete(insn);
-          TraceReplace(1, insn, i);
-        }
+      if (insn->op() == OP_add && insn->GetImmediateIntValue(0) == 1) {
+        InstructionEntry *i = unit_->CreateIncFromOperand(function_, insn, 1);
+        insn->LinkBefore(i);
+        MarkInsnForDelete(insn);
+        TraceReplace(1, insn, i);
+      }
+      if (insn->op() == OP_sub && insn->GetImmediateIntValue(0) == 1) {
+        InstructionEntry *i = unit_->CreateDecFromOperand(function_, insn, 1);
+        insn->LinkBefore(i);
+        MarkInsnForDelete(insn);
+        TraceReplace(1, insn, i);
       }
     }
 

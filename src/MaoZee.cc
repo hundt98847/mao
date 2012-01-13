@@ -52,8 +52,6 @@ class ZeroExtentElimPass : public MaoFunctionPass {
   bool Go() {
     CFG *cfg = CFG::GetCFG(unit_, function_);
 
-    std::list<InstructionEntry *> redundants;
-
     FORALL_CFG_BB(cfg,it) {
       MaoEntry *first = (*it)->GetFirstInstruction();
       if (!first) continue;
@@ -86,7 +84,7 @@ class ZeroExtentElimPass : public MaoFunctionPass {
               Trace(1, "Found redundant zero-extend:");
               if (tracing_level() > 0)
                 (*it)->Print(stderr, prev, insn);
-              redundants.push_back(insn);
+              MarkInsnForDelete(insn);
               break;
             }
 
@@ -108,12 +106,6 @@ class ZeroExtentElimPass : public MaoFunctionPass {
         }  // Starting from a sign-extend move
       }  // Entries
     }  // BB
-
-    // Now delete all the redundant ones.
-    for (std::list<InstructionEntry *>::iterator it = redundants.begin();
-         it != redundants.end(); ++it) {
-      unit_->DeleteEntry(*it);
-    }
 
     return true;
   }
