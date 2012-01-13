@@ -1,0 +1,17 @@
+# This file contains all x86 operands in the following format
+# operand_value, test/ignore, operand_type
+# Legend:
+#   operand_value = The value of the operand when output to an assembly file
+#   test/ignore = "test" to generate tests for this operand
+#                 "ignore" to not load this operand into the Test Generator
+#   operand_type = The type of the operand and its size
+%al, test, r8
+%ax, test, r16
+%eax, test, r32
+%r8, test, r64
+$0x01, test, imm8
+$0x0001, test, imm16
+$0x00000001, test, imm32
+$0x0000000000000001, test, imm64
+-0xd8(%rbp), test, m32
+%ebx, test, mp32
