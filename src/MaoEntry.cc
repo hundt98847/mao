@@ -1178,6 +1178,25 @@ bool InstructionEntry::IsImmediateOperand(const i386_insn *instruction,
           || t.bitfield.imm64);
 }
 
+bool InstructionEntry::IsImmediateIntOperand(const i386_insn *instruction,
+                                             const unsigned int op_index) {
+  MAO_ASSERT(instruction->operands > op_index);
+  i386_operand_type t = instruction->types[op_index];
+  expressionS *imm1 = instruction->op[op_index].imms;
+  if (!imm1)
+    return false;
+  if (imm1->X_op != O_constant)
+    return false;
+
+  return (t.bitfield.imm1
+          || t.bitfield.imm8
+          || t.bitfield.imm8s
+          || t.bitfield.imm16
+          || t.bitfield.imm32
+          || t.bitfield.imm32s
+          || t.bitfield.imm64);
+}
+
 bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
                                        const unsigned int op_index) {
   MAO_ASSERT(instruction->operands > op_index);
@@ -1200,7 +1219,7 @@ bool InstructionEntry::IsRegisterOperand(const i386_insn *instruction,
 }
 
 // If an operand is an immediate, get it's integer value
-offsetT  InstructionEntry::GetImmediateValue(const unsigned int op_index) {
+offsetT  InstructionEntry::GetImmediateIntValue(const unsigned int op_index) {
   i386_insn   *insn = instruction();
   MAO_ASSERT(IsImmediateOperand(insn, op_index));
   MAO_ASSERT(insn->operands > op_index);
@@ -1210,6 +1229,42 @@ offsetT  InstructionEntry::GetImmediateValue(const unsigned int op_index) {
 
   return imm1->X_add_number;
 }
+
+// Set an Operand to be an immediate integer.
+// Bit Width is specified as an integer (1,8,16,32,64).
+// The gas sources also support the cases 8s and 32s,
+// which cannot be set with this routin.
+//
+void InstructionEntry::SetImmediateIntOperand(const unsigned int op_index,
+                                              int bit_size,
+                                              int value) {
+  i386_insn *ins = instruction();
+  MAO_ASSERT(ins->operands > op_index);
+
+  switch (bit_size) {
+    case 1:
+      ins->types[op_index].bitfield.imm1 = 1;
+      break;
+    case 8:
+      ins->types[op_index].bitfield.imm8 = 1;
+      break;
+    case 16:
+      ins->types[op_index].bitfield.imm16 = 1;
+      break;
+    case 32:
+      ins->types[op_index].bitfield.imm32 = 1;
+      break;
+    case 64:
+      ins->types[op_index].bitfield.imm64 = 1;
+      break;
+  }
+  if (ins->op[op_index].imms)
+    delete ins->op[op_index].imms;
+  ins->op[op_index].imms = new expressionS();
+  ins->op[op_index].imms->X_op = O_constant;
+  ins->op[op_index].imms->X_add_number = value;
+}
+
 
 // Make a copy of an expression.
 expressionS *InstructionEntry::CreateExpressionCopy(expressionS *in_exp) {
