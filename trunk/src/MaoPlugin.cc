@@ -19,12 +19,15 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
 
 #include "MaoDebug.h"
 #include "MaoPlugin.h"
 
-void LoadPlugin(const char *path) {
-  fprintf(stderr, "Loading plugin %s\n", path);
+void LoadPlugin(const char *path, bool verbose) {
+  if (verbose)
+    fprintf(stderr, "  Loading plugin: %s\n", path);
 
   char *error;
   void *lib_handle = dlopen(path, RTLD_NOW);
@@ -54,4 +57,75 @@ void LoadPlugin(const char *path) {
     MAO_ASSERT_MSG(false, "%s", error);
 
   init();
+}
+
+// Allow names like Mao*.so
+//
+int NameFilter(const struct dirent *d) {
+  const char *name = d->d_name;
+  int len = strlen(name);
+  if (len < 6)
+    return 0;
+  if (name[0] == 'M' &&
+      name[1] == 'a' &&
+      name[2] == 'o' &&
+      name[len-3] == '.' &&
+      name[len-2] == 's' &&
+      name[len-1] == 'o')
+    return 1;
+  return 0;
+}
+
+static int ScanDir(const char *dir, bool verbose) {
+  struct dirent **namelist;
+  int n;
+
+  n = scandir(dir, &namelist, NameFilter, alphasort);
+  if (n <= 0)
+    return 0;
+  for (int i = 0; i < n; ++i) {
+    char *fullpath = (char *)  malloc(strlen(dir)
+                                      + strlen(namelist[i]->d_name) + 1);
+    MAO_ASSERT(fullpath != NULL);
+
+    strcpy(fullpath, dir);
+    strcat(fullpath, namelist[i]->d_name);
+
+    LoadPlugin(fullpath, verbose);
+
+    free(namelist[i]);
+    free(fullpath);
+  }
+  free(namelist);
+  return n;
+}
+
+void ScanAndLoadPlugins(const char *argv0, bool verbose) {
+  char *path = realpath(argv0, NULL);
+  char *rslash = strrchr(path, '/');
+  if (!rslash)
+    path = (char *) "./";
+  else
+    *(rslash+1) = '\0';
+
+  // get plugins from same directory where mao-x86... lives
+  //
+  if (verbose)
+    fprintf(stderr, "Scanning plugins from: %s\n", path);
+  ScanDir(path, verbose);
+
+  // next go to ../lib
+  //
+  const char *libdir = "../lib";
+  char *fullpath = (char *) malloc(strlen(path)
+                                   + strlen(libdir) + 1);
+  MAO_ASSERT(fullpath != NULL);
+
+  strcpy(fullpath, path);
+  strcat(fullpath, libdir);
+
+  if (verbose)
+    fprintf(stderr, "Scanning plugins from: %s\n", fullpath);
+  ScanDir(fullpath, verbose);
+  free(fullpath);
 }

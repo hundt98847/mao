@@ -31,6 +31,17 @@ struct PluginVersion {
     PluginVersion mao_plugin_version = {MAO_MAJOR_VERSION, MAO_MINOR_VERSION}; \
   }
 
-void LoadPlugin(const char *path);
+// Load single fully specified plugin.so file.
+void LoadPlugin(const char *path, bool verbose);
+
+// Given MAO's binary path, find and scan all possible
+// plugins, following this algorithm:
+//
+//  Extract realpath from invocation of mao-x86_64-linux, e.g.:
+//     /home/rhundt/mao/bin/
+//  Look for Mao*.so in  /home/rhundt/mao/bin/Mao*.so
+//  Look for Mao*.so in  /home/rhundt/mao/lib/Mao*.so
+//
+void ScanAndLoadPlugins(const char *argv0, bool verbose);
 
 #endif  // MAOPLUGIN_H_
