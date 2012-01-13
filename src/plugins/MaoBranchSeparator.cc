@@ -317,10 +317,5 @@ bool BranchSeparatorPass::IsProfitable(Function *function) {
     }
 }
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("BRSEP", BranchSeparatorPass)
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS("BRSEP", BranchSeparatorPass)
 }  // namespace

@@ -115,10 +115,5 @@ class Inc2AddPass : public MaoFunctionPass {
   }
 };
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("INC2ADD", Inc2AddPass )
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS("INC2ADD", Inc2AddPass )
 } // namespace

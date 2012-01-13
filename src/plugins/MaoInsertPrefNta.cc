@@ -385,10 +385,5 @@ bool InsertPrefetchNtaPass::Go() {
   return true;
 }
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_UNIT_PASS("INSPREFNTA", InsertPrefetchNtaPass)
-  }
-}
-
+REGISTER_PLUGIN_UNIT_PASS("INSPREFNTA", InsertPrefetchNtaPass)
 }  // namespace

@@ -77,10 +77,5 @@ class MissDispElimPass : public MaoFunctionPass {
   }
 };
 
-extern "C" {
-  void MaoInit() {
-    REGISTER_FUNC_PASS("MISSDISP", MissDispElimPass)
-  }
-}
-
+REGISTER_PLUGIN_FUNC_PASS("MISSDISP", MissDispElimPass)
 }  // namespace
