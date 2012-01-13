@@ -348,6 +348,10 @@ InstructionEntry *MaoUnit::CreateInstruction(i386_insn *instruction,
   return e;
 }
 
+// Note that the base_opcode for instructions can be found in:
+//
+//    ~/mao/binutils-2.21.1/opcodes/i36-opc.tbl
+//
 InstructionEntry *MaoUnit::CreateInstruction(const char *opcode_str,
                                              unsigned int base_opcode,
                                              Function *function) {
@@ -385,6 +389,23 @@ InstructionEntry *MaoUnit::CreateInstruction(const char *opcode_str,
   }
   return e;
 }
+
+InstructionEntry *MaoUnit::CreateAdd(Function *function) {
+  InstructionEntry *e = CreateInstruction("add", 0x83, function);
+
+  e->set_op(OP_add);
+
+  return e;
+}
+
+InstructionEntry *MaoUnit::CreateSub(Function *function) {
+  InstructionEntry *e = CreateInstruction("sub", 0x83, function);
+
+  e->set_op(OP_sub);
+
+  return e;
+}
+
 
 InstructionEntry *MaoUnit::CreateNop(Function *function) {
   InstructionEntry *e = CreateInstruction("nop", 0x90, function);
@@ -495,6 +516,28 @@ InstructionEntry *MaoUnit::CreateUncondJump(LabelEntry *label,
 
 
   e->set_op(OP_jmp);
+
+  return e;
+}
+
+InstructionEntry *MaoUnit::CreateIncFromOperand(Function *function,
+                                                InstructionEntry *insn2,
+                                                int op2) {
+  InstructionEntry *e = CreateInstruction("inc", 0xfe, function);
+  e->SetOperand(0, insn2, op2);
+  e->instruction()->operands++;
+  e->set_op(OP_inc);
+
+  return e;
+}
+
+InstructionEntry *MaoUnit::CreateDecFromOperand(Function *function,
+                                                InstructionEntry *insn2,
+                                                int op2) {
+  InstructionEntry *e = CreateInstruction("dec", 0xfe, function);
+  e->SetOperand(0, insn2, op2);
+  e->instruction()->operands++;
+  e->set_op(OP_dec);
 
   return e;
 }
