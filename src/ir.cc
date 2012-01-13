@@ -20,7 +20,6 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-
 #include <stdio.h>
 
 extern "C" {
@@ -28,9 +27,7 @@ extern "C" {
   #include "struc-symbol.h"
 }
 
-#include "MaoDebug.h"
-#include "MaoOptions.h"
-#include "MaoUnit.h"
+#include "Mao.h"
 #include "SymbolTable.h"
 
 // Reference to a the mao_unit.

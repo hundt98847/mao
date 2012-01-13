@@ -18,13 +18,9 @@
 
 
 #include <stdio.h>
-
 #include <string>
 
-#include "MaoUnit.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoOptions.h"
+#include "Mao.h"
 
 // Class: BasicBlock
 EntryIterator BasicBlock::EntryBegin() const {

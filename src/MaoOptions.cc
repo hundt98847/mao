@@ -23,11 +23,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#include "libiberty.h"
-#include "MaoDebug.h"
-#include "MaoOptions.h"
-#include "MaoPasses.h"
-#include "MaoPlugin.h"
+#include "Mao.h"
 
 // Maintain static list of all option arrays.
 typedef std::vector<MaoOptionArray *> OptionVector;

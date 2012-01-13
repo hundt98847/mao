@@ -1,5 +1,5 @@
 //
-// Copyright 2010 Google Inc.
+// Copyright 2010, 2011, 2012 Google Inc.
 //
 // This program is free software; you can redistribute it and/or to
 // modify it under the terms of the GNU General Public License
@@ -21,16 +21,11 @@
 #include <sstream>
 #include <string>
 
-#include "mao.h"
-#include "MaoCFG.h"
-#include "MaoDebug.h"
-#include "MaoEntry.h"
-#include "MaoRelax.h"
+#include "Mao.h"
 #include "MaoUnit.h"
 
 #include "ir.h"
 #include "struc-symbol.h"
-
 #include "tc-i386-helper.h"
 
 

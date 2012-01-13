@@ -18,16 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ir.h"
-#include "mao.h"
-#include "MaoDebug.h"
-#include "MaoOptions.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoLoops.h"
-#include "MaoRelax.h"
-#include "MaoPlugin.h"
+#include "Mao.h"
 
 //==================================
 // MAO Main Entry

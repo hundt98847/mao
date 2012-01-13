@@ -26,6 +26,7 @@
 #include <stdio.h>
 
 #include "MaoDebug.h"
+#include "MaoOptions.h"
 #include "MaoUnit.h"
 #include "MaoPasses.h"
 #include "MaoCFG.h"
@@ -35,5 +36,16 @@
 #include "MaoPlugin.h"
 #include "MaoLiveness.h"
 #include "MaoReachingDefs.h"
+#include "MaoLoops.h"
+
+#define MAO_REVISION "$Rev: 751 $"
+#define MAO_VERSION "0.2 " MAO_REVISION
+
+// gas main entry point
+extern "C" {
+// gas main entry point
+int as_main (int argc, char ** argv);
+const char *get_default_arch ();
+}
 
 #endif // __MAO_H_INCLUDED

@@ -24,13 +24,7 @@
 #include <vector>
 #include <set>
 
-#include "MaoUnit.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoOptions.h"
-#include "MaoRelax.h"
-
-#include "libiberty.h"
+#include "Mao.h"
 
 using std::insert_iterator;
 using std::pair;

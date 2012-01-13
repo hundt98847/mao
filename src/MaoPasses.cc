@@ -23,11 +23,7 @@
 #include <map>
 #include <string>
 
-#include "MaoDebug.h"
-#include "MaoCFG.h"
-#include "MaoOptions.h"
-#include "MaoPasses.h"
-#include "MaoRelax.h"
+#include "Mao.h"
 
 // MaoAction
 //
