@@ -130,10 +130,12 @@ CCSRCS=						\
 
 PLUGIN_CCSRCS=					\
 	$(PLUGINSRC)/MaoAddAdd.cc		\
+	$(PLUGINSRC)/MaoAdd2Inc.cc		\
 	$(PLUGINSRC)/MaoBackBranchAlign.cc	\
 	$(PLUGINSRC)/MaoBranchSeparator.cc	\
 	$(PLUGINSRC)/MaoDCE.cc			\
 	$(PLUGINSRC)/MaoEnableFunctionHijacking.cc \
+	$(PLUGINSRC)/MaoInc2Add.cc		\
 	$(PLUGINSRC)/MaoInsertPrefNta.cc	\
 	$(PLUGINSRC)/MaoMissDisp.cc		\
 	$(PLUGINSRC)/MaoNopinizer.cc		\
@@ -145,10 +147,12 @@ PLUGIN_CCSRCS=					\
 
 
 PLUGINS=MaoAddAdd				\
+	MaoAdd2Inc				\
 	MaoBackBranchAlign			\
 	MaoBranchSeparator	  		\
 	MaoDCE					\
 	MaoInsertPrefNta			\
+	MaoInc2Add				\
 	MaoEnableFunctionHijacking		\
 	MaoMissDisp				\
 	MaoNopinizer				\
