@@ -41,6 +41,5 @@ class TestPlugin : public MaoFunctionPass {
   }
 };
 
-REGISTER_PLUGIN_FUNC_PASS("TESTPLUG",
-         MaoFunctionPassManager::GenericPassCreator<TestPlugin>);
+REGISTER_PLUGIN_FUNC_PASS("TESTPLUG", TestPlugin );
 }  // namespace

@@ -74,6 +74,15 @@ void MaoAction::TraceC(unsigned int level, const char *fmt, ...) const {
   fflush(stderr);
 }
 
+void MaoAction::TraceReplace(unsigned int level,
+                             InstructionEntry *before,
+                             InstructionEntry *after) {
+  TraceC(level, "*** Replaced: ");
+  if (tracing_level() >= level) before->PrintEntry(stderr);
+  TraceC(level, "*** With    : ");
+  if (tracing_level() >= level) after->PrintEntry(stderr);
+}
+
 MaoOptionValue MaoAction::FindOptionEntry(const char *name) {
   MAO_ASSERT(options_);
   MaoOptionMap::const_iterator iter = options_->find(std::string(name));
@@ -144,7 +153,8 @@ static PassDebugAction *pass_debug_action = NULL;
 // MaoPass
 //
 MaoPass::MaoPass(const char *name, MaoOptionMap *options, MaoUnit *unit)
-    : MaoAction(name, options, unit) { }
+  : MaoAction(name, options, unit), redundants(NULL)
+{}
 
 MaoPass::~MaoPass() { }
 
@@ -153,9 +163,25 @@ bool MaoPass::Run() {
     pass_debug_action = new PassDebugAction(name());
   else
     pass_debug_action->set_pass_name(name());
-  return Go();
+  redundants = new std::list<InstructionEntry *>();
+
+  int ret = Go();
+
+  // Now delete all the collected redundant instructions.
+  for (std::list<InstructionEntry *>::iterator it = redundants->begin();
+       it != redundants->end(); ++it) {
+    unit_->DeleteEntry(*it);
+  }
+  delete redundants;
+  redundants = NULL;
+  return ret;
 }
 
+// Allow marking of Entries for deletion after exit from Go()
+void MaoPass::MarkInsnForDelete(InstructionEntry *insn) {
+  MAO_ASSERT(redundants);
+  redundants->push_back(insn);
+}
 
 // MaoFunctionPass
 //

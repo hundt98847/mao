@@ -54,6 +54,11 @@ class MaoAction {
   // Trace with Continuation, doesn't add newline
   virtual void TraceC(unsigned int level, const char *fmt, ...) const;
 
+  // Helpers for typical Tracing functions
+  void TraceReplace(unsigned int level,
+                    InstructionEntry *before,
+                    InstructionEntry *after);
+
   // Options
   MaoOptionValue FindOptionEntry(const char *name);
   bool           GetOptionBool(const char *name);
@@ -109,6 +114,12 @@ class MaoPass : public MaoAction {
 
   // Main invocation.
   virtual bool Run();
+
+  // Allow marking of Entries for deletion after exit from Go()
+  void MarkInsnForDelete(InstructionEntry *insn);
+
+ private:
+  std::list<InstructionEntry *> *redundants;
 };
 
 
