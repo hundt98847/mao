@@ -77,16 +77,11 @@ class DeadCodeElimPass : public MaoFunctionPass {
         if (!num) {
           Trace(1, "Found dead, empty basic block");
         } else {
-          if (num == 1) {
-            if (bb->first_entry()->IsLabel())
-              Trace(1, "Found dead, single label basic block");
-            else
-              Trace(1, "Found dead, single insn basic block");
-          } else {
-            Trace(1, "Found Dead Basic Block: BB#%d, %d insn",
-                  (*it)->id(), num);
-            if (tracing_level() > 0) {
-              (*it)->first_entry()->PrintEntry(stderr);
+          Trace(1, "Found Dead Basic Block: BB#%d, %d insn",
+                (*it)->id(), num);
+          if (tracing_level() > 0) {
+            FORALL_BB_ENTRY(it, entry) {
+              (*entry)->PrintEntry(stderr);
             }
           }
         }
