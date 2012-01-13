@@ -32,8 +32,7 @@
 #include <list>
 #include <algorithm>
 
-#include "MaoDebug.h"
-#include "MaoCFG.h"
+#include "Mao.h"
 
 //
 // SimpleLoop

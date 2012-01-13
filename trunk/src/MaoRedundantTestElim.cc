@@ -19,11 +19,7 @@
 
 // Redundant Test Elimination
 //
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
+#include "Mao.h"
 
 namespace {
 

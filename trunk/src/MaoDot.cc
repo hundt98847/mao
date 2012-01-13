@@ -38,14 +38,10 @@
 //  [1] http://www.graphviz.org/
 //  [2] http://rw4.cs.uni-sb.de/~sander/html/gsvcg1.html
 
-#include "MaoUnit.h"  // Needs to be before MaoDefs.h since MaoDefs.h
-                      // uses reg_entry which is defined in the unguarded
-                      // i386-opc.h.
-                      // (MaoUnit.h -> tc-i386.h -> opcodes/i386-opc.h)
-#include "MaoCFG.h"
-#include "MaoDebug.h"
-#include "MaoDefs.h"
-#include "MaoPasses.h"
+#include "Mao.h"  // Needs to be before MaoDefs.h since MaoDefs.h
+                  // uses reg_entry which is defined in the unguarded
+                  // i386-opc.h.
+                  // (MaoUnit.h -> tc-i386.h -> opcodes/i386-opc.h)
 
 namespace {
 

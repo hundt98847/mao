@@ -22,8 +22,7 @@
 #include <string.h>
 #include <dirent.h>
 
-#include "MaoDebug.h"
-#include "MaoPlugin.h"
+#include "Mao.h"
 
 void LoadPlugin(const char *path, bool verbose) {
   if (verbose)

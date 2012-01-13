@@ -22,14 +22,7 @@
 // iteration. This seems to cause an 9% degradation
 // on SPEC 2000 252.eon with gcc 4.4 over gcc 4.2.1
 //
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoLoops.h"
-#include "MaoRelax.h"
-
+#include "Mao.h"
 #include <map>
 
 namespace {

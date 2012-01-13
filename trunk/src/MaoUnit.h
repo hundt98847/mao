@@ -45,6 +45,7 @@ extern "C" {
 #include "MaoSection.h"
 #include "MaoStats.h"
 
+#include "ir.h"
 #include "SymbolTable.h"
 
 #define MAO_MAJOR_VERSION 0

@@ -19,12 +19,7 @@
 
 // Scheduler that minimizes effects such as reservation station bottlenecks
 //
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoDefs.h"
-#include "MaoUtil.h"
+#include "Mao.h"
 
 namespace {
 

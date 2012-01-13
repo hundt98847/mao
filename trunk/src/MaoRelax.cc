@@ -24,8 +24,7 @@
 #include <string>
 #include <vector>
 
-#include "MaoOptions.h"
-#include "MaoRelax.h"
+#include "Mao.h"
 #include "tc-i386-helper.h"
 
 /* TODO(nvachhar): Unparsed directives that end fragments:

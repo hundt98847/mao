@@ -16,8 +16,7 @@
 // Foundation, Inc., 51 Franklin Street, 5th Floor, Boston, MA 02110-1301, USA.
 
 
-#include "MaoUnit.h"
-#include "MaoDefs.h"
+#include "Mao.h"
 #include "gen-defs.h"
 #include "gen-uses.h"
 

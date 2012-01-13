@@ -17,17 +17,7 @@
 //   51 Franklin Street, Fifth Floor,
 //   Boston, MA  02110-1301, USA.
 
-#include <iostream>
-
-
-#include <stdio.h>
-
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "SymbolTable.h"
-
-// Class SymbolTable
-
+#include "Mao.h"
 
 SymbolTable::SymbolTable() {
   table_.clear();
@@ -150,12 +140,9 @@ bool SymbolIterator::operator !=(const SymbolIterator &other) const {
 }
 
 
-
-
 //
 // Class: Symbol
 //
-
 Symbol::Symbol(const char *name, SymbolID id, const Section *section,
                const SymbolVisibility symbol_visibility,
                const SymbolType symbol_type)

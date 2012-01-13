@@ -18,8 +18,7 @@
 #include <map>
 #include <set>
 
-#include "MaoDataFlow.h"
-#include "MaoDefs.h"
+#include "Mao.h"
 
 DFProblem::DFProblem(MaoUnit *unit,
                      Function *function,

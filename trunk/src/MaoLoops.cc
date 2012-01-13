@@ -23,9 +23,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoLoops.h"
+#include "Mao.h"
 
 namespace {
 

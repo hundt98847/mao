@@ -20,12 +20,10 @@
 #include <sstream>
 #include <string>
 
+#include "Mao.h"
+
 // Needed for macros (OPERAND_TYPE_IMM64, ..) in gotrel[]
 #include "opcodes/i386-init.h"
-
-#include "MaoEntry.h"
-#include "MaoUnit.h"
-
 #include "struc-symbol.h"
 #include "tc-i386-helper.h"
 
