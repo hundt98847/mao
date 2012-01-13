@@ -17,13 +17,7 @@
 //   51 Franklin Street, Fifth Floor,
 //   Boston, MA  02110-1301, USA.
 
-// Rat Finder Pass
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoCFG.h"
-#include "MaoPlugin.h"
-
+#include "Mao.h"
 #include <set>
 
 namespace {

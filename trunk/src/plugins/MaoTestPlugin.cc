@@ -17,10 +17,7 @@
 //   51 Franklin Street, Fifth Floor,
 //   Boston, MA  02110-1301, USA.
 
-#include "MaoDebug.h"
-#include "MaoUnit.h"
-#include "MaoPasses.h"
-#include "MaoPlugin.h"
+#include "Mao.h"
 
 namespace {
 

@@ -21,11 +21,7 @@
 // instruction, this plugin prints C++ code that fills in an i386_insn
 // structure corresponding to this instruction.
 
-#include "MaoDebug.h"
-#include "MaoPasses.h"
-#include "MaoPlugin.h"
-#include "MaoUnit.h"
-
+#include "Mao.h"
 namespace {
 
 PLUGIN_VERSION
