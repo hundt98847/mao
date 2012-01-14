@@ -34,6 +34,11 @@ svn checkout https://mao.googlecode.com/svn/trunk/ . --username your.name
 # Fetch and patch binutils sources.
 #    (note: sometimes updates are being uploaded to the ftp
 #           please check for latest versions)
+#
+#    (note: Some Apple OS X systems don't have wget installed. Either
+#           install it, or set this alias:
+#           alias wget="curl -O"
+#
 wget http://ftp.gnu.org/gnu/binutils/binutils-2.21.1.tar.bz2
 bunzip2 binutils-2.21.1.tar.bz2
 tar xvf binutils-2.21.1.tar
