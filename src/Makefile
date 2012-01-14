@@ -256,7 +256,7 @@ MAO_HEADERS = $(SRCDIR)/MaoCFG.h $(SRCDIR)/MaoDebug.h $(SRCDIR)/MaoDefs.h \
 	      $(SRCDIR)/MaoPasses.h $(SRCDIR)/MaoPlugin.h \
 	      $(SRCDIR)/MaoStats.h $(SRCDIR)/MaoSection.h $(SRCDIR)/MaoUnit.h \
 	      $(SRCDIR)/MaoUtil.h $(SRCDIR)/SymbolTable.h $(SRCDIR)/MaoTypes.h \
-	      $(OBJDIR)/gen-opcodes.h $(SRCDIR)/mao.h $(SRCDIR)/irlink.h \
+	      $(OBJDIR)/gen-opcodes.h $(SRCDIR)/Mao.h $(SRCDIR)/irlink.h \
 	      $(SRCDIR)/expr.h
 
 
