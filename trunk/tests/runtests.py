@@ -51,8 +51,10 @@ def _RunCheck(command, stdin=None, stdout=None, stderr=None, env=None):
 # standard error and standard output as a big string.
 def RunMao(maocommand, inputfile, options, plugin, target, library_ext):
   cmd = [maocommand]
+  cmd.append('--mao=-s') # load plugins by default
   if plugin:
     cmd.append('--mao=--plugin=../bin/' + plugin + '-' + target + library_ext)
+
   cmd.extend(options.split())
   cmd.append(inputfile)
   output = _RunCheck(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -104,6 +106,8 @@ def main(argv):
     if flag == '-f':
       f = open(value, 'r')
       for line in f:
+        if len(line) == 1 or line[0:1] == "#":
+          continue
         args.append(os.path.join(os.path.dirname(argv[0]), line).strip())
     elif flag == '-t':
       target = value

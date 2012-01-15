@@ -1,6 +1,13 @@
+# List of files to run via:
+#   runtests.py -f ./testlist
+#
 redtest.s
 zero.s
 redmov1.s
 redmov2.s
 redmov3.s
 addadd.s
+
+add2inc.s
+inc2add.s
+
