@@ -21,6 +21,7 @@
 #include "Mao.h"
 
 namespace {
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -29,6 +30,9 @@ MAO_DEFINE_OPTIONS(ZEE, "Eliminates unnecessary zero extension instructions", \
                    0) {
 };
 
+// --------------------------------------------------------------------
+// Pass
+// --------------------------------------------------------------------
 class ZeroExtentElimPass : public MaoFunctionPass {
  public:
   ZeroExtentElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
@@ -111,6 +115,5 @@ class ZeroExtentElimPass : public MaoFunctionPass {
   }
 };
 
-REGISTER_FUNC_PASS("ZEE", ZeroExtentElimPass)
-
+REGISTER_PLUGIN_FUNC_PASS("ZEE", ZeroExtentElimPass)
 }  // namespace

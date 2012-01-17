@@ -107,22 +107,16 @@ CCSRCS=						\
 	MaoEntry.cc				\
 	MaoFunction.cc				\
 	Maoi386Size.cc				\
-	MaoLoop16.cc				\
 	MaoLoops.cc				\
-	MaoNopKiller.cc				\
 	MaoOpcodes.cc				\
 	MaoOptions.cc				\
 	MaoPasses.cc				\
 	MaoPlugin.cc				\
 	MaoProfile.cc				\
-	MaoRedundantTestElim.cc			\
-	MaoRedundantMemMove.cc			\
-	MaoScheduler.cc				\
 	MaoRelax.cc				\
 	MaoSection.cc				\
 	MaoUnit.cc				\
 	MaoUtil.cc				\
-	MaoZee.cc				\
 	MaoDataFlow.cc                          \
 	MaoLiveness.cc                          \
 	MaoReachingDefs.cc                      \
@@ -137,12 +131,18 @@ PLUGIN_CCSRCS=					\
 	$(PLUGINSRC)/MaoEnableFunctionHijacking.cc \
 	$(PLUGINSRC)/MaoInc2Add.cc		\
 	$(PLUGINSRC)/MaoInsertPrefNta.cc	\
+	$(PLUGINSRC)/MaoLoop16.cc		\
 	$(PLUGINSRC)/MaoMissDisp.cc		\
 	$(PLUGINSRC)/MaoNopinizer.cc		\
+	$(PLUGINSRC)/MaoNopKiller.cc		\
 	$(PLUGINSRC)/MaoPrefetchNta.cc		\
 	$(PLUGINSRC)/MaoRatFinder.cc		\
+	$(PLUGINSRC)/MaoRedundantTestElim.cc	\
+	$(PLUGINSRC)/MaoRedundantMemMove.cc	\
+	$(PLUGINSRC)/MaoScheduler.cc		\
 	$(PLUGINSRC)/MaoTestDF.cc		\
 	$(PLUGINSRC)/MaoTestPlugin.cc		\
+	$(PLUGINSRC)/MaoZee.cc			\
 #	$(PLUGINSRC)/MaoInstructionBuilder.cc	
 
 
@@ -151,15 +151,21 @@ PLUGINS=MaoAddAdd				\
 	MaoBackBranchAlign			\
 	MaoBranchSeparator	  		\
 	MaoDCE					\
+	MaoEnableFunctionHijacking		\
 	MaoInsertPrefNta			\
 	MaoInc2Add				\
-	MaoEnableFunctionHijacking		\
+	MaoLoop16				\
 	MaoMissDisp				\
 	MaoNopinizer				\
+	MaoNopKiller				\
 	MaoPrefetchNta				\
 	MaoRatFinder				\
+	MaoRedundantTestElim			\
+	MaoRedundantMemMove			\
+	MaoScheduler				\
 	MaoTestDF				\
 	MaoTestPlugin				\
+	MaoZee					\
 #	MaoInstructionBuilder
 
 GAS_OBJS=$(patsubst %.c,$(OBJDIR)/%.o,$(notdir $(GAS_SRC)))
