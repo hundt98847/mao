@@ -10,4 +10,4 @@ addadd.s
 
 add2inc.s
 inc2add.s
-
+uopscmpjmp.s
