@@ -22,6 +22,7 @@
 #include "Mao.h"
 
 namespace {
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -29,6 +30,9 @@ namespace {
 MAO_DEFINE_OPTIONS(REDTEST, "Eliminates redundant tests",  0) {
 };
 
+// --------------------------------------------------------------------
+// Pass
+// --------------------------------------------------------------------
 class RedTestElimPass : public MaoFunctionPass {
  public:
   RedTestElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
@@ -120,6 +124,5 @@ class RedTestElimPass : public MaoFunctionPass {
   }
 };
 
-REGISTER_FUNC_PASS("REDTEST", RedTestElimPass)
-
+REGISTER_PLUGIN_FUNC_PASS("REDTEST", RedTestElimPass)
 }  // namespace

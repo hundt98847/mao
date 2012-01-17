@@ -22,6 +22,7 @@
 #include "Mao.h"
 
 namespace {
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -29,6 +30,9 @@ namespace {
 MAO_DEFINE_OPTIONS(NOPKILL, "Removes all NOPs in the code", 0) {
 };
 
+// --------------------------------------------------------------------
+// Pass
+// --------------------------------------------------------------------
 class NopKillerElimPass : public MaoFunctionPass {
  public:
   NopKillerElimPass(MaoOptionMap *options, MaoUnit *mao, Function *func)
@@ -77,5 +81,5 @@ class NopKillerElimPass : public MaoFunctionPass {
   }
 };
 
-REGISTER_FUNC_PASS("NOPKILL", NopKillerElimPass)
+REGISTER_PLUGIN_FUNC_PASS("NOPKILL", NopKillerElimPass)
 }  // namespace

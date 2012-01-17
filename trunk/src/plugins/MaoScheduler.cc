@@ -22,6 +22,7 @@
 #include "Mao.h"
 
 namespace {
+PLUGIN_VERSION
 
 #define LCD_HEIGHT_ADJUSTMENT 10
 #define HOT_REGISTER_BONUS 1
@@ -1174,6 +1175,5 @@ bool SchedulerPass::IsProfitable(Function *function) {
   }
 }
 
-REGISTER_FUNC_PASS("SCHEDULER", SchedulerPass)
-
+REGISTER_PLUGIN_FUNC_PASS("SCHEDULER", SchedulerPass)
 }  // namespace

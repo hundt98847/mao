@@ -26,6 +26,7 @@
 #include <map>
 
 namespace {
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -37,8 +38,9 @@ MAO_DEFINE_OPTIONS(LOOP16, "Aligns short loops at 16 byte boundaries", 3) {
   OPTION_INT("limit", -1, "Limit tranformation invocations")
 };
 
+// --------------------------------------------------------------------
 // Align Tiny Loops to 16 Bytes
-//
+// --------------------------------------------------------------------
 class AlignTinyLoops16 : public MaoFunctionPass {
 
   // Helper data structure to maintain candidate loops
@@ -258,6 +260,5 @@ class AlignTinyLoops16 : public MaoFunctionPass {
   int       limit_;
 };
 
-REGISTER_FUNC_PASS("LOOP16", AlignTinyLoops16)
-
+REGISTER_PLUGIN_FUNC_PASS("LOOP16", AlignTinyLoops16)
 }  // namespace

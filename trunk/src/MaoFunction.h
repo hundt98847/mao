@@ -143,7 +143,7 @@ class Function {
 // Convenience macros
 #define FORALL_FUNC_ENTRY(func, entry) \
   for (MaoEntry *entry = func->first_entry(); \
-       entry != func->end_entry(); \
+       entry != func->end_entry()->next(); \
        entry = entry->next())
 
 

@@ -22,6 +22,7 @@
 #include "Mao.h"
 
 namespace {
+PLUGIN_VERSION
 
 // --------------------------------------------------------------------
 // Options
@@ -30,6 +31,9 @@ MAO_DEFINE_OPTIONS(REDMOV, "Eliminates redundant memory moves", 1) {
   OPTION_INT("lookahead", 6, "Look ahead limit for pattern matcher")
 };
 
+// --------------------------------------------------------------------
+// Pass
+// --------------------------------------------------------------------
 class RedMemMovElimPass : public MaoFunctionPass {
  public:
   RedMemMovElimPass(MaoOptionMap *options, MaoUnit *mao, Function *function)
@@ -139,6 +143,5 @@ class RedMemMovElimPass : public MaoFunctionPass {
   int        look_ahead_;
 };
 
-REGISTER_FUNC_PASS("REDMOV", RedMemMovElimPass)
-
+REGISTER_PLUGIN_FUNC_PASS("REDMOV", RedMemMovElimPass)
 }  // namespace
