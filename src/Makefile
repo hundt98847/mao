@@ -142,6 +142,7 @@ PLUGIN_CCSRCS=					\
 	$(PLUGINSRC)/MaoScheduler.cc		\
 	$(PLUGINSRC)/MaoTestDF.cc		\
 	$(PLUGINSRC)/MaoTestPlugin.cc		\
+	$(PLUGINSRC)/MaoUOpsFuse.cc		\
 	$(PLUGINSRC)/MaoZee.cc			\
 #	$(PLUGINSRC)/MaoInstructionBuilder.cc	
 
@@ -165,6 +166,7 @@ PLUGINS=MaoAddAdd				\
 	MaoScheduler				\
 	MaoTestDF				\
 	MaoTestPlugin				\
+	MaoUOpsFuse				\
 	MaoZee					\
 #	MaoInstructionBuilder
 
