@@ -50,12 +50,14 @@ class NopKillerElimPass : public MaoFunctionPass {
   // and kill them all
   //
   bool Go() {
-   FORALL_FUNC_ENTRY(function_, entry) {
+    int total = 0;
+    FORALL_FUNC_ENTRY(function_, entry) {
       if (entry->IsInstruction()) {
         InstructionEntry *insn = entry->AsInstruction();
 
         if (insn->op() == OP_nop) {
           MarkInsnForDelete(insn);
+          total++;
           continue;
         }
 
@@ -63,6 +65,7 @@ class NopKillerElimPass : public MaoFunctionPass {
             insn->IsRegisterOperand(0) &&
             insn->IsRegisterOperand(1) &&
             insn->GetRegisterOperand(0) == insn->GetRegisterOperand(1)) {
+          total++;
           MarkInsnForDelete(insn);
           continue;
         }
@@ -72,11 +75,14 @@ class NopKillerElimPass : public MaoFunctionPass {
         DirectiveEntry *insn = entry->AsDirective();
         if (insn->op() == DirectiveEntry::P2ALIGN) {
           MarkInsnForDelete(entry);
+          total++;
           continue;
         }
       }
     }
 
+    if (total)
+      Trace(1, "Killed %d Nop-like constructs", total);
     return true;
   }
 };
