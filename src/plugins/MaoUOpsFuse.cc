@@ -157,7 +157,9 @@ class UOpsCmpJmp : public MaoFunctionPass {
                 //
                 while (insert->prev() &&
                        (insert->prev()->IsInstruction() ||
-                        insert->prev()->IsLabel()))
+                        insert->prev()->IsLabel()) &&
+                       !(insert->prev()->IsInstruction() &&
+                         insert->prev()->AsInstruction()->HasTarget()))
                   insert = insert->prev();
               }
 
