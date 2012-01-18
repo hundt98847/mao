@@ -70,7 +70,6 @@ class UOpsCmpJmp : public MaoFunctionPass {
     MaoEntryIntMap *sizes, *offsets;
     bool changed;  // iterate until no more changes happened.
     CFG *cfg = CFG::GetCFG(unit_, function_);
-    cfg->Print();
 
     // Relax and compute offsets
     //
