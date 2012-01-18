@@ -52,7 +52,7 @@ CFLAGS=						\
 	-I$(BINUTILOBJ)/include			\
 	-DLOCALEDIR="\"$(LOCALEDIR)\""		\
 	-DHAVE_DECL_BASENAME=1                  \
-	-g -O2 -Wall -Werror -fno-exceptions
+	-g -O0 -Wall -Werror -fno-exceptions
 
 MAKEDEPEND=$(CC) -MM $(CFLAGS) $(CCEXTRAFLAGS) -o $(patsubst %.o,%.P,$@) $<
 
@@ -135,6 +135,7 @@ PLUGIN_CCSRCS=					\
 	$(PLUGINSRC)/MaoMissDisp.cc		\
 	$(PLUGINSRC)/MaoNopinizer.cc		\
 	$(PLUGINSRC)/MaoNopKiller.cc		\
+	$(PLUGINSRC)/MaoPrefAlias.cc		\
 	$(PLUGINSRC)/MaoPrefetchNta.cc		\
 	$(PLUGINSRC)/MaoRatFinder.cc		\
 	$(PLUGINSRC)/MaoRedundantTestElim.cc	\
@@ -159,6 +160,7 @@ PLUGINS=MaoAddAdd				\
 	MaoMissDisp				\
 	MaoNopinizer				\
 	MaoNopKiller				\
+	MaoPrefAlias				\
 	MaoPrefetchNta				\
 	MaoRatFinder				\
 	MaoRedundantTestElim			\

@@ -541,6 +541,8 @@ class InstructionEntry : public MaoEntry {
   bool IsAdd() const;
   // Returns if this is a move instruction.
   bool IsOpMov() const { return op() == OP_mov || op() == OP_movq; }
+  // Returns if this is a load which indexes/triggers the prefetcher(s)
+  bool IsPrefetchLoad() const { return IsOpMov(); }
   // Returns if this is a lock instruction.
   bool IsLock() const { return op() == OP_lock; }
   // Returns if this is a predicated instruction (conditional moves).
