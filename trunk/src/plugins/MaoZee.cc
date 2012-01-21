@@ -61,8 +61,8 @@ class ZeroExtentElimPass : public MaoFunctionPass {
       if (!first) continue;
 
       FORALL_BB_ENTRY(it,entry) {
-        if (!(*entry)->IsInstruction()) continue;
-        InstructionEntry *insn = (*entry)->AsInstruction();
+        if (!entry->IsInstruction()) continue;
+        InstructionEntry *insn = entry->AsInstruction();
         if (first == insn) continue;
 
         if (IsZeroExtent(insn)) {

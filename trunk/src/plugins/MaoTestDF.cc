@@ -63,8 +63,8 @@ class TestDataFlowPass : public MaoFunctionPass {
         const BasicBlock *bb = *it;
         // Loop over the instructions.
         FORALL_BB_ENTRY(it, entry) {
-          if ((*entry)->IsInstruction()) {
-            InstructionEntry *insn = (*entry)->AsInstruction();
+          if (entry->IsInstruction()) {
+            InstructionEntry *insn = entry->AsInstruction();
             std::string insn_str;
             insn->ToString(&insn_str);
             fprintf(stderr, "insn: %s\n", insn_str.c_str());
@@ -81,7 +81,7 @@ class TestDataFlowPass : public MaoFunctionPass {
             fprintf(stderr, "\n");
           } else {
             std::string s;
-            (*entry)->ToString(&s);
+            entry->ToString(&s);
             fprintf(stderr, "entry: %s\n", s.c_str());
           }
         }
@@ -104,8 +104,8 @@ class TestDataFlowPass : public MaoFunctionPass {
         const BasicBlock *bb = *it;
         // Loop over the instructions.
         FORALL_BB_ENTRY(it, entry) {
-          if (!(*entry)->IsInstruction()) continue;
-          InstructionEntry *insn = (*entry)->AsInstruction();
+          if (!entry->IsInstruction()) continue;
+          InstructionEntry *insn = entry->AsInstruction();
           std::string insn_str;
           insn->ToString(&insn_str);
            fprintf(stderr, "\ninsn: %s\n", insn_str.c_str());

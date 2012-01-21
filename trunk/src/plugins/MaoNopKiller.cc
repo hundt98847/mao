@@ -51,9 +51,9 @@ class NopKillerElimPass : public MaoFunctionPass {
   //
   bool Go() {
     int total = 0;
-    FORALL_FUNC_ENTRY(function_, entry) {
-      if (entry->IsInstruction()) {
-        InstructionEntry *insn = entry->AsInstruction();
+    FORALL_FUNC_ENTRY(function_, iter) {
+      if (iter->IsInstruction()) {
+        InstructionEntry *insn = iter->AsInstruction();
 
         if (insn->op() == OP_nop) {
           MarkInsnForDelete(insn);
@@ -71,10 +71,10 @@ class NopKillerElimPass : public MaoFunctionPass {
         }
       }
 
-      if (entry->IsDirective()) {
-        DirectiveEntry *insn = entry->AsDirective();
+      if (iter->IsDirective()) {
+        DirectiveEntry *insn = iter->AsDirective();
         if (insn->op() == DirectiveEntry::P2ALIGN) {
-          MarkInsnForDelete(entry);
+          MarkInsnForDelete(*iter);
           total++;
           continue;
         }

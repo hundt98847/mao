@@ -59,8 +59,8 @@ class PrefetchNtaPass : public MaoFunctionPass {
 
     FORALL_CFG_BB(cfg,it) {
       FORALL_BB_ENTRY(it,entry) {
-        if (!(*entry)->IsInstruction()) continue;
-        InstructionEntry *insn = (*entry)->AsInstruction();
+        if (!entry->IsInstruction()) continue;
+        InstructionEntry *insn = entry->AsInstruction();
 
         // Look for loads and stores from memory
         //

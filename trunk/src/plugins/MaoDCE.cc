@@ -81,7 +81,7 @@ class DeadCodeElimPass : public MaoFunctionPass {
                 (*it)->id(), num);
           if (tracing_level() > 0) {
             FORALL_BB_ENTRY(it, entry) {
-              (*entry)->PrintEntry(stderr);
+              entry->PrintEntry(stderr);
             }
           }
         }

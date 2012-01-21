@@ -238,7 +238,7 @@ void BranchSeparatorPass::AlignEntry(Function *function, MaoEntry *entry, bool i
       function, ss);
   if (insert_jump) {
     //Create a new label
-    
+
     LabelEntry *label_entry = unit_->CreateLabel(
             MaoUnit::BBNameGen::GetUniqueName(),
             function,

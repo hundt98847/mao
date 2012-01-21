@@ -90,8 +90,8 @@ class RatFinderPass : public MaoFunctionPass {
       int num_rat_stall_possibilites = 0;
 
       FORALL_BB_ENTRY(it, entry) {
-        if (!(*entry)->IsInstruction()) continue;
-        InstructionEntry *current_insn = (*entry)->AsInstruction();
+        if (!entry->IsInstruction()) continue;
+        InstructionEntry *current_insn = entry->AsInstruction();
 
         // Get the registers that are defined by the current instruction.
         // Normally this is only one register/instruction
@@ -176,7 +176,7 @@ class RatFinderPass : public MaoFunctionPass {
         // Print the basic block, given the instruction.
         if (tracing_level() >= 1) {
           FORALL_BB_ENTRY(it, entry) {
-            (*entry)->PrintEntry(stderr);
+            entry->PrintEntry(stderr);
           }
         }
       }

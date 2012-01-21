@@ -800,6 +800,7 @@ class EntryIterator {
   explicit EntryIterator(MaoEntry *entry);
   // Overloads the * operator to return the current entry pointer.
   MaoEntry *operator *() {return current_entry_;}
+  MaoEntry *operator ->(){return current_entry_;}
   // Overloads the ++ operator to move the iterator to the next entry.
   EntryIterator &operator ++();
   // Overloads the -- operator to move the iterator to the previous entry.
