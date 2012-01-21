@@ -117,8 +117,8 @@ class UOpsCmpJmp : public MaoFunctionPass {
       for (std::list<BasicBlock*>::iterator iter = bb_list.begin();
            iter != bb_list.end(); ++iter) {
         FORALL_BB_ENTRY(iter,entry) {
-          if (!(*entry)->IsInstruction()) continue;
-          InstructionEntry *insn = (*entry)->AsInstruction();
+          if (!entry->IsInstruction()) continue;
+          InstructionEntry *insn = entry->AsInstruction();
 
           // Find the cmp/cond-jump pattern
           //

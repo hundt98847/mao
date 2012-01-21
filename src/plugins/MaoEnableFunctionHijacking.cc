@@ -53,9 +53,9 @@ class EnableFunHijackPass : public MaoFunctionPass {
   bool Go() {
     bool first_instrn = true;
 
-    FORALL_FUNC_ENTRY(function_,entry) {
-      if (!entry->IsInstruction())
-        continue;
+    FORALL_FUNC_ENTRY(function_,iter) {
+      if (!(*iter)->IsInstruction()) continue;
+      InstructionEntry *entry = (*iter)->AsInstruction();
 
       if (first_instrn) {
         first_instrn = false;
@@ -99,7 +99,8 @@ class EnableFunHijackPass : public MaoFunctionPass {
   // Insert 5-byte space before the function. This has to be done before the
   // label for the start of the function and after all other directives.
   void InsertSpacesBefore() {
-    FORALL_FUNC_ENTRY(function_, entry) {
+    FORALL_FUNC_ENTRY(function_, iter) {
+      MaoEntry *entry = *iter;
       if (entry->IsDirective()) {
         continue;
       }

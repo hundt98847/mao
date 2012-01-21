@@ -76,7 +76,7 @@ class Function {
   FunctionID id() const {return id_;}
 
   // Returns the number of instructions in this function.
-  int GetNumInstructions() const;
+  int GetNumInstructions();
   // Returns an iterator that points to first_entry().
   EntryIterator EntryBegin();
   // Returns an iterator that points to end_entry().
@@ -141,10 +141,9 @@ class Function {
 };
 
 // Convenience macros
-#define FORALL_FUNC_ENTRY(func, entry) \
-  for (MaoEntry *entry = func->first_entry(); \
-       entry != func->end_entry()->next(); \
-       entry = entry->next())
-
+#define FORALL_FUNC_ENTRY(func,iter) \
+  for (EntryIterator iter = func->EntryBegin(); \
+       iter != func->EntryEnd(); \
+       ++iter)
 
 #endif // MAOFUNCTION_H_

@@ -64,9 +64,9 @@ class Inc2AddPass : public MaoFunctionPass {
     // Then, convert this instruction to an add or sub of 1 to that
     // register.
     //
-    FORALL_FUNC_ENTRY(function_, entry) {
-      if (!entry->IsInstruction()) continue;
-      InstructionEntry *insn = entry->AsInstruction();
+    FORALL_FUNC_ENTRY(function_, iter) {
+      if (!iter->IsInstruction()) continue;
+      InstructionEntry *insn = iter->AsInstruction();
 
       if (insn->NumOperands() != 1 ||
           !insn->IsRegisterOperand(0))

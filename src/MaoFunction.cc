@@ -23,11 +23,10 @@
 // Class: Function
 //
 
-int Function::GetNumInstructions() const {
+int Function::GetNumInstructions() {
   unsigned num_instrns = 0;
-  for (MaoEntry *entry = first_entry(); entry != end_entry();
-       entry = entry->next()) {
-    if (entry->IsInstruction()) {
+  FORALL_FUNC_ENTRY(this, entry) {
+    if ((*entry)->IsInstruction()) {
       ++num_instrns;
     }
   }

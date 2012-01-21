@@ -58,9 +58,9 @@ class AddAddElimPass : public MaoFunctionPass {
       // an instruction that breaks the pattern.
       FORALL_BB_ENTRY(it, entry) {
         // Only check instructions
-        if (!(*entry)->IsInstruction()) continue;
+        if (!entry->IsInstruction()) continue;
 
-        InstructionEntry *insn = (*entry)->AsInstruction();
+        InstructionEntry *insn = entry->AsInstruction();
 
         // The first instruction can be the last instruction of
         // the pattern we are looking for.

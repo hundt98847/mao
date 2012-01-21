@@ -60,9 +60,9 @@ class PrefAlias : public MaoFunctionPass {
     MaoRelaxer::InvalidateSizeMap(function_->GetSection());
     offsets = MaoRelaxer::GetOffsetMap(unit_, function_->GetSection());
 
-    FORALL_FUNC_ENTRY(function_, entry) {
-      if (!entry->IsInstruction()) continue;
-      InstructionEntry *insn = entry->AsInstruction();
+    FORALL_FUNC_ENTRY(function_, iter) {
+      if (!iter->IsInstruction()) continue;
+      InstructionEntry *insn = iter->AsInstruction();
 
       // Find loads from mem and find aliases indexed by lower 8 bits
       //

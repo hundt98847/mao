@@ -65,9 +65,9 @@ class Add2IncPass : public MaoFunctionPass {
     // OP_sub, replace the instructions with an inc or dec
     // instruction.
     //
-    FORALL_FUNC_ENTRY(function_, entry) {
-      if (!entry->IsInstruction()) continue;
-      InstructionEntry *insn = entry->AsInstruction();
+    FORALL_FUNC_ENTRY(function_, iter) {
+      if (!iter->IsInstruction()) continue;
+      InstructionEntry *insn = iter->AsInstruction();
 
       if (insn->NumOperands() != 2 ||
           !insn->IsImmediateIntOperand(0) ||
