@@ -19,7 +19,6 @@ add1:
         dec %ax
         dec %eax
         dec %rax
-	nop
 
 	.data
 	.align 32

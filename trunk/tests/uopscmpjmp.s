@@ -1,5 +1,5 @@
-#Option: --mao=UOPSCMPJMP=trace[2]
-#grep Inserting 1
+#Option: --mao=UOPSCMPJMP=trace[2]+offset_min[25]
+#grep Insert 1
 #grep Found 3
 
 .globl cmp
