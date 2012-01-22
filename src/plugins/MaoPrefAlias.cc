@@ -53,31 +53,98 @@ class PrefAlias : public MaoFunctionPass {
     : MaoFunctionPass("PREFALIAS", options, mao, function) {
   }
 
-  bool Go() {
-    MaoEntryIntMap *offsets;
-    std::list <InstructionEntry *> indexed_list[256];
+  struct Load {
+    int level;
+    InstructionEntry *insn;
+    Load(int l, InstructionEntry *i) :
+      level(l), insn(i) {}
+  };
 
+  void ScanLoop(const SimpleLoop  *loop,
+                MaoEntryIntMap    *offsets,
+                int                level) {
+    MAO_ASSERT(offsets);
+    MAO_ASSERT(loop);
+
+    if (!loop->is_root()) {         // not root
+      // Iterate over Basic Blocks, populate alias map
+      //
+      for (SimpleLoop::BasicBlockSet::const_iterator iter =
+             loop->ConstBasicBlockBegin();
+           iter != loop->ConstBasicBlockEnd(); ++iter) {
+        bb_map[(*iter)] = true;
+        FORALL_BB_ENTRY(iter, entry) {
+          if (!entry->IsInstruction()) continue;
+          InstructionEntry *insn = entry->AsInstruction();
+
+          // Find loads from mem and find aliases indexed by lower 8 bits
+          //
+          if (insn->IsPrefetchLoad() &&
+              insn->IsMemOperand(0))
+            indexed_list[ (*offsets)[insn] % 256].push_back(
+              new Load(level, insn));
+        }
+      }
+    }
+
+    // Recursively find inner loops
+    //
+    for (SimpleLoop::LoopSet::const_iterator liter = loop->ConstChildrenBegin();
+         liter != loop->ConstChildrenEnd(); ++liter) {
+      ScanLoop(*liter, offsets, level+1);
+    }
+  }
+
+  bool Go() {
+    CFG *cfg = CFG::GetCFG(unit_, function_);
+    if (!cfg->IsWellFormed()) return true;
+
+    MaoEntryIntMap *offsets;
     MaoRelaxer::InvalidateSizeMap(function_->GetSection());
     offsets = MaoRelaxer::GetOffsetMap(unit_, function_->GetSection());
 
-    FORALL_FUNC_ENTRY(function_, iter) {
-      if (!iter->IsInstruction()) continue;
-      InstructionEntry *insn = iter->AsInstruction();
+    FORALL_CFG_BB(cfg, it)
+      bb_map[(*it)] = false;
 
-      // Find loads from mem and find aliases indexed by lower 8 bits
-      //
-      if (insn->IsPrefetchLoad() &&
-          insn->IsMemOperand(0))
-        indexed_list[ (*offsets)[insn] % 256].push_back(insn);
-    } // FORALL_ENTRY's
+    LoopStructureGraph *loop_graph = LoopStructureGraph::GetLSG(unit_, function_);
+    if (loop_graph && loop_graph->NumberOfLoops())
+      ScanLoop(loop_graph->root(), offsets, 0);
 
-    // Iterate over the array and find aliasing entries
+    // pick up all other, non-loop BB's
+    FORALL_CFG_BB(cfg, it) {
+      if (bb_map[(*it)]) continue;
+      FORALL_BB_ENTRY(it, iter) {
+        if (!iter->IsInstruction()) continue;
+        InstructionEntry *insn = iter->AsInstruction();
+
+        // Find loads from mem and find aliases indexed by lower 8 bits
+        //
+        if (insn->IsPrefetchLoad() &&
+            insn->IsMemOperand(0))
+          indexed_list[ (*offsets)[insn] % 256].push_back(
+            new Load(0, insn));
+      } // FORALL_ENTRY's
+    }
+
+
+    // Iterate over the alias array and find aliasing entries
     //
     for (int i = 0; i < 256; i++) {
       int n = indexed_list[i].size();
       if (n > 0) {
         Trace(1, "Found %d loads at offset %d%s",
               n, i, n > 1 ? ": ALIAS" : "" );
+      }
+      if (n > 1) {
+        for (std::list<Load *>::iterator iter = indexed_list[i].begin();
+             iter != indexed_list[i].end(); ++iter) {
+          TraceC(1, "  Level: %d ", (*iter)->level);
+          (*iter)->insn->PrintEntry(stderr);
+          //if ((*iter)->level > 3) {
+          //  InstructionEntry *nop = unit_->CreateNop(function_);
+          //  (*iter)->insn->LinkBefore(nop);
+          // }
+        }
       }
     }
 
@@ -86,7 +153,9 @@ class PrefAlias : public MaoFunctionPass {
     //
     return true;
   }
-
+ private:
+  std::list<Load *> indexed_list[256];
+  std::map<BasicBlock *, bool> bb_map;
 };
 
 REGISTER_PLUGIN_FUNC_PASS("PREFALIAS", PrefAlias )
