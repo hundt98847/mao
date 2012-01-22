@@ -52,4 +52,12 @@ The pass seeks to eliminate the first add instruction in the following pattern:
 }}}
 [ADDADD More.]
 
+== ADD2INC - Convert add|sub 1,reg to inc|dec reg ==
+This pass modifies this single instruction pattern. inc|dec are most likely to run slightly slower on modern x86 architectures, but they have a shorter encoding, which might help for certain other passes.
+[ADD2INC More.]
+
+== ADD2INC - Convert inc|dec reg to add|sub 1,reg ==
+This pass modifies this single instruction pattern. inc|dec are most likely to run slightly slower on modern x86 architectures, but these instructions are still commonly used by inline asm sequences. 
+ [INC2ADD More.]
+
 
