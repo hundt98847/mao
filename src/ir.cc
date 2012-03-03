@@ -159,8 +159,6 @@ void link_section(int push,
 }
 
 void link_subsection_directive(int subsection_number) {
-  struct link_context_s link_context = get_link_context();
-
   DirectiveEntry::OperandVector operands;
   operands.push_back(new DirectiveEntry::Operand(
                          subsection_number));

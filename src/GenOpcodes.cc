@@ -85,8 +85,10 @@ next_field(char *str, char sep, char **next) {
 void usage(char *const argv[]) __attribute__ ((noreturn));
 
 void usage(char *const argv[]) {
-  fprintf(stderr, "USAGE:\n"
-          "  %s [-p outputpath] table-file sideeffect-file \n\n", argv[0]);
+  fprintf(stderr,
+          "USAGE:\n "
+          " %s [-p outputpath] optable-file regtable-file sideeffect-file \n\n",
+          argv[0]);
   fprintf(stderr,
           "Creates headerfiles in in directory outputpath, "
           "defaults to current path\n");
@@ -147,18 +149,8 @@ class RegEntry {
 typedef std::list<RegEntry *> RegList;
 static RegList reg_list;
 
-void ReadRegisterTable(const char *op_table) {
+void ReadRegisterTable(FILE *regs) {
   char buff[1024];
-  strcpy(buff, op_table);
-  char *p = strrchr(buff, '/');
-  strcpy(p+1, "i386-reg.tbl");
-
-  FILE *regs = fopen(buff, "r");
-  if (!regs) {
-    fprintf(stderr, "Cannot open register table file: %s\n", buff);
-    exit(1);
-  }
-
   int count = 0;
   while (!feof(regs)) {
     char *p = fgets(buff, 1024, regs);
@@ -171,8 +163,6 @@ void ReadRegisterTable(const char *op_table) {
     RegEntry *r = new RegEntry(reg, count++);
     reg_list.push_back(r);
   }
-
-  fclose(regs);
 }
 
 // linear search through list to find a register by name
@@ -310,7 +300,11 @@ int main(int argc, char *const argv[]) {
 
   // Options processing
   //
-  if (argc < 3)
+  // Mandatory arguments are:
+  //  - optable-file
+  //  - regtable-file
+  //  - sideeffect-file
+  if (argc < 4)
     usage(argv);
 
   const char *out_path = NULL; // Default to current directory.
@@ -340,30 +334,35 @@ int main(int argc, char *const argv[]) {
     }
   }
 
-  // there shoule be three more arguments
-  if ((argc - optind) != 3)
+  // there shoule be four more arguments
+  if ((argc - optind) != 4)
     usage(argv);
 
 
   const char *op_table = argv[optind];
-  const char *side_effect_table = argv[optind+1];
-
-  // Get tables and data
-  //
-  ReadRegisterTable(op_table);
-  ReadSideEffects(side_effect_table, mnem_def_map);
-
-  side_effect_table = argv[optind+2];
-  ReadSideEffects(side_effect_table, mnem_use_map);
+  const char *reg_table = argv[optind+1];
+  const char *side_effect_table = argv[optind+2];
 
   // Open the various input and output files,
   // emit top portion in generated files.
   //
-  FILE *in = fopen(op_table, "r");
-  if (!in) {
-    fprintf(stderr, "Cannot open table file: %s\n", argv[1]);
+  FILE *op = fopen(op_table, "r");
+  if (!op) {
+    fprintf(stderr, "Cannot open table file: %s\n", op_table);
     usage(argv);
   }
+
+  FILE *reg = fopen(reg_table, "r");
+  if (!reg) {
+    fprintf(stderr, "Cannot open register file: %s\n", reg_table);
+    usage(argv);
+  }
+
+  ReadRegisterTable(reg);
+  ReadSideEffects(side_effect_table, mnem_def_map);
+
+  side_effect_table = argv[optind+3];
+  ReadSideEffects(side_effect_table, mnem_use_map);
 
   const char *out_filename;
   const char *table_filename;
@@ -445,9 +444,9 @@ int main(int argc, char *const argv[]) {
   // effect tables in
   //    gen-defs.h
   //
-  while (!feof(in)) {
-    char *p, *str, *last, *name;
-    if (fgets (buf, sizeof (buf), in) == NULL)
+  while (!feof(op)) {
+    char *p, *str, *name;
+    if (fgets (buf, sizeof (buf), op) == NULL)
       break;
 
     lineno++;
@@ -471,8 +470,6 @@ int main(int argc, char *const argv[]) {
       default:
         break;
     }
-
-    last = p + strlen(p);
 
     /* Find name.  */
     name = next_field(p, ',', &str);
@@ -593,7 +590,8 @@ int main(int argc, char *const argv[]) {
           "#endif  // GEN_USES_MAODEFS_H_\n"
           );
 
-  fclose(in);
+  fclose(op);
+  fclose(reg);
   fclose(out);
   fclose(table);
   fclose(def);

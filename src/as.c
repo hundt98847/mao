@@ -1,6 +1,7 @@
 /* as.c - GAS main program.
    Copyright 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+   2010, 2011
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -286,6 +287,9 @@ Options:\n\
   --execstack             require executable stack for this object\n"));
   fprintf (stream, _("\
   --noexecstack           don't require executable stack for this object\n"));
+  fprintf (stream, _("\
+  --size-check=[error|warning]\n\
+			  ELF .size directive check (default --size-check=error)\n"));
 #endif
   fprintf (stream, _("\
   -f                      skip whitespace and comment preprocessing\n"));
@@ -445,6 +449,7 @@ parse_args (int * pargc, char *** pargv)
       OPTION_TARGET_HELP,
       OPTION_EXECSTACK,
       OPTION_NOEXECSTACK,
+      OPTION_SIZE_CHECK,
       OPTION_ALTERNATE,
       OPTION_AL,
       OPTION_HASH_TABLE_SIZE,
@@ -459,7 +464,7 @@ parse_args (int * pargc, char *** pargv)
   static const struct option std_longopts[] =
   {
     /* Note: commas are placed at the start of the line rather than
-       the end of the preceeding line so that it is simpler to
+       the end of the preceding line so that it is simpler to
        selectively add and remove lines from this list.  */
     {"alternate", no_argument, NULL, OPTION_ALTERNATE}
     /* The entry for "a" is here to prevent getopt_long_only() from
@@ -478,6 +483,7 @@ parse_args (int * pargc, char *** pargv)
 #if defined OBJ_ELF || defined OBJ_MAYBE_ELF
     ,{"execstack", no_argument, NULL, OPTION_EXECSTACK}
     ,{"noexecstack", no_argument, NULL, OPTION_NOEXECSTACK}
+    ,{"size-check", required_argument, NULL, OPTION_SIZE_CHECK}
 #endif
     ,{"fatal-warnings", no_argument, NULL, OPTION_WARN_FATAL}
     ,{"gdwarf-2", no_argument, NULL, OPTION_GDWARF2}
@@ -620,7 +626,7 @@ parse_args (int * pargc, char *** pargv)
 	case OPTION_VERSION:
 	  /* This output is intended to follow the GNU standards document.  */
 	  printf (_("GNU assembler %s\n"), BFD_VERSION_STRING);
-	  printf (_("Copyright 2010 Free Software Foundation, Inc.\n"));
+	  printf (_("Copyright 2011 Free Software Foundation, Inc.\n"));
 	  printf (_("\
 This program is free software; you may redistribute it under the terms of\n\
 the GNU General Public License version 3 or later.\n\
@@ -814,6 +820,15 @@ This program has absolutely no warranty.\n"));
 	case OPTION_NOEXECSTACK:
 	  flag_noexecstack = 1;
 	  flag_execstack = 0;
+	  break;
+
+	case OPTION_SIZE_CHECK:
+	  if (strcasecmp (optarg, "error") == 0)
+	    flag_size_check = size_check_error;
+	  else if (strcasecmp (optarg, "warning") == 0)
+	    flag_size_check = size_check_warning;
+	  else
+	    as_fatal (_("Invalid --size-check= option: `%s'"), optarg);
 	  break;
 #endif
 	case 'Z':
@@ -1115,9 +1130,9 @@ int
 as_main (int argc, char ** argv)
 {
   char ** argv_orig = argv;
+  int running_mao = 1;
 
   int macro_strip_at;
-  int running_mao = 1;
 
   start_time = get_run_time ();
 
@@ -1184,7 +1199,7 @@ as_main (int argc, char ** argv)
 
   PROGRESS (1);
 
-  // Create a temporary file for MAO so that we dont overwrite
+  // Create a temporary file for MAO so that we don't overwrite
   // a.out. The file is never written to, but is needed for
   // the bfd code in gas to work correctly.
   // First try to append a temporary string to
@@ -1217,6 +1232,8 @@ as_main (int argc, char ** argv)
   output_file_create (out_file_name);
   gas_assert (stdoutput != 0);
 
+  dot_symbol_init ();
+
 #ifdef tc_init_after_args
   tc_init_after_args ();
 #endif
@@ -1224,6 +1241,9 @@ as_main (int argc, char ** argv)
   itbl_init ();
 
   dwarf2_init ();
+
+  local_symbol_make (".gasversion.", absolute_section,
+		     BFD_VERSION / 10000UL, &predefined_address_frag);
 
   /* Now that we have fully initialized, and have created the output
      file, define any symbols requested by --defsym command line
@@ -1296,9 +1316,8 @@ as_main (int argc, char ** argv)
      I didn't want to risk the change.  */
   subsegs_finish ();
 
-  if ((!running_mao) && keep_it) {
+  if ((!running_mao) && keep_it)
     write_object_file ();
-  }
 
   fflush (stderr);
 
@@ -1323,7 +1342,6 @@ as_main (int argc, char ** argv)
 
   /* Only generate dependency file if assembler was successful.  */
   print_dependencies ();
-
 
   /* Since we call this from MAO, we do not want to exit, but instead
      return to the caller. Because of this we have to manually renmove the file.
