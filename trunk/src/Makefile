@@ -2,7 +2,7 @@ OS=Linux
 TARGET=x86_64-linux
 DEVPREFIX=
 LOCALEDIR=/usr/share/locale
-BINUTILSRC=../binutils-2.21.1
+BINUTILSRC=../binutils-2.22
 BINUTILOBJ=$(BINUTILSRC)-obj-$(TARGET)
 PYTHON=../python-2.5.4
 PYTHONLIB=$(PYTHON)/usr/local/lib/python2.5/config/libpython2.5.a
@@ -243,8 +243,13 @@ $(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) $(SRCDIR)/GenOpcodes.cc $(SRCDIR)/MaoD
 	mkdir -p $(OBJDIR)
 	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) $(OBJDIR)/MaoDebug.o -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
 
-$(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes
-	$(OBJDIR)/GenOpcodes -p $(OBJDIR) $(BINUTILSRC)/opcodes/i386-opc.tbl $(SRCDIR)/MaoDefs.tbl $(SRCDIR)/MaoUses.tbl
+# GenOpcodes assumes that the names are sorted in the input. As of binutils 2.22 this not true,
+# so we manually sort the file before processing it.
+$(OBJDIR)/i386-opc.tbl.sorted: $(BINUTILSRC)/opcodes/i386-opc.tbl
+	sort $(BINUTILSRC)/opcodes/i386-opc.tbl > $(OBJDIR)/i386-opc.tbl.sorted
+
+$(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes $(OBJDIR)/i386-opc.tbl.sorted
+	$(OBJDIR)/GenOpcodes -p $(OBJDIR) $(OBJDIR)/i386-opc.tbl.sorted $(BINUTILSRC)/opcodes/i386-reg.tbl $(SRCDIR)/MaoDefs.tbl $(SRCDIR)/MaoUses.tbl
 
 mao-$(DEVPREFIX)$(TARGET): $(BINDIR)/mao-$(DEVPREFIX)$(TARGET)
 

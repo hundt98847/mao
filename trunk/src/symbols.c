@@ -1,7 +1,7 @@
 /* symbols.c -symbol table-
    Copyright 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
-   Free Software Foundation, Inc.
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
+   2011 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -23,13 +23,11 @@
 /* #define DEBUG_SYMS / * to debug symbol list maintenance.  */
 
 #include "as.h"
-
 #include "safe-ctype.h"
 #include "obstack.h"		/* For "symbols.h" */
 #include "subsegs.h"
 
 #include "irlink.h"
-
 #include "struc-symbol.h"
 
 /* This is non-zero if symbols are case sensitive, which is the
@@ -50,6 +48,7 @@ static struct hash_control *local_hash;
 symbolS *symbol_rootP;
 symbolS *symbol_lastP;
 symbolS abs_symbol;
+symbolS dot_symbol;
 
 #ifdef DEBUG_SYMS
 #define debug_verify_symchain verify_symbol_chain
@@ -57,14 +56,17 @@ symbolS abs_symbol;
 #define debug_verify_symchain(root, last) ((void) 0)
 #endif
 
-//#define DOLLAR_LABEL_CHAR	'\001'
+// #define DOLLAR_LABEL_CHAR	'\001'
+// #define LOCAL_LABEL_CHAR	'\002'
 #define DOLLAR_LABEL_CHAR	'-'
-//#define LOCAL_LABEL_CHAR	'\002'
 #define LOCAL_LABEL_CHAR	'_'
 
 #define LOCAL_LABEL_PREFIX_STR  ".L__MAO_LOCAL__"
 #define LOCAL_LABEL_PREFIX_LEN  15
 
+#ifndef TC_LABEL_IS_LOCAL
+#define TC_LABEL_IS_LOCAL(name)	0
+#endif
 
 struct obstack notes;
 #ifdef TE_PE
@@ -79,7 +81,6 @@ static long dollar_label_instance (long);
 static long fb_label_instance (long);
 
 static void print_binary (FILE *, const char *, expressionS *);
-static void report_op_error (symbolS *, symbolS *, symbolS *);
 
 /* Return a pointer to a new symbol.  Die if we can't make a new
    symbol.  Fill in the symbol's values.  Add symbol to end of symbol
@@ -195,7 +196,7 @@ static unsigned long local_symbol_conversion_count;
 
 /* Create a local symbol and insert it into the local hash table.  */
 
-static struct local_symbol *
+struct local_symbol *
 local_symbol_make (const char *name, segT section, valueT val, fragS *frag)
 {
   char *name_copy;
@@ -258,9 +259,6 @@ static void
 define_sym_at_dot (symbolS *symbolP)
 {
   symbolP->sy_frag = frag_now;
-#ifdef OBJ_VMS
-  S_SET_OTHER (symbolP, const_flag);
-#endif
   S_SET_VALUE (symbolP, (valueT) frag_now_fix ());
   S_SET_SEGMENT (symbolP, now_seg);
 }
@@ -455,9 +453,6 @@ colon (/* Just seen "x:" - rattle symbols & frags.  */
     {
       symbolP = symbol_new (sym_name, now_seg, (valueT) frag_now_fix (),
 			    frag_now);
-#ifdef OBJ_VMS
-      S_SET_OTHER (symbolP, const_flag);
-#endif /* OBJ_VMS */
 
       symbol_table_insert (symbolP);
     }
@@ -567,6 +562,9 @@ symbol_clone (symbolS *orgsymP, int replace)
   symbolS *newsymP;
   asymbol *bsymorg, *bsymnew;
 
+  /* Make sure we never clone the dot special symbol.  */
+  gas_assert (orgsymP != &dot_symbol);
+
   /* Running local_symbol_convert on a clone that's not the one currently
      in local_hash would incorrectly replace the hash entry.  Thus the
      symbol must be converted here.  Note that the rest of the function
@@ -655,7 +653,8 @@ symbol_clone_if_forward_ref (symbolS *symbolP, int is_forward)
 
       /* Re-using sy_resolving here, as this routine cannot get called from
 	 symbol resolution code.  */
-      if (symbolP->bsym->section == expr_section && !symbolP->sy_resolving)
+      if ((symbolP->bsym->section == expr_section || symbolP->sy_forward_ref)
+	  && !symbolP->sy_resolving)
 	{
 	  symbolP->sy_resolving = 1;
 	  add_symbol = symbol_clone_if_forward_ref (add_symbol, is_forward);
@@ -666,7 +665,20 @@ symbol_clone_if_forward_ref (symbolS *symbolP, int is_forward)
       if (symbolP->sy_forward_ref
 	  || add_symbol != symbolP->sy_value.X_add_symbol
 	  || op_symbol != symbolP->sy_value.X_op_symbol)
-	symbolP = symbol_clone (symbolP, 0);
+	{
+	  if (symbolP != &dot_symbol)
+	    {
+	      symbolP = symbol_clone (symbolP, 0);
+	      symbolP->sy_resolving = 0;
+	    }
+	  else
+	    {
+	      symbolP = symbol_temp_new_now ();
+#ifdef tc_new_dot_label
+	      tc_new_dot_label (symbolP);
+#endif
+	    }
+	}
 
       symbolP->sy_value.X_add_symbol = add_symbol;
       symbolP->sy_value.X_op_symbol = op_symbol;
@@ -962,55 +974,65 @@ use_complex_relocs_for (symbolS * symp)
 #endif
 
 static void
-report_op_error (symbolS *symp, symbolS *left, symbolS *right)
+report_op_error (symbolS *symp, symbolS *left, operatorT op, symbolS *right)
 {
   char *file;
   unsigned int line;
-  segT seg_left = S_GET_SEGMENT (left);
-  segT seg_right = right ? S_GET_SEGMENT (right) : 0;
+  segT seg_left = left ? S_GET_SEGMENT (left) : 0;
+  segT seg_right = S_GET_SEGMENT (right);
+  const char *opname;
+
+  switch (op)
+    {
+    default:
+      abort ();
+      return;
+
+    case O_uminus:		opname = "-"; break;
+    case O_bit_not:		opname = "~"; break;
+    case O_logical_not:		opname = "!"; break;
+    case O_multiply:		opname = "*"; break;
+    case O_divide:		opname = "/"; break;
+    case O_modulus:		opname = "%"; break;
+    case O_left_shift:		opname = "<<"; break;
+    case O_right_shift:		opname = ">>"; break;
+    case O_bit_inclusive_or:	opname = "|"; break;
+    case O_bit_or_not:		opname = "|~"; break;
+    case O_bit_exclusive_or:	opname = "^"; break;
+    case O_bit_and:		opname = "&"; break;
+    case O_add:			opname = "+"; break;
+    case O_subtract:		opname = "-"; break;
+    case O_eq:			opname = "=="; break;
+    case O_ne:			opname = "!="; break;
+    case O_lt:			opname = "<"; break;
+    case O_le:			opname = "<="; break;
+    case O_ge:			opname = ">="; break;
+    case O_gt:			opname = ">"; break;
+    case O_logical_and:		opname = "&&"; break;
+    case O_logical_or:		opname = "||"; break;
+    }
 
   if (expr_symbol_where (symp, &file, &line))
     {
-      if (seg_left == undefined_section)
+      if (left)
 	as_bad_where (file, line,
-		      _("undefined symbol `%s' in operation"),
-		      S_GET_NAME (left));
-      if (seg_right == undefined_section)
+		      _("invalid operands (%s and %s sections) for `%s'"),
+		      seg_left->name, seg_right->name, opname);
+      else
 	as_bad_where (file, line,
-		      _("undefined symbol `%s' in operation"),
-		      S_GET_NAME (right));
-      if (seg_left != undefined_section
-	  && seg_right != undefined_section)
-	{
-	  if (right)
-	    as_bad_where (file, line,
-			  _("invalid sections for operation on `%s' and `%s'"),
-			  S_GET_NAME (left), S_GET_NAME (right));
-	  else
-	    as_bad_where (file, line,
-			  _("invalid section for operation on `%s'"),
-			  S_GET_NAME (left));
-	}
-
+		      _("invalid operand (%s section) for `%s'"),
+		      seg_right->name, opname);
     }
   else
     {
-      if (seg_left == undefined_section)
-	as_bad (_("undefined symbol `%s' in operation setting `%s'"),
-		S_GET_NAME (left), S_GET_NAME (symp));
-      if (seg_right == undefined_section)
-	as_bad (_("undefined symbol `%s' in operation setting `%s'"),
-		S_GET_NAME (right), S_GET_NAME (symp));
-      if (seg_left != undefined_section
-	  && seg_right != undefined_section)
-	{
-	  if (right)
-	    as_bad (_("invalid sections for operation on `%s' and `%s' setting `%s'"),
-		    S_GET_NAME (left), S_GET_NAME (right), S_GET_NAME (symp));
-	  else
-	    as_bad (_("invalid section for operation on `%s' setting `%s'"),
-		    S_GET_NAME (left), S_GET_NAME (symp));
-	}
+      const char *sname = S_GET_NAME (symp);
+
+      if (left)
+	as_bad (_("invalid operands (%s and %s sections) for `%s' when setting `%s'"),
+		seg_left->name, seg_right->name, opname, sname);
+      else
+	as_bad (_("invalid operand (%s section) for `%s' when setting `%s'"),
+		seg_right->name, opname, sname);
     }
 }
 
@@ -1203,8 +1225,8 @@ resolve_symbol_value (symbolS *symp)
 		  symp->sy_value.X_add_number = final_val;
 		  /* Use X_op_symbol as a flag.  */
 		  symp->sy_value.X_op_symbol = add_symbol;
-		  final_seg = seg_left;
 		}
+	      final_seg = seg_left;
 	      final_val = 0;
 	      resolved = symbol_resolved_p (add_symbol);
 	      symp->sy_resolving = 0;
@@ -1253,7 +1275,7 @@ resolve_symbol_value (symbolS *symp)
 		~S -> S ^ ~0 	only permitted on absolute  */
 	  if (op != O_logical_not && seg_left != absolute_section
 	      && finalize_syms)
-	    report_op_error (symp, add_symbol, NULL);
+	    report_op_error (symp, NULL, op, add_symbol);
 
 	  if (final_seg == expr_section || final_seg == undefined_section)
 	    final_seg = absolute_section;
@@ -1330,7 +1352,7 @@ resolve_symbol_value (symbolS *symp)
 	     probably need to be changed for an object file format which
 	     supports arbitrary expressions, such as IEEE-695.  */
 	  if (!(seg_left == absolute_section
-		   && seg_right == absolute_section)
+		&& seg_right == absolute_section)
 	      && !(op == O_eq || op == O_ne)
 	      && !((op == O_subtract
 		    || op == O_lt || op == O_le || op == O_ge || op == O_gt)
@@ -1341,7 +1363,7 @@ resolve_symbol_value (symbolS *symp)
 	      /* Don't emit messages unless we're finalizing the symbol value,
 		 otherwise we may get the same message multiple times.  */
 	      if (finalize_syms)
-		report_op_error (symp, add_symbol, op_symbol);
+		report_op_error (symp, add_symbol, op, op_symbol);
 	      /* However do not move the symbol into the absolute section
 		 if it cannot currently be resolved - this would confuse
 		 other parts of the assembler into believing that the
@@ -2083,13 +2105,12 @@ S_FORCE_RELOC (symbolS *s, int strict)
 
   return ((strict
 	   && ((s->bsym->flags & BSF_WEAK) != 0
-	       || (s->bsym->flags & BSF_GNU_INDIRECT_FUNCTION) != 0
 	       || (EXTERN_FORCE_RELOC
 		   && (s->bsym->flags & BSF_GLOBAL) != 0)))
+	  || (s->bsym->flags & BSF_GNU_INDIRECT_FUNCTION) != 0
 	  || s->bsym->section == undefined_section
 	  || bfd_is_com_section (s->bsym->section));
 }
-
 
 static char
 is_local_label(const char *name) {
@@ -2134,14 +2155,15 @@ S_IS_LOCAL (symbolS *s)
     return 1;
 
   /* Dollar local labels are not enabled in gas, and MAO only has a
-   partial implementation to support them. To support dollar local
-   labels in the future, the corresponding expression below needs to
-   be updated. */
+     partial implementation to support them. To support dollar local
+     labels in the future, the corresponding expression below needs to
+     be updated. */
   name = S_GET_NAME (s);
   return (name != NULL
 	  && ! S_IS_DEBUG (s)
 	  && (strchr (name, DOLLAR_LABEL_CHAR)
-	      || is_local_label(name)
+	      || TC_LABEL_IS_LOCAL (name)
+              || is_local_label(name)
 	      || (! flag_keep_locals
 		  && (bfd_is_local_label (stdoutput, s->bsym)
 		      || (flag_mri
@@ -2153,6 +2175,16 @@ int
 S_IS_STABD (symbolS *s)
 {
   return S_GET_NAME (s) == 0;
+}
+
+int
+S_CAN_BE_REDEFINED (const symbolS *s)
+{
+  if (LOCAL_SYMBOL_CHECK (s))
+    return (local_symbol_get_frag ((struct local_symbol *) s)
+	    == &predefined_address_frag);
+  /* Permit register names to be redefined.  */
+  return s->bsym->section == reg_section;
 }
 
 int
@@ -2787,6 +2819,17 @@ symbol_begin (void)
 
   if (LOCAL_LABELS_FB)
     fb_label_init ();
+}
+
+void
+dot_symbol_init (void)
+{
+  dot_symbol.bsym = bfd_make_empty_symbol (stdoutput);
+  if (dot_symbol.bsym == NULL)
+    as_fatal ("bfd_make_empty_symbol: %s", bfd_errmsg (bfd_get_error ()));
+  dot_symbol.bsym->name = ".";
+  dot_symbol.sy_forward_ref = 1;
+  dot_symbol.sy_value.X_op = O_constant;
 }
 
 int indent_level;

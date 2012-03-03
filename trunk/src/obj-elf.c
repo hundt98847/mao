@@ -1,6 +1,6 @@
 /* ELF object file format
    Copyright 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -478,12 +478,11 @@ obj_elf_visibility (int visibility)
   do
     {
       symbolP = get_sym_from_input_line_and_check ();
-      /* Verify how to get name from symbol. */
+     /* Verify how to get name from symbol. */
       const char *name = S_GET_NAME (symbolP);
       struct MaoStringPiece symbol_name =
           { name, strlen(name) };
       link_hidden_directive(symbol_name);
-
 
       bfdsym = symbol_get_bfdsym (symbolP);
       elfsym = elf_symbol_from (bfd_asymbol_bfd (bfdsym), bfdsym);
@@ -979,6 +978,7 @@ obj_elf_section (int push)
 	{
 	  /* .pushsection has an optional subsection.  */
 	  new_subsection = (subsegT) get_absolute_expression ();
+
 	  SKIP_WHITESPACE ();
 
 	  /* Stop if we don't see a comma.  */
@@ -1118,12 +1118,11 @@ obj_elf_section (int push)
 
 done:
 
-  link_section(push, name, link_arguments);
+ link_section(push, name, link_arguments);
 
   if (new_subsection > -1) {
     link_subsection_directive(new_subsection);
   }
-
 
   demand_empty_rest_of_line ();
 
@@ -1246,9 +1245,8 @@ obj_elf_previous (int ignore ATTRIBUTE_UNUSED)
   md_elf_section_change_hook ();
 #endif
 
-  /* Link directive to MAO */
+ /* Link directive to MAO */
   link_previous_directive();
-
 }
 
 static void
@@ -1272,7 +1270,7 @@ obj_elf_popsection (int xxx ATTRIBUTE_UNUSED)
   subseg_set (top->seg, top->subseg);
   free (top);
 
-  /* Link directive to MAO */
+ /* Link directive to MAO */
   link_popsection_directive();
 
 #ifdef md_elf_section_change_hook
@@ -1309,6 +1307,7 @@ obj_elf_symver (int ignore ATTRIBUTE_UNUSED)
   struct MaoStringPiece sp_name =
       { name, strlen(name)};
 
+
   if (*input_line_pointer != ',')
     {
       as_bad (_("expected comma after name in .symver"));
@@ -1318,6 +1317,7 @@ obj_elf_symver (int ignore ATTRIBUTE_UNUSED)
 
   ++input_line_pointer;
   SKIP_WHITESPACE ();
+  name = input_line_pointer;
 
   /* Temporarily include '@' in symbol names.  */
   old_lexat = lex_type[(unsigned char) '@'];
@@ -1354,10 +1354,12 @@ obj_elf_symver (int ignore ATTRIBUTE_UNUSED)
 
       *input_line_pointer = c;
     }
+
   struct MaoStringPiece sp_symvername =
       { name, input_line_pointer - name};
 
   link_symver_directive(sp_name, sp_symvername);
+
   demand_empty_rest_of_line ();
 }
 
@@ -1745,8 +1747,8 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
       const struct elf_backend_data *bed;
 
       bed = get_elf_backend_data (stdoutput);
-      if (!(bed->elf_osabi == ELFOSABI_LINUX
-	    /* GNU/Linux is still using the default value 0.  */
+      if (!(bed->elf_osabi == ELFOSABI_GNU
+	    /* GNU is still using the default value 0.  */
 	    || bed->elf_osabi == ELFOSABI_NONE))
 	as_bad (_("symbol type \"%s\" is supported only by GNU targets"),
 		type_name);
@@ -1757,14 +1759,14 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
       struct elf_backend_data *bed;
 
       bed = (struct elf_backend_data *) get_elf_backend_data (stdoutput);
-      if (!(bed->elf_osabi == ELFOSABI_LINUX
-	    /* GNU/Linux is still using the default value 0.  */
+      if (!(bed->elf_osabi == ELFOSABI_GNU
+	    /* GNU is still using the default value 0.  */
 	    || bed->elf_osabi == ELFOSABI_NONE))
 	as_bad (_("symbol type \"%s\" is supported only by GNU targets"),
 		type_name);
       type = BSF_OBJECT | BSF_GNU_UNIQUE;
-      /* PR 10549: Always set OSABI field to LINUX for objects containing unique symbols.  */
-      bed->elf_osabi = ELFOSABI_LINUX;
+      /* PR 10549: Always set OSABI field to GNU for objects containing unique symbols.  */
+      bed->elf_osabi = ELFOSABI_GNU;
     }
 #ifdef md_elf_symbol_type
   else if ((type = md_elf_symbol_type (type_name, sym, elfsym)) != -1)
@@ -1780,7 +1782,7 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
 
   elfsym->symbol.flags |= type;
 
-  if (type & BSF_FUNCTION)
+ if (type & BSF_FUNCTION)
       link_type(sym, FUNCTION_SYMBOL, 0);
   else if ((type & BSF_OBJECT) && (type & BSF_THREAD_LOCAL))
     link_type(sym, TLS_SYMBOL, 0);
@@ -1793,7 +1795,6 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
     link_type(sym, NOTYPE_SYMBOL, 0);
 
   demand_empty_rest_of_line ();
-
 }
 
 void get_string_from_input_line(char *buffer){
@@ -1807,8 +1808,7 @@ void get_string_from_input_line(char *buffer){
     *buffer++ = *ip++;
   }
   gas_assert(buffer[-1] == '\"');
-  buffer[-1] = '\0';
-  
+  buffer[-1] = '\0'; 
 }
 
 static void
@@ -1839,21 +1839,13 @@ obj_elf_ident (int ignore ATTRIBUTE_UNUSED)
   else
     subseg_set (comment_section, 0);
 
-
-  // get the ident string
+ // get the ident string
   char buffer[1024];
   get_string_from_input_line(buffer);
 
   struct MaoStringPiece arguments = { buffer, strlen(buffer) };
-  //  struct MaoStringPiece arguments = { NULL, 0 };
   link_ident_directive(arguments);
-//   if (link_section(0, ".comment", arguments))
-//     {
-//       expressionS zero = { NULL, NULL, 0, O_constant, 1, 0};
-//       link_dc_directive(1, 0, &zero);
-//     }
   stringer_imp (8 + 1, 0);
-  // link_section(0, old_section->name, arguments);
   subseg_set (old_section, old_subsection);
 }
 
@@ -1966,6 +1958,7 @@ void
 elf_frob_symbol (symbolS *symp, int *puntp)
 {
   struct elf_obj_sy *sy_obj;
+  expressionS *size;
 
 #ifdef NEED_ECOFF_DEBUG
   if (ECOFF_DEBUGGING)
@@ -1974,24 +1967,20 @@ elf_frob_symbol (symbolS *symp, int *puntp)
 
   sy_obj = symbol_get_obj (symp);
 
-  if (sy_obj->size != NULL)
+  size = sy_obj->size;
+  if (size != NULL)
     {
-      switch (sy_obj->size->X_op)
+      if (resolve_expression (size)
+	  && size->X_op == O_constant)
+	S_SET_SIZE (symp, size->X_add_number);
+      else
 	{
-	case O_subtract:
-	  S_SET_SIZE (symp,
-		      (S_GET_VALUE (sy_obj->size->X_add_symbol)
-		       + sy_obj->size->X_add_number
-		       - S_GET_VALUE (sy_obj->size->X_op_symbol)));
-	  break;
-	case O_constant:
-	  S_SET_SIZE (symp,
-		      (S_GET_VALUE (sy_obj->size->X_add_symbol)
-		       + sy_obj->size->X_add_number));
-	  break;
-	default:
-	  as_bad (_(".size expression too complicated to fix up"));
-	  break;
+	  if (flag_size_check == size_check_error)
+	    as_bad (_(".size expression for %s "
+		      "does not evaluate to a constant"), S_GET_NAME (symp));
+	  else
+	    as_warn (_(".size expression for %s "
+		       "does not evaluate to a constant"), S_GET_NAME (symp));
 	}
       free (sy_obj->size);
       sy_obj->size = NULL;

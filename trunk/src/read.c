@@ -1,7 +1,7 @@
 /* read.c - read a source file -
    Copyright 1986, 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997,
    1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-   2010  Free Software Foundation, Inc.
+   2010, 2011  Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -525,11 +525,10 @@ pobegin (void)
   pop_table_name = "standard";
   pop_insert (potable);
 
-#ifdef TARGET_USE_CFIPOP
+  /* Now CFI ones.  */
   pop_table_name = "cfi";
   pop_override_ok = 1;
   cfi_pop_insert ();
-#endif
 }
 
 #define HANDLE_CONDITIONAL_ASSEMBLY()					\
@@ -633,6 +632,8 @@ read_a_source_file (char *name)
 	  was_new_line = is_end_of_line[(unsigned char) input_line_pointer[-1]];
 	  if (was_new_line)
 	    {
+              /* TODO(martint): Check if this is correct */
+	      symbol_set_value_now (&dot_symbol);
 #ifdef md_start_line_hook
 	      md_start_line_hook ();
 #endif
@@ -1144,13 +1145,11 @@ read_a_source_file (char *name)
 	  /* Report unknown char as error.  */
 	  demand_empty_rest_of_line ();
 	}
-
-#ifdef md_after_pass_hook
-      md_after_pass_hook ();
-#endif
     }
 
  quit:
+  // TODO(martint): Check if this is correct.
+  symbol_set_value_now (&dot_symbol);
 
 #ifdef md_cleanup
   md_cleanup ();
@@ -1447,7 +1446,6 @@ s_altmacro (int on)
   macro_set_alternate (on);
 }
 
-
 /* MAO requires the alignment parameter to be linked in .comm
    directives. It turned out to be difficult to get it from the
    sections, so this simple function parses it from the
@@ -1479,7 +1477,7 @@ s_comm_internal (int param,
   char *name;
   char c;
   char *p;
-  offsetT temp, size = 0;
+  offsetT temp, size;
   symbolS *symbolP = NULL;
   char *stop = NULL;
   char stopc = 0;
@@ -1563,30 +1561,12 @@ s_comm_internal (int param,
       S_SET_VALUE (symbolP, (valueT) size);
       S_SET_EXTERNAL (symbolP);
       S_SET_SEGMENT (symbolP, bfd_com_section_ptr);
-#ifdef OBJ_VMS
-      {
-	extern int flag_one;
-	if (size == 0 || !flag_one)
-	  S_GET_OTHER (symbolP) = const_flag;
-      }
-#endif
     }
 
   demand_empty_rest_of_line ();
  out:
   if (flag_mri)
     mri_comment_end (stop, stopc);
-
-//   int is_local = symbol_get_obj (symbolP)->local;
-//   if (is_local) {
-//      // The following code does not work for alignment values of 1 and 2
-//     int tmp = get_recorded_alignment (bss_section);
-//     al = 1;
-//     while(tmp--)
-//       al = al * 2;
-//   } else {
-//     al = (int)S_GET_ALIGN(symbolP);
-//   }
   link_comm((char *)(symbolP->bsym->name), size, my_alignment, 0);
   return symbolP;
 }
@@ -1720,11 +1700,7 @@ s_data (int ignore ATTRIBUTE_UNUSED)
 
   subseg_set (section, (subsegT) temp);
 
-#ifdef OBJ_VMS
-  const_flag = 0;
-#endif
   demand_empty_rest_of_line ();
-
   struct MaoStringPiece arguments = { NULL, 0 };
   link_section(0, ".data", arguments);
 }
@@ -1846,7 +1822,6 @@ s_app_line (int appline)
 	      while (get_linefile_number (&this_flag)) {
                 if (num_flags < 8)
                   flag_arr[num_flags++] = this_flag;
-
 		switch (this_flag)
 		  {
 		    /* From GCC's cpp documentation:
@@ -2099,7 +2074,6 @@ s_fill (int ignore ATTRIBUTE_UNUSED)
 	 compiler.  */
     }
   demand_empty_rest_of_line ();
-
   // link back to MAO
   link_fill_directive(&rep_exp, size, fill);
 }
@@ -2743,7 +2717,9 @@ s_mri (int ignore ATTRIBUTE_UNUSED)
 static void
 do_org (segT segment, expressionS *exp, int fill)
 {
-  if (segment != now_seg && segment != absolute_section)
+  if (segment != now_seg
+      && segment != absolute_section
+      && segment != expr_section)
     as_bad (_("invalid segment \"%s\""), segment_name (segment));
 
   if (now_seg == absolute_section)
@@ -3039,7 +3015,7 @@ s_purgem (int ignore ATTRIBUTE_UNUSED)
 static void
 s_bad_end (int endr)
 {
-  as_warn (_(".end%c encountered without preceeding %s"),
+  as_warn (_(".end%c encountered without preceding %s"),
 	   endr ? 'r' : 'm',
 	   endr ? ".rept, .irp, or .irpc" : ".macro");
   demand_empty_rest_of_line ();
@@ -3195,9 +3171,8 @@ assign_symbol (char *name, int mode)
 
   if (S_IS_DEFINED (symbolP) || symbol_equated_p (symbolP))
     {
-      /* Permit register names to be redefined.  */
       if ((mode != 0 || !S_IS_VOLATILE (symbolP))
-	  && S_GET_SEGMENT (symbolP) != reg_section)
+	  && !S_CAN_BE_REDEFINED (symbolP))
 	{
 	  as_bad (_("symbol `%s' is already defined"), name);
 	  symbolP = symbol_clone (symbolP, 0);
@@ -3561,10 +3536,6 @@ s_text (int ignore ATTRIBUTE_UNUSED)
   temp = get_absolute_expression ();
   subseg_set (text_section, (subsegT) temp);
   demand_empty_rest_of_line ();
-#ifdef OBJ_VMS
-  const_flag &= ~IN_DEFAULT_SECTION;
-#endif
-
   struct MaoStringPiece arguments = { NULL, 0 };
   link_section(0, ".text", arguments);
 }
@@ -3765,7 +3736,6 @@ pseudo_set (symbolS *symbolP) {
   pseudo_set_imp (symbolP, 0);
 }
 
-
 /* In:	Pointer to a symbol.
         Mode (as used in assign_symbol)
 	Input_line_pointer->expression.
@@ -3882,7 +3852,7 @@ pseudo_set_imp (symbolS *symbolP, int mode)
       set_zero_frag (symbolP);
       break;
     }
-  switch (mode) {
+ switch (mode) {
     case 0:
       link_set_directive(symbolP, &exp);
       break;
@@ -4882,7 +4852,6 @@ float_cons (/* Clobbers input_line-pointer, checks end-of-line.  */
       }
       *buffer_p = '\0';
 
-
       /* Skip any 0{letter} that may be present. Don't even check if the
 	 letter is legal. Someone may invent a "z" format and this routine
 	 has no use for such information. Lusers beware: you get
@@ -5067,7 +5036,7 @@ output_leb128 (char *p, valueT value, int sign)
    we don't output for NULL values of P.  It isn't really as critical as
    for "normal" values that this be streamlined.  */
 
-static inline int
+inline int
 output_big_sleb128 (char *p, LITTLENUM_TYPE *bignum, int size)
 {
   char *orig = p;
@@ -5306,8 +5275,6 @@ stringer_append_char (int c, int bitsize)
     FRAG_APPEND_1_CHAR (c);
 }
 
-
-
 void
 stringer_imp (int bits_appendzero, int link_string)
 {
@@ -5368,7 +5335,7 @@ stringer_imp (int bits_appendzero, int link_string)
 
 	  know (input_line_pointer[-1] == '\"');
 
-          if (link_string) {
+         if (link_string) {
             struct MaoStringPiece string =
                 { start, input_line_pointer-start-1 };
             link_string_directive(bitsize, append_zero, string);
@@ -5420,6 +5387,7 @@ stringer_imp (int bits_appendzero, int link_string)
    Checks for end-of-line.
    BITS_APPENDZERO says how many bits are in a target char.
    The bottom bit is set if a NUL char should be appended to the strings.  */
+
 void
 stringer (int bits_appendzero)
 {
@@ -5575,9 +5543,9 @@ get_segmented_expression (expressionS *expP)
 static segT
 get_known_segmented_expression (expressionS *expP)
 {
-  segT retval;
+  segT retval = get_segmented_expression (expP);
 
-  if ((retval = get_segmented_expression (expP)) == undefined_section)
+  if (retval == undefined_section)
     {
       /* There is no easy way to extract the undefined symbol from the
 	 expression.  */
@@ -5591,8 +5559,7 @@ get_known_segmented_expression (expressionS *expP)
       expP->X_op = O_constant;
       expP->X_add_number = 0;
     }
-  know (retval == absolute_section || SEG_NORMAL (retval));
-  return (retval);
+  return retval;
 }
 
 char				/* Return terminator.  */
@@ -5756,7 +5723,6 @@ s_incbin (int x ATTRIBUTE_UNUSED)
     }
 
   demand_empty_rest_of_line ();
-
 
   // link it to mao.
   struct MaoStringPiece sp_filename =
