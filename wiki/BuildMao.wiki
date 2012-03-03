@@ -2,7 +2,7 @@
 
 = Build instructions =
 
-MAO reuses code from the GNU Binutils (currently v2.21.1) for parsing an input assembly 
+MAO reuses code from the GNU Binutils (currently v2.22) for parsing an input assembly 
 file. Before building MAO, it is necessary to download Binutils, and patch the sources using a provided patch (see instructions below).
 
 MAO currently supports i686 and x86_64 targets on Linux and Mac OS X (only tested on Leopard). Please note any host-specific instructions below.
@@ -39,17 +39,17 @@ svn checkout https://mao.googlecode.com/svn/trunk/ . --username your.name
 #           install it, or set this alias:
 #           alias wget="curl -O"
 #
-wget http://ftp.gnu.org/gnu/binutils/binutils-2.21.1.tar.bz2
-bunzip2 binutils-2.21.1.tar.bz2
-tar xvf binutils-2.21.1.tar
-(cd binutils-2.21.1 && patch -p1  < ../data/binutils-2.21-mao.patch)
+wget http://ftp.gnu.org/gnu/binutils/binutils-2.22.tar.bz2
+bunzip2 binutils-2.22.tar.bz2
+tar xvf binutils-2.22.tar
+(cd binutils-2.22 && patch -p1  < ../data/binutils-2.22-mao.patch)
 
 # Configure modified binutils.
 #  note: make -j 4 spawn parallel make, 4 processes. Increase
 #        or decrease, according to your needs and system
-(mkdir binutils-2.21.1-obj-${TARGET}
-cd binutils-2.21.1-obj-${TARGET}
-../binutils-2.21.1/configure --target=${TARGET} ${BINUTILS_CONF_FLAGS}
+(mkdir binutils-2.22-obj-${TARGET}
+cd binutils-2.22-obj-${TARGET}
+../binutils-2.22/configure --target=${TARGET} ${BINUTILS_CONF_FLAGS}
 make -j 4)
 
 #=========================================================
