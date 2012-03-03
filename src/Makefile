@@ -245,7 +245,8 @@ $(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) $(SRCDIR)/GenOpcodes.cc $(SRCDIR)/MaoD
 
 # GenOpcodes assumes that the names are sorted in the input. As of binutils 2.22 this not true,
 # so we manually sort the file before processing it.
-$(OBJDIR)/i386-opc.tbl.sorted: $(BINUTILSRC)/opcodes/i386-opc.tbl
+$(OBJDIR)/i386-opc.tbl.sorted: stamp-obj-$(TARGET) $(BINUTILSRC)/opcodes/i386-opc.tbl
+	mkdir -p $(OBJDIR)
 	sort $(BINUTILSRC)/opcodes/i386-opc.tbl > $(OBJDIR)/i386-opc.tbl.sorted
 
 $(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes $(OBJDIR)/i386-opc.tbl.sorted
