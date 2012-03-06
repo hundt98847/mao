@@ -241,7 +241,7 @@ $(OPCODES_OBJS) : $(OBJDIR)/%.o : $(BINUTILSRC)/opcodes/%.c
 
 $(OBJDIR)/GenOpcodes: stamp-obj-$(TARGET) $(SRCDIR)/GenOpcodes.cc $(SRCDIR)/MaoDebug.h $(OBJDIR)/MaoDebug.o $(SRCDIR)/MaoDefs.h $(SRCDIR)/MaoDefs.tbl $(SRCDIR)/MaoUses.tbl $(SRCDIR)/MaoUtil.h $(SRCDIR)/Makefile
 	mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) $(OBJDIR)/MaoDebug.o -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -lstdc++
+	$(CC) $(CFLAGS) $(CCEXTRAFLAGS) $(OBJDIR)/MaoDebug.o -o $(OBJDIR)/GenOpcodes $(SRCDIR)/GenOpcodes.cc -l:libstdc++.a
 
 # GenOpcodes assumes that the names are sorted in the input. As of binutils 2.22 this not true,
 # so we manually sort the file before processing it.
@@ -255,7 +255,7 @@ $(OBJDIR)/gen-opcodes.h: $(OBJDIR)/GenOpcodes $(OBJDIR)/i386-opc.tbl.sorted
 mao-$(DEVPREFIX)$(TARGET): $(BINDIR)/mao-$(DEVPREFIX)$(TARGET)
 
 $(BINDIR)/mao-$(DEVPREFIX)$(TARGET): stamp-bin $(OBJDIR)/gen-opcodes.h $(OBJS)
-	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -rdynamic -o $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -lstdc++ $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil -lm $(EXTRALIBS)
+	$(CC) $(CFLAGS) $(PYTHONLDOPTS) -rdynamic -o $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(OBJS) -L$(BINUTILOBJ)/libiberty -L$(BINUTILOBJ)/bfd -lbfd -liberty -l:libstdc++.a $(LIBZ) $(PYTHONLIB) -lpthread -ldl -lutil -lm $(EXTRALIBS)
 
 mao: all
 	ln -s $(BINDIR)/mao-$(DEVPREFIX)$(TARGET) $(BINDIR)/mao

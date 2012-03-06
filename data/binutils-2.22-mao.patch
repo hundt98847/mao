@@ -1,6 +1,6 @@
 diff -urpN binutils-2.22.orig/gas/config/tc-i386.c binutils-2.22/gas/config/tc-i386.c
 --- binutils-2.22.orig/gas/config/tc-i386.c	2012-02-13 17:43:40.058231000 -0800
-+++ binutils-2.22/gas/config/tc-i386.c	2012-02-23 09:44:39.359516000 -0800
++++ binutils-2.22/gas/config/tc-i386.c	2012-03-05 15:55:02.252472000 -0800
 @@ -55,20 +55,6 @@
  #endif
  #endif
@@ -157,7 +157,7 @@ diff -urpN binutils-2.22.orig/gas/config/tc-i386.c binutils-2.22/gas/config/tc-i
  
  /* List of chars besides those in app.c:symbol_chars that can start an
     operand.  Used to prevent the scrubber eating vital white-space.  */
-@@ -382,15 +247,7 @@ static expressionS im_expressions[MAX_IM
+@@ -382,14 +247,6 @@ static expressionS im_expressions[MAX_IM
  /* Current operand we are working on.  */
  static int this_operand = -1;
  
@@ -169,11 +169,9 @@ diff -urpN binutils-2.22.orig/gas/config/tc-i386.c binutils-2.22/gas/config/tc-i
 -	CODE_16BIT,
 -	CODE_64BIT };
 -
--static enum flag_code flag_code;
-+enum flag_code flag_code;
+ static enum flag_code flag_code;
  static unsigned int object_64bit;
  static unsigned int disallow_64bit_reloc;
- static int use_rela_relocations = 0;
 diff -urpN binutils-2.22.orig/gas/config/tc-i386.h binutils-2.22/gas/config/tc-i386.h
 --- binutils-2.22.orig/gas/config/tc-i386.h	2012-02-13 17:43:40.061216000 -0800
 +++ binutils-2.22/gas/config/tc-i386.h	2012-02-23 09:46:19.528305000 -0800
