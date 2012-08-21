@@ -266,14 +266,18 @@ $(PLUGIN_TARGETS) : $(BINDIR)/%-$(TARGET).$(DYNLIBEXT) : $(OBJDIR)/%.o stamp-bin
 .PHONY : clean allclean all mao-$(DEVPREFIX)$(TARGET) headers mao
 
 
-MAO_HEADERS = $(SRCDIR)/MaoCFG.h $(SRCDIR)/MaoDebug.h $(SRCDIR)/MaoDefs.h \
-	      $(SRCDIR)/MaoEntry.h $(SRCDIR)/MaoFunction.h \
-	      $(SRCDIR)/MaoLoops.h $(SRCDIR)/MaoOptions.h \
-	      $(SRCDIR)/MaoPasses.h $(SRCDIR)/MaoPlugin.h \
-	      $(SRCDIR)/MaoStats.h $(SRCDIR)/MaoSection.h $(SRCDIR)/MaoUnit.h \
-	      $(SRCDIR)/MaoUtil.h $(SRCDIR)/SymbolTable.h $(SRCDIR)/MaoTypes.h \
-	      $(OBJDIR)/gen-opcodes.h $(SRCDIR)/Mao.h $(SRCDIR)/irlink.h \
-	      $(SRCDIR)/expr.h
+MAO_HEADERS = $(SRCDIR)/Mao.h $(SRCDIR)/MaoCFG.h			\
+	      $(SRCDIR)/MaoDataFlow.h $(SRCDIR)/MaoDebug.h		\
+	      $(SRCDIR)/MaoDefs.h $(SRCDIR)/MaoEntry.h			\
+	      $(SRCDIR)/MaoFunction.h $(SRCDIR)/MaoLiveness.h		\
+	      $(SRCDIR)/MaoLoops.h $(SRCDIR)/MaoOptions.h		\
+	      $(SRCDIR)/MaoPasses.h $(SRCDIR)/MaoPlugin.h		\
+	      $(SRCDIR)/MaoReachingDefs.h $(SRCDIR)/MaoRelax.h		\
+	      $(SRCDIR)/MaoStats.h $(SRCDIR)/MaoSection.h		\
+	      $(SRCDIR)/MaoUnit.h $(SRCDIR)/MaoUtil.h			\
+	      $(SRCDIR)/SymbolTable.h $(SRCDIR)/MaoTypes.h		\
+	      $(SRCDIR)/expr.h $(OBJDIR)/gen-opcodes.h $(SRCDIR)/ir.h	\
+	      $(SRCDIR)/irlink.h $(SRCDIR)/tc-i386-helper.h
 
 
 MAO_BINUTILS_HEADERS = $(BINUTILSRC)/gas/config/tc-i386.h \
