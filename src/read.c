@@ -1477,7 +1477,7 @@ s_comm_internal (int param,
   char *name;
   char c;
   char *p;
-  offsetT temp, size;
+  offsetT temp, size = 0;
   symbolS *symbolP = NULL;
   char *stop = NULL;
   char stopc = 0;
