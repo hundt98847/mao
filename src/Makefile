@@ -52,7 +52,7 @@ CFLAGS=						\
 	-I$(BINUTILOBJ)/include			\
 	-DLOCALEDIR="\"$(LOCALEDIR)\""		\
 	-DHAVE_DECL_BASENAME=1                  \
-	-g -O0 -Wall -Werror -fno-exceptions
+	-g -O2 -Wall -Werror -fno-exceptions
 
 MAKEDEPEND=$(CC) -MM $(CFLAGS) $(CCEXTRAFLAGS) -o $(patsubst %.o,%.P,$@) $<
 
