@@ -1,3 +1,5 @@
+Note: THIS PROJECT IS CLOSED, WITH NO FURTHER MAINTAINANCE
+
 MAO - An Extensible Micro-Architectural Optimizer
 
 This project seeks to build an infrastructure for micro-architectural
